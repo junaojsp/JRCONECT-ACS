@@ -158,6 +158,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         </div>
                     </div>
 
+                    ${renderPhysicalPorts(device.lan_ports)}
+
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span><i class="bi bi-clock-history"></i> Última conexão</span>
@@ -504,6 +506,55 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Show error in loading area
         document.getElementById('loading-spinner').innerHTML = '<div class="alert alert-danger">Failed to load device details</div>';
     }
+}
+
+function renderPhysicalPorts(ports) {
+    if (!Array.isArray(ports) || ports.length === 0) {
+        return `
+            <div class="acs-physical-ports">
+                <div class="acs-physical-ports-title">
+                    <span><i class="bi bi-ethernet"></i> Portas físicas</span>
+                    <small>Sem leitura</small>
+                </div>
+                <div class="acs-physical-ports-empty">Dados das portas LAN ainda não coletados.</div>
+            </div>
+        `;
+    }
+
+    const formatSpeed = (value) => {
+        if (value === null || value === undefined || value === '' || value === 'N/A') return 'Auto';
+        const text = String(value).trim();
+        if (/^auto$/i.test(text)) return 'Auto';
+        const speed = Number(text);
+        if (!Number.isFinite(speed)) return text;
+        if (speed >= 1000) return (speed / 1000) + 'G';
+        return speed + 'M';
+    };
+
+    return `
+        <div class="acs-physical-ports">
+            <div class="acs-physical-ports-title">
+                <span><i class="bi bi-ethernet"></i> Portas físicas</span>
+                <small>${ports.length} LAN</small>
+            </div>
+            <div class="acs-physical-ports-grid">
+                ${ports.map(port => {
+                    const status = String(port.status || '').toLowerCase();
+                    const isUp = status === 'up' || status === 'connected';
+                    const isDisabled = port.enabled === false || String(port.enabled).toLowerCase() === 'false';
+
+                    return `
+                        <div class="acs-lan-port ${isUp ? 'link-up' : 'link-down'} ${isDisabled ? 'disabled' : ''}"
+                             title="${port.name}: ${port.status || 'N/D'}">
+                            <div class="acs-lan-port-icon"><i class="bi bi-ethernet"></i></div>
+                            <strong>${port.name}</strong>
+                            <span>${isUp ? formatSpeed(port.max_bit_rate) : 'Sem link'}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
 }
 
 function extractIP(ipString) {
