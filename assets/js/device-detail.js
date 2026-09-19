@@ -2922,12 +2922,14 @@ function getPrimaryWAN(device) {
 }
 
 function toCounter(value) {
+    if (value === null || value === undefined || value === '' || value === 'N/A') return null;
     const n = Number(value);
-    return Number.isFinite(n) && n >= 0 ? n : 0;
+    return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 function formatTrafficBytes(bytes) {
     let value = toCounter(bytes);
+    if (value === null) return 'Sem leitura';
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     let i = 0;
     while (value >= 1024 && i < units.length - 1) {
@@ -2935,6 +2937,11 @@ function formatTrafficBytes(bytes) {
         i++;
     }
     return (i === 0 ? value.toFixed(0) : value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)) + ' ' + units[i];
+}
+
+function formatCounter(value) {
+    const counter = toCounter(value);
+    return counter === null ? 'Sem leitura' : counter.toLocaleString('pt-BR');
 }
 
 function formatUptimeValue(value) {
@@ -2977,9 +2984,9 @@ function renderMonitoringTab(device) {
                     <div><span>Tipo</span><strong>${wan.type || 'N/A'}</strong></div>
                     <div><span>IP WAN</span><strong>${wan.external_ip || 'N/A'}</strong></div>
                     <div><span>Uptime</span><strong>${formatUptimeValue(wan.uptime)}</strong></div>
-                    <div><span>Pacotes RX</span><strong>${toCounter(wan.packets_received).toLocaleString('pt-BR')}</strong></div>
-                    <div><span>Pacotes TX</span><strong>${toCounter(wan.packets_sent).toLocaleString('pt-BR')}</strong></div>
-                    <div><span>Erros RX/TX</span><strong>${toCounter(wan.errors_received)} / ${toCounter(wan.errors_sent)}</strong></div>
+                    <div><span>Pacotes RX</span><strong>${formatCounter(wan.packets_received)}</strong></div>
+                    <div><span>Pacotes TX</span><strong>${formatCounter(wan.packets_sent)}</strong></div>
+                    <div><span>Erros RX/TX</span><strong>${formatCounter(wan.errors_received)} / ${formatCounter(wan.errors_sent)}</strong></div>
                     <div><span>Último erro</span><strong>${wan.last_error || 'N/A'}</strong></div>
                 </div>
             </div>
@@ -2994,7 +3001,7 @@ function updateBandwidthSample(device) {
     const tx = toCounter(wan.bytes_sent);
     const previous = bandwidthSamples.length ? bandwidthSamples[bandwidthSamples.length - 1] : null;
     let rxMbps = null, txMbps = null;
-    if (previous && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
+    if (previous && rx !== null && tx !== null && previous.rx !== null && previous.tx !== null && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
         const seconds = (now - previous.time) / 1000;
         rxMbps = ((rx - previous.rx) * 8) / seconds / 1000000;
         txMbps = ((tx - previous.tx) * 8) / seconds / 1000000;
@@ -3008,7 +3015,7 @@ function updateBandwidthSample(device) {
     if (txEl) txEl.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
 
     const status = document.getElementById('bandwidth-sample-status');
-    if (status) status.textContent = rxMbps === null ? 'Aguardando segunda leitura...' : 'Última amostra: ' + new Date(now).toLocaleTimeString('pt-BR');
+    if (status) status.textContent = (rx === null || tx === null) ? 'Contadores WAN ainda não foram coletados. Clique em Comunicar.' : (rxMbps === null ? 'Aguardando segunda leitura...' : 'Última amostra: ' + new Date(now).toLocaleTimeString('pt-BR'));
 
     const chart = document.getElementById('bandwidth-bars');
     if (chart) {
