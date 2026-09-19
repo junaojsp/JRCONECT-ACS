@@ -977,6 +977,45 @@ class GenieACS {
         $data['connected_devices'] = $connectedDevices;
         $data['connected_devices_count'] = count($connectedDevices);
 
+        // Physical LAN Ethernet ports
+        // TR-098: InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceConfig.{i}
+        $lanPorts = [];
+        $lanPortCount = (int)($getParam('InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceNumberOfEntries') ?? 0);
+        $maxLanPorts = $lanPortCount > 0 ? min($lanPortCount, 8) : 8;
+
+        for ($i = 1; $i <= $maxLanPorts; $i++) {
+            $lanBase = "InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceConfig.{$i}";
+            $status = $getParam("{$lanBase}.Status");
+            $enable = $getParam("{$lanBase}.Enable");
+            $maxBitRate = $getParam("{$lanBase}.MaxBitRate");
+            $duplexMode = $getParam("{$lanBase}.DuplexMode");
+
+            // Ignore non-existent instances. A port is considered present when
+            // at least one commonly exposed parameter was collected by GenieACS.
+            if ($status === null && $enable === null && $maxBitRate === null && $duplexMode === null) {
+                continue;
+            }
+
+            $statsBase = "{$lanBase}.Stats";
+
+            $lanPorts[] = [
+                'port' => $i,
+                'name' => "LAN{$i}",
+                'enabled' => $enable,
+                'status' => $status ?? 'Unknown',
+                'max_bit_rate' => $maxBitRate ?? 'N/A',
+                'duplex_mode' => $duplexMode ?? 'N/A',
+                'bytes_received' => $getParam("{$statsBase}.BytesReceived") ?? 0,
+                'bytes_sent' => $getParam("{$statsBase}.BytesSent") ?? 0,
+                'packets_received' => $getParam("{$statsBase}.PacketsReceived") ?? 0,
+                'packets_sent' => $getParam("{$statsBase}.PacketsSent") ?? 0,
+                'errors_received' => $getParam("{$statsBase}.ErrorsReceived") ?? 0,
+                'errors_sent' => $getParam("{$statsBase}.ErrorsSent") ?? 0,
+            ];
+        }
+
+        $data['lan_ports'] = $lanPorts;
+
         // DHCP Server Configuration
         $dhcpServer = [];
         $dhcpBase = 'InternetGatewayDevice.LANDevice.1.LANHostConfigManagement';
