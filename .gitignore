@@ -35,3 +35,40 @@ composer.lock
 
 # Uploads (if any)
 uploads/
+
+# Configurações sensíveis
+/config/config.php
+/config/database.php
+
+# Backups locais
+*.bak
+*.bak-*
+*.backup
+*.sql
+
+# Logs
+*.log
+/logs/
+/storage/logs/
+
+# Temporários
+*.tmp
+*.swp
+*~
+
+# Credenciais / ambientes
+.env
+.env.*
+credentials*
+secrets*
+
+# Cache
+/cache/
+/tmp/
+
+# Integrações com credenciais
+/config/fiberhome-tl1.php
+
+# Scripts de teste/integracao que podem conter token IXC
+/api/test-ixc-onu.php
+/api/discovery-ixc-tr069.php

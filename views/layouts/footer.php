@@ -2,7 +2,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            Made by <a href="https://github.com/safrinnetwork/" target="_blank">Mostech</a>
+            Made by <a href="https://github.com/safrinnetwork/" target="_blank">JRCONECT TELECOM</a>
         </div>
     </div>
 

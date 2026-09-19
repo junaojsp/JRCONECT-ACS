@@ -688,3 +688,2362 @@ table tbody tr:hover {
         flex: 1 1 100%;
     }
 }
+
+/* =========================================================
+   JR CONECT ACS - MODO ESCURO
+   ========================================================= */
+
+:root {
+    --jr-bg: #071522;
+    --jr-bg-2: #0b1c2b;
+    --jr-panel: #102536;
+    --jr-panel-2: #132d41;
+    --jr-border: #25455d;
+
+    --jr-text: #eaf6ff;
+    --jr-muted: #95afc1;
+
+    --jr-primary: #13a9d5;
+    --jr-primary-hover: #1cc4ef;
+
+    --jr-success: #2fd480;
+    --jr-warning: #f2b93b;
+    --jr-danger: #ef5f6c;
+}
+
+
+/* BODY */
+body {
+    background: var(--jr-bg) !important;
+    color: var(--jr-text) !important;
+}
+
+
+/* CONTEUDO PRINCIPAL */
+.main-content {
+    background: var(--jr-bg) !important;
+}
+
+.content-wrapper {
+    background: var(--jr-bg) !important;
+    color: var(--jr-text) !important;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar {
+    background: #0b1b2d !important;
+    border-right: 1px solid var(--jr-border) !important;
+}
+
+.sidebar-header {
+    background: #091827 !important;
+    border-bottom: 1px solid var(--jr-border) !important;
+}
+
+.sidebar-header h3 {
+    color: #ffffff !important;
+}
+
+.sidebar-header i {
+    color: var(--jr-primary) !important;
+}
+
+.sidebar-menu li a {
+    color: #c9dbea !important;
+}
+
+.sidebar-menu li a:hover {
+    background: #123149 !important;
+    color: #ffffff !important;
+}
+
+.sidebar-menu li a.active {
+    background: #0e7fa6 !important;
+    color: #ffffff !important;
+    border-left: 3px solid #66dcff !important;
+}
+
+.sidebar-menu li a i {
+    color: inherit !important;
+}
+
+
+/* =========================================================
+   TOPBAR
+   ========================================================= */
+
+.topbar {
+    background: #0b1c2b !important;
+    border-bottom: 1px solid var(--jr-border) !important;
+    color: var(--jr-text) !important;
+}
+
+.topbar h4 {
+    color: #ffffff !important;
+}
+
+.user-info,
+.user-info span {
+    color: #dcecf7 !important;
+}
+
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.card {
+    background: var(--jr-panel) !important;
+    border: 1px solid var(--jr-border) !important;
+    color: var(--jr-text) !important;
+    box-shadow: 0 8px 22px rgba(0,0,0,.22) !important;
+}
+
+.card-header {
+    background: var(--jr-panel-2) !important;
+    border-bottom: 1px solid var(--jr-border) !important;
+    color: #ffffff !important;
+}
+
+.card-body {
+    background: var(--jr-panel) !important;
+    color: var(--jr-text) !important;
+}
+
+
+/* =========================================================
+   CARDS DE ESTATISTICA
+   ========================================================= */
+
+.stat-card {
+    background: var(--jr-panel) !important;
+    border: 1px solid var(--jr-border) !important;
+    color: var(--jr-text) !important;
+}
+
+.stat-card h3 {
+    color: #ffffff !important;
+}
+
+.stat-card p {
+    color: var(--jr-muted) !important;
+}
+
+
+/* =========================================================
+   TABELAS
+   ========================================================= */
+
+.table {
+    color: var(--jr-text) !important;
+    border-color: var(--jr-border) !important;
+}
+
+.table thead th {
+    background: #0d2233 !important;
+    color: #8adfff !important;
+    border-color: var(--jr-border) !important;
+}
+
+.table tbody td {
+    background: var(--jr-panel) !important;
+    color: var(--jr-text) !important;
+    border-color: var(--jr-border) !important;
+}
+
+.table-hover tbody tr:hover td {
+    background: #183448 !important;
+}
+
+.table a {
+    color: #65d9ff !important;
+}
+
+.table a:hover {
+    color: #a3ebff !important;
+}
+
+
+/* =========================================================
+   FORMULARIOS
+   ========================================================= */
+
+.form-control,
+.form-select {
+    background: #0b1d2d !important;
+    color: var(--jr-text) !important;
+    border: 1px solid #31516a !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background: #10283b !important;
+    color: #ffffff !important;
+    border-color: var(--jr-primary) !important;
+    box-shadow: 0 0 0 .2rem rgba(19,169,213,.15) !important;
+}
+
+.form-control::placeholder {
+    color: #71899b !important;
+}
+
+.input-group-text {
+    background: #10283b !important;
+    color: #cfeaff !important;
+    border-color: #31516a !important;
+}
+
+label {
+    color: #cce3f1 !important;
+}
+
+
+/* =========================================================
+   ABAS
+   ========================================================= */
+
+.nav-tabs {
+    border-bottom: 1px solid var(--jr-border) !important;
+}
+
+.nav-tabs .nav-link {
+    color: #a9c6d9 !important;
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #ffffff !important;
+    background: #132e43 !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: #ffffff !important;
+    background: #0e7fa6 !important;
+    border-color: #0e7fa6 !important;
+}
+
+
+/* =========================================================
+   MODAIS
+   ========================================================= */
+
+.modal-content {
+    background: var(--jr-panel) !important;
+    color: var(--jr-text) !important;
+    border: 1px solid var(--jr-border) !important;
+}
+
+.modal-header,
+.modal-footer {
+    background: var(--jr-panel-2) !important;
+    border-color: var(--jr-border) !important;
+}
+
+.modal-title {
+    color: #ffffff !important;
+}
+
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+
+/* =========================================================
+   ALERTAS
+   ========================================================= */
+
+.alert-info {
+    background: #0d334a !important;
+    color: #ccefff !important;
+    border-color: #176083 !important;
+}
+
+.alert-warning {
+    background: #3a3216 !important;
+    color: #ffe6a2 !important;
+    border-color: #7c6421 !important;
+}
+
+.alert-danger {
+    background: #3b1d24 !important;
+    color: #ffd2d7 !important;
+    border-color: #7f313f !important;
+}
+
+.alert-success {
+    background: #173625 !important;
+    color: #caffdc !important;
+    border-color: #286a46 !important;
+}
+
+
+/* =========================================================
+   TEXTOS
+   ========================================================= */
+
+.text-muted {
+    color: var(--jr-muted) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   PAGINACAO
+   ========================================================= */
+
+.page-link {
+    background: #102536 !important;
+    color: #cce9f7 !important;
+    border-color: var(--jr-border) !important;
+}
+
+.page-link:hover {
+    background: #17374e !important;
+    color: #ffffff !important;
+}
+
+.page-item.active .page-link {
+    background: var(--jr-primary) !important;
+    border-color: var(--jr-primary) !important;
+}
+
+
+/* =========================================================
+   DROPDOWNS
+   ========================================================= */
+
+.dropdown-menu {
+    background: var(--jr-panel) !important;
+    border: 1px solid var(--jr-border) !important;
+}
+
+.dropdown-item {
+    color: var(--jr-text) !important;
+}
+
+.dropdown-item:hover {
+    background: #17374e !important;
+    color: #ffffff !important;
+}
+
+
+/* =========================================================
+   MAPA
+   ========================================================= */
+
+#map-card {
+    background: var(--jr-panel) !important;
+}
+
+.context-menu {
+    background: var(--jr-panel) !important;
+    color: var(--jr-text) !important;
+    border-color: var(--jr-border) !important;
+}
+
+.context-menu-item {
+    color: var(--jr-text) !important;
+}
+
+.context-menu-item:hover {
+    background: #17374e !important;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #071522;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #29485d;
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #37637e;
+}
+
+/* =========================================================
+   JR CONECT ACS - AJUSTES DEVICE DETAIL DARK
+   ========================================================= */
+
+#overview-content table,
+#wan-content table,
+#dhcp-content table,
+#devices-content table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#overview-content td,
+#wan-content td,
+#dhcp-content td,
+#devices-content td {
+    background: #102536 !important;
+    color: #eaf6ff !important;
+    border-color: #29485d !important;
+}
+
+#overview-content td:first-child,
+#wan-content td:first-child,
+#dhcp-content td:first-child,
+#devices-content td:first-child {
+    background: #0c2030 !important;
+    color: #82dcff !important;
+    font-weight: 600 !important;
+}
+
+#overview-content th,
+#wan-content th,
+#dhcp-content th,
+#devices-content th {
+    background: #0c2030 !important;
+    color: #82dcff !important;
+    border-color: #29485d !important;
+}
+
+#overview-content h5,
+#overview-content h6,
+#wan-content h5,
+#wan-content h6,
+#dhcp-content h5,
+#dhcp-content h6,
+#devices-content h5,
+#devices-content h6 {
+    color: #ffffff !important;
+}
+
+#overview-content .alert,
+#wan-content .alert,
+#dhcp-content .alert,
+#devices-content .alert {
+    background: #12344a !important;
+    color: #dff5ff !important;
+    border-color: #2b6685 !important;
+}
+
+/* Links e IPs */
+#overview-content a,
+#wan-content a,
+#dhcp-content a,
+#devices-content a {
+    color: #5ed9ff !important;
+}
+
+#overview-content a:hover,
+#wan-content a:hover,
+#dhcp-content a:hover,
+#devices-content a:hover {
+    color: #a7ecff !important;
+}
+
+/* Abas */
+#deviceTabs .nav-link {
+    color: #b8d6e7 !important;
+}
+
+#deviceTabs .nav-link.active {
+    background: #0e7fa6 !important;
+    color: #ffffff !important;
+    border-color: #0e7fa6 !important;
+}
+
+/* Card principal */
+#deviceTabContent {
+    background: transparent !important;
+}
+
+/* Texto N/A */
+#overview-content .text-danger,
+#overview-content .text-muted {
+    color: #a8bdca !important;
+}
+
+/* Footer escuro */
+footer,
+.footer,
+.main-content > footer {
+    background: #0b1c2b !important;
+    color: #95afc1 !important;
+    border-top: 1px solid #25455d !important;
+}
+
+footer a,
+.footer a {
+    color: #5ed9ff !important;
+}
+
+/* =========================================================
+   TESTE DE VELOCIDADE JR CONECT
+   ========================================================= */
+
+body:has(a[href="/speedtest.php"].active) .content-wrapper {
+    padding-bottom: 0 !important;
+}
+
+body:has(a[href="/speedtest.php"].active) .card {
+    overflow: hidden !important;
+}
+
+body:has(a[href="/speedtest.php"].active) iframe {
+    background: #071522 !important;
+}
+
+/* =========================================================
+   JR CONECT ACS - UI V2
+   Tema inspirado em consoles modernos de gerenciamento ACS
+   ========================================================= */
+
+:root {
+    --jrc-bg: #050d16;
+    --jrc-bg-soft: #08131f;
+    --jrc-panel: #0b1825;
+    --jrc-panel-2: #0e1d2c;
+    --jrc-panel-hover: #122538;
+
+    --jrc-border: rgba(117, 168, 198, 0.13);
+    --jrc-border-strong: rgba(27, 198, 232, 0.28);
+
+    --jrc-text: #e7f2f8;
+    --jrc-muted: #7893a5;
+
+    --jrc-primary: #00bde3;
+    --jrc-primary-soft: rgba(0, 189, 227, 0.10);
+
+    --jrc-success: #20d59b;
+    --jrc-warning: #f6b94a;
+    --jrc-danger: #f06472;
+    --jrc-purple: #9b68ff;
+
+    --jrc-radius: 13px;
+    --jrc-shadow:
+        0 12px 30px rgba(0, 0, 0, .20);
+}
+
+
+/* =========================================================
+   BASE
+   ========================================================= */
+
+html,
+body {
+    background:
+        radial-gradient(
+            circle at 50% -10%,
+            rgba(0, 119, 174, .09),
+            transparent 38%
+        ),
+        var(--jrc-bg) !important;
+
+    color: var(--jrc-text);
+}
+
+body {
+    font-family:
+        Inter,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+}
+
+
+/* =========================================================
+   CONTEÚDO PRINCIPAL
+   ========================================================= */
+
+.main-content {
+    background: transparent !important;
+
+    padding:
+        24px
+        28px
+        40px !important;
+}
+
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.card,
+.stat-card {
+    position: relative;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(14, 29, 44, .98),
+            rgba(7, 20, 31, .98)
+        ) !important;
+
+    border:
+        1px solid
+        var(--jrc-border) !important;
+
+    border-radius:
+        var(--jrc-radius) !important;
+
+    box-shadow:
+        var(--jrc-shadow) !important;
+
+    overflow: hidden;
+
+    transition:
+        border-color .18s ease,
+        transform .18s ease,
+        box-shadow .18s ease;
+}
+
+.card:hover,
+.stat-card:hover {
+    border-color:
+        var(--jrc-border-strong) !important;
+
+    box-shadow:
+        0 16px 40px
+        rgba(0, 0, 0, .28) !important;
+}
+
+
+/* linha superior discreta */
+
+.card::before,
+.stat-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(0, 189, 227, .35),
+            transparent
+        );
+}
+
+
+/* =========================================================
+   CABEÇALHO DOS CARDS
+   ========================================================= */
+
+.card-header {
+    background:
+        transparent !important;
+
+    border-bottom:
+        1px solid
+        var(--jrc-border) !important;
+
+    padding:
+        15px
+        18px !important;
+
+    color:
+        var(--jrc-text) !important;
+
+    font-size:
+        13px;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        .03em;
+}
+
+
+/* =========================================================
+   CORPO
+   ========================================================= */
+
+.card-body {
+    padding:
+        18px !important;
+}
+
+
+/* =========================================================
+   GRID DE ESTATÍSTICAS
+   ========================================================= */
+
+.stats-grid {
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(210px, 1fr)
+        );
+
+    gap:
+        14px !important;
+
+    margin-bottom:
+        18px !important;
+}
+
+
+/* =========================================================
+   CARDS DE STATUS
+   ========================================================= */
+
+.stat-card {
+    min-height:
+        128px;
+
+    padding:
+        18px !important;
+}
+
+.stat-card .stat-value,
+.stat-card h2,
+.stat-card h3 {
+    color:
+        #f2f9fc !important;
+
+    font-weight:
+        700 !important;
+
+    letter-spacing:
+        -.02em;
+}
+
+
+/* ONLINE */
+
+.stat-card.success {
+    border-top:
+        2px solid
+        var(--jrc-success) !important;
+}
+
+
+/* OFFLINE */
+
+.stat-card.danger {
+    border-top:
+        2px solid
+        var(--jrc-danger) !important;
+}
+
+
+/* ATENÇÃO */
+
+.stat-card.warning {
+    border-top:
+        2px solid
+        var(--jrc-warning) !important;
+}
+
+
+/* PRINCIPAL */
+
+.stat-card.primary {
+    border-top:
+        2px solid
+        var(--jrc-primary) !important;
+}
+
+
+/* =========================================================
+   TEXTOS
+   ========================================================= */
+
+.text-muted,
+small {
+    color:
+        var(--jrc-muted) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color:
+        var(--jrc-text);
+}
+
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.badge {
+    border-radius:
+        999px !important;
+
+    padding:
+        5px
+        9px !important;
+
+    font-size:
+        10px !important;
+
+    font-weight:
+        700 !important;
+
+    letter-spacing:
+        .06em;
+}
+
+.badge.online {
+    color:
+        #65f3c3 !important;
+
+    background:
+        rgba(32, 213, 155, .12) !important;
+
+    border:
+        1px solid
+        rgba(32, 213, 155, .27);
+}
+
+.badge.offline {
+    color:
+        #ff8e99 !important;
+
+    background:
+        rgba(240, 100, 114, .12) !important;
+
+    border:
+        1px solid
+        rgba(240, 100, 114, .27);
+}
+
+
+/* =========================================================
+   TABELAS
+   ========================================================= */
+
+.table {
+    --bs-table-bg:
+        transparent !important;
+
+    --bs-table-color:
+        var(--jrc-text) !important;
+
+    --bs-table-border-color:
+        var(--jrc-border) !important;
+}
+
+.table > thead > tr > th {
+    color:
+        #7696aa !important;
+
+    font-size:
+        10px !important;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        .08em;
+
+    font-weight:
+        700;
+
+    border-bottom:
+        1px solid
+        var(--jrc-border) !important;
+
+    padding:
+        12px !important;
+}
+
+.table > tbody > tr > td {
+    color:
+        #c8dae5 !important;
+
+    padding:
+        13px
+        12px !important;
+
+    border-color:
+        rgba(120, 150, 170, .08) !important;
+
+    vertical-align:
+        middle;
+}
+
+.table > tbody > tr {
+    transition:
+        background-color .15s ease;
+}
+
+.table > tbody > tr:hover {
+    background:
+        rgba(0, 189, 227, .045) !important;
+}
+
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+a {
+    color:
+        #57cbea;
+}
+
+a:hover {
+    color:
+        #86ddf2;
+}
+
+
+/* =========================================================
+   BOTÕES
+   ========================================================= */
+
+.btn {
+    border-radius:
+        8px !important;
+
+    font-size:
+        12px !important;
+
+    font-weight:
+        600 !important;
+
+    padding:
+        8px
+        13px !important;
+
+    transition:
+        .18s ease;
+}
+
+.btn-primary {
+    background:
+        linear-gradient(
+            135deg,
+            #087fa4,
+            #00aaca
+        ) !important;
+
+    border-color:
+        rgba(0, 189, 227, .35) !important;
+
+    color:
+        white !important;
+
+    box-shadow:
+        0 5px 18px
+        rgba(0, 174, 211, .12);
+}
+
+.btn-primary:hover {
+    filter:
+        brightness(1.12);
+
+    transform:
+        translateY(-1px);
+}
+
+.btn-secondary {
+    background:
+        #152637 !important;
+
+    color:
+        #bcd1df !important;
+
+    border:
+        1px solid
+        var(--jrc-border) !important;
+}
+
+
+/* =========================================================
+   FORMULÁRIOS
+   ========================================================= */
+
+.form-control,
+.form-select {
+    background:
+        #071521 !important;
+
+    color:
+        var(--jrc-text) !important;
+
+    border:
+        1px solid
+        #21394a !important;
+
+    border-radius:
+        8px !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color:
+        var(--jrc-primary) !important;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(0, 189, 227, .10) !important;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar {
+    background:
+        linear-gradient(
+            180deg,
+            #06101a 0%,
+            #07131d 100%
+        ) !important;
+
+    border-right:
+        1px solid
+        rgba(117, 168, 198, .10) !important;
+
+    box-shadow:
+        8px 0 30px
+        rgba(0, 0, 0, .16);
+}
+
+.sidebar-header {
+    border-bottom:
+        1px solid
+        rgba(117, 168, 198, .08);
+}
+
+.sidebar-menu {
+    padding-top:
+        10px;
+}
+
+.sidebar-menu li a {
+    position:
+        relative;
+
+    color:
+        #7893a5 !important;
+
+    border-radius:
+        8px;
+
+    margin:
+        3px
+        8px;
+
+    transition:
+        .16s ease;
+
+    border:
+        1px solid
+        transparent;
+}
+
+.sidebar-menu li a:hover {
+    background:
+        rgba(0, 189, 227, .065) !important;
+
+    color:
+        #ccecf5 !important;
+
+    border-color:
+        rgba(0, 189, 227, .08);
+}
+
+.sidebar-menu li a.active {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(0, 189, 227, .16),
+            rgba(0, 189, 227, .04)
+        ) !important;
+
+    color:
+        #62d9f3 !important;
+
+    border-color:
+        rgba(0, 189, 227, .14);
+}
+
+.sidebar-menu li a.active::before {
+    content:
+        "";
+
+    position:
+        absolute;
+
+    left:
+        -9px;
+
+    top:
+        20%;
+
+    width:
+        3px;
+
+    height:
+        60%;
+
+    border-radius:
+        0 5px 5px 0;
+
+    background:
+        var(--jrc-primary);
+
+    box-shadow:
+        0 0 10px
+        rgba(0, 189, 227, .45);
+}
+
+
+/* =========================================================
+   ÍCONES
+   ========================================================= */
+
+.sidebar-menu i {
+    color:
+        inherit;
+
+    font-size:
+        16px;
+}
+
+
+/* =========================================================
+   GRÁFICOS
+   ========================================================= */
+
+canvas {
+    max-width:
+        100%;
+}
+
+
+/* =========================================================
+   MODAIS
+   ========================================================= */
+
+.modal-content {
+    background:
+        #0b1926 !important;
+
+    border:
+        1px solid
+        #21394a !important;
+
+    border-radius:
+        13px !important;
+
+    box-shadow:
+        0 30px 80px
+        rgba(0, 0, 0, .48) !important;
+
+    color:
+        var(--jrc-text);
+}
+
+.modal-header,
+.modal-footer {
+    border-color:
+        var(--jrc-border) !important;
+}
+
+
+/* =========================================================
+   SCROLL
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width:
+        8px;
+
+    height:
+        8px;
+}
+
+::-webkit-scrollbar-track {
+    background:
+        #07121b;
+}
+
+::-webkit-scrollbar-thumb {
+    background:
+        #203b4c;
+
+    border-radius:
+        10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background:
+        #2c566c;
+}
+
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+#stats-container {
+    gap:
+        14px;
+}
+
+#stats-container .stat-card {
+    backdrop-filter:
+        blur(8px);
+}
+
+#recent-devices {
+    color:
+        var(--jrc-text);
+}
+
+
+/* destaque gráfico */
+
+#deviceChart,
+#uplinkChart {
+    filter:
+        drop-shadow(
+            0 8px 18px
+            rgba(0, 0, 0, .16)
+        );
+}
+
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 992px) {
+
+    .main-content {
+        padding:
+            18px !important;
+    }
+
+    .stats-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .stats-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .card-body {
+        padding:
+            14px !important;
+    }
+
+}
+
+/* =========================================================
+   JR CONECT ACS - EQUIPAMENTOS V2
+   ========================================================= */
+
+/* Página */
+
+#deviceTypeTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-bottom: 16px;
+
+    padding: 7px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10, 26, 39, .96),
+            rgba(6, 18, 29, .96)
+        );
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .12);
+
+    border-radius: 12px;
+}
+
+
+/* =========================================================
+   ABAS DE TIPO
+   ========================================================= */
+
+#deviceTypeTabs .nav-item {
+    margin: 0 !important;
+}
+
+#deviceTypeTabs .nav-link {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    min-height: 36px;
+
+    padding:
+        7px
+        11px;
+
+    border:
+        1px solid
+        transparent !important;
+
+    border-radius:
+        8px !important;
+
+    background:
+        transparent !important;
+
+    color:
+        #718da0 !important;
+
+    font-size:
+        10px;
+
+    font-weight:
+        600;
+
+    transition:
+        .16s ease;
+}
+
+#deviceTypeTabs .nav-link:hover {
+    color:
+        #bce8f3 !important;
+
+    background:
+        rgba(0, 189, 227, .05) !important;
+
+    border-color:
+        rgba(0, 189, 227, .10) !important;
+}
+
+#deviceTypeTabs .nav-link.active {
+    color:
+        #6bd9f0 !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(0, 189, 227, .14),
+            rgba(0, 189, 227, .05)
+        ) !important;
+
+    border-color:
+        rgba(0, 189, 227, .20) !important;
+
+    box-shadow:
+        inset 0 0 0 1px
+        rgba(0, 189, 227, .03);
+}
+
+#deviceTypeTabs .nav-link i {
+    font-size:
+        13px;
+}
+
+
+/* contador */
+
+#deviceTypeTabs .badge {
+    min-width:
+        21px;
+
+    padding:
+        3px 6px !important;
+
+    background:
+        rgba(70, 143, 177, .14) !important;
+
+    color:
+        #86bfd8 !important;
+
+    border:
+        1px solid
+        rgba(88, 155, 186, .13);
+
+    font-size:
+        8px !important;
+}
+
+#deviceTypeTabs .nav-link.active .badge {
+    background:
+        rgba(0, 189, 227, .16) !important;
+
+    color:
+        #7ce2f5 !important;
+}
+
+
+/* =========================================================
+   CONTADOR DOS EQUIPAMENTOS
+   ========================================================= */
+
+#device-stats-badges {
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        6px;
+}
+
+
+/* =========================================================
+   BUSCA
+   ========================================================= */
+
+#search-input {
+    min-height:
+        39px;
+
+    padding-left:
+        38px !important;
+
+    background:
+        #071521 !important;
+
+    color:
+        #d8e7ee !important;
+
+    border:
+        1px solid
+        rgba(101, 159, 190, .16) !important;
+
+    border-radius:
+        9px !important;
+
+    font-size:
+        11px;
+}
+
+#search-input::placeholder {
+    color:
+        #557183;
+}
+
+#search-input:focus {
+    border-color:
+        rgba(0, 189, 227, .5) !important;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(0, 189, 227, .07) !important;
+}
+
+
+/* =========================================================
+   CONTADOR TOTAL
+   ========================================================= */
+
+#device-count {
+    color:
+        #6bd8ee;
+
+    font-weight:
+        700;
+}
+
+
+/* =========================================================
+   TABELA DE EQUIPAMENTOS
+   ========================================================= */
+
+#devices-table {
+    width:
+        100%;
+
+    margin:
+        0;
+
+    border-collapse:
+        separate;
+
+    border-spacing:
+        0;
+}
+
+
+/* Cabeçalho */
+
+#devices-table thead {
+    background:
+        rgba(6, 19, 30, .7);
+}
+
+#devices-table thead th {
+    padding:
+        11px
+        12px !important;
+
+    border-bottom:
+        1px solid
+        rgba(105, 159, 187, .10) !important;
+
+    color:
+        #688699 !important;
+
+    font-size:
+        8px !important;
+
+    font-weight:
+        700;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        .08em;
+
+    white-space:
+        nowrap;
+}
+
+
+/* Linhas */
+
+#devices-table tbody td {
+    padding:
+        11px
+        12px !important;
+
+    border-bottom:
+        1px solid
+        rgba(105, 159, 187, .055) !important;
+
+    color:
+        #aec2ce !important;
+
+    font-size:
+        10px;
+
+    vertical-align:
+        middle;
+}
+
+#devices-table tbody tr {
+    background:
+        transparent;
+
+    transition:
+        background .15s ease;
+}
+
+#devices-table tbody tr:hover {
+    background:
+        rgba(0, 189, 227, .035) !important;
+}
+
+
+/* links */
+
+#devices-table tbody a {
+    color:
+        #5bd3eb;
+
+    font-weight:
+        600;
+
+    text-decoration:
+        none;
+}
+
+#devices-table tbody a:hover {
+    color:
+        #9deaf8;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+#devices-table .badge.online {
+    padding:
+        4px
+        7px !important;
+
+    color:
+        #58e2b5 !important;
+
+    background:
+        rgba(32, 213, 155, .08) !important;
+
+    border:
+        1px solid
+        rgba(32, 213, 155, .22);
+
+    box-shadow:
+        0 0 9px
+        rgba(32, 213, 155, .05);
+}
+
+#devices-table .badge.offline {
+    padding:
+        4px
+        7px !important;
+
+    color:
+        #ff8390 !important;
+
+    background:
+        rgba(240, 100, 114, .08) !important;
+
+    border:
+        1px solid
+        rgba(240, 100, 114, .22);
+}
+
+
+/* =========================================================
+   BOTÕES DE AÇÃO
+   ========================================================= */
+
+#devices-table .btn-sm {
+    width:
+        30px;
+
+    height:
+        30px;
+
+    display:
+        inline-grid;
+
+    place-items:
+        center;
+
+    padding:
+        0 !important;
+
+    border-radius:
+        7px !important;
+}
+
+#devices-table .btn-primary {
+    background:
+        rgba(0, 174, 211, .16) !important;
+
+    border-color:
+        rgba(0, 189, 227, .22) !important;
+
+    color:
+        #60d8ef !important;
+}
+
+#devices-table .btn-success {
+    background:
+        rgba(32, 213, 155, .08) !important;
+
+    border-color:
+        rgba(32, 213, 155, .18) !important;
+
+    color:
+        #57dcae !important;
+}
+
+#devices-table .btn-secondary {
+    background:
+        rgba(120, 145, 160, .07) !important;
+
+    border-color:
+        rgba(120, 145, 160, .13) !important;
+
+    color:
+        #839dab !important;
+}
+
+
+/* =========================================================
+   CONTAINER DA TABELA
+   ========================================================= */
+
+.table-responsive:has(#devices-table) {
+    overflow:
+        auto;
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .11);
+
+    border-radius:
+        11px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10, 27, 40, .98),
+            rgba(6, 19, 30, .98)
+        );
+
+    box-shadow:
+        0 14px 36px
+        rgba(0, 0, 0, .14);
+}
+
+
+/* =========================================================
+   PAGINAÇÃO
+   ========================================================= */
+
+#pagination-container {
+    margin-top:
+        15px;
+
+    padding:
+        11px;
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .09);
+
+    border-radius:
+        9px;
+
+    background:
+        rgba(7, 20, 31, .65);
+}
+
+#pagination-container .page-link {
+    min-width:
+        31px;
+
+    height:
+        31px;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    padding:
+        0 8px;
+
+    margin:
+        0 2px;
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .11) !important;
+
+    border-radius:
+        7px !important;
+
+    background:
+        rgba(255, 255, 255, .015) !important;
+
+    color:
+        #7896a8 !important;
+
+    font-size:
+        9px;
+}
+
+#pagination-container .page-link:hover {
+    background:
+        rgba(0, 189, 227, .07) !important;
+
+    color:
+        #79dff2 !important;
+
+    border-color:
+        rgba(0, 189, 227, .18) !important;
+}
+
+#pagination-container .page-item.active .page-link {
+    background:
+        rgba(0, 189, 227, .14) !important;
+
+    color:
+        #7de4f6 !important;
+
+    border-color:
+        rgba(0, 189, 227, .28) !important;
+}
+
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    #deviceTypeTabs {
+        overflow-x:
+            auto;
+
+        flex-wrap:
+            nowrap;
+    }
+
+    #deviceTypeTabs .nav-link {
+        white-space:
+            nowrap;
+    }
+
+}
+
+/* =========================================================
+   JR CONECT ACS - DEVICE DETAIL V2
+   ========================================================= */
+
+/* =========================================================
+   TOPO DO EQUIPAMENTO
+   ========================================================= */
+
+.device-detail-header,
+.device-header,
+.device-summary-header {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10, 26, 39, .98),
+            rgba(5, 17, 27, .98)
+        ) !important;
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .13) !important;
+
+    border-radius:
+        13px !important;
+
+    box-shadow:
+        0 14px 40px
+        rgba(0, 0, 0, .16);
+
+    overflow:
+        hidden;
+}
+
+
+/* =========================================================
+   ABAS PRINCIPAIS
+   ========================================================= */
+
+#deviceTabs,
+.device-tabs,
+.nav-tabs {
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        4px;
+
+    padding:
+        6px;
+
+    margin-bottom:
+        14px;
+
+    background:
+        rgba(5, 17, 27, .72);
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .10) !important;
+
+    border-radius:
+        10px;
+}
+
+#deviceTabs .nav-link,
+.device-tabs .nav-link,
+.nav-tabs .nav-link {
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        7px;
+
+    min-height:
+        35px;
+
+    padding:
+        7px 11px;
+
+    border:
+        1px solid
+        transparent !important;
+
+    border-radius:
+        7px !important;
+
+    background:
+        transparent !important;
+
+    color:
+        #718da0 !important;
+
+    font-size:
+        10px;
+
+    font-weight:
+        600;
+
+    transition:
+        .16s ease;
+}
+
+#deviceTabs .nav-link:hover,
+.device-tabs .nav-link:hover,
+.nav-tabs .nav-link:hover {
+    color:
+        #bcecf5 !important;
+
+    background:
+        rgba(0, 189, 227, .045) !important;
+}
+
+#deviceTabs .nav-link.active,
+.device-tabs .nav-link.active,
+.nav-tabs .nav-link.active {
+    color:
+        #65d9ef !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(0, 189, 227, .14),
+            rgba(0, 189, 227, .045)
+        ) !important;
+
+    border-color:
+        rgba(0, 189, 227, .18) !important;
+}
+
+
+/* badges das abas */
+
+#deviceTabs .badge,
+.device-tabs .badge,
+.nav-tabs .badge {
+    min-width:
+        20px;
+
+    padding:
+        3px 6px !important;
+
+    background:
+        rgba(0, 189, 227, .12) !important;
+
+    color:
+        #75dff2 !important;
+
+    border:
+        1px solid
+        rgba(0, 189, 227, .14);
+
+    font-size:
+        8px !important;
+}
+
+
+/* =========================================================
+   CONTEÚDO DAS ABAS
+   ========================================================= */
+
+#deviceTabContent {
+    margin-top:
+        0 !important;
+}
+
+#deviceTabContent .tab-pane {
+    animation:
+        jrcTabFade .18s ease;
+}
+
+@keyframes jrcTabFade {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateY(3px);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateY(0);
+    }
+
+}
+
+
+/* =========================================================
+   CARDS INTERNOS
+   ========================================================= */
+
+#deviceTabContent .card,
+.device-detail-card {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10, 27, 41, .98),
+            rgba(6, 18, 29, .98)
+        ) !important;
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .11) !important;
+
+    border-radius:
+        12px !important;
+
+    box-shadow:
+        0 12px 34px
+        rgba(0, 0, 0, .14);
+
+    overflow:
+        hidden;
+}
+
+#deviceTabContent .card-header {
+    min-height:
+        52px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    padding:
+        12px
+        15px !important;
+
+    background:
+        rgba(5, 17, 27, .28) !important;
+
+    border-bottom:
+        1px solid
+        rgba(105, 159, 187, .08) !important;
+
+    color:
+        #ddecf3 !important;
+
+    font-size:
+        10px;
+
+    font-weight:
+        700;
+}
+
+
+/* =========================================================
+   INFORMAÇÕES / CAMPOS
+   ========================================================= */
+
+#deviceTabContent table td,
+#deviceTabContent table th {
+    border-color:
+        rgba(105, 159, 187, .06) !important;
+}
+
+#deviceTabContent table td {
+    color:
+        #abc1ce !important;
+
+    font-size:
+        10px;
+}
+
+#deviceTabContent table th {
+    color:
+        #658398 !important;
+
+    font-size:
+        8px !important;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        .06em;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.device-online,
+.status-online,
+.badge.online {
+    color:
+        #5de6ba !important;
+
+    background:
+        rgba(32, 213, 155, .09) !important;
+
+    border:
+        1px solid
+        rgba(32, 213, 155, .20) !important;
+
+    border-radius:
+        999px !important;
+}
+
+.device-offline,
+.status-offline,
+.badge.offline {
+    color:
+        #ff8591 !important;
+
+    background:
+        rgba(240, 100, 114, .09) !important;
+
+    border:
+        1px solid
+        rgba(240, 100, 114, .20) !important;
+
+    border-radius:
+        999px !important;
+}
+
+
+/* =========================================================
+   RESUMO / OVERVIEW
+   ========================================================= */
+
+#overview-content {
+    display:
+        grid;
+
+    grid-template-columns:
+        repeat(
+            12,
+            minmax(0, 1fr)
+        );
+
+    gap:
+        12px;
+}
+
+#overview-content > * {
+    grid-column:
+        span 4;
+}
+
+
+/* cards maiores */
+
+#overview-content .wide,
+#overview-content .col-lg-6 {
+    grid-column:
+        span 6;
+}
+
+#overview-content .full,
+#overview-content .col-lg-12 {
+    grid-column:
+        1 / -1;
+}
+
+
+/* =========================================================
+   TOPOLOGIA
+   ========================================================= */
+
+#topology-content {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(9, 25, 38, .98),
+            rgba(5, 17, 27, .98)
+        );
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .11);
+
+    border-radius:
+        12px;
+
+    min-height:
+        300px;
+
+    padding:
+        14px;
+}
+
+
+/* =========================================================
+   DISPOSITIVOS CONECTADOS
+   ========================================================= */
+
+#devices-count-badge {
+    background:
+        rgba(0, 189, 227, .14) !important;
+
+    color:
+        #77e1f4 !important;
+
+    border:
+        1px solid
+        rgba(0, 189, 227, .16);
+}
+
+
+/* =========================================================
+   BOTÕES
+   ========================================================= */
+
+#deviceTabContent .btn,
+.device-detail-header .btn {
+    border-radius:
+        7px !important;
+
+    font-size:
+        10px !important;
+
+    font-weight:
+        600 !important;
+}
+
+
+/* =========================================================
+   PAINEL DE DIAGNÓSTICOS
+   ========================================================= */
+
+.diagnostic-card,
+.diagnostic-item {
+    background:
+        rgba(255, 255, 255, .014);
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .09);
+
+    border-radius:
+        9px;
+
+    transition:
+        .16s ease;
+}
+
+.diagnostic-card:hover,
+.diagnostic-item:hover {
+    background:
+        rgba(0, 189, 227, .035);
+
+    border-color:
+        rgba(0, 189, 227, .17);
+}
+
+
+/* =========================================================
+   WI-FI
+   ========================================================= */
+
+.wifi-card,
+.wifi-network-card {
+    background:
+        rgba(255, 255, 255, .014);
+
+    border:
+        1px solid
+        rgba(105, 159, 187, .09);
+
+    border-radius:
+        9px;
+}
+
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 1200px) {
+
+    #overview-content > * {
+        grid-column:
+            span 6;
+    }
+
+}
+
+@media (max-width: 760px) {
+
+    #deviceTabs,
+    .device-tabs,
+    .nav-tabs {
+        overflow-x:
+            auto;
+
+        flex-wrap:
+            nowrap;
+    }
+
+    #deviceTabs .nav-link,
+    .device-tabs .nav-link,
+    .nav-tabs .nav-link {
+        white-space:
+            nowrap;
+    }
+
+    #overview-content > *,
+    #overview-content .wide,
+    #overview-content .col-lg-6 {
+        grid-column:
+            1 / -1;
+    }
+
+}

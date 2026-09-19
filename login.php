@@ -17,22 +17,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Username dan password harus diisi';
     } else {
         $conn = getDBConnection();
-        $stmt = $conn->prepare("SELECT id, username, password FROM users WHERE username = ?");
+       $stmt = $conn->prepare("
+    SELECT id, name, username, password, role, active
+    FROM users
+    WHERE username = ?
+    LIMIT 1
+");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
 
-        if ($user = $result->fetch_assoc()) {
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                redirect('/dashboard.php');
-            } else {
-                $error = 'Username atau password salah';
-            }
-        } else {
-            $error = 'Username atau password salah';
-        }
+      if ($user = $result->fetch_assoc()) {
+
+    if ((int)$user['active'] !== 1) {
+        $error = 'Usuário desativado. Entre em contato com o administrador.';
+    }
+    elseif (password_verify($password, $user['password'])) {
+
+        $_SESSION['user_id']  = (int)$user['id'];
+        $_SESSION['name']     = $user['name'] ?: $user['username'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role']     = $user['role'];
+
+        $update = $conn->prepare("
+            UPDATE users
+            SET last_login = NOW()
+            WHERE id = ?
+        ");
+
+        $update->bind_param("i", $user['id']);
+        $update->execute();
+        $update->close();
+
+        redirect('/dashboard.php');
+
+    } else {
+        $error = 'Usuário ou senha inválidos.';
+    }
+
+} else {
+    $error = 'Usuário ou senha inválidos.';
+}
     }
 }
 ?>

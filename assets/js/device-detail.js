@@ -3,6 +3,12 @@ const deviceId = window.DEVICE_ID || '';
 let savedScrollPosition = 0;
 let savedHotspotData = {}; // Store last known hotspot data
 
+// Cache local dos dados ópticos para sobreviver ao auto-refresh de 30 segundos
+let cachedOpticalData = null;
+let opticalLoading = false;
+let opticalLoadedForDevice = null;
+let opticalRequestCounter = 0;
+
 // Helper function to get active tab name
 function getActiveTabName() {
     const activeTab = document.querySelector('.nav-link.active');
@@ -136,8 +142,34 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
                     <h6 class="mt-4"><i class="bi bi-broadcast"></i> Optical Information</h6>
                     <table class="table table-sm table-bordered">
-                        <tr><th width="40%">Rx Power</th><td>${device.rx_power} dBm</td></tr>
-                        <tr><th>Temperature</th><td>${device.temperature}°C</td></tr>
+                        <tr>
+                            <th width="40%">RX Power</th>
+                            <td id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>TX Power</th>
+                            <td id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>Temperature</th>
+                            <td id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>Voltage</th>
+                            <td id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>PON ID</th>
+                            <td id="optical-pon-id">${renderOpticalCachedPon()}</td>
+                        </tr>
+                        <tr>
+                            <th>Última atualização</th>
+                            <td id="optical-last-update">${renderOpticalLastUpdate()}</td>
+                        </tr>
+                        <tr>
+                            <th>Fonte</th>
+                            <td id="optical-source">${renderOpticalSource()}</td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -217,6 +249,15 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </div>
             </div>
         `;
+
+        // Buscar dados ópticos FiberHome via TL1 sem bloquear o carregamento principal.
+        // No auto-refresh, não inicia uma nova consulta se já existir uma em andamento
+        // ou se já houver dados em cache para este equipamento.
+        if (!isAutoRefresh) {
+            loadFiberhomeOptical(device.device_id, true);
+        } else if (opticalLoadedForDevice !== device.device_id && !opticalLoading) {
+            loadFiberhomeOptical(device.device_id, false);
+        }
 
         // Populate Topology Location Tab
         document.getElementById('topology-content').innerHTML = renderTopologyLocationTab(locationResult);
@@ -2250,6 +2291,280 @@ function stopHotspotTrafficMonitoring() {
     hotspotMonitoringActive = false;
 
     console.log('[HOTSPOT] Monitoring stopped successfully');
+}
+
+
+/* =========================================================
+   FIBERHOME TL1 - OPTICAL INFORMATION
+   ========================================================= */
+
+function opticalLoadingHtml() {
+    return '<span class="text-muted">Consultando OLT...</span>';
+}
+
+function opticalUnavailableHtml(message = 'Não disponível') {
+    return '<span class="text-muted">' + escapeOpticalHtml(message) + '</span>';
+}
+
+function formatOpticalValue(value, unit, status) {
+    const numericValue = Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+        return opticalUnavailableHtml();
+    }
+
+    const formatted = numericValue.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+    let statusHtml = '';
+
+    if (status) {
+        const statusText = String(status).trim();
+
+        if (statusText.toLowerCase() === 'normal') {
+            statusHtml = ' <span class="badge bg-success ms-2">Normal</span>';
+        } else {
+            statusHtml =
+                ' <span class="badge bg-warning text-dark ms-2">' +
+                escapeOpticalHtml(statusText) +
+                '</span>';
+        }
+    }
+
+    return (
+        '<strong>' +
+        formatted +
+        ' ' +
+        escapeOpticalHtml(unit) +
+        '</strong>' +
+        statusHtml
+    );
+}
+
+function renderOpticalCachedValue(valueKey, unit, statusKey) {
+    if (cachedOpticalData && cachedOpticalData.device_id === deviceId) {
+        if (cachedOpticalData.error) {
+            return opticalUnavailableHtml();
+        }
+
+        const optical = cachedOpticalData.optical || {};
+        return formatOpticalValue(optical[valueKey], unit, optical[statusKey]);
+    }
+
+    return opticalLoadingHtml();
+}
+
+function renderOpticalCachedPon() {
+    if (cachedOpticalData && cachedOpticalData.device_id === deviceId) {
+        if (cachedOpticalData.error) {
+            return opticalUnavailableHtml();
+        }
+
+        if (cachedOpticalData.pon_id) {
+            return '<strong>' + escapeOpticalHtml(cachedOpticalData.pon_id) + '</strong>';
+        }
+
+        return opticalUnavailableHtml('Não identificado');
+    }
+
+    return opticalLoadingHtml();
+}
+
+function formatOpticalDate(value) {
+    if (!value) {
+        return 'Não disponível';
+    }
+
+    const text = String(value).trim();
+    const match = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
+
+    if (!match) {
+        return text;
+    }
+
+    return `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}:${match[6]}`;
+}
+
+function renderOpticalLastUpdate() {
+    if (cachedOpticalData && cachedOpticalData.device_id === deviceId) {
+        if (cachedOpticalData.error) {
+            return opticalUnavailableHtml();
+        }
+
+        const optical = cachedOpticalData.optical || {};
+
+        if (optical.last_update) {
+            return '<strong>' + escapeOpticalHtml(formatOpticalDate(optical.last_update)) + '</strong>';
+        }
+
+        return opticalUnavailableHtml();
+    }
+
+    return opticalLoadingHtml();
+}
+
+function renderOpticalSource() {
+    if (cachedOpticalData && cachedOpticalData.device_id === deviceId) {
+        if (cachedOpticalData.error) {
+            return opticalUnavailableHtml();
+        }
+
+        const source = cachedOpticalData.source || 'IXC';
+        return '<span class="badge bg-info">' + escapeOpticalHtml(source) + '</span>';
+    }
+
+    return opticalLoadingHtml();
+}
+
+function updateOpticalDomFromCache() {
+    // IMPORTANTE: busca os elementos novamente depois da resposta.
+    // O auto-refresh pode ter recriado todo o HTML enquanto a API estava consultando a OLT.
+    const rxEl = document.getElementById('optical-rx-power');
+    const txEl = document.getElementById('optical-tx-power');
+    const tempEl = document.getElementById('optical-temperature');
+    const voltageEl = document.getElementById('optical-voltage');
+    const ponEl = document.getElementById('optical-pon-id');
+    const lastUpdateEl = document.getElementById('optical-last-update');
+    const sourceEl = document.getElementById('optical-source');
+
+    if (rxEl) rxEl.innerHTML = renderOpticalCachedValue('rx_power', 'dBm', 'rx_status');
+    if (txEl) txEl.innerHTML = renderOpticalCachedValue('tx_power', 'dBm', 'tx_status');
+    if (tempEl) tempEl.innerHTML = renderOpticalCachedValue('temperature', '°C', 'temperature_status');
+    if (voltageEl) voltageEl.innerHTML = renderOpticalCachedValue('voltage', 'V', 'voltage_status');
+    if (ponEl) ponEl.innerHTML = renderOpticalCachedPon();
+    if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
+    if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
+}
+
+async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
+    if (!deviceIdToLoad) {
+        return;
+    }
+
+    // Se já existe uma consulta para a mesma ONU, não abre outra.
+    if (opticalLoading && opticalLoadedForDevice === deviceIdToLoad) {
+        return;
+    }
+
+    // Se já temos os dados da mesma ONU e não foi solicitado refresh manual,
+    // apenas redesenha usando o cache local.
+    if (
+        !forceRefresh &&
+        cachedOpticalData &&
+        cachedOpticalData.device_id === deviceIdToLoad &&
+        !cachedOpticalData.error
+    ) {
+        updateOpticalDomFromCache();
+        return;
+    }
+
+    opticalLoading = true;
+    opticalLoadedForDevice = deviceIdToLoad;
+
+    const currentRequest = ++opticalRequestCounter;
+
+    // Mostra "Consultando OLT..." apenas quando realmente iniciamos nova consulta.
+    const loadingIds = [
+        'optical-rx-power',
+        'optical-tx-power',
+        'optical-temperature',
+        'optical-voltage',
+        'optical-pon-id',
+        'optical-last-update',
+        'optical-source'
+    ];
+
+    loadingIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = opticalLoadingHtml();
+    });
+
+    try {
+        const response = await fetch(
+            '/api/get-onu-optical.php?device_id=' + encodeURIComponent(deviceIdToLoad),
+            {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }
+        );
+
+        const raw = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(raw);
+        } catch (jsonError) {
+            throw new Error('Resposta inválida da API óptica.');
+        }
+
+        if (currentRequest !== opticalRequestCounter) {
+            return;
+        }
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Falha ao consultar dados ópticos.');
+        }
+
+        cachedOpticalData = {
+            device_id: deviceIdToLoad,
+            source: data.source || 'IXC',
+            pon_id: data.pon_id || null,
+            onu_number: data.onu_number ?? null,
+            olt_id: data.olt_id || null,
+            optical: data.optical || {},
+            error: null,
+            loaded_at: Date.now()
+        };
+
+        opticalLoadedForDevice = deviceIdToLoad;
+
+        // Busca os elementos atuais do DOM e atualiza a tela atual,
+        // mesmo que o auto-refresh tenha acontecido durante a consulta.
+        updateOpticalDomFromCache();
+
+        console.log('[IXC] Dados ópticos carregados:', data);
+
+    } catch (error) {
+        console.error('[IXC] Erro:', error);
+
+        if (currentRequest !== opticalRequestCounter) {
+            return;
+        }
+
+        cachedOpticalData = {
+            device_id: deviceIdToLoad,
+            source: 'IXC',
+            pon_id: null,
+            onu_number: null,
+            olt_id: null,
+            optical: {},
+            error: error && error.message ? error.message : 'Erro TL1',
+            loaded_at: Date.now()
+        };
+
+        opticalLoadedForDevice = deviceIdToLoad;
+        updateOpticalDomFromCache();
+
+    } finally {
+        if (currentRequest === opticalRequestCounter) {
+            opticalLoading = false;
+        }
+    }
+}
+
+function escapeOpticalHtml(value) {
+    return String(value == null ? '' : value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
 }
 
 document.addEventListener('DOMContentLoaded', function() {

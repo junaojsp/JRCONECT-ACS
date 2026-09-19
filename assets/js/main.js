@@ -144,16 +144,67 @@ function copyToClipboard(text) {
 
 // Format uptime
 function formatUptime(seconds) {
+
+    if (
+        seconds === null ||
+        seconds === undefined ||
+        seconds === '' ||
+        seconds === 'N/A'
+    ) {
+        return 'Não disponível';
+    }
+
+    seconds = Number(seconds);
+
+    if (!Number.isFinite(seconds) || seconds < 0) {
+        return 'Não disponível';
+    }
+
     const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
 
-    let result = '';
-    if (days > 0) result += days + ' hari ';
-    if (hours > 0) result += hours + ' jam ';
-    if (minutes > 0) result += minutes + ' menit';
+    const hours = Math.floor(
+        (seconds % 86400) / 3600
+    );
 
-    return result || '0 menit';
+    const minutes = Math.floor(
+        (seconds % 3600) / 60
+    );
+
+    const secs = Math.floor(
+        seconds % 60
+    );
+
+    const parts = [];
+
+    if (days > 0) {
+        parts.push(
+            days + (days === 1 ? ' dia' : ' dias')
+        );
+    }
+
+    if (hours > 0) {
+        parts.push(
+            hours + (hours === 1 ? ' hora' : ' horas')
+        );
+    }
+
+    if (minutes > 0) {
+        parts.push(
+            minutes + ' min'
+        );
+    }
+
+    if (
+        days === 0 &&
+        hours === 0 &&
+        minutes === 0
+    ) {
+        parts.push(
+            secs + ' s'
+        );
+    }
+
+    return parts.join(' ');
 }
 
 // Add animation styles
