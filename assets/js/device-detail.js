@@ -210,22 +210,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span><i class="bi bi-link-45deg"></i> URL TR-069</span>
                             <strong class="acs-truncate">${device.ip_tr069 || 'N/D'}</strong>
                         </div>
-                        <div class="acs-info-row">
-                            <span><i class="bi bi-broadcast-pin"></i> Conexões WAN</span>
-                            <strong>${device.wan_details ? device.wan_details.length : 0}</strong>
-                        </div>
-                        <div class="acs-info-row">
-                            <span><i class="bi bi-diagram-3"></i> Clientes conectados</span>
-                            <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
-                        </div>
                     </div>
 
                     <div class="acs-card-actions">
-                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('wan-tab').click()">
-                            <i class="bi bi-arrow-up-right"></i> Ver conexões
-                        </button>
-                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('devices-tab').click()">
-                            <i class="bi bi-people"></i> Ver clientes
+                        <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('wan-tab').click()">
+                            <i class="bi bi-arrow-up-right"></i> Ver conexões WAN
                         </button>
                     </div>
                 </section>
@@ -274,32 +263,29 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-wifi">
+                <section class="acs-overview-card acs-card-wifi acs-card-ai-summary">
                     <div class="acs-overview-card-header">
                         <div>
-                            <span class="acs-kicker"><i class="bi bi-wifi"></i> Rede Wi-Fi</span>
-                            <h5>${device.wifi_ssid || 'SSID não identificado'}</h5>
+                            <span class="acs-kicker"><i class="bi bi-stars"></i> Assistente técnico</span>
+                            <h5>Resumo por IA</h5>
                         </div>
-                        <button
-                            class="acs-icon-btn"
-                            type="button"
-                            title="Editar Wi-Fi"
-                            onclick="openEditWiFiModal('${device.device_id}', '${(device.wifi_ssid || '').replace(/'/g, "\\\\'")}', '${(device.wifi_password || '').replace(/'/g, "\\\\'")}')"
-                        >
-                            <i class="bi bi-pencil"></i>
-                        </button>
+                        <span class="acs-mini-badge">PREPARADO</span>
                     </div>
 
-                    <div class="acs-wifi-hero">
-                        <i class="bi bi-wifi"></i>
-                        <div>
-                            <span>SSID</span>
-                            <strong>${device.wifi_ssid || 'N/D'}</strong>
-                        </div>
+                    <div class="acs-ai-context">
+                        <strong>Contexto disponível</strong>
+                        <span><i class="bi bi-check-circle"></i> Modelo: ${device.product_class || 'N/D'}</span>
+                        <span><i class="bi bi-check-circle"></i> Status: ${device.status === 'online' ? 'Online' : 'Offline'}</span>
+                        <span><i class="bi bi-check-circle"></i> WAN: ${getPrimaryWAN(device)?.status || 'N/D'}</span>
+                        <span><i class="bi bi-check-circle"></i> Clientes: ${device.connected_devices ? device.connected_devices.length : 0}</span>
                     </div>
+
+                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('ai-tab').click()">
+                        <i class="bi bi-stars"></i> Abrir assistente IA
+                    </button>
 
                     <div class="acs-info-row acs-password-row">
-                        <span><i class="bi bi-lock"></i> Senha Wi-Fi</span>
+                        <span><i class="bi bi-wifi"></i> Wi-Fi: ${device.wifi_ssid || 'N/D'}</span>
                         <strong>
                             <span id="wifi-pass-hidden">********</span>
                             <span id="wifi-pass-shown" style="display:none;">${device.wifi_password || 'N/D'}</span>
@@ -308,24 +294,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             </button>
                         </strong>
                     </div>
-                </section>
-
-                <section class="acs-overview-card acs-card-clients">
-                    <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-people"></i> Dispositivos conectados</span>
-                            <h5>Clientes da rede</h5>
-                        </div>
-                    </div>
-
-                    <div class="acs-big-number">
-                        <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
-                        <span>conectados no momento</span>
-                    </div>
-
-                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('devices-tab').click()">
-                        <i class="bi bi-hdd-network"></i> Abrir dispositivos conectados
-                    </button>
                 </section>
 
                 <section class="acs-overview-card acs-card-diagnostics">
@@ -370,32 +338,21 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
                     </div>
 
+                    ${(device.admin_user === 'N/A' || !device.admin_user) ? '' : `
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span>Super Admin</span>
-                            <strong><code>${device.admin_user || 'N/A'}</code></strong>
+                            <strong><code>${device.admin_user}</code></strong>
                         </div>
                         <div class="acs-info-row">
                             <span>Senha Admin</span>
                             <strong>
                                 <span id="admin-pass-hidden">********</span>
-                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/A'}</code></span>
-                                <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()">
-                                    <i id="admin-toggle-icon" class="bi bi-eye"></i>
-                                </button>
+                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/D'}</code></span>
+                                <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()"><i id="admin-toggle-icon" class="bi bi-eye"></i></button>
                             </strong>
                         </div>
-                        <div class="acs-info-row">
-                            <span>Senha Telecom</span>
-                            <strong>
-                                <span id="telecom-pass-hidden">********</span>
-                                <span id="telecom-pass-shown" style="display:none;"><code>${device.telecom_password || 'N/A'}</code></span>
-                                <button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()">
-                                    <i id="telecom-toggle-icon" class="bi bi-eye"></i>
-                                </button>
-                            </strong>
-                        </div>
-                    </div>
+                    </div>`}
 
                     ${(device.admin_user === 'N/A' || !device.admin_user) ?
                         '<div class="acs-admin-note"><i class="bi bi-info-circle"></i><span>As credenciais ainda não foram coletadas. Use <strong>Obter</strong> para solicitar ao equipamento.</span></div>' :
