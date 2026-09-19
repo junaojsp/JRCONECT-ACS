@@ -242,6 +242,9 @@ class GenieACS {
         $paths = [
             'InternetGatewayDevice.WANDevice',
             'InternetGatewayDevice.LANDevice',
+            // Explicit WAN subtree required by FiberHome HG6143D3 to refresh
+            // PPP connection statistics used by the bandwidth monitor.
+            'InternetGatewayDevice.WANDevice.1.WANConnectionDevice',
             'Device.PPP',
             'Device.IP',
             'Device.Ethernet',
