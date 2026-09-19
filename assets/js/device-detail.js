@@ -8,6 +8,7 @@ let cachedOpticalData = null;
 let opticalLoading = false;
 let opticalLoadedForDevice = null;
 let opticalRequestCounter = 0;
+let currentDeviceData = null;
 
 // Helper function to get active tab name
 function getActiveTabName() {
@@ -102,6 +103,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
     if (result && result.success) {
         const device = result.device;
+        currentDeviceData = device;
 
         // Fetch ONU location from map
         const locationResult = await fetchAPI('/api/get-onu-location.php?serial_number=' + encodeURIComponent(device.serial_number));
@@ -2884,4 +2886,24 @@ function renderFirmwareTab(device) {
             </div>
         </div>
     `;
+}
+
+
+function openWebManagement() {
+    if (!currentDeviceData) {
+        alert('Os dados do equipamento ainda não foram carregados.');
+        return;
+    }
+    const raw = currentDeviceData.ip_tr069 || currentDeviceData.ip_address || '';
+    let host = '';
+    try {
+        host = /^https?:\/\//i.test(raw) ? new URL(raw).hostname : extractIP(raw);
+    } catch (e) {
+        host = extractIP(raw);
+    }
+    if (!host) {
+        alert('Não foi possível identificar o IP de gerenciamento deste equipamento.');
+        return;
+    }
+    window.open('http://' + host, '_blank', 'noopener,noreferrer');
 }
