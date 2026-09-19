@@ -3288,3 +3288,54 @@ canvas {
     .sidebar.collapsed{width:70px !important}
     .main-content.collapsed{margin-left:70px !important}
 }
+
+
+/* =========================================================
+   ABA WAN - PADRAO JR CONECT ACS
+   ========================================================= */
+.acs-wan-page{padding:4px 2px 2px}
+.acs-wan-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.acs-wan-page-header h4{margin:4px 0 3px;color:#edf9fd;font-size:18px;font-weight:750}
+.acs-wan-page-header p{margin:0;color:#66899b;font-size:10px}
+.acs-wan-header-actions{display:flex;align-items:center;gap:8px}
+.acs-wan-summary-pill{height:38px;min-width:70px;padding:5px 11px;border:1px solid rgba(0,189,227,.13);border-radius:9px;background:rgba(0,189,227,.035);display:flex;flex-direction:column;justify-content:center;align-items:center}
+.acs-wan-summary-pill strong{color:#70def1;font-size:13px;line-height:1}
+.acs-wan-summary-pill span{color:#66899b;font-size:8px;margin-top:3px}
+.acs-wan-primary-btn{height:38px;padding:0 13px;border:1px solid rgba(0,189,227,.28);border-radius:9px;background:rgba(0,189,227,.09);color:#72e2f5;font-size:10px;font-weight:700}
+.acs-wan-primary-btn:hover{background:rgba(0,189,227,.16);color:#baf5ff}
+.acs-wan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.acs-wan-card{min-width:0;padding:16px;border:1px solid rgba(105,159,187,.13);border-radius:12px;background:linear-gradient(145deg,rgba(8,31,45,.98),rgba(6,25,37,.98));box-shadow:0 10px 30px rgba(0,0,0,.10)}
+.acs-wan-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(105,159,187,.08)}
+.acs-wan-card-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.acs-wan-card-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(0,189,227,.16);background:rgba(0,189,227,.07);color:#54d9f1;font-size:16px}
+.acs-wan-index{display:block;color:#4d8297;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.acs-wan-card h5{margin:3px 0 0;color:#e7f5fa;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+.acs-wan-state{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.04em}
+.acs-wan-state span{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
+.acs-wan-state.online{color:#55e6ba;background:rgba(32,213,155,.08);border:1px solid rgba(32,213,155,.18)}
+.acs-wan-state.offline{color:#ff7b8d;background:rgba(240,100,114,.08);border:1px solid rgba(240,100,114,.18)}
+.acs-wan-tags{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0}
+.acs-wan-tags span{padding:4px 7px;border-radius:6px;background:rgba(0,189,227,.06);border:1px solid rgba(0,189,227,.11);color:#77cfe0;font-size:8px;font-weight:700}
+.acs-wan-tags span.danger{color:#ff8594;background:rgba(240,100,114,.06);border-color:rgba(240,100,114,.14)}
+.acs-wan-hero{padding:12px 13px;border:1px solid rgba(0,189,227,.13);border-radius:10px;background:rgba(0,189,227,.035);margin-bottom:10px}
+.acs-wan-hero span{display:block;color:#51798b;font-size:8px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.acs-wan-hero strong,.acs-wan-hero a{color:#69dcef;font-size:17px;font-weight:750;text-decoration:none}
+.acs-wan-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.acs-wan-details>div{min-height:38px;padding:8px 0;border-bottom:1px solid rgba(105,159,187,.065);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.acs-wan-details span{display:flex;align-items:center;gap:6px;color:#648b9d;font-size:9px}
+.acs-wan-details span i{color:#26bcd8}
+.acs-wan-details strong,.acs-wan-details a{color:#d9edf4;font-size:10px;font-weight:650;text-align:right;overflow-wrap:anywhere;text-decoration:none}
+.acs-wan-error-row strong{color:#ff8594}
+.acs-wan-card-actions{display:flex;justify-content:flex-end;gap:7px;padding-top:13px}
+.acs-wan-card-actions button{padding:6px 10px;border:1px solid rgba(0,189,227,.14);border-radius:7px;background:rgba(0,189,227,.05);color:#72dced;font-size:9px;font-weight:700}
+.acs-wan-card-actions button:hover{background:rgba(0,189,227,.11)}
+.acs-wan-card-actions button.danger{color:#ff8391;border-color:rgba(240,100,114,.14);background:rgba(240,100,114,.045)}
+.acs-wan-footnote{display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;border:1px solid rgba(0,189,227,.08);border-radius:9px;background:rgba(0,189,227,.025);color:#5d8395;font-size:9px}
+.acs-wan-footnote i{color:#25bdd9}
+.acs-wan-empty{min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(0,189,227,.16);border-radius:12px;background:rgba(0,189,227,.02);color:#62889a}
+.acs-wan-empty>i{font-size:28px;color:#37c9e3}
+.acs-wan-empty strong{font-size:14px;color:#d9edf4}
+.acs-wan-empty span{font-size:10px}
+.acs-wan-empty button{margin-top:5px;padding:7px 11px;border:1px solid rgba(0,189,227,.18);border-radius:8px;background:rgba(0,189,227,.07);color:#69dcef;font-size:9px;font-weight:700}
+@media(max-width:1050px){.acs-wan-grid{grid-template-columns:1fr}.acs-wan-page-header{align-items:flex-start;flex-direction:column}.acs-wan-header-actions{width:100%;flex-wrap:wrap}}
+@media(max-width:700px){.acs-wan-details{grid-template-columns:1fr}.acs-wan-card-top{flex-direction:column}.acs-wan-card-status{align-self:flex-start}}
