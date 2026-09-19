@@ -3047,3 +3047,62 @@ canvas {
     }
 
 }
+
+/* =========================================================
+   JR CONECT ACS - OVERVIEW V2
+   ========================================================= */
+.acs-overview-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;width:100%}
+.acs-overview-card{grid-column:span 4;background:linear-gradient(145deg,rgba(11,31,46,.98),rgba(6,20,31,.98));border:1px solid rgba(88,157,190,.16);border-radius:14px;padding:16px;min-width:0;box-shadow:0 12px 30px rgba(0,0,0,.12)}
+.acs-card-admin,.acs-card-events{grid-column:span 6}
+.acs-overview-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:13px;margin-bottom:13px;border-bottom:1px solid rgba(105,159,187,.09)}
+.acs-overview-card-header h5{margin:4px 0 0;color:#e7f3f8;font-size:14px;font-weight:700}
+.acs-kicker{display:flex;align-items:center;gap:7px;color:#6f93a7;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em}
+.acs-kicker i{color:#27c9e8;font-size:12px}
+.acs-status-pill,.acs-mini-badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 8px;font-size:8px;font-weight:800;letter-spacing:.05em;white-space:nowrap}
+.acs-status-pill.online,.acs-mini-badge.success{color:#5de6ba;background:rgba(32,213,155,.09);border:1px solid rgba(32,213,155,.18)}
+.acs-status-pill.offline{color:#ff8591;background:rgba(240,100,114,.09);border:1px solid rgba(240,100,114,.18)}
+.acs-mini-badge{color:#6fdcf0;background:rgba(0,189,227,.08);border:1px solid rgba(0,189,227,.14)}
+.acs-status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.acs-device-identity,.acs-wifi-hero{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
+.acs-device-icon,.acs-wifi-hero>i{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(0,189,227,.08);border:1px solid rgba(0,189,227,.13);color:#42d2ec;font-size:20px}
+.acs-device-identity strong,.acs-wifi-hero strong{display:block;color:#ddecf3;font-size:12px}
+.acs-device-identity span,.acs-wifi-hero span{display:block;margin-top:3px;color:#648398;font-size:9px}
+.acs-info-list{display:flex;flex-direction:column}
+.acs-info-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:35px;padding:7px 0;border-bottom:1px solid rgba(105,159,187,.06)}
+.acs-info-row:last-child{border-bottom:0}
+.acs-info-row>span{display:flex;align-items:center;gap:7px;color:#69879a;font-size:9px}
+.acs-info-row>span i{color:#4ebbd0}
+.acs-info-row>strong{max-width:58%;color:#bfd1db;font-size:9px;font-weight:650;text-align:right;overflow-wrap:anywhere}
+.acs-card-meta{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid rgba(105,159,187,.07);color:#547286;font-size:8px}
+.acs-wan-ip{padding:15px;border-radius:11px;margin-bottom:8px;background:linear-gradient(135deg,rgba(0,189,227,.10),rgba(0,189,227,.025));border:1px solid rgba(0,189,227,.12)}
+.acs-wan-ip span{display:block;color:#66879a;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.acs-wan-ip strong{display:block;margin-top:4px;color:#67dff3;font-size:15px}
+.acs-truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acs-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.acs-soft-btn,.acs-icon-btn,.acs-eye-btn{border:1px solid rgba(0,189,227,.15);background:rgba(0,189,227,.06);color:#78dff1;border-radius:8px;font-size:9px;font-weight:700;transition:.16s ease}
+.acs-soft-btn{padding:8px 10px}
+.acs-soft-btn:hover,.acs-icon-btn:hover,.acs-eye-btn:hover{background:rgba(0,189,227,.12);color:#c5f6ff;border-color:rgba(0,189,227,.28)}
+.acs-icon-btn{width:31px;height:31px;display:grid;place-items:center}
+.acs-eye-btn{border:0;background:transparent;padding:2px 4px;margin-left:5px}
+.acs-optical-primary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:7px}
+.acs-optical-primary>div{padding:13px;border-radius:10px;background:rgba(255,255,255,.018);border:1px solid rgba(105,159,187,.08)}
+.acs-optical-primary span{display:block;color:#68889b;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.acs-optical-primary strong{display:block;margin-top:5px;color:#dcecf3;font-size:13px}
+.acs-password-row{margin-top:6px}
+.acs-big-number{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:125px}
+.acs-big-number strong{color:#69dcef;font-size:42px;line-height:1;font-weight:750}
+.acs-big-number span{margin-top:7px;color:#67879a;font-size:9px}
+.acs-full-btn{width:100%}
+.acs-diagnostic-list{display:flex;flex-direction:column;gap:8px}
+.acs-diagnostic-list button{width:100%;display:grid;grid-template-columns:32px 1fr 20px;align-items:center;gap:9px;text-align:left;padding:9px;border:1px solid rgba(105,159,187,.08);border-radius:9px;background:rgba(255,255,255,.012);color:#7bdced;transition:.16s ease}
+.acs-diagnostic-list button:hover{background:rgba(0,189,227,.05);border-color:rgba(0,189,227,.16)}
+.acs-diagnostic-list button>i:first-child{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:rgba(0,189,227,.07)}
+.acs-diagnostic-list strong{display:block;color:#bdd1dc;font-size:9px}
+.acs-diagnostic-list small{display:block;margin-top:2px;color:#58788c;font-size:8px}
+.acs-admin-note,.acs-event-placeholder{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding:11px;border-radius:9px;background:rgba(0,189,227,.035);border:1px solid rgba(0,189,227,.08);color:#718fa1;font-size:9px}
+.acs-event-placeholder{align-items:center;min-height:90px}
+.acs-event-placeholder strong{display:block;color:#b9ced9;font-size:10px}
+.acs-event-placeholder span{display:block;margin-top:4px;line-height:1.5}
+.acs-event-line{width:3px;align-self:stretch;border-radius:999px;background:linear-gradient(#21c7e7,rgba(33,199,231,.08))}
+@media(max-width:1200px){.acs-overview-card{grid-column:span 6}.acs-card-admin,.acs-card-events{grid-column:span 6}}
+@media(max-width:760px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:1/-1}.acs-card-actions{grid-template-columns:1fr}.acs-card-meta{flex-direction:column}}
