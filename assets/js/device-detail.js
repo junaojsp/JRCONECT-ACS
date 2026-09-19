@@ -437,6 +437,9 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate DHCP Server Tab
         document.getElementById('dhcp-content').innerHTML = renderDHCPServerTab(device.dhcp_server);
 
+        // Populate Firmware Tab
+        document.getElementById('firmware-content').innerHTML = renderFirmwareTab(device);
+
         // Populate Connected Devices Tab
         document.getElementById('devices-content').innerHTML = renderConnectedDevicesTab(device.connected_devices);
 
@@ -2755,3 +2758,79 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+
+function renderFirmwareTab(device) {
+    const manufacturer = device.manufacturer || 'Não disponível';
+    const model = device.product_class || 'Não disponível';
+    const currentVersion = device.software_version || 'Não disponível';
+    const hardwareVersion = device.hardware_version || 'Não disponível';
+
+    return `
+        <div class="acs-firmware-page">
+            <div class="acs-firmware-header">
+                <div>
+                    <span class="acs-kicker"><i class="bi bi-cloud-arrow-up"></i> MANUTENÇÃO</span>
+                    <h4>Atualização de Firmware</h4>
+                    <p>Gerencie versões de software do equipamento através do ACS.</p>
+                </div>
+                <span class="acs-firmware-safe"><i class="bi bi-shield-check"></i> Atualização controlada</span>
+            </div>
+
+            <div class="acs-firmware-grid">
+                <section class="acs-firmware-card">
+                    <div class="acs-firmware-card-title">
+                        <div class="acs-firmware-icon"><i class="bi bi-router"></i></div>
+                        <div>
+                            <span>Equipamento</span>
+                            <h5>${model}</h5>
+                        </div>
+                    </div>
+                    <div class="acs-firmware-info">
+                        <div><span>Fabricante</span><strong>${manufacturer}</strong></div>
+                        <div><span>Hardware</span><strong>${hardwareVersion}</strong></div>
+                        <div><span>Firmware atual</span><strong class="version">${currentVersion}</strong></div>
+                    </div>
+                </section>
+
+                <section class="acs-firmware-card acs-firmware-update">
+                    <div class="acs-firmware-card-title">
+                        <div class="acs-firmware-icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                        <div>
+                            <span>Nova versão</span>
+                            <h5>Enviar firmware</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-firmware-dropzone">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <strong>Selecione o arquivo de firmware</strong>
+                        <span>O envio e a instalação serão habilitados na próxima etapa.</span>
+                        <button type="button" disabled><i class="bi bi-folder2-open"></i> Selecionar arquivo</button>
+                    </div>
+                </section>
+
+                <section class="acs-firmware-card acs-firmware-wide">
+                    <div class="acs-firmware-card-title">
+                        <div class="acs-firmware-icon"><i class="bi bi-activity"></i></div>
+                        <div>
+                            <span>Status</span>
+                            <h5>Processo de atualização</h5>
+                        </div>
+                    </div>
+                    <div class="acs-firmware-status">
+                        <div class="acs-firmware-step active"><b>1</b><span><strong>Equipamento identificado</strong><small>Modelo e versão atual coletados pelo ACS.</small></span></div>
+                        <div class="acs-firmware-line"></div>
+                        <div class="acs-firmware-step"><b>2</b><span><strong>Arquivo validado</strong><small>Aguardando seleção de firmware compatível.</small></span></div>
+                        <div class="acs-firmware-line"></div>
+                        <div class="acs-firmware-step"><b>3</b><span><strong>Instalação</strong><small>A atualização será enviada ao equipamento via TR-069.</small></span></div>
+                    </div>
+                    <div class="acs-firmware-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span><strong>Proteção ativa.</strong> O botão de instalação permanecerá bloqueado até implementarmos a validação do arquivo, modelo e versão. Nenhum firmware será enviado nesta etapa.</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+    `;
+}
