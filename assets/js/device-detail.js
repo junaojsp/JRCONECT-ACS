@@ -447,6 +447,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate Connected Devices Tab
         document.getElementById('devices-content').innerHTML = renderConnectedDevicesTab(device.connected_devices);
 
+        // Populate Monitoring and AI tabs
+        document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
+        document.getElementById('ai-content').innerHTML = renderAIAssistantTab(device);
+        updateBandwidthSample(device);
+
         // Restore hotspot data after re-render (if available)
         if (isAutoRefresh && Object.keys(savedHotspotData).length > 0) {
             setTimeout(() => {
@@ -2906,4 +2911,149 @@ function openWebManagement() {
         return;
     }
     window.open('http://' + host, '_blank', 'noopener,noreferrer');
+}
+
+
+let bandwidthSamples = [];
+
+function getPrimaryWAN(device) {
+    const list = Array.isArray(device?.wan_details) ? device.wan_details : [];
+    return list.find(w => String(w.status || '').toLowerCase() === 'connected') || list[0] || null;
+}
+
+function toCounter(value) {
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+function formatTrafficBytes(bytes) {
+    let value = toCounter(bytes);
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return (i === 0 ? value.toFixed(0) : value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)) + ' ' + units[i];
+}
+
+function formatUptimeValue(value) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds)) return value || 'N/A';
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return [d ? d + 'd' : '', h ? h + 'h' : '', m + 'min'].filter(Boolean).join(' ');
+}
+
+function renderMonitoringTab(device) {
+    const wan = getPrimaryWAN(device);
+    if (!wan) {
+        return '<div class="acs-monitor-empty"><i class="bi bi-graph-up"></i><h5>Monitoramento indisponível</h5><p>Nenhuma conexão WAN foi identificada neste equipamento.</p></div>';
+    }
+    const rx = toCounter(wan.bytes_received);
+    const tx = toCounter(wan.bytes_sent);
+    const connected = String(wan.status || '').toLowerCase() === 'connected';
+    return `
+        <div class="acs-monitor-shell">
+            <div class="acs-monitor-head">
+                <div><span class="acs-kicker"><i class="bi bi-activity"></i> TR-069</span><h4>Monitoramento da conexão</h4><p>Banda calculada entre as leituras recebidas do equipamento.</p></div>
+                <span class="acs-mini-badge ${connected ? 'success' : ''}">${wan.status || 'Unknown'}</span>
+            </div>
+            <div class="acs-live-grid">
+                <div class="acs-live-card download"><span><i class="bi bi-arrow-down-circle"></i> Download em uso</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
+                <div class="acs-live-card upload"><span><i class="bi bi-arrow-up-circle"></i> Upload em uso</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
+                <div class="acs-live-card"><span><i class="bi bi-database-down"></i> Recebido</span><strong>${formatTrafficBytes(rx)}</strong><small>contador WAN</small></div>
+                <div class="acs-live-card"><span><i class="bi bi-database-up"></i> Enviado</span><strong>${formatTrafficBytes(tx)}</strong><small>contador WAN</small></div>
+            </div>
+            <div class="acs-bandwidth-chart">
+                <div class="acs-chart-title"><strong>Uso de banda</strong><span id="bandwidth-sample-status">Aguardando segunda leitura...</span></div>
+                <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
+            </div>
+            <div class="acs-connection-report">
+                <div class="acs-chart-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>
+                <div class="acs-report-grid">
+                    <div><span>Interface</span><strong>${wan.name || 'N/A'}</strong></div>
+                    <div><span>Tipo</span><strong>${wan.type || 'N/A'}</strong></div>
+                    <div><span>IP WAN</span><strong>${wan.external_ip || 'N/A'}</strong></div>
+                    <div><span>Uptime</span><strong>${formatUptimeValue(wan.uptime)}</strong></div>
+                    <div><span>Pacotes RX</span><strong>${toCounter(wan.packets_received).toLocaleString('pt-BR')}</strong></div>
+                    <div><span>Pacotes TX</span><strong>${toCounter(wan.packets_sent).toLocaleString('pt-BR')}</strong></div>
+                    <div><span>Erros RX/TX</span><strong>${toCounter(wan.errors_received)} / ${toCounter(wan.errors_sent)}</strong></div>
+                    <div><span>Último erro</span><strong>${wan.last_error || 'N/A'}</strong></div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function updateBandwidthSample(device) {
+    const wan = getPrimaryWAN(device);
+    if (!wan) return;
+    const now = Date.now();
+    const rx = toCounter(wan.bytes_received);
+    const tx = toCounter(wan.bytes_sent);
+    const previous = bandwidthSamples.length ? bandwidthSamples[bandwidthSamples.length - 1] : null;
+    let rxMbps = null, txMbps = null;
+    if (previous && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
+        const seconds = (now - previous.time) / 1000;
+        rxMbps = ((rx - previous.rx) * 8) / seconds / 1000000;
+        txMbps = ((tx - previous.tx) * 8) / seconds / 1000000;
+    }
+    bandwidthSamples.push({time: now, rx, tx, rxMbps, txMbps});
+    if (bandwidthSamples.length > 24) bandwidthSamples.shift();
+
+    const rxEl = document.getElementById('live-rx-mbps');
+    const txEl = document.getElementById('live-tx-mbps');
+    if (rxEl) rxEl.textContent = rxMbps === null ? '--' : rxMbps.toFixed(2);
+    if (txEl) txEl.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
+
+    const status = document.getElementById('bandwidth-sample-status');
+    if (status) status.textContent = rxMbps === null ? 'Aguardando segunda leitura...' : 'Última amostra: ' + new Date(now).toLocaleTimeString('pt-BR');
+
+    const chart = document.getElementById('bandwidth-bars');
+    if (chart) {
+        const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
+        const max = Math.max(1, ...valid.flatMap(s => [s.rxMbps, s.txMbps]));
+        chart.innerHTML = valid.length ? valid.map(s => `
+            <div class="acs-bandwidth-pair" title="${new Date(s.time).toLocaleTimeString('pt-BR')} - RX ${s.rxMbps.toFixed(2)} Mbps / TX ${s.txMbps.toFixed(2)} Mbps">
+                <i class="rx" style="height:${Math.max(3, (s.rxMbps/max)*100)}%"></i>
+                <i class="tx" style="height:${Math.max(3, (s.txMbps/max)*100)}%"></i>
+            </div>`).join('') : '<span class="acs-chart-wait">A próxima atualização permitirá calcular a banda utilizada.</span>';
+    }
+}
+
+function renderAIAssistantTab(device) {
+    const wan = getPrimaryWAN(device);
+    const optical = cachedOpticalData || {};
+    const context = [
+        'Modelo: ' + (device.product_class || device.model || 'N/A'),
+        'Serial: ' + (device.serial_number || 'N/A'),
+        'Status: ' + (device.status || 'N/A'),
+        'WAN: ' + (wan ? (wan.status || 'N/A') : 'N/A'),
+        'Uptime: ' + (wan ? formatUptimeValue(wan.uptime) : 'N/A'),
+        'Último erro WAN: ' + (wan ? (wan.last_error || 'N/A') : 'N/A'),
+        'Dispositivos conectados: ' + (device.connected_devices_count ?? 0)
+    ];
+    return `
+        <div class="acs-ai-shell">
+            <div class="acs-ai-hero">
+                <div class="acs-ai-icon"><i class="bi bi-stars"></i></div>
+                <div><span class="acs-kicker">JR CONECT IA</span><h4>Assistente técnico do equipamento</h4><p>Área preparada para analisar diagnóstico, WAN, sinal óptico, Wi-Fi, clientes e histórico da conexão.</p></div>
+                <span class="acs-mini-badge">PREPARADO</span>
+            </div>
+            <div class="acs-ai-grid">
+                <div class="acs-ai-context"><strong>Contexto técnico disponível</strong>${context.map(x => '<span><i class="bi bi-check-circle"></i>'+x+'</span>').join('')}</div>
+                <div class="acs-ai-chat">
+                    <label for="acs-ai-question">Pergunte sobre este equipamento</label>
+                    <textarea id="acs-ai-question" rows="5" placeholder="Ex.: Analise esta conexão e indique possíveis problemas."></textarea>
+                    <button type="button" class="acs-soft-btn" onclick="runDeviceAIAnalysis()"><i class="bi bi-stars"></i> Analisar com IA</button>
+                    <div id="acs-ai-answer" class="acs-ai-answer">A integração com o provedor de IA será conectada na próxima etapa. Nenhum dado será enviado sem configuração explícita.</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function runDeviceAIAnalysis() {
+    const answer = document.getElementById('acs-ai-answer');
+    if (answer) answer.innerHTML = '<i class="bi bi-info-circle"></i> Interface de IA pronta. Agora falta definir o provedor/API que será usado no servidor para realizar as análises.';
 }
