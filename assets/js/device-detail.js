@@ -1632,7 +1632,7 @@ async function summonForAdminCredentials() {
     // Disable button and show status
     if (btn) btn.disabled = true;
     if (statusDiv) statusDiv.style.display = 'block';
-    if (statusText) statusText.textContent = 'Summoning device...';
+    if (statusText) statusText.textContent = 'Solicitando comunicação com o equipamento...';
 
     // Summon device and request VirtualParameters for admin credentials
     const result = await fetchAPI('/api/summon-device.php', {
@@ -1642,7 +1642,7 @@ async function summonForAdminCredentials() {
 
     if (result && result.success) {
         // Single toast notification with longer duration (5 seconds)
-        showToast('Device summon berhasil, mengambil credentials...', 'success', 5000);
+        showToast('Solicitação enviada. Aguardando resposta do equipamento...', 'success', 5000);
 
         // Show countdown in status div only (not in toast)
         let countdown = 10;
@@ -1671,7 +1671,7 @@ async function summonForAdminCredentials() {
         // Hide status and show error (longer duration for error messages)
         if (statusDiv) statusDiv.style.display = 'none';
         if (btn) btn.disabled = false;
-        showToast(result.message || 'Gagal summon device', 'danger', 5000);
+        showToast(result.message || 'Não foi possível solicitar a comunicação.', 'danger', 5000);
     }
 }
 
@@ -1690,7 +1690,7 @@ async function confirmSummon() {
     hideLoading();
 
     if (result && result.success) {
-        showToast('🚀 Device summon berhasil! Menunggu device response...', 'success');
+        showToast('Solicitação enviada. Aguardando resposta do equipamento...', 'success');
 
         // Wait longer for device to respond and GenieACS to fetch all parameters
         // This is especially important for admin credentials (VirtualParameters)
@@ -1708,7 +1708,7 @@ async function confirmSummon() {
             loadDeviceDetail();
         }, 15000);
     } else {
-        showToast(result.message || 'Gagal summon device', 'danger');
+        showToast(result.message || 'Não foi possível solicitar a comunicação.', 'danger');
     }
 }
 
