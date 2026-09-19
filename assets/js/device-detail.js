@@ -116,147 +116,137 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('wan-count-badge').textContent = device.wan_details ? device.wan_details.length : 0;
         document.getElementById('devices-count-badge').textContent = device.connected_devices ? device.connected_devices.length : 0;
 
-        // Populate Overview Tab - JR Conect clean layout
-        const cleanValue = (value, fallback = '—') => {
-            if (value === undefined || value === null || value === '' || value === 'N/A') return fallback;
-            return value;
-        };
-
-        const primaryWan = (device.wan_details || []).find(w => w.status === 'Connected')
-            || (device.wan_details || [])[0]
-            || {};
-
+        // Populate Overview Tab
         document.getElementById('overview-content').innerHTML = `
-            <div class="jr-device-overview">
-                <section class="jr-summary-strip">
-                    <div class="jr-summary-item">
-                        <span class="jr-summary-icon"><i class="bi bi-activity"></i></span>
-                        <div>
-                            <small>Status</small>
-                            <strong><span class="jr-status-dot ${device.status === 'online' ? 'online' : 'offline'}"></span>${cleanValue(device.status)}</strong>
-                        </div>
-                    </div>
-                    <div class="jr-summary-item">
-                        <span class="jr-summary-icon"><i class="bi bi-clock-history"></i></span>
-                        <div><small>Última comunicação</small><strong>${cleanValue(device.last_inform)}</strong></div>
-                    </div>
-                    <div class="jr-summary-item">
-                        <span class="jr-summary-icon"><i class="bi bi-cpu"></i></span>
-                        <div><small>Modelo</small><strong>${cleanValue(device.product_class)}</strong></div>
-                    </div>
-                    <div class="jr-summary-item">
-                        <span class="jr-summary-icon"><i class="bi bi-globe2"></i></span>
-                        <div><small>IP externo</small><strong>${makeIPClickable(cleanValue(primaryWan.external_ip))}</strong></div>
-                    </div>
-                </section>
-
-                <div class="jr-overview-grid">
-                    <section class="jr-panel jr-panel-device">
-                        <div class="jr-panel-title">
-                            <span><i class="bi bi-router"></i> Equipamento</span>
-                            <span class="jr-chip">${cleanValue(device.manufacturer)}</span>
-                        </div>
-                        <div class="jr-key-grid">
-                            <div class="jr-key"><small>Número de série</small><strong>${cleanValue(device.serial_number)}</strong></div>
-                            <div class="jr-key"><small>MAC</small><strong>${cleanValue(device.mac_address)}</strong></div>
-                            <div class="jr-key"><small>Firmware</small><strong>${cleanValue(device.software_version)}</strong></div>
-                            <div class="jr-key"><small>Hardware</small><strong>${cleanValue(device.hardware_version)}</strong></div>
-                            <div class="jr-key"><small>Uptime</small><strong>${device.uptime ? formatUptime(device.uptime) : '—'}</strong></div>
-                            <div class="jr-key"><small>OUI</small><strong>${cleanValue(device.oui)}</strong></div>
-                        </div>
-                    </section>
-
-                    <section class="jr-panel jr-panel-optical">
-                        <div class="jr-panel-title">
-                            <span><i class="bi bi-broadcast-pin"></i> Sinal óptico</span>
-                            <span class="jr-chip">GPON</span>
-                        </div>
-                        <div class="jr-optical-grid">
-                            <div class="jr-optical-metric">
-                                <small>RX</small>
-                                <strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong>
-                            </div>
-                            <div class="jr-optical-metric">
-                                <small>TX</small>
-                                <strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong>
-                            </div>
-                            <div class="jr-optical-metric">
-                                <small>Temperatura</small>
-                                <strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong>
-                            </div>
-                            <div class="jr-optical-metric">
-                                <small>Tensão</small>
-                                <strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong>
-                            </div>
-                        </div>
-                        <div class="jr-panel-foot">
-                            <span>PON: <strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></span>
-                            <span id="optical-last-update">${renderOpticalLastUpdate()}</span>
-                            <span id="optical-source" class="d-none">${renderOpticalSource()}</span>
-                        </div>
-                    </section>
-
-                    <section class="jr-panel jr-panel-network">
-                        <div class="jr-panel-title">
-                            <span><i class="bi bi-diagram-3"></i> Rede</span>
-                            <span class="jr-chip">${cleanValue(primaryWan.type, 'WAN')}</span>
-                        </div>
-                        <div class="jr-key-grid">
-                            <div class="jr-key"><small>IP TR-069</small><strong>${makeIPClickable(extractIP(device.ip_tr069))}</strong></div>
-                            <div class="jr-key"><small>WAN</small><strong>${cleanValue(primaryWan.name)}</strong></div>
-                            <div class="jr-key"><small>VLAN</small><strong>${cleanValue(primaryWan.vlan_id || primaryWan.vlan)}</strong></div>
-                            <div class="jr-key"><small>Gateway</small><strong>${makeIPClickable(cleanValue(primaryWan.gateway))}</strong></div>
-                            <div class="jr-key"><small>PPPoE</small><strong>${cleanValue(primaryWan.username)}</strong></div>
-                            <div class="jr-key"><small>DNS</small><strong>${cleanValue(primaryWan.dns_servers)}</strong></div>
-                        </div>
-                    </section>
-
-                    <section class="jr-panel jr-panel-wifi">
-                        <div class="jr-panel-title">
-                            <span><i class="bi bi-wifi"></i> Wi-Fi</span>
-                            <button class="jr-icon-btn" onclick="openEditWiFiModal('${device.device_id}', '${String(device.wifi_ssid || '').replace(/'/g, "\\'")}', '${String(device.wifi_password || '').replace(/'/g, "\\'")}')" title="Editar Wi-Fi">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        </div>
-                        <div class="jr-key-grid">
-                            <div class="jr-key jr-key-wide"><small>SSID</small><strong>${cleanValue(device.wifi_ssid)}</strong></div>
-                            <div class="jr-key jr-key-wide">
-                                <small>Senha</small>
-                                <strong>
-                                    <span id="wifi-pass-hidden">••••••••</span>
-                                    <span id="wifi-pass-shown" style="display:none;">${cleanValue(device.wifi_password)}</span>
-                                    <button class="jr-inline-action" onclick="togglePassword()" title="Mostrar/ocultar senha"><i id="toggle-icon" class="bi bi-eye"></i></button>
-                                </strong>
-                            </div>
-                        </div>
-                    </section>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="bi bi-info-circle"></i> Basic Information</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr><th width="40%">Device ID</th><td>${device.device_id}</td></tr>
+                        <tr><th>Serial Number</th><td>${device.serial_number}</td></tr>
+                        <tr><th>MAC Address</th><td>${device.mac_address}</td></tr>
+                        <tr><th>Last Inform</th><td>${device.last_inform}</td></tr>
+                        <tr><th>Status</th><td><span class="badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status}</span></td></tr>
+                        <tr><th>Manufacturer</th><td>${device.manufacturer}</td></tr>
+                        <tr><th>Product Class</th><td>${device.product_class}</td></tr>
+                        <tr><th>OUI</th><td>${device.oui}</td></tr>
+                    </table>
                 </div>
+                <div class="col-md-6">
+                    <h6><i class="bi bi-cpu"></i> Hardware/Software</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr><th width="40%">Hardware Version</th><td>${device.hardware_version}</td></tr>
+                        <tr><th>Software Version</th><td>${device.software_version}</td></tr>
+                        <tr><th>Uptime</th><td>${formatUptime(device.uptime)}</td></tr>
+                    </table>
 
-                <details class="jr-advanced-panel">
-                    <summary><i class="bi bi-shield-lock"></i> Acesso administrativo e informações avançadas</summary>
-                    <div class="jr-advanced-content">
-                        <div class="jr-key-grid">
-                            <div class="jr-key"><small>Super Admin</small><strong><code>${cleanValue(device.admin_user)}</code></strong></div>
-                            <div class="jr-key">
-                                <small>Senha Super Admin</small>
-                                <strong>
-                                    <span id="admin-pass-hidden">••••••••</span>
-                                    <span id="admin-pass-shown" style="display:none;"><code>${cleanValue(device.admin_password)}</code></span>
-                                    <button class="jr-inline-action" onclick="toggleAdminPassword()"><i id="admin-toggle-icon" class="bi bi-eye"></i></button>
-                                </strong>
-                            </div>
-                            <div class="jr-key"><small>Senha Telecom</small><strong><code>${cleanValue(device.telecom_password)}</code></strong></div>
-                            <div class="jr-key jr-key-wide"><small>TR-069</small><strong class="jr-break">${cleanValue(device.ip_tr069)}</strong></div>
-                        </div>
-                        <div id="credentials-status" class="alert alert-info mt-3" style="display:none;">
-                            <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
-                        </div>
-                        ${(!device.admin_user || device.admin_user === 'N/A') ? `
-                            <button id="get-credentials-btn" class="btn btn-sm btn-warning mt-3" onclick="summonForAdminCredentials()">
-                                <i class="bi bi-lightning-charge"></i> Buscar credenciais
-                            </button>` : ''}
+                    <h6 class="mt-4"><i class="bi bi-broadcast"></i> Optical Information</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <th width="40%">RX Power</th>
+                            <td id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>TX Power</th>
+                            <td id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>Temperature</th>
+                            <td id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>Voltage</th>
+                            <td id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</td>
+                        </tr>
+                        <tr>
+                            <th>PON ID</th>
+                            <td id="optical-pon-id">${renderOpticalCachedPon()}</td>
+                        </tr>
+                        <tr>
+                            <th>Última atualização</th>
+                            <td id="optical-last-update">${renderOpticalLastUpdate()}</td>
+                        </tr>
+                        <tr>
+                            <th>Fonte</th>
+                            <td id="optical-source">${renderOpticalSource()}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h6><i class="bi bi-ethernet"></i> Network Information</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <th width="20%">IP TR069</th>
+                            <td>${makeIPClickable(extractIP(device.ip_tr069))}</td>
+                        </tr>
+                        <tr>
+                            <th>WiFi SSID</th>
+                            <td>
+                                ${device.wifi_ssid}
+                                <button class="btn btn-sm btn-warning ms-2" onclick="openEditWiFiModal('${device.device_id}', '${device.wifi_ssid.replace(/'/g, "\\'")}', '${device.wifi_password.replace(/'/g, "\\'")}')">
+                                    <i class="bi bi-pencil"></i> Edit WiFi
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>WiFi Password</th>
+                            <td>
+                                <span id="wifi-pass-hidden">********</span>
+                                <span id="wifi-pass-shown" style="display:none;">${device.wifi_password}</span>
+                                <button class="btn btn-sm btn-link" onclick="togglePassword()">
+                                    <i id="toggle-icon" class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Full TR069 URL</th>
+                            <td><small>${device.ip_tr069}</small></td>
+                        </tr>
+                    </table>
+
+                    <h6 class="mt-4">
+                        <i class="bi bi-shield-lock"></i> Admin Web Access
+                        ${(device.admin_user === 'N/A' || !device.admin_user || device.admin_user === '' || device.admin_user === null || device.admin_user === undefined) ?
+                            '<button id="get-credentials-btn" class="btn btn-sm btn-warning ms-2" onclick="summonForAdminCredentials()" title="Summon device to get admin credentials"><i class="bi bi-lightning-charge"></i> Get Credentials</button>' :
+                            ''}
+                    </h6>
+                    <div id="credentials-status" class="alert alert-info" style="display:none;">
+                        <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
                     </div>
-                </details>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <th width="20%">Super Admin User</th>
+                            <td>
+                                <code>${device.admin_user || 'N/A'}</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Super Admin Password</th>
+                            <td>
+                                <span id="admin-pass-hidden">********</span>
+                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/A'}</code></span>
+                                <button class="btn btn-sm btn-link" onclick="toggleAdminPassword()">
+                                    <i id="admin-toggle-icon" class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Telecom Password</th>
+                            <td>
+                                <span id="telecom-pass-hidden">********</span>
+                                <span id="telecom-pass-shown" style="display:none;"><code>${device.telecom_password || 'N/A'}</code></span>
+                                <button class="btn btn-sm btn-link" onclick="toggleTelecomPassword()">
+                                    <i id="telecom-toggle-icon" class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                    ${(device.admin_user === 'N/A' || !device.admin_user || device.admin_user === '' || device.admin_user === null || device.admin_user === undefined) ?
+                        '<div class="alert alert-info mt-2"><i class="bi bi-info-circle"></i> <strong>Admin credentials belum tersedia.</strong><br><br>Klik tombol <strong>"Get Credentials"</strong> untuk mengambil username dan password dari device.<br><br>⏱️ <em>Proses membutuhkan waktu ~20 detik (otomatis summon 2x untuk device baru)</em></div>' :
+                        ''}
+                </div>
             </div>
         `;
 
