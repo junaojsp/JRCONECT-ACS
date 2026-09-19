@@ -117,55 +117,55 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('devices-count-badge').textContent = device.connected_devices ? device.connected_devices.length : 0;
 
         // Populate Overview Tab - JR CONECT ACS V2
-        document.getElementById('overview-content').innerHTML = \`
+        document.getElementById('overview-content').innerHTML = `
             <div class="acs-overview-grid">
 
                 <section class="acs-overview-card acs-card-device">
                     <div class="acs-overview-card-header">
                         <div>
                             <span class="acs-kicker"><i class="bi bi-router"></i> Dispositivo</span>
-                            <h5>\${device.product_class || 'Equipamento'}</h5>
+                            <h5>${device.product_class || 'Equipamento'}</h5>
                         </div>
-                        <span class="acs-status-pill \${device.status === 'online' ? 'online' : 'offline'}">
+                        <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
                             <span class="acs-status-dot"></span>
-                            \${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
+                            ${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
                         </span>
                     </div>
 
                     <div class="acs-device-identity">
                         <div class="acs-device-icon"><i class="bi bi-hdd-network"></i></div>
                         <div>
-                            <strong>\${device.serial_number || 'N/D'}</strong>
-                            <span>\${device.manufacturer || 'Fabricante não identificado'}</span>
+                            <strong>${device.serial_number || 'N/D'}</strong>
+                            <span>${device.manufacturer || 'Fabricante não identificado'}</span>
                         </div>
                     </div>
 
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span><i class="bi bi-clock-history"></i> Última conexão</span>
-                            <strong>\${device.last_inform || 'N/D'}</strong>
+                            <strong>${device.last_inform || 'N/D'}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-hourglass-split"></i> Uptime</span>
-                            <strong>\${formatUptime(device.uptime)}</strong>
+                            <strong>${formatUptime(device.uptime)}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-code-slash"></i> Firmware</span>
-                            <strong>\${device.software_version || 'N/D'}</strong>
+                            <strong>${device.software_version || 'N/D'}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-cpu"></i> Hardware</span>
-                            <strong>\${device.hardware_version || 'N/D'}</strong>
+                            <strong>${device.hardware_version || 'N/D'}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-upc-scan"></i> MAC</span>
-                            <strong>\${device.mac_address || 'N/D'}</strong>
+                            <strong>${device.mac_address || 'N/D'}</strong>
                         </div>
                     </div>
 
                     <div class="acs-card-meta">
-                        <span>OUI: \${device.oui || 'N/D'}</span>
-                        <span>ID: \${device.device_id || 'N/D'}</span>
+                        <span>OUI: ${device.oui || 'N/D'}</span>
+                        <span>ID: ${device.device_id || 'N/D'}</span>
                     </div>
                 </section>
 
@@ -175,26 +175,26 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span class="acs-kicker"><i class="bi bi-globe2"></i> Interface de Internet</span>
                             <h5>WAN / TR-069</h5>
                         </div>
-                        <span class="acs-mini-badge">\${device.wan_details ? device.wan_details.length : 0} WAN</span>
+                        <span class="acs-mini-badge">${device.wan_details ? device.wan_details.length : 0} WAN</span>
                     </div>
 
                     <div class="acs-wan-ip">
                         <span>IP TR-069</span>
-                        <strong>\${makeIPClickable(extractIP(device.ip_tr069))}</strong>
+                        <strong>${makeIPClickable(extractIP(device.ip_tr069))}</strong>
                     </div>
 
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span><i class="bi bi-link-45deg"></i> URL TR-069</span>
-                            <strong class="acs-truncate">\${device.ip_tr069 || 'N/D'}</strong>
+                            <strong class="acs-truncate">${device.ip_tr069 || 'N/D'}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-broadcast-pin"></i> Conexões WAN</span>
-                            <strong>\${device.wan_details ? device.wan_details.length : 0}</strong>
+                            <strong>${device.wan_details ? device.wan_details.length : 0}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-diagram-3"></i> Clientes conectados</span>
-                            <strong>\${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                            <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
                         </div>
                     </div>
 
@@ -220,35 +220,35 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <div class="acs-optical-primary">
                         <div>
                             <span>RX</span>
-                            <strong id="optical-rx-power">\${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong>
+                            <strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong>
                         </div>
                         <div>
                             <span>TX</span>
-                            <strong id="optical-tx-power">\${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong>
+                            <strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong>
                         </div>
                     </div>
 
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span><i class="bi bi-thermometer-half"></i> Temperatura</span>
-                            <strong id="optical-temperature">\${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong>
+                            <strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-lightning"></i> Tensão</span>
-                            <strong id="optical-voltage">\${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong>
+                            <strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-diagram-2"></i> PON</span>
-                            <strong id="optical-pon-id">\${renderOpticalCachedPon()}</strong>
+                            <strong id="optical-pon-id">${renderOpticalCachedPon()}</strong>
                         </div>
                         <div class="acs-info-row">
                             <span><i class="bi bi-database-check"></i> Fonte</span>
-                            <strong id="optical-source">\${renderOpticalSource()}</strong>
+                            <strong id="optical-source">${renderOpticalSource()}</strong>
                         </div>
                     </div>
 
                     <div class="acs-card-meta">
-                        <span>Última atualização: <strong id="optical-last-update">\${renderOpticalLastUpdate()}</strong></span>
+                        <span>Última atualização: <strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></span>
                     </div>
                 </section>
 
@@ -256,13 +256,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <div class="acs-overview-card-header">
                         <div>
                             <span class="acs-kicker"><i class="bi bi-wifi"></i> Rede Wi-Fi</span>
-                            <h5>\${device.wifi_ssid || 'SSID não identificado'}</h5>
+                            <h5>${device.wifi_ssid || 'SSID não identificado'}</h5>
                         </div>
                         <button
                             class="acs-icon-btn"
                             type="button"
                             title="Editar Wi-Fi"
-                            onclick="openEditWiFiModal('\${device.device_id}', '\${(device.wifi_ssid || '').replace(/'/g, "\\\\'")}', '\${(device.wifi_password || '').replace(/'/g, "\\\\'")}')"
+                            onclick="openEditWiFiModal('${device.device_id}', '${(device.wifi_ssid || '').replace(/'/g, "\\\\'")}', '${(device.wifi_password || '').replace(/'/g, "\\\\'")}')"
                         >
                             <i class="bi bi-pencil"></i>
                         </button>
@@ -272,7 +272,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <i class="bi bi-wifi"></i>
                         <div>
                             <span>SSID</span>
-                            <strong>\${device.wifi_ssid || 'N/D'}</strong>
+                            <strong>${device.wifi_ssid || 'N/D'}</strong>
                         </div>
                     </div>
 
@@ -280,7 +280,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <span><i class="bi bi-lock"></i> Senha Wi-Fi</span>
                         <strong>
                             <span id="wifi-pass-hidden">********</span>
-                            <span id="wifi-pass-shown" style="display:none;">\${device.wifi_password || 'N/D'}</span>
+                            <span id="wifi-pass-shown" style="display:none;">${device.wifi_password || 'N/D'}</span>
                             <button class="acs-eye-btn" type="button" onclick="togglePassword()">
                                 <i id="toggle-icon" class="bi bi-eye"></i>
                             </button>
@@ -297,7 +297,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
 
                     <div class="acs-big-number">
-                        <strong>\${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
                         <span>conectados no momento</span>
                     </div>
 
@@ -339,7 +339,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span class="acs-kicker"><i class="bi bi-shield-lock"></i> Acesso administrativo</span>
                             <h5>Credenciais do equipamento</h5>
                         </div>
-                        \${(device.admin_user === 'N/A' || !device.admin_user) ?
+                        ${(device.admin_user === 'N/A' || !device.admin_user) ?
                             '<button id="get-credentials-btn" class="acs-soft-btn" type="button" onclick="summonForAdminCredentials()"><i class="bi bi-lightning-charge"></i> Obter</button>' :
                             '<span class="acs-mini-badge success">DISPONÍVEL</span>'}
                     </div>
@@ -351,13 +351,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span>Super Admin</span>
-                            <strong><code>\${device.admin_user || 'N/A'}</code></strong>
+                            <strong><code>${device.admin_user || 'N/A'}</code></strong>
                         </div>
                         <div class="acs-info-row">
                             <span>Senha Admin</span>
                             <strong>
                                 <span id="admin-pass-hidden">********</span>
-                                <span id="admin-pass-shown" style="display:none;"><code>\${device.admin_password || 'N/A'}</code></span>
+                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/A'}</code></span>
                                 <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()">
                                     <i id="admin-toggle-icon" class="bi bi-eye"></i>
                                 </button>
@@ -367,7 +367,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span>Senha Telecom</span>
                             <strong>
                                 <span id="telecom-pass-hidden">********</span>
-                                <span id="telecom-pass-shown" style="display:none;"><code>\${device.telecom_password || 'N/A'}</code></span>
+                                <span id="telecom-pass-shown" style="display:none;"><code>${device.telecom_password || 'N/A'}</code></span>
                                 <button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()">
                                     <i id="telecom-toggle-icon" class="bi bi-eye"></i>
                                 </button>
@@ -375,7 +375,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         </div>
                     </div>
 
-                    \${(device.admin_user === 'N/A' || !device.admin_user) ?
+                    ${(device.admin_user === 'N/A' || !device.admin_user) ?
                         '<div class="acs-admin-note"><i class="bi bi-info-circle"></i><span>As credenciais ainda não foram coletadas. Use <strong>Obter</strong> para solicitar ao equipamento.</span></div>' :
                         ''}
                 </section>
@@ -399,7 +399,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </section>
 
             </div>
-        \`;
+        `;
 
         // Buscar dados ópticos FiberHome via TL1 sem bloquear o carregamento principal.
         // No auto-refresh, não inicia uma nova consulta se já existir uma em andamento
