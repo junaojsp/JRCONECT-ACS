@@ -3138,3 +3138,153 @@ canvas {
 .acs-device-tabs-wrap #deviceTabs .nav-link:hover{color:#b7dce9}
 .acs-device-tabs-wrap #deviceTabs .nav-link.active{color:#eaf8fc;border-bottom-color:#20c7e8;background:transparent}
 @media(max-width:900px){.acs-device-toolbar{align-items:flex-start;flex-direction:column}.acs-device-toolbar-actions{width:100%;overflow-x:auto;padding-bottom:2px}.acs-toolbar-action span{display:none}}
+
+
+/* =========================================================
+   JR CONECT ACS - LEGIBILIDADE + SIDEBAR COMPACTA
+   Inspirado na densidade visual do ACS de referencia
+   ========================================================= */
+
+/* Sidebar compacta por icones */
+.sidebar.collapsed{
+    width:76px !important;
+}
+.main-content.collapsed{
+    margin-left:76px !important;
+}
+.sidebar.collapsed .sidebar-header{
+    min-height:82px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:14px 0;
+}
+.sidebar.collapsed .sidebar-header i{
+    font-size:26px !important;
+    color:#28c9e8 !important;
+}
+.sidebar.collapsed .sidebar-menu{
+    padding-top:8px;
+}
+.sidebar.collapsed .sidebar-menu li{
+    display:flex;
+    justify-content:center;
+}
+.sidebar.collapsed .sidebar-menu a{
+    width:52px;
+    height:52px;
+    margin:4px auto;
+    padding:0 !important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid transparent;
+    border-radius:10px;
+}
+.sidebar.collapsed .sidebar-menu a i{
+    margin:0 !important;
+    font-size:18px !important;
+}
+.sidebar.collapsed .sidebar-menu a.active{
+    background:rgba(0,189,227,.08) !important;
+    border:1px solid rgba(0,189,227,.28) !important;
+    border-bottom:1px solid rgba(0,189,227,.28) !important;
+    color:#69e2f5 !important;
+}
+.sidebar.collapsed .sidebar-menu a:hover{
+    background:rgba(0,189,227,.07) !important;
+    border-color:rgba(0,189,227,.18);
+}
+.sidebar.collapsed .sidebar-menu a::after{
+    left:60px;
+    margin-left:0;
+    padding:7px 10px;
+    border:1px solid rgba(0,189,227,.15);
+    background:#0a1f2e;
+    color:#d7edf5;
+    font-size:11px;
+    border-radius:7px;
+}
+.sidebar.collapsed .sidebar-toggle{
+    left:18px;
+    width:38px;
+    height:38px;
+    border-radius:9px;
+    border:1px solid rgba(0,189,227,.22);
+    background:#102c3e;
+}
+
+/* Tipografia do detalhe: mais legivel sem perder densidade */
+.acs-device-title-row h3{font-size:20px}
+.acs-device-subtitle{font-size:11px}
+.acs-header-status{font-size:9px}
+.acs-toolbar-action{font-size:10px}
+
+.acs-device-tabs-wrap #deviceTabs .nav-link{
+    font-size:11px !important;
+    font-weight:650 !important;
+}
+
+.acs-overview-card-header h5{
+    font-size:16px;
+    line-height:1.25;
+}
+.acs-kicker{
+    font-size:10px;
+}
+.acs-kicker i{
+    font-size:13px;
+}
+.acs-status-pill,.acs-mini-badge{
+    font-size:9px;
+}
+.acs-device-identity strong,.acs-wifi-hero strong{
+    font-size:13px;
+}
+.acs-device-identity span,.acs-wifi-hero span{
+    font-size:10px;
+}
+.acs-info-row>span{
+    font-size:10px;
+}
+.acs-info-row>strong{
+    font-size:10px;
+}
+.acs-card-meta{
+    font-size:9px;
+}
+.acs-wan-ip span{
+    font-size:9px;
+}
+.acs-wan-ip strong{
+    font-size:16px;
+}
+.acs-soft-btn,.acs-icon-btn,.acs-eye-btn{
+    font-size:10px;
+}
+.acs-optical-primary span{
+    font-size:9px;
+}
+.acs-optical-primary strong{
+    font-size:14px;
+}
+.acs-big-number span{
+    font-size:10px;
+}
+.acs-diagnostic-list strong{
+    font-size:10px;
+}
+.acs-diagnostic-list small{
+    font-size:9px;
+}
+.acs-admin-note,.acs-event-placeholder{
+    font-size:10px;
+}
+.acs-event-placeholder strong{
+    font-size:11px;
+}
+
+@media(max-width:900px){
+    .sidebar.collapsed{width:70px !important}
+    .main-content.collapsed{margin-left:70px !important}
+}
