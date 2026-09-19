@@ -1,4 +1,3 @@
-// Device ID is set via global variable in device-detail.php
 const deviceId = window.DEVICE_ID || '';
 let savedScrollPosition = 0;
 let savedHotspotData = {}; // Store last known hotspot data
@@ -454,7 +453,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate Monitoring and AI tabs
         document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
         document.getElementById('ai-content').innerHTML = renderAIAssistantTab(device);
-        updateBandwidthSample(device);
         updateRadiusBandwidthSample();
 
         // Restore hotspot data after re-render (if available)
