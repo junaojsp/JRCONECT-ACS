@@ -178,7 +178,7 @@ class GenieACS {
      */
     public function addRefreshTask($deviceId, $parameterPath) {
         $encodedId = rawurlencode($deviceId);
-        $endpoint = "/devices/{$encodedId}/tasks?timeout=3000&connection_request";
+        $endpoint = "/devices/{$encodedId}/tasks?connection_request";
 
         $data = [
             'name' => 'refreshObject',
@@ -226,7 +226,7 @@ class GenieACS {
         $encodedId = rawurlencode($deviceId);
 
         // Connection request + Refresh VirtualParameters object
-        $endpoint = "/devices/{$encodedId}/tasks?timeout=3000&connection_request";
+        $endpoint = "/devices/{$encodedId}/tasks?connection_request";
 
         // Refresh all VirtualParameters - this triggers evaluation of superAdmin/superPassword
         $data = [
