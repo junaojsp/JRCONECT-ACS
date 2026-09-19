@@ -116,139 +116,290 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('wan-count-badge').textContent = device.wan_details ? device.wan_details.length : 0;
         document.getElementById('devices-count-badge').textContent = device.connected_devices ? device.connected_devices.length : 0;
 
-        // Populate Overview Tab
-        document.getElementById('overview-content').innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h6><i class="bi bi-info-circle"></i> Basic Information</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr><th width="40%">Device ID</th><td>${device.device_id}</td></tr>
-                        <tr><th>Serial Number</th><td>${device.serial_number}</td></tr>
-                        <tr><th>MAC Address</th><td>${device.mac_address}</td></tr>
-                        <tr><th>Last Inform</th><td>${device.last_inform}</td></tr>
-                        <tr><th>Status</th><td><span class="badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status}</span></td></tr>
-                        <tr><th>Manufacturer</th><td>${device.manufacturer}</td></tr>
-                        <tr><th>Product Class</th><td>${device.product_class}</td></tr>
-                        <tr><th>OUI</th><td>${device.oui}</td></tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h6><i class="bi bi-cpu"></i> Hardware/Software</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr><th width="40%">Hardware Version</th><td>${device.hardware_version}</td></tr>
-                        <tr><th>Software Version</th><td>${device.software_version}</td></tr>
-                        <tr><th>Uptime</th><td>${formatUptime(device.uptime)}</td></tr>
-                    </table>
+        // Populate Overview Tab - JR CONECT ACS V2
+        document.getElementById('overview-content').innerHTML = \`
+            <div class="acs-overview-grid">
 
-                    <h6 class="mt-4"><i class="bi bi-broadcast"></i> Optical Information</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr>
-                            <th width="40%">RX Power</th>
-                            <td id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>TX Power</th>
-                            <td id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>Temperature</th>
-                            <td id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>Voltage</th>
-                            <td id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>PON ID</th>
-                            <td id="optical-pon-id">${renderOpticalCachedPon()}</td>
-                        </tr>
-                        <tr>
-                            <th>Última atualização</th>
-                            <td id="optical-last-update">${renderOpticalLastUpdate()}</td>
-                        </tr>
-                        <tr>
-                            <th>Fonte</th>
-                            <td id="optical-source">${renderOpticalSource()}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <h6><i class="bi bi-ethernet"></i> Network Information</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr>
-                            <th width="20%">IP TR069</th>
-                            <td>${makeIPClickable(extractIP(device.ip_tr069))}</td>
-                        </tr>
-                        <tr>
-                            <th>WiFi SSID</th>
-                            <td>
-                                ${device.wifi_ssid}
-                                <button class="btn btn-sm btn-warning ms-2" onclick="openEditWiFiModal('${device.device_id}', '${device.wifi_ssid.replace(/'/g, "\\'")}', '${device.wifi_password.replace(/'/g, "\\'")}')">
-                                    <i class="bi bi-pencil"></i> Edit WiFi
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>WiFi Password</th>
-                            <td>
-                                <span id="wifi-pass-hidden">********</span>
-                                <span id="wifi-pass-shown" style="display:none;">${device.wifi_password}</span>
-                                <button class="btn btn-sm btn-link" onclick="togglePassword()">
-                                    <i id="toggle-icon" class="bi bi-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Full TR069 URL</th>
-                            <td><small>${device.ip_tr069}</small></td>
-                        </tr>
-                    </table>
+                <section class="acs-overview-card acs-card-device">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-router"></i> Dispositivo</span>
+                            <h5>\${device.product_class || 'Equipamento'}</h5>
+                        </div>
+                        <span class="acs-status-pill \${device.status === 'online' ? 'online' : 'offline'}">
+                            <span class="acs-status-dot"></span>
+                            \${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                    </div>
 
-                    <h6 class="mt-4">
-                        <i class="bi bi-shield-lock"></i> Admin Web Access
-                        ${(device.admin_user === 'N/A' || !device.admin_user || device.admin_user === '' || device.admin_user === null || device.admin_user === undefined) ?
-                            '<button id="get-credentials-btn" class="btn btn-sm btn-warning ms-2" onclick="summonForAdminCredentials()" title="Summon device to get admin credentials"><i class="bi bi-lightning-charge"></i> Get Credentials</button>' :
-                            ''}
-                    </h6>
+                    <div class="acs-device-identity">
+                        <div class="acs-device-icon"><i class="bi bi-hdd-network"></i></div>
+                        <div>
+                            <strong>\${device.serial_number || 'N/D'}</strong>
+                            <span>\${device.manufacturer || 'Fabricante não identificado'}</span>
+                        </div>
+                    </div>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-clock-history"></i> Última conexão</span>
+                            <strong>\${device.last_inform || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-hourglass-split"></i> Uptime</span>
+                            <strong>\${formatUptime(device.uptime)}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-code-slash"></i> Firmware</span>
+                            <strong>\${device.software_version || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-cpu"></i> Hardware</span>
+                            <strong>\${device.hardware_version || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-upc-scan"></i> MAC</span>
+                            <strong>\${device.mac_address || 'N/D'}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-card-meta">
+                        <span>OUI: \${device.oui || 'N/D'}</span>
+                        <span>ID: \${device.device_id || 'N/D'}</span>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-wan">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-globe2"></i> Interface de Internet</span>
+                            <h5>WAN / TR-069</h5>
+                        </div>
+                        <span class="acs-mini-badge">\${device.wan_details ? device.wan_details.length : 0} WAN</span>
+                    </div>
+
+                    <div class="acs-wan-ip">
+                        <span>IP TR-069</span>
+                        <strong>\${makeIPClickable(extractIP(device.ip_tr069))}</strong>
+                    </div>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-link-45deg"></i> URL TR-069</span>
+                            <strong class="acs-truncate">\${device.ip_tr069 || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-broadcast-pin"></i> Conexões WAN</span>
+                            <strong>\${device.wan_details ? device.wan_details.length : 0}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-diagram-3"></i> Clientes conectados</span>
+                            <strong>\${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-card-actions">
+                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('wan-tab').click()">
+                            <i class="bi bi-arrow-up-right"></i> Ver conexões
+                        </button>
+                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('devices-tab').click()">
+                            <i class="bi bi-people"></i> Ver clientes
+                        </button>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-optical">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-reception-4"></i> Óptico / GPON</span>
+                            <h5>Leituras da fibra</h5>
+                        </div>
+                        <span class="acs-mini-badge">PON</span>
+                    </div>
+
+                    <div class="acs-optical-primary">
+                        <div>
+                            <span>RX</span>
+                            <strong id="optical-rx-power">\${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong>
+                        </div>
+                        <div>
+                            <span>TX</span>
+                            <strong id="optical-tx-power">\${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-thermometer-half"></i> Temperatura</span>
+                            <strong id="optical-temperature">\${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-lightning"></i> Tensão</span>
+                            <strong id="optical-voltage">\${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-diagram-2"></i> PON</span>
+                            <strong id="optical-pon-id">\${renderOpticalCachedPon()}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-database-check"></i> Fonte</span>
+                            <strong id="optical-source">\${renderOpticalSource()}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-card-meta">
+                        <span>Última atualização: <strong id="optical-last-update">\${renderOpticalLastUpdate()}</strong></span>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-wifi">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-wifi"></i> Rede Wi-Fi</span>
+                            <h5>\${device.wifi_ssid || 'SSID não identificado'}</h5>
+                        </div>
+                        <button
+                            class="acs-icon-btn"
+                            type="button"
+                            title="Editar Wi-Fi"
+                            onclick="openEditWiFiModal('\${device.device_id}', '\${(device.wifi_ssid || '').replace(/'/g, "\\\\'")}', '\${(device.wifi_password || '').replace(/'/g, "\\\\'")}')"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+
+                    <div class="acs-wifi-hero">
+                        <i class="bi bi-wifi"></i>
+                        <div>
+                            <span>SSID</span>
+                            <strong>\${device.wifi_ssid || 'N/D'}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-info-row acs-password-row">
+                        <span><i class="bi bi-lock"></i> Senha Wi-Fi</span>
+                        <strong>
+                            <span id="wifi-pass-hidden">********</span>
+                            <span id="wifi-pass-shown" style="display:none;">\${device.wifi_password || 'N/D'}</span>
+                            <button class="acs-eye-btn" type="button" onclick="togglePassword()">
+                                <i id="toggle-icon" class="bi bi-eye"></i>
+                            </button>
+                        </strong>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-clients">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-people"></i> Dispositivos conectados</span>
+                            <h5>Clientes da rede</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-big-number">
+                        <strong>\${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        <span>conectados no momento</span>
+                    </div>
+
+                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('devices-tab').click()">
+                        <i class="bi bi-hdd-network"></i> Abrir dispositivos conectados
+                    </button>
+                </section>
+
+                <section class="acs-overview-card acs-card-diagnostics">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-activity"></i> Diagnósticos</span>
+                            <h5>Ferramentas rápidas</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-diagnostic-list">
+                        <button type="button" onclick="startONUSpeedtest()">
+                            <i class="bi bi-speedometer2"></i>
+                            <span><strong>Teste de velocidade</strong><small>LibreSpeed JR CONECT</small></span>
+                            <i class="bi bi-play-circle"></i>
+                        </button>
+                        <button type="button" onclick="summonDevice()">
+                            <i class="bi bi-lightning-charge"></i>
+                            <span><strong>Solicitar comunicação</strong><small>Forçar nova sessão TR-069</small></span>
+                            <i class="bi bi-play-circle"></i>
+                        </button>
+                        <button type="button" onclick="document.getElementById('wan-tab').click()">
+                            <i class="bi bi-globe2"></i>
+                            <span><strong>Conectividade WAN</strong><small>Abrir parâmetros de Internet</small></span>
+                            <i class="bi bi-arrow-up-right-circle"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-admin">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-shield-lock"></i> Acesso administrativo</span>
+                            <h5>Credenciais do equipamento</h5>
+                        </div>
+                        \${(device.admin_user === 'N/A' || !device.admin_user) ?
+                            '<button id="get-credentials-btn" class="acs-soft-btn" type="button" onclick="summonForAdminCredentials()"><i class="bi bi-lightning-charge"></i> Obter</button>' :
+                            '<span class="acs-mini-badge success">DISPONÍVEL</span>'}
+                    </div>
+
                     <div id="credentials-status" class="alert alert-info" style="display:none;">
                         <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
                     </div>
-                    <table class="table table-sm table-bordered">
-                        <tr>
-                            <th width="20%">Super Admin User</th>
-                            <td>
-                                <code>${device.admin_user || 'N/A'}</code>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Super Admin Password</th>
-                            <td>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span>Super Admin</span>
+                            <strong><code>\${device.admin_user || 'N/A'}</code></strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span>Senha Admin</span>
+                            <strong>
                                 <span id="admin-pass-hidden">********</span>
-                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/A'}</code></span>
-                                <button class="btn btn-sm btn-link" onclick="toggleAdminPassword()">
+                                <span id="admin-pass-shown" style="display:none;"><code>\${device.admin_password || 'N/A'}</code></span>
+                                <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()">
                                     <i id="admin-toggle-icon" class="bi bi-eye"></i>
                                 </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Telecom Password</th>
-                            <td>
+                            </strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span>Senha Telecom</span>
+                            <strong>
                                 <span id="telecom-pass-hidden">********</span>
-                                <span id="telecom-pass-shown" style="display:none;"><code>${device.telecom_password || 'N/A'}</code></span>
-                                <button class="btn btn-sm btn-link" onclick="toggleTelecomPassword()">
+                                <span id="telecom-pass-shown" style="display:none;"><code>\${device.telecom_password || 'N/A'}</code></span>
+                                <button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()">
                                     <i id="telecom-toggle-icon" class="bi bi-eye"></i>
                                 </button>
-                            </td>
-                        </tr>
-                    </table>
-                    ${(device.admin_user === 'N/A' || !device.admin_user || device.admin_user === '' || device.admin_user === null || device.admin_user === undefined) ?
-                        '<div class="alert alert-info mt-2"><i class="bi bi-info-circle"></i> <strong>Admin credentials belum tersedia.</strong><br><br>Klik tombol <strong>"Get Credentials"</strong> untuk mengambil username dan password dari device.<br><br>⏱️ <em>Proses membutuhkan waktu ~20 detik (otomatis summon 2x untuk device baru)</em></div>' :
+                            </strong>
+                        </div>
+                    </div>
+
+                    \${(device.admin_user === 'N/A' || !device.admin_user) ?
+                        '<div class="acs-admin-note"><i class="bi bi-info-circle"></i><span>As credenciais ainda não foram coletadas. Use <strong>Obter</strong> para solicitar ao equipamento.</span></div>' :
                         ''}
-                </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-events">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-clock-history"></i> Eventos</span>
+                            <h5>Atividade do equipamento</h5>
+                        </div>
+                        <span class="acs-mini-badge">EM BREVE</span>
+                    </div>
+
+                    <div class="acs-event-placeholder">
+                        <div class="acs-event-line"></div>
+                        <div>
+                            <strong>Histórico operacional</strong>
+                            <span>Esta área ficará preparada para alterações de Wi-Fi, reinicializações, falhas e eventos TR-069.</span>
+                        </div>
+                    </div>
+                </section>
+
             </div>
-        `;
+        \`;
 
         // Buscar dados ópticos FiberHome via TL1 sem bloquear o carregamento principal.
         // No auto-refresh, não inicia uma nova consulta se já existir uma em andamento
