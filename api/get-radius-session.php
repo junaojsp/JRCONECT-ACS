@@ -73,6 +73,7 @@ try {
     $filter = $mac !== ''
         ? ['qtype' => 'radacct.callingstationid', 'query' => $mac, 'oper' => '=']
         : ['qtype' => 'radacct.framedipaddress', 'query' => $ip, 'oper' => '='];
+    $lookup = $mac !== '' ? 'MAC' : 'IP';
     $payload = json_encode($filter + ['page' => '1', 'rp' => '20', 'sortname' => 'radacct.radacctid', 'sortorder' => 'desc']);
     $ch = curl_init($ixcUrl);
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 12,
@@ -82,6 +83,23 @@ try {
     if ($status < 200 || $status >= 300) throw new RuntimeException('IXC retornou HTTP ' . $status . '.');
     $response = json_decode($body, true);
     $records = is_array($response['registros'] ?? null) ? $response['registros'] : (is_array($response) ? $response : []);
+    /* Alguns BRAS não gravam o MAC da ONU no RADIUS. Nessa situação,
+       o IP PPPoE atual é a referência segura para a sessão ativa. */
+    $hasRadiusRecord = false;
+    foreach ($records as $candidate) {
+        if (is_array($candidate) && !empty($candidate['radacctid'])) { $hasRadiusRecord = true; break; }
+    }
+    if (!$hasRadiusRecord && $mac !== '' && $ip !== '') {
+        $lookup = 'IP';
+        $payload = json_encode(['qtype' => 'radacct.framedipaddress', 'query' => $ip, 'oper' => '=', 'page' => '1', 'rp' => '20', 'sortname' => 'radacct.radacctid', 'sortorder' => 'desc']);
+        $ch = curl_init($ixcUrl);
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 12,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json', 'ixcsoft: listar', 'Authorization: Basic ' . base64_encode($token)], CURLOPT_POSTFIELDS => $payload]);
+        $body = curl_exec($ch); $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $error = curl_error($ch); curl_close($ch);
+        if ($body === false || $status < 200 || $status >= 300) throw new RuntimeException('Falha ao consultar RADIUS pelo IP PPPoE.');
+        $response = json_decode($body, true);
+        $records = is_array($response['registros'] ?? null) ? $response['registros'] : (is_array($response) ? $response : []);
+    }
     $active = null;
     foreach ($records as $record) {
         if (!is_array($record) || empty($record['radacctid'])) continue;
@@ -93,8 +111,8 @@ try {
             if (is_array($candidate) && !empty($candidate['radacctid'])) { $record = $candidate; break; }
         }
     }
-    if ($record === null) radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => false, 'lookup' => $mac !== '' ? 'MAC' : 'IP', 'message' => 'Nenhuma sessão RADIUS encontrada.']);
-    radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => $active !== null, 'lookup' => $mac !== '' ? 'MAC' : 'IP', 'mac' => $mac ?: null,
+    if ($record === null) radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => false, 'lookup' => $lookup, 'message' => 'Nenhuma sessão RADIUS encontrada.']);
+    radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => $active !== null, 'lookup' => $lookup, 'mac' => $mac ?: null,
         'session' => ['username' => $record['username'] ?? null, 'ip' => $record['framedipaddress'] ?? null, 'bras' => $record['nasipaddress'] ?? null,
             'interface' => $record['nasportid'] ?? null, 'started_at' => $record['acctstarttime'] ?? null, 'stopped_at' => $record['acctstoptime'] ?? null,
             'seconds' => numberOrNull($record['acctsessiontime'] ?? null), 'bytes_received' => numberOrNull($record['acctinputoctets'] ?? null), 'bytes_sent' => numberOrNull($record['acctoutputoctets'] ?? null)]]);
