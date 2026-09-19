@@ -41,11 +41,11 @@ try {
 
     /* Credencial já configurada no endpoint IXC existente; evita duplicação. */
     $opticalSource = (string)file_get_contents(__DIR__ . '/get-onu-optical.php');
-    if (!preg_match("/\\$ixcToken\\s*=\\s*'([^']+)'/", $opticalSource, $tokenMatch)) {
+    if (!preg_match('/\\$ixcToken\\s*=\\s*\'([^\']+)\'/', $opticalSource, $tokenMatch)) {
         throw new RuntimeException('Token IXC não localizado na configuração existente.');
     }
     $token = $tokenMatch[1];
-    if (!preg_match("/\\$ixcBaseUrl\\s*=\\s*'([^']+)'/", $opticalSource, $urlMatch)) {
+    if (!preg_match('/\\$ixcBaseUrl\\s*=\\s*\'([^\']+)\'/', $opticalSource, $urlMatch)) {
         throw new RuntimeException('URL IXC não localizada na configuração existente.');
     }
     $ixcUrl = rtrim($urlMatch[1], '/') . '/webservice/v1/radacct';
