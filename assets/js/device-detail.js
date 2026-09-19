@@ -1,4 +1,3 @@
-// Device ID is set via global variable in device-detail.php
 const deviceId = window.DEVICE_ID || '';
 let savedScrollPosition = 0;
 let savedHotspotData = {}; // Store last known hotspot data
@@ -2822,7 +2821,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDeviceDetail(); // Initial load (manual, scroll to top)
     // Auto refresh every 30 seconds (preserve scroll position)
     setInterval(() => loadDeviceDetail(true), 30000);
-    setInterval(updateRadiusBandwidthSample, 5000);
+    setInterval(updateRadiusBandwidthSample, 1000);
 
     // Auto-start/stop hotspot monitoring based on Connected Devices tab visibility
     const allTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
