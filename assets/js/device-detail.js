@@ -160,6 +160,10 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         </div>
                     </div>
 
+                    <div id="ixc-onu-summary" class="acs-info-list" style="margin-top:12px">
+                        <div class="acs-info-row"><span><i class="bi bi-database"></i> Cadastro oficial</span><strong>Consultando IXC...</strong></div>
+                    </div>
+
                     ${renderPhysicalPorts(device.lan_ports)}
 
                     <div class="acs-info-list">
@@ -2621,6 +2625,24 @@ function updateOpticalDomFromCache() {
     if (ponEl) ponEl.innerHTML = renderOpticalCachedPon();
     if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
+    updateIxcOnuSummary();
+}
+
+function updateIxcOnuSummary() {
+    const container = document.getElementById('ixc-onu-summary');
+    if (!container) return;
+    if (!cachedOpticalData || cachedOpticalData.error) {
+        container.innerHTML = '<div class="acs-info-row"><span><i class="bi bi-database"></i> Cadastro oficial</span><strong>IXC indisponível</strong></div>';
+        return;
+    }
+    const value = (v) => escapeOpticalHtml(v == null || v === '' ? 'Não informado' : v);
+    const pon = [cachedOpticalData.slot, cachedOpticalData.pon, cachedOpticalData.onu_number]
+        .filter(v => v !== null && v !== undefined && v !== '')
+        .join(' / ') || cachedOpticalData.pon_id || 'Não informado';
+    container.innerHTML =
+        '<div class="acs-info-row"><span><i class="bi bi-database-check"></i> Cliente (IXC)</span><strong>' + value(cachedOpticalData.nome) + '</strong></div>' +
+        '<div class="acs-info-row"><span><i class="bi bi-person-vcard"></i> Login / contrato</span><strong>' + value(cachedOpticalData.id_login) + ' / ' + value(cachedOpticalData.id_contrato) + '</strong></div>' +
+        '<div class="acs-info-row"><span><i class="bi bi-diagram-2"></i> Slot / PON / ONU</span><strong>' + value(pon) + '</strong></div>';
 }
 
 async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
@@ -2699,9 +2721,14 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
         cachedOpticalData = {
             device_id: deviceIdToLoad,
             source: data.source || 'IXC',
+            nome: data.nome || null,
+            id_login: data.id_login ?? null,
+            id_contrato: data.id_contrato ?? null,
             pon_id: data.pon_id || null,
             onu_number: data.onu_number ?? null,
             olt_id: data.olt_id || null,
+            slot: data.slot ?? null,
+            pon: data.pon ?? null,
             optical: data.optical || {},
             error: null,
             loaded_at: Date.now()
