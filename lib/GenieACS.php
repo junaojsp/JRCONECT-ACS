@@ -237,6 +237,25 @@ class GenieACS {
         return $this->request($endpoint, 'POST', $data);
     }
 
+    /** Queue refreshes for the TR-098 and TR-181 objects used in device details. */
+    public function refreshDeviceDiagnostics($deviceId) {
+        $paths = [
+            'InternetGatewayDevice.WANDevice',
+            'InternetGatewayDevice.LANDevice',
+            'Device.PPP',
+            'Device.IP',
+            'Device.Ethernet',
+        ];
+        $results = [];
+        foreach ($paths as $path) {
+            $results[] = $this->addRefreshTask($deviceId, $path);
+        }
+        return [
+            'success' => (bool)array_filter($results, fn($result) => !empty($result['success'])),
+            'results' => $results,
+        ];
+    }
+
     /**
      * Reboot device
      */
@@ -742,6 +761,39 @@ class GenieACS {
             }
         }
 
+        // TR-181 WAN: used by Nokia and newer FiberHome firmware.
+        for ($i = 1; $i <= 16; $i++) {
+            $basePath = "Device.PPP.Interface.{$i}";
+            $status = $getParam("{$basePath}.Status");
+            $enable = $getParam("{$basePath}.Enable");
+            $name = $getParam("{$basePath}.Name") ?? $getParam("{$basePath}.Alias");
+            $username = $getParam("{$basePath}.Username");
+            $bytesReceived = $getParam("{$basePath}.Stats.BytesReceived");
+            $bytesSent = $getParam("{$basePath}.Stats.BytesSent");
+            if ($status === null && $enable === null && $name === null && $username === null && $bytesReceived === null && $bytesSent === null) continue;
+
+            $wanDetails[] = [
+                'type' => 'PPPoE',
+                'name' => $name ?: "PPP{$i}",
+                'status' => $status ?? ($enable ? 'Up' : 'Unknown'),
+                'connection_type' => 'PPPoE',
+                'external_ip' => $getParam("{$basePath}.IPCP.LocalIPAddress") ?? 'N/A',
+                'gateway' => $getParam("{$basePath}.IPCP.RemoteIPAddress") ?? 'N/A',
+                'subnet_mask' => 'N/A', 'dns_servers' => 'N/A', 'mac_address' => 'N/A',
+                'username' => $username ?? 'N/A',
+                'uptime' => $getParam("{$basePath}.Uptime") ?? 'N/A',
+                'last_error' => $getParam("{$basePath}.LastConnectionError") ?? 'N/A',
+                'mru_size' => $getParam("{$basePath}.MaxMRUSize") ?? 'N/A',
+                'bytes_received' => $bytesReceived,
+                'bytes_sent' => $bytesSent,
+                'packets_received' => $getParam("{$basePath}.Stats.PacketsReceived"),
+                'packets_sent' => $getParam("{$basePath}.Stats.PacketsSent"),
+                'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived"),
+                'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent"),
+                'binding' => $getParam("{$basePath}.LowerLayers") ?? 'N/A',
+            ];
+        }
+
         // Try WANIPConnection (for DHCP/Static IP)
         for ($i = 1; $i <= 8; $i++) {
             $basePath = "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.{$i}.WANIPConnection.1";
@@ -1024,6 +1076,33 @@ class GenieACS {
                 'errors_received' => $getParam("{$statsBase}.ErrorsReceived") ?? 0,
                 'errors_sent' => $getParam("{$statsBase}.ErrorsSent") ?? 0,
             ];
+        }
+
+        // TR-181 physical LAN ports, used by Nokia and some FiberHome RP firmware.
+        if (empty($lanPorts)) {
+            for ($i = 1; $i <= 16; $i++) {
+                $lanBase = "Device.Ethernet.Interface.{$i}";
+                $status = $getParam("{$lanBase}.Status");
+                $enable = $getParam("{$lanBase}.Enable");
+                $name = $getParam("{$lanBase}.Name") ?? $getParam("{$lanBase}.Alias");
+                $maxBitRate = $getParam("{$lanBase}.MaxBitRate");
+                $duplexMode = $getParam("{$lanBase}.DuplexMode");
+                if ($status === null && $enable === null && $name === null && $maxBitRate === null && $duplexMode === null) continue;
+                if ($name && preg_match('/^(br|bridge|lo|cpu|veip)/i', $name)) continue;
+
+                $statsBase = "{$lanBase}.Stats";
+                $lanPorts[] = [
+                    'port' => $i, 'name' => $name ?: "LAN{$i}", 'enabled' => $enable,
+                    'status' => $status ?? 'Unknown', 'max_bit_rate' => $maxBitRate ?? 'N/A',
+                    'duplex_mode' => $duplexMode ?? 'N/A',
+                    'bytes_received' => $getParam("{$statsBase}.BytesReceived"),
+                    'bytes_sent' => $getParam("{$statsBase}.BytesSent"),
+                    'packets_received' => $getParam("{$statsBase}.PacketsReceived"),
+                    'packets_sent' => $getParam("{$statsBase}.PacketsSent"),
+                    'errors_received' => $getParam("{$statsBase}.ErrorsReceived"),
+                    'errors_sent' => $getParam("{$statsBase}.ErrorsSent"),
+                ];
+            }
         }
 
         $data['lan_ports'] = $lanPorts;
