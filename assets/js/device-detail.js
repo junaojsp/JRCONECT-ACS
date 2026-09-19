@@ -214,11 +214,22 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span><i class="bi bi-link-45deg"></i> URL TR-069</span>
                             <strong class="acs-truncate">${device.ip_tr069 || 'N/D'}</strong>
                         </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-broadcast-pin"></i> Conexões WAN</span>
+                            <strong>${device.wan_details ? device.wan_details.length : 0}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-diagram-3"></i> Clientes conectados</span>
+                            <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        </div>
                     </div>
 
                     <div class="acs-card-actions">
-                        <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('wan-tab').click()">
-                            <i class="bi bi-arrow-up-right"></i> Ver conexões WAN
+                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('wan-tab').click()">
+                            <i class="bi bi-arrow-up-right"></i> Ver conexões
+                        </button>
+                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('devices-tab').click()">
+                            <i class="bi bi-people"></i> Ver clientes
                         </button>
                     </div>
                 </section>
@@ -267,29 +278,32 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-wifi acs-card-ai-summary">
+                <section class="acs-overview-card acs-card-wifi">
                     <div class="acs-overview-card-header">
                         <div>
-                            <span class="acs-kicker"><i class="bi bi-stars"></i> Assistente técnico</span>
-                            <h5>Resumo por IA</h5>
+                            <span class="acs-kicker"><i class="bi bi-wifi"></i> Rede Wi-Fi</span>
+                            <h5>${device.wifi_ssid || 'SSID não identificado'}</h5>
                         </div>
-                        <span class="acs-mini-badge">PREPARADO</span>
+                        <button
+                            class="acs-icon-btn"
+                            type="button"
+                            title="Editar Wi-Fi"
+                            onclick="openEditWiFiModal('${device.device_id}', '${(device.wifi_ssid || '').replace(/'/g, "\\\\'")}', '${(device.wifi_password || '').replace(/'/g, "\\\\'")}')"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </button>
                     </div>
 
-                    <div class="acs-ai-context">
-                        <strong>Contexto disponível</strong>
-                        <span><i class="bi bi-check-circle"></i> Modelo: ${device.product_class || 'N/D'}</span>
-                        <span><i class="bi bi-check-circle"></i> Status: ${device.status === 'online' ? 'Online' : 'Offline'}</span>
-                        <span><i class="bi bi-check-circle"></i> WAN: ${getPrimaryWAN(device)?.status || 'N/D'}</span>
-                        <span><i class="bi bi-check-circle"></i> Clientes: ${device.connected_devices ? device.connected_devices.length : 0}</span>
+                    <div class="acs-wifi-hero">
+                        <i class="bi bi-wifi"></i>
+                        <div>
+                            <span>SSID</span>
+                            <strong>${device.wifi_ssid || 'N/D'}</strong>
+                        </div>
                     </div>
-
-                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('ai-tab').click()">
-                        <i class="bi bi-stars"></i> Abrir assistente IA
-                    </button>
 
                     <div class="acs-info-row acs-password-row">
-                        <span><i class="bi bi-wifi"></i> Wi-Fi: ${device.wifi_ssid || 'N/D'}</span>
+                        <span><i class="bi bi-lock"></i> Senha Wi-Fi</span>
                         <strong>
                             <span id="wifi-pass-hidden">********</span>
                             <span id="wifi-pass-shown" style="display:none;">${device.wifi_password || 'N/D'}</span>
@@ -298,6 +312,24 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             </button>
                         </strong>
                     </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-clients">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-people"></i> Dispositivos conectados</span>
+                            <h5>Clientes da rede</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-big-number">
+                        <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        <span>conectados no momento</span>
+                    </div>
+
+                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('devices-tab').click()">
+                        <i class="bi bi-hdd-network"></i> Abrir dispositivos conectados
+                    </button>
                 </section>
 
                 <section class="acs-overview-card acs-card-diagnostics">
@@ -324,11 +356,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span><strong>Conectividade WAN</strong><small>Abrir parâmetros de Internet</small></span>
                             <i class="bi bi-arrow-up-right-circle"></i>
                         </button>
-                        <button type="button" onclick="openParameterMap()">
-                            <i class="bi bi-list-check"></i>
-                            <span><strong>Diagnóstico TR-069</strong><small>Ver parâmetros disponíveis (sem senhas)</small></span>
-                            <i class="bi bi-arrow-up-right-circle"></i>
-                        </button>
                     </div>
                 </section>
 
@@ -347,21 +374,32 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
                     </div>
 
-                    ${(device.admin_user === 'N/A' || !device.admin_user) ? '' : `
                     <div class="acs-info-list">
                         <div class="acs-info-row">
                             <span>Super Admin</span>
-                            <strong><code>${device.admin_user}</code></strong>
+                            <strong><code>${device.admin_user || 'N/A'}</code></strong>
                         </div>
                         <div class="acs-info-row">
                             <span>Senha Admin</span>
                             <strong>
                                 <span id="admin-pass-hidden">********</span>
-                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/D'}</code></span>
-                                <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()"><i id="admin-toggle-icon" class="bi bi-eye"></i></button>
+                                <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/A'}</code></span>
+                                <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()">
+                                    <i id="admin-toggle-icon" class="bi bi-eye"></i>
+                                </button>
                             </strong>
                         </div>
-                    </div>`}
+                        <div class="acs-info-row">
+                            <span>Senha Telecom</span>
+                            <strong>
+                                <span id="telecom-pass-hidden">********</span>
+                                <span id="telecom-pass-shown" style="display:none;"><code>${device.telecom_password || 'N/A'}</code></span>
+                                <button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()">
+                                    <i id="telecom-toggle-icon" class="bi bi-eye"></i>
+                                </button>
+                            </strong>
+                        </div>
+                    </div>
 
                     ${(device.admin_user === 'N/A' || !device.admin_user) ?
                         '<div class="acs-admin-note"><i class="bi bi-info-circle"></i><span>As credenciais ainda não foram coletadas. Use <strong>Obter</strong> para solicitar ao equipamento.</span></div>' :
@@ -417,6 +455,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
         document.getElementById('ai-content').innerHTML = renderAIAssistantTab(device);
         updateBandwidthSample(device);
+        updateRadiusBandwidthSample();
 
         // Restore hotspot data after re-render (if available)
         if (isAutoRefresh && Object.keys(savedHotspotData).length > 0) {
@@ -1598,7 +1637,7 @@ async function summonForAdminCredentials() {
     // Disable button and show status
     if (btn) btn.disabled = true;
     if (statusDiv) statusDiv.style.display = 'block';
-    if (statusText) statusText.textContent = 'Solicitando comunicação com o equipamento...';
+    if (statusText) statusText.textContent = 'Summoning device...';
 
     // Summon device and request VirtualParameters for admin credentials
     const result = await fetchAPI('/api/summon-device.php', {
@@ -1608,7 +1647,7 @@ async function summonForAdminCredentials() {
 
     if (result && result.success) {
         // Single toast notification with longer duration (5 seconds)
-        showToast('Solicitação enviada. Aguardando resposta do equipamento...', 'success', 5000);
+        showToast('Device summon berhasil, mengambil credentials...', 'success', 5000);
 
         // Show countdown in status div only (not in toast)
         let countdown = 10;
@@ -1637,7 +1676,7 @@ async function summonForAdminCredentials() {
         // Hide status and show error (longer duration for error messages)
         if (statusDiv) statusDiv.style.display = 'none';
         if (btn) btn.disabled = false;
-        showToast(result.message || 'Não foi possível solicitar a comunicação.', 'danger', 5000);
+        showToast(result.message || 'Gagal summon device', 'danger', 5000);
     }
 }
 
@@ -1656,7 +1695,7 @@ async function confirmSummon() {
     hideLoading();
 
     if (result && result.success) {
-        showToast('Solicitação enviada. Aguardando resposta do equipamento...', 'success');
+        showToast('🚀 Device summon berhasil! Menunggu device response...', 'success');
 
         // Wait longer for device to respond and GenieACS to fetch all parameters
         // This is especially important for admin credentials (VirtualParameters)
@@ -1674,7 +1713,7 @@ async function confirmSummon() {
             loadDeviceDetail();
         }, 15000);
     } else {
-        showToast(result.message || 'Não foi possível solicitar a comunicação.', 'danger');
+        showToast(result.message || 'Gagal summon device', 'danger');
     }
 }
 
@@ -2639,10 +2678,10 @@ function updateIxcOnuSummary() {
     const pon = [cachedOpticalData.slot, cachedOpticalData.pon, cachedOpticalData.onu_number]
         .filter(v => v !== null && v !== undefined && v !== '')
         .join(' / ') || cachedOpticalData.pon_id || 'Não informado';
-    container.innerHTML =
-        '<div class="acs-info-row"><span><i class="bi bi-database-check"></i> Cliente (IXC)</span><strong>' + value(cachedOpticalData.nome) + '</strong></div>' +
-        '<div class="acs-info-row"><span><i class="bi bi-person-vcard"></i> Login / contrato</span><strong>' + value(cachedOpticalData.id_login) + ' / ' + value(cachedOpticalData.id_contrato) + '</strong></div>' +
-        '<div class="acs-info-row"><span><i class="bi bi-diagram-2"></i> Slot / PON / ONU</span><strong>' + value(pon) + '</strong></div>';
+    container.innerHTML = `
+        <div class="acs-info-row"><span><i class="bi bi-database-check"></i> Cliente (IXC)</span><strong>${value(cachedOpticalData.nome)}</strong></div>
+        <div class="acs-info-row"><span><i class="bi bi-person-vcard"></i> Login / contrato</span><strong>${value(cachedOpticalData.id_login)} / ${value(cachedOpticalData.id_contrato)}</strong></div>
+        <div class="acs-info-row"><span><i class="bi bi-diagram-2"></i> Slot / PON / ONU</span><strong>${value(pon)}</strong></div>`;
 }
 
 async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
@@ -2783,6 +2822,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDeviceDetail(); // Initial load (manual, scroll to top)
     // Auto refresh every 30 seconds (preserve scroll position)
     setInterval(() => loadDeviceDetail(true), 30000);
+    setInterval(updateRadiusBandwidthSample, 5000);
 
     // Auto-start/stop hotspot monitoring based on Connected Devices tab visibility
     const allTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
@@ -2883,14 +2923,6 @@ function renderFirmwareTab(device) {
 }
 
 
-function openParameterMap() {
-    if (!deviceId) {
-        alert('O ID do equipamento não foi encontrado.');
-        return;
-    }
-    window.open('/api/get-device-parameter-map.php?device_id=' + encodeURIComponent(deviceId), '_blank', 'noopener,noreferrer');
-}
-
 function openWebManagement() {
     if (!currentDeviceData) {
         alert('Os dados do equipamento ainda não foram carregados.');
@@ -2916,6 +2948,21 @@ let bandwidthSamples = [];
 function getPrimaryWAN(device) {
     const list = Array.isArray(device?.wan_details) ? device.wan_details : [];
     return list.find(w => String(w.status || '').toLowerCase() === 'connected') || list[0] || null;
+}
+
+function getTrafficCounters(device, wan) {
+    const wanRx = toCounter(wan?.bytes_received);
+    const wanTx = toCounter(wan?.bytes_sent);
+    if (wanRx !== null && wanTx !== null && (wanRx > 0 || wanTx > 0)) {
+        return { rx: wanRx, tx: wanTx, source: 'contador WAN' };
+    }
+    const lan = device?.lan_traffic;
+    const lanRx = toCounter(lan?.bytes_received);
+    const lanTx = toCounter(lan?.bytes_sent);
+    if (lanRx !== null && lanTx !== null) {
+        return { rx: lanRx, tx: lanTx, source: lan?.source || 'Portas LAN' };
+    }
+    return { rx: wanRx, tx: wanTx, source: 'contador WAN' };
 }
 
 function toCounter(value) {
@@ -2955,8 +3002,9 @@ function renderMonitoringTab(device) {
     if (!wan) {
         return '<div class="acs-monitor-empty"><i class="bi bi-graph-up"></i><h5>Monitoramento indisponível</h5><p>Nenhuma conexão WAN foi identificada neste equipamento.</p></div>';
     }
-    const rx = toCounter(wan.bytes_received);
-    const tx = toCounter(wan.bytes_sent);
+    const traffic = getTrafficCounters(device, wan);
+    const rx = traffic.rx;
+    const tx = traffic.tx;
     const connected = String(wan.status || '').toLowerCase() === 'connected';
     return `
         <div class="acs-monitor-shell">
@@ -2967,8 +3015,8 @@ function renderMonitoringTab(device) {
             <div class="acs-live-grid">
                 <div class="acs-live-card download"><span><i class="bi bi-arrow-down-circle"></i> Download em uso</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
                 <div class="acs-live-card upload"><span><i class="bi bi-arrow-up-circle"></i> Upload em uso</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
-                <div class="acs-live-card"><span><i class="bi bi-database-down"></i> Recebido</span><strong>${formatTrafficBytes(rx)}</strong><small>contador WAN</small></div>
-                <div class="acs-live-card"><span><i class="bi bi-database-up"></i> Enviado</span><strong>${formatTrafficBytes(tx)}</strong><small>contador WAN</small></div>
+                <div class="acs-live-card"><span><i class="bi bi-database-down"></i> Recebido</span><strong id="live-rx-total">${formatTrafficBytes(rx)}</strong><small id="live-traffic-source">${traffic.source}</small></div>
+                <div class="acs-live-card"><span><i class="bi bi-database-up"></i> Enviado</span><strong id="live-tx-total">${formatTrafficBytes(tx)}</strong><small>contador da sessão</small></div>
             </div>
             <div class="acs-bandwidth-chart">
                 <div class="acs-chart-title"><strong>Uso de banda</strong><span id="bandwidth-sample-status">Aguardando segunda leitura...</span></div>
@@ -2994,8 +3042,9 @@ function updateBandwidthSample(device) {
     const wan = getPrimaryWAN(device);
     if (!wan) return;
     const now = Date.now();
-    const rx = toCounter(wan.bytes_received);
-    const tx = toCounter(wan.bytes_sent);
+    const traffic = getTrafficCounters(device, wan);
+    const rx = traffic.rx;
+    const tx = traffic.tx;
     const previous = bandwidthSamples.length ? bandwidthSamples[bandwidthSamples.length - 1] : null;
     let rxMbps = null, txMbps = null;
     if (previous && rx !== null && tx !== null && previous.rx !== null && previous.tx !== null && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
@@ -3012,7 +3061,7 @@ function updateBandwidthSample(device) {
     if (txEl) txEl.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
 
     const status = document.getElementById('bandwidth-sample-status');
-    if (status) status.textContent = (rx === null || tx === null) ? 'Contadores WAN ainda não foram coletados. Clique em Comunicar.' : (rxMbps === null ? 'Aguardando segunda leitura...' : 'Última amostra: ' + new Date(now).toLocaleTimeString('pt-BR'));
+    if (status) status.textContent = (rx === null || tx === null) ? 'Contadores ainda não foram coletados. Clique em Comunicar.' : (rxMbps === null ? 'Aguardando segunda leitura...' : 'Última amostra (' + traffic.source + '): ' + new Date(now).toLocaleTimeString('pt-BR'));
 
     const chart = document.getElementById('bandwidth-bars');
     if (chart) {
@@ -3024,6 +3073,39 @@ function updateBandwidthSample(device) {
                 <i class="tx" style="height:${Math.max(3, (s.txMbps/max)*100)}%"></i>
             </div>`).join('') : '<span class="acs-chart-wait">A próxima atualização permitirá calcular a banda utilizada.</span>';
     }
+}
+
+async function updateRadiusBandwidthSample() {
+    const chart = document.getElementById('bandwidth-bars');
+    if (!chart || !deviceId) return;
+    try {
+        const response = await fetch('/api/get-radius-session.php?device_id=' + encodeURIComponent(deviceId), { credentials: 'same-origin' });
+        const data = await response.json();
+        const session = data?.session;
+        const rx = toCounter(session?.bytes_received), tx = toCounter(session?.bytes_sent);
+        if (!data?.success || !data?.online || rx === null || tx === null) return;
+        const now = Date.now(), previous = bandwidthSamples[bandwidthSamples.length - 1];
+        let rxMbps = null, txMbps = null;
+        if (previous && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
+            const seconds = (now - previous.time) / 1000;
+            rxMbps = ((rx - previous.rx) * 8) / seconds / 1000000;
+            txMbps = ((tx - previous.tx) * 8) / seconds / 1000000;
+        }
+        bandwidthSamples.push({ time: now, rx, tx, rxMbps, txMbps });
+        if (bandwidthSamples.length > 60) bandwidthSamples.shift();
+        const rxRate = document.getElementById('live-rx-mbps'), txRate = document.getElementById('live-tx-mbps');
+        if (rxRate) rxRate.textContent = rxMbps === null ? '--' : rxMbps.toFixed(2);
+        if (txRate) txRate.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
+        const rxTotal = document.getElementById('live-rx-total'), txTotal = document.getElementById('live-tx-total'), source = document.getElementById('live-traffic-source');
+        if (rxTotal) rxTotal.textContent = formatTrafficBytes(rx);
+        if (txTotal) txTotal.textContent = formatTrafficBytes(tx);
+        if (source) source.textContent = 'IXC/RADIUS • ' + (session.interface || 'sessão PPPoE');
+        const status = document.getElementById('bandwidth-sample-status');
+        if (status) status.textContent = rxMbps === null ? 'IXC/RADIUS: aguardando segunda leitura...' : 'IXC/RADIUS • ' + new Date(now).toLocaleTimeString('pt-BR');
+        const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
+        const max = Math.max(1, ...valid.flatMap(s => [s.rxMbps, s.txMbps]));
+        chart.innerHTML = valid.length ? valid.map(s => `<div class="acs-bandwidth-pair" title="${new Date(s.time).toLocaleTimeString('pt-BR')} — Download ${s.rxMbps.toFixed(2)} Mbps / Upload ${s.txMbps.toFixed(2)} Mbps"><i class="rx" style="height:${Math.max(3,(s.rxMbps/max)*100)}%"></i><i class="tx" style="height:${Math.max(3,(s.txMbps/max)*100)}%"></i></div>`).join('') : '<span class="acs-chart-wait">Aguardando segunda leitura do IXC/RADIUS.</span>';
+    } catch (_) { /* mantém a última amostra válida */ }
 }
 
 function renderAIAssistantTab(device) {
