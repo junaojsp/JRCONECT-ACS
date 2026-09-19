@@ -3375,3 +3375,21 @@ canvas {
 .acs-firmware-warning i{color:#d7b84c}
 .acs-firmware-warning strong{color:#d8c77d}
 @media(max-width:900px){.acs-firmware-grid{grid-template-columns:1fr}.acs-firmware-wide{grid-column:auto}.acs-firmware-header{align-items:flex-start;flex-direction:column}.acs-firmware-status{align-items:flex-start;flex-direction:column;gap:8px}.acs-firmware-line{width:1px;height:18px;margin:0 0 0 14px}}
+
+
+/* JR CONECT ACS - physical LAN ports */
+.acs-physical-ports{margin:12px 0 13px;padding:11px;border:1px solid rgba(105,159,187,.08);background:rgba(0,189,227,.025);border-radius:10px}
+.acs-physical-ports-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;color:#79dfff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+.acs-physical-ports-title small{color:#66879a;font-size:8px;font-weight:700}
+.acs-physical-ports-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.acs-lan-port{min-width:0;padding:8px 4px 7px;border-radius:8px;border:1px solid rgba(105,159,187,.10);background:rgba(7,26,38,.72);text-align:center;transition:.16s ease}
+.acs-lan-port-icon{width:25px;height:22px;margin:0 auto 5px;display:grid;place-items:center;border-radius:6px;font-size:13px}
+.acs-lan-port strong,.acs-lan-port span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acs-lan-port strong{font-size:9px;color:#dcecf3}
+.acs-lan-port span{margin-top:2px;font-size:7px;color:#68899b}
+.acs-lan-port.link-up{border-color:rgba(32,213,155,.24);background:rgba(32,213,155,.045)}
+.acs-lan-port.link-up .acs-lan-port-icon{color:#55e3b1;background:rgba(32,213,155,.10);box-shadow:inset 0 0 0 1px rgba(32,213,155,.16)}
+.acs-lan-port.link-down .acs-lan-port-icon{color:#69879a;background:rgba(105,159,187,.055);box-shadow:inset 0 0 0 1px rgba(105,159,187,.09)}
+.acs-lan-port.disabled{opacity:.48}
+.acs-physical-ports-empty{padding:9px;border-radius:7px;background:rgba(105,159,187,.035);color:#66879a;font-size:8px;text-align:center}
+@media(max-width:1400px){.acs-physical-ports-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
