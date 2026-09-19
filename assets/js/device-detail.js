@@ -320,6 +320,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             <span><strong>Conectividade WAN</strong><small>Abrir parâmetros de Internet</small></span>
                             <i class="bi bi-arrow-up-right-circle"></i>
                         </button>
+                        <button type="button" onclick="openParameterMap()">
+                            <i class="bi bi-list-check"></i>
+                            <span><strong>Diagnóstico TR-069</strong><small>Ver parâmetros disponíveis (sem senhas)</small></span>
+                            <i class="bi bi-arrow-up-right-circle"></i>
+                        </button>
                     </div>
                 </section>
 
@@ -2850,6 +2855,14 @@ function renderFirmwareTab(device) {
     `;
 }
 
+
+function openParameterMap() {
+    if (!deviceId) {
+        alert('O ID do equipamento não foi encontrado.');
+        return;
+    }
+    window.open('/api/get-device-parameter-map.php?device_id=' + encodeURIComponent(deviceId), '_blank', 'noopener,noreferrer');
+}
 
 function openWebManagement() {
     if (!currentDeviceData) {
