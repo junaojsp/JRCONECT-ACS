@@ -3052,8 +3052,8 @@ canvas {
    JR CONECT ACS - OVERVIEW V2
    ========================================================= */
 .acs-overview-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;width:100%}
-.acs-overview-card{grid-column:span 4;background:linear-gradient(145deg,rgba(11,31,46,.98),rgba(6,20,31,.98));border:1px solid rgba(88,157,190,.16);border-radius:14px;padding:16px;min-width:0;box-shadow:0 12px 30px rgba(0,0,0,.12)}
-.acs-card-admin,.acs-card-events{grid-column:span 6}
+.acs-overview-card{grid-column:span 3;background:linear-gradient(145deg,rgba(11,31,46,.98),rgba(6,20,31,.98));border:1px solid rgba(88,157,190,.16);border-radius:14px;padding:16px;min-width:0;box-shadow:0 12px 30px rgba(0,0,0,.12)}
+.acs-card-admin,.acs-card-events{grid-column:span 3}
 .acs-overview-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:13px;margin-bottom:13px;border-bottom:1px solid rgba(105,159,187,.09)}
 .acs-overview-card-header h5{margin:4px 0 0;color:#e7f3f8;font-size:14px;font-weight:700}
 .acs-kicker{display:flex;align-items:center;gap:7px;color:#6f93a7;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em}
@@ -3104,5 +3104,5 @@ canvas {
 .acs-event-placeholder strong{display:block;color:#b9ced9;font-size:10px}
 .acs-event-placeholder span{display:block;margin-top:4px;line-height:1.5}
 .acs-event-line{width:3px;align-self:stretch;border-radius:999px;background:linear-gradient(#21c7e7,rgba(33,199,231,.08))}
-@media(max-width:1200px){.acs-overview-card{grid-column:span 6}.acs-card-admin,.acs-card-events{grid-column:span 6}}
+@media(max-width:1400px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:span 4}}@media(max-width:1050px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:span 6}}
 @media(max-width:760px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:1/-1}.acs-card-actions{grid-template-columns:1fr}.acs-card-meta{flex-direction:column}}
