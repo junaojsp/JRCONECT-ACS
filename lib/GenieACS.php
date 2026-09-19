@@ -731,6 +731,12 @@ class GenieACS {
                     'uptime' => $getParam("{$basePath}.Uptime") ?? 'N/A',
                     'last_error' => $getParam("{$basePath}.LastConnectionError") ?? 'N/A',
                     'mru_size' => $getParam("{$basePath}.MaxMRUSize") ?? 'N/A',
+                    'bytes_received' => $getParam("{$basePath}.Stats.BytesReceived") ?? 0,
+                    'bytes_sent' => $getParam("{$basePath}.Stats.BytesSent") ?? 0,
+                    'packets_received' => $getParam("{$basePath}.Stats.PacketsReceived") ?? 0,
+                    'packets_sent' => $getParam("{$basePath}.Stats.PacketsSent") ?? 0,
+                    'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived") ?? 0,
+                    'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent") ?? 0,
                     'binding' => $bindingInfo,
                 ];
             }
@@ -816,6 +822,12 @@ class GenieACS {
                     'username' => 'N/A', // IP connections don't have username
                     'last_error' => 'N/A', // IP connections don't have last error
                     'mru_size' => 'N/A', // IP connections don't have MRU size
+                    'bytes_received' => $getParam("{$basePath}.Stats.BytesReceived") ?? 0,
+                    'bytes_sent' => $getParam("{$basePath}.Stats.BytesSent") ?? 0,
+                    'packets_received' => $getParam("{$basePath}.Stats.PacketsReceived") ?? 0,
+                    'packets_sent' => $getParam("{$basePath}.Stats.PacketsSent") ?? 0,
+                    'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived") ?? 0,
+                    'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent") ?? 0,
                 ];
             }
         }
