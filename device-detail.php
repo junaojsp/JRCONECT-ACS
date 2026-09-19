@@ -191,6 +191,23 @@ include __DIR__ . '/views/layouts/header.php';
 
                     <button
                         class="nav-link"
+                        id="firmware-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#firmware"
+                        type="button"
+                        role="tab"
+                    >
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        Firmware
+                    </button>
+
+                </li>
+
+
+                <li class="nav-item" role="presentation">
+
+                    <button
+                        class="nav-link"
                         id="devices-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#devices"
@@ -256,6 +273,15 @@ include __DIR__ . '/views/layouts/header.php';
                     role="tabpanel"
                 >
                     <div id="dhcp-content"></div>
+                </div>
+
+
+                <div
+                    class="tab-pane fade"
+                    id="firmware"
+                    role="tabpanel"
+                >
+                    <div id="firmware-content"></div>
                 </div>
 
 
