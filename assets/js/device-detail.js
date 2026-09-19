@@ -1,3 +1,4 @@
+// Device ID is set via global variable in device-detail.php
 const deviceId = window.DEVICE_ID || '';
 let savedScrollPosition = 0;
 let savedHotspotData = {}; // Store last known hotspot data
@@ -2996,6 +2997,18 @@ function formatUptimeValue(value) {
     return [d ? d + 'd' : '', h ? h + 'h' : '', m + 'min'].filter(Boolean).join(' ');
 }
 
+function renderModernBandwidthChart(samples) {
+    if (!samples.length) return '<div class="acs-chart-wait">Aguardando segunda leitura do IXC/RADIUS.</div>';
+    const max = Math.max(1, ...samples.flatMap(s => [s.rxMbps, s.txMbps]));
+    const points = (field) => samples.map((s, i) => {
+        const x = samples.length === 1 ? 0 : (i / (samples.length - 1)) * 100;
+        const y = 100 - (s[field] / max) * 88 - 4;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(' ');
+    const labels = samples.filter((_, i) => i === 0 || i === samples.length - 1).map((s, i) => `<span class="${i ? 'end' : ''}">${new Date(s.time).toLocaleTimeString('pt-BR')}</span>`).join('');
+    return `<div class="acs-modern-chart"><div class="acs-chart-scale"><b>${max.toFixed(1)} Mbps</b><b>${(max / 2).toFixed(1)} Mbps</b><b>0 Mbps</b></div><div class="acs-chart-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Tráfego em tempo real"><defs><linearGradient id="rxArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#64d9ff" stop-opacity=".32"/><stop offset="1" stop-color="#64d9ff" stop-opacity="0"/></linearGradient><linearGradient id="txArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#55dda6" stop-opacity=".30"/><stop offset="1" stop-color="#55dda6" stop-opacity="0"/></linearGradient></defs><path class="grid" d="M0 4H100M0 48H100M0 92H100"/><polygon class="area rx" points="0,100 ${points('rxMbps')} 100,100"/><polygon class="area tx" points="0,100 ${points('txMbps')} 100,100"/><polyline class="line rx" points="${points('rxMbps')}"/><polyline class="line tx" points="${points('txMbps')}"/></svg><div class="acs-chart-times">${labels}</div></div></div><div class="acs-chart-legend"><span><i class="rx"></i>Download</span><span><i class="tx"></i>Upload</span><span>Últimos ${samples.length}s</span></div>`;
+}
+
 function renderMonitoringTab(device) {
     const wan = getPrimaryWAN(device);
     if (!wan) {
@@ -3065,12 +3078,7 @@ function updateBandwidthSample(device) {
     const chart = document.getElementById('bandwidth-bars');
     if (chart) {
         const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
-        const max = Math.max(1, ...valid.flatMap(s => [s.rxMbps, s.txMbps]));
-        chart.innerHTML = valid.length ? valid.map(s => `
-            <div class="acs-bandwidth-pair" title="${new Date(s.time).toLocaleTimeString('pt-BR')} - RX ${s.rxMbps.toFixed(2)} Mbps / TX ${s.txMbps.toFixed(2)} Mbps">
-                <i class="rx" style="height:${Math.max(3, (s.rxMbps/max)*100)}%"></i>
-                <i class="tx" style="height:${Math.max(3, (s.txMbps/max)*100)}%"></i>
-            </div>`).join('') : '<span class="acs-chart-wait">A próxima atualização permitirá calcular a banda utilizada.</span>';
+        chart.innerHTML = renderModernBandwidthChart(valid);
     }
 }
 
@@ -3102,8 +3110,7 @@ async function updateRadiusBandwidthSample() {
         const status = document.getElementById('bandwidth-sample-status');
         if (status) status.textContent = rxMbps === null ? 'IXC/RADIUS: aguardando segunda leitura...' : 'IXC/RADIUS • ' + new Date(now).toLocaleTimeString('pt-BR');
         const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
-        const max = Math.max(1, ...valid.flatMap(s => [s.rxMbps, s.txMbps]));
-        chart.innerHTML = valid.length ? valid.map(s => `<div class="acs-bandwidth-pair" title="${new Date(s.time).toLocaleTimeString('pt-BR')} — Download ${s.rxMbps.toFixed(2)} Mbps / Upload ${s.txMbps.toFixed(2)} Mbps"><i class="rx" style="height:${Math.max(3,(s.rxMbps/max)*100)}%"></i><i class="tx" style="height:${Math.max(3,(s.txMbps/max)*100)}%"></i></div>`).join('') : '<span class="acs-chart-wait">Aguardando segunda leitura do IXC/RADIUS.</span>';
+        chart.innerHTML = renderModernBandwidthChart(valid);
     } catch (_) { /* mantém a última amostra válida */ }
 }
 
