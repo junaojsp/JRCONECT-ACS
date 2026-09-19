@@ -106,8 +106,26 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Fetch ONU location from map
         const locationResult = await fetchAPI('/api/get-onu-location.php?serial_number=' + encodeURIComponent(device.serial_number));
 
-        // Update badge
+        // Update modern device header
         document.getElementById('device-id-badge').textContent = device.serial_number;
+
+        const modelTitle = document.getElementById('device-model-title');
+        if (modelTitle) {
+            modelTitle.textContent = device.product_class || device.model || device.manufacturer || 'Equipamento';
+        }
+
+        const ipHeader = document.getElementById('device-ip-header');
+        if (ipHeader) {
+            ipHeader.textContent = extractIP(device.ip_tr069) || 'IP não disponível';
+        }
+
+        const statusHeader = document.getElementById('device-status-header');
+        if (statusHeader) {
+            const online = String(device.status || '').toLowerCase() === 'online';
+            statusHeader.textContent = online ? 'ONLINE' : 'OFFLINE';
+            statusHeader.classList.toggle('online', online);
+            statusHeader.classList.toggle('offline', !online);
+        }
 
         // Update tags badge
         updateTagsBadge(device.tags || []);
