@@ -76,6 +76,11 @@ include __DIR__ . '/views/layouts/header.php';
                     <span>Etiqueta</span>
                 </button>
 
+                <button class="acs-toolbar-action" type="button" onclick="openWebManagement()" title="Abrir gerenciamento web do equipamento">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                    <span>Web</span>
+                </button>
+
                 <button class="acs-toolbar-action acs-toolbar-icon" type="button" onclick="loadDeviceDetail()" title="Atualizar">
                     <i class="bi bi-arrow-clockwise"></i>
                 </button>
