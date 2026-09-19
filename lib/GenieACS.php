@@ -739,6 +739,18 @@ class GenieACS {
                     $name = $serviceList ? "WAN_{$serviceList}_{$i}" : "WAN_PPP_Connection_{$i}";
                 }
 
+                // HG6143D3 reports live byte/packet totals in the WAN common
+                // interface, not under WANPPPConnection.Stats.
+                $commonBase = 'InternetGatewayDevice.WANDevice.1.WANCommonInterfaceConfig';
+                $bytesReceived = $getParam("{$basePath}.Stats.BytesReceived");
+                $bytesSent = $getParam("{$basePath}.Stats.BytesSent");
+                $packetsReceived = $getParam("{$basePath}.Stats.PacketsReceived");
+                $packetsSent = $getParam("{$basePath}.Stats.PacketsSent");
+                if (!is_numeric($bytesReceived) || (float)$bytesReceived <= 0) $bytesReceived = $getParam("{$commonBase}.TotalBytesReceived");
+                if (!is_numeric($bytesSent) || (float)$bytesSent <= 0) $bytesSent = $getParam("{$commonBase}.TotalBytesSent");
+                if (!is_numeric($packetsReceived) || (float)$packetsReceived <= 0) $packetsReceived = $getParam("{$commonBase}.TotalPacketsReceived");
+                if (!is_numeric($packetsSent) || (float)$packetsSent <= 0) $packetsSent = $getParam("{$commonBase}.TotalPacketsSent");
+
                 $wanDetails[] = [
                     'type' => 'PPPoE',
                     'name' => $name,
@@ -753,10 +765,10 @@ class GenieACS {
                     'uptime' => $getParam("{$basePath}.Uptime") ?? 'N/A',
                     'last_error' => $getParam("{$basePath}.LastConnectionError") ?? 'N/A',
                     'mru_size' => $getParam("{$basePath}.MaxMRUSize") ?? 'N/A',
-                    'bytes_received' => $getParam("{$basePath}.Stats.BytesReceived") ?? 0,
-                    'bytes_sent' => $getParam("{$basePath}.Stats.BytesSent") ?? 0,
-                    'packets_received' => $getParam("{$basePath}.Stats.PacketsReceived") ?? 0,
-                    'packets_sent' => $getParam("{$basePath}.Stats.PacketsSent") ?? 0,
+                    'bytes_received' => $bytesReceived,
+                    'bytes_sent' => $bytesSent,
+                    'packets_received' => $packetsReceived,
+                    'packets_sent' => $packetsSent,
                     'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived") ?? 0,
                     'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent") ?? 0,
                     'binding' => $bindingInfo,
