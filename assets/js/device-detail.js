@@ -783,212 +783,205 @@ function renderTopologyLocation(locationResult) {
 }
 
 function renderWANDetailsTab(wanDetails) {
+    const hasValue = (value) => (
+        value !== null &&
+        value !== undefined &&
+        value !== '' &&
+        value !== 'N/A' &&
+        value !== '0.0.0.0'
+    );
+
     if (!wanDetails || wanDetails.length === 0) {
         return `
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6><i class="bi bi-globe"></i> WAN Connection Details</h6>
-                <button class="btn btn-sm btn-success" onclick="openAddWANModal()"><i class="bi bi-plus-lg"></i> Add WAN Connection</button>
-            </div>
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No WAN connections configured on this device.
-                <button class="btn btn-sm btn-success ms-2" onclick="openAddWANModal()">
-                    <i class="bi bi-plus-lg"></i> Add First Connection
-                </button>
+            <div class="acs-wan-page">
+                <div class="acs-wan-page-header">
+                    <div>
+                        <span class="acs-kicker"><i class="bi bi-globe2"></i> Conectividade</span>
+                        <h4>Interfaces WAN</h4>
+                        <p>Nenhuma conexão WAN foi identificada neste equipamento.</p>
+                    </div>
+                    <button class="acs-wan-primary-btn" type="button" onclick="openAddWANModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar WAN
+                    </button>
+                </div>
+
+                <div class="acs-wan-empty">
+                    <i class="bi bi-router"></i>
+                    <strong>Sem conexões WAN</strong>
+                    <span>Quando o equipamento disponibilizar uma interface WAN pelo TR-069, ela aparecerá aqui.</span>
+                    <button type="button" onclick="openAddWANModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar primeira conexão
+                    </button>
+                </div>
             </div>
         `;
     }
 
-    let html = '<div class="d-flex justify-content-between align-items-center mb-3">';
-    html += '<h6><i class="bi bi-globe"></i> WAN Connection Details</h6>';
-    html += '<button class="btn btn-sm btn-success" onclick="openAddWANModal()"><i class="bi bi-plus-lg"></i> Add WAN Connection</button>';
-    html += '</div>';
+    const connectedCount = wanDetails.filter(wan => String(wan.status || '').toLowerCase() === 'connected').length;
 
-    wanDetails.forEach((wan, index) => {
-        const statusBadge = wan.status === 'Connected' ?
-            '<span class="badge online">Connected</span>' :
-            '<span class="badge offline">Disconnected</span>';
-
-        // Check if this is a bridge connection
-        const isBridge = wan.connection_type && (
-            wan.connection_type.includes('Bridge') ||
-            wan.connection_type.includes('Bridged')
-        );
-
-        // Extract VLAN ID from connection name
-        const vlanMatch = wan.name.match(/VID[_-]?(\d+)/i);
-        const vlanId = vlanMatch ? vlanMatch[1] : null;
-
-        // Check if this is TR069 connection
-        const isTR069 = (wan.service_list && (wan.service_list.toUpperCase().includes('TR069') || wan.service_list.toUpperCase().includes('CWMP'))) ||
-                        (wan.name && (wan.name.toUpperCase().includes('TR069') || wan.name.toUpperCase().includes('CWMP')));
-
-        html += `
-            <div class="card mb-3">
-                <div class="card-header bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>${wan.name}</strong>
-                            <span class="badge bg-info ms-2">${wan.type}</span>
-                            ${statusBadge}
-                            ${isBridge ? '<span class="badge bg-secondary ms-2">Bridge Mode</span>' : ''}
-                            ${isTR069 ? '<span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle"></i> TR069</span>' : ''}
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-warning" onclick='openEditWANModal(${JSON.stringify(wan)})'>
-                                <i class="bi bi-pencil"></i> Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick='openDeleteWANModal(${JSON.stringify(wan)})'>
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
+    let html = `
+        <div class="acs-wan-page">
+            <div class="acs-wan-page-header">
+                <div>
+                    <span class="acs-kicker"><i class="bi bi-globe2"></i> Conectividade</span>
+                    <h4>Interfaces WAN</h4>
+                    <p>Parâmetros de Internet coletados do equipamento via TR-069.</p>
                 </div>
-                <div class="card-body">`;
 
-        // Build table content (same as before)
-        if (isBridge) {
-            html += `
-                    <table class="table table-sm table-bordered mb-0">
-                        <tr>
-                            <th width="30%">Connection Type</th>
-                            <td>${wan.connection_type}</td>
-                        </tr>`;
-
-            if (vlanId) {
-                html += `
-                        <tr>
-                            <th>VLAN ID</th>
-                            <td>${vlanId}</td>
-                        </tr>`;
-            }
-
-            if (wan.binding && wan.binding !== 'N/A') {
-                html += `
-                        <tr>
-                            <th>Bound to</th>
-                            <td><span class="badge bg-primary">${wan.binding}</span></td>
-                        </tr>`;
-            }
-
-            html += `
-                    </table>`;
-        } else {
-            html += `
-                    <table class="table table-sm table-bordered mb-0">
-                        <tr>
-                            <th width="30%">Connection Type</th>
-                            <td>${wan.connection_type}</td>
-                        </tr>`;
-
-            if (vlanId) {
-                html += `
-                        <tr>
-                            <th>VLAN ID</th>
-                            <td>${vlanId}</td>
-                        </tr>`;
-            }
-
-            if (wan.binding && wan.binding !== 'N/A') {
-                html += `
-                        <tr>
-                            <th>Bound to</th>
-                            <td><span class="badge bg-primary">${wan.binding}</span></td>
-                        </tr>`;
-            }
-
-            if (wan.external_ip && wan.external_ip !== 'N/A' && wan.external_ip !== '0.0.0.0') {
-                html += `
-                        <tr>
-                            <th>External IP</th>
-                            <td>${makeIPClickable(wan.external_ip)}</td>
-                        </tr>`;
-            }
-
-            if (wan.gateway && wan.gateway !== 'N/A' && wan.gateway !== '0.0.0.0') {
-                html += `
-                        <tr>
-                            <th>Gateway</th>
-                            <td>${makeIPClickable(wan.gateway)}</td>
-                        </tr>`;
-            }
-
-            if (wan.subnet_mask && wan.subnet_mask !== 'N/A') {
-                html += `
-                        <tr>
-                            <th>Subnet Mask</th>
-                            <td>${wan.subnet_mask}</td>
-                        </tr>`;
-            }
-
-            if (wan.dns_servers && wan.dns_servers !== 'N/A' && wan.dns_servers !== '') {
-                html += `
-                        <tr>
-                            <th>DNS Servers</th>
-                            <td>${wan.dns_servers}</td>
-                        </tr>`;
-            }
-
-            if (wan.mac_address && wan.mac_address !== 'N/A' && wan.mac_address !== '00:00:00:00:00:00') {
-                html += `
-                        <tr>
-                            <th>MAC Address</th>
-                            <td>${wan.mac_address}</td>
-                        </tr>`;
-            }
-
-            if (wan.type === 'PPPoE') {
-                if (wan.username && wan.username !== 'N/A' && wan.username !== '') {
-                    html += `
-                        <tr>
-                            <th>Username</th>
-                            <td>${wan.username}</td>
-                        </tr>`;
-                }
-
-                if (wan.last_error && wan.last_error !== 'N/A') {
-                    html += `
-                        <tr>
-                            <th>Last Error</th>
-                            <td>${wan.last_error}</td>
-                        </tr>`;
-                }
-
-                if (wan.mru_size && wan.mru_size !== 'N/A' && wan.mru_size !== '0' && wan.mru_size !== 0) {
-                    html += `
-                        <tr>
-                            <th>MRU Size</th>
-                            <td>${wan.mru_size}</td>
-                        </tr>`;
-                }
-            }
-
-            if (wan.type === 'IP') {
-                if (wan.addressing_type && wan.addressing_type !== 'N/A') {
-                    html += `
-                        <tr>
-                            <th>Addressing Type</th>
-                            <td>${wan.addressing_type}</td>
-                        </tr>`;
-                }
-            }
-
-            if (wan.uptime && wan.uptime !== 'N/A' && wan.uptime !== '0' && wan.uptime !== 0) {
-                html += `
-                        <tr>
-                            <th>Uptime</th>
-                            <td>${formatUptime(wan.uptime)}</td>
-                        </tr>`;
-            }
-
-            html += `
-                    </table>`;
-        }
-
-        html += `
+                <div class="acs-wan-header-actions">
+                    <div class="acs-wan-summary-pill">
+                        <strong>${connectedCount}</strong>
+                        <span>conectada${connectedCount === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="acs-wan-summary-pill">
+                        <strong>${wanDetails.length}</strong>
+                        <span>total</span>
+                    </div>
+                    <button class="acs-wan-primary-btn" type="button" onclick="openAddWANModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar WAN
+                    </button>
                 </div>
             </div>
+
+            <div class="acs-wan-grid">
+    `;
+
+    wanDetails.forEach((wan, index) => {
+        const isConnected = String(wan.status || '').toLowerCase() === 'connected';
+        const connectionType = wan.connection_type || 'N/A';
+        const isBridge = /bridge|bridged/i.test(connectionType);
+        const vlanMatch = String(wan.name || '').match(/VID[_-]?(\d+)/i);
+        const vlanId = vlanMatch ? vlanMatch[1] : null;
+        const isTR069 = /TR069|CWMP/i.test(String(wan.service_list || '')) || /TR069|CWMP/i.test(String(wan.name || ''));
+        const displayName = wan.name || `WAN ${index + 1}`;
+        const typeLabel = wan.type || (isBridge ? 'Bridge' : 'WAN');
+
+        html += `
+            <section class="acs-wan-card">
+                <div class="acs-wan-card-top">
+                    <div class="acs-wan-card-identity">
+                        <div class="acs-wan-card-icon">
+                            <i class="bi ${isBridge ? 'bi-diagram-3' : (wan.type === 'PPPoE' ? 'bi-person-badge' : 'bi-globe2')}"></i>
+                        </div>
+                        <div>
+                            <span class="acs-wan-index">WAN ${index + 1}</span>
+                            <h5>${displayName}</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-wan-card-status">
+                        <span class="acs-wan-state ${isConnected ? 'online' : 'offline'}">
+                            <span></span>
+                            ${isConnected ? 'CONECTADA' : 'DESCONECTADA'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="acs-wan-tags">
+                    <span>${typeLabel}</span>
+                    <span>${connectionType}</span>
+                    ${vlanId ? `<span>VLAN ${vlanId}</span>` : ''}
+                    ${isTR069 ? '<span class="danger">TR-069</span>' : ''}
+                </div>
+
+                <div class="acs-wan-hero">
+                    <span>Endereço IP</span>
+                    <strong>${hasValue(wan.external_ip) ? makeIPClickable(wan.external_ip) : 'Não disponível'}</strong>
+                </div>
+
+                <div class="acs-wan-details">
+                    ${hasValue(wan.gateway) ? `
+                        <div>
+                            <span><i class="bi bi-signpost-2"></i> Gateway</span>
+                            <strong>${makeIPClickable(wan.gateway)}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.subnet_mask) ? `
+                        <div>
+                            <span><i class="bi bi-diagram-2"></i> Máscara</span>
+                            <strong>${wan.subnet_mask}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.dns_servers) ? `
+                        <div>
+                            <span><i class="bi bi-hdd-network"></i> DNS</span>
+                            <strong>${wan.dns_servers}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.mac_address) && wan.mac_address !== '00:00:00:00:00:00' ? `
+                        <div>
+                            <span><i class="bi bi-upc-scan"></i> MAC</span>
+                            <strong>${wan.mac_address}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'PPPoE' && hasValue(wan.username) ? `
+                        <div>
+                            <span><i class="bi bi-person"></i> Usuário PPPoE</span>
+                            <strong>${wan.username}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'IP' && hasValue(wan.addressing_type) ? `
+                        <div>
+                            <span><i class="bi bi-gear-wide-connected"></i> Endereçamento</span>
+                            <strong>${wan.addressing_type}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.binding) ? `
+                        <div>
+                            <span><i class="bi bi-link-45deg"></i> Binding</span>
+                            <strong>${wan.binding}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.uptime) && String(wan.uptime) !== '0' ? `
+                        <div>
+                            <span><i class="bi bi-clock-history"></i> Uptime</span>
+                            <strong>${formatUptime(wan.uptime)}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'PPPoE' && hasValue(wan.mru_size) && String(wan.mru_size) !== '0' ? `
+                        <div>
+                            <span><i class="bi bi-arrows-expand"></i> MRU</span>
+                            <strong>${wan.mru_size}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'PPPoE' && hasValue(wan.last_error) ? `
+                        <div class="acs-wan-error-row">
+                            <span><i class="bi bi-exclamation-triangle"></i> Último erro</span>
+                            <strong>${wan.last_error}</strong>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="acs-wan-card-actions">
+                    <button type="button" onclick='openEditWANModal(${JSON.stringify(wan)})'>
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button type="button" class="danger" onclick='openDeleteWANModal(${JSON.stringify(wan)})'>
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </div>
+            </section>
         `;
     });
+
+    html += `
+            </div>
+
+            <div class="acs-wan-footnote">
+                <i class="bi bi-info-circle"></i>
+                <span>IPv6 será exibido aqui quando adicionarmos a coleta desses parâmetros ao backend do ACS.</span>
+            </div>
+        </div>
+    `;
 
     return html;
 }
