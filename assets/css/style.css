@@ -3107,3 +3107,34 @@ canvas {
 .acs-event-line{width:3px;align-self:stretch;border-radius:999px;background:linear-gradient(#21c7e7,rgba(33,199,231,.08))}
 @media(max-width:1400px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:span 4}}@media(max-width:1050px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:span 6}}
 @media(max-width:760px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:1/-1}.acs-card-actions{grid-template-columns:1fr}.acs-card-meta{flex-direction:column}}
+
+
+/* =========================================================
+   JR CONECT ACS - CABECALHO MODERNO DO EQUIPAMENTO
+   ========================================================= */
+.acs-device-shell{border:1px solid rgba(0,189,227,.28);border-radius:14px;background:#0d2535;overflow:hidden}
+.acs-device-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;border-bottom:1px solid rgba(105,159,187,.12);background:#0a1f2e}
+.acs-device-toolbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.acs-back-btn,.acs-device-avatar{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto}
+.acs-back-btn{border:1px solid rgba(0,189,227,.18);background:rgba(0,189,227,.05);color:#75dff4;text-decoration:none}
+.acs-back-btn:hover{background:rgba(0,189,227,.12);color:#b7f3ff}
+.acs-device-avatar{background:rgba(0,189,227,.08);border:1px solid rgba(0,189,227,.18);color:#20c7e8;font-size:17px}
+.acs-device-heading{min-width:0}
+.acs-device-title-row{display:flex;align-items:center;gap:9px}
+.acs-device-title-row h3{margin:0;color:#f1f7fb;font-size:18px;font-weight:750;line-height:1.2}
+.acs-device-subtitle{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px;color:#66879a;font-size:10px}
+.acs-device-subtitle #device-id-badge{color:#a8c9d8;font-weight:700}
+.acs-separator{opacity:.5}
+.acs-header-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:8px;font-weight:800;letter-spacing:.06em}
+.acs-header-status.online{color:#5de6ba;background:rgba(32,213,155,.09);border:1px solid rgba(32,213,155,.2)}
+.acs-header-status.offline{color:#ff8591;background:rgba(240,100,114,.09);border:1px solid rgba(240,100,114,.2)}
+.acs-device-toolbar-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.acs-toolbar-action{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;border-radius:8px;border:1px solid rgba(0,189,227,.16);background:rgba(0,189,227,.055);color:#87dff0;font-size:9px;font-weight:700;transition:.16s ease}
+.acs-toolbar-action:hover{background:rgba(0,189,227,.12);border-color:rgba(0,189,227,.3);color:#d6f8ff}
+.acs-toolbar-icon{width:34px;padding:0}
+.acs-device-tabs-wrap{padding:0 14px 14px}
+.acs-device-tabs-wrap #deviceTabs{margin:0 -14px 12px;padding:0 14px;border-bottom:1px solid rgba(105,159,187,.12);background:#091d2b}
+.acs-device-tabs-wrap #deviceTabs .nav-link{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:11px 12px;color:#66879a}
+.acs-device-tabs-wrap #deviceTabs .nav-link:hover{color:#b7dce9}
+.acs-device-tabs-wrap #deviceTabs .nav-link.active{color:#eaf8fc;border-bottom-color:#20c7e8;background:transparent}
+@media(max-width:900px){.acs-device-toolbar{align-items:flex-start;flex-direction:column}.acs-device-toolbar-actions{width:100%;overflow-x:auto;padding-bottom:2px}.acs-toolbar-action span{display:none}}
