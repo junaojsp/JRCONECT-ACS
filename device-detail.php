@@ -210,6 +210,20 @@ include __DIR__ . '/views/layouts/header.php';
 
 
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Monitoramento
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-assistant" type="button" role="tab">
+                        <i class="bi bi-stars"></i>
+                        IA
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
 
                     <button
                         class="nav-link"
@@ -296,6 +310,14 @@ include __DIR__ . '/views/layouts/header.php';
                     role="tabpanel"
                 >
                     <div id="devices-content"></div>
+                </div>
+
+                <div class="tab-pane fade" id="monitoring" role="tabpanel">
+                    <div id="monitoring-content"></div>
+                </div>
+
+                <div class="tab-pane fade" id="ai-assistant" role="tabpanel">
+                    <div id="ai-content"></div>
                 </div>
 
             </div>
