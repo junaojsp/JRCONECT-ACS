@@ -31,6 +31,17 @@ function normalizeMac(string $mac): string {
     $hex = strtoupper(preg_replace('/[^A-F0-9]/i', '', $mac));
     return strlen($hex) === 12 ? implode(':', str_split($hex, 2)) : '';
 }
+function getOnuMac(array $device): string {
+    foreach (['InternetGatewayDevice', 'Device'] as $root) {
+        $interfaces = $device[$root]['LANDevice']['1']['LANEthernetInterfaceConfig'] ?? null;
+        if (!is_array($interfaces)) continue;
+        foreach ($interfaces as $interface) {
+            $mac = normalizeMac((string)(unwrap($interface['MACAddress'] ?? null) ?? ''));
+            if ($mac !== '') return $mac;
+        }
+    }
+    return '';
+}
 function numberOrNull(mixed $value): ?int {
     return is_numeric($value) ? (int)$value : null;
 }
@@ -55,7 +66,7 @@ try {
     $devices = json_decode($raw ?: '', true);
     if (!is_array($devices) || empty($devices[0])) throw new RuntimeException('Equipamento não encontrado no GenieACS.');
     $device = $devices[0];
-    $mac = normalizeMac((string)(findByKey($device, 'MACAddress') ?? ''));
+    $mac = getOnuMac($device);
     $ip = (string)(findByKey($device, 'ExternalIPAddress') ?? '');
     if ($mac === '' && $ip === '') throw new RuntimeException('MAC e IP WAN não encontrados para consultar o RADIUS.');
 
@@ -73,9 +84,15 @@ try {
     $records = is_array($response['registros'] ?? null) ? $response['registros'] : (is_array($response) ? $response : []);
     $active = null;
     foreach ($records as $record) {
-        if (is_array($record) && trim((string)($record['acctstoptime'] ?? '')) === '') { $active = $record; break; }
+        if (!is_array($record) || empty($record['radacctid'])) continue;
+        if (trim((string)($record['acctstoptime'] ?? '')) === '') { $active = $record; break; }
     }
-    $record = $active ?? (is_array($records[0] ?? null) ? $records[0] : null);
+    $record = $active;
+    if ($record === null) {
+        foreach ($records as $candidate) {
+            if (is_array($candidate) && !empty($candidate['radacctid'])) { $record = $candidate; break; }
+        }
+    }
     if ($record === null) radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => false, 'lookup' => $mac !== '' ? 'MAC' : 'IP', 'message' => 'Nenhuma sessão RADIUS encontrada.']);
     radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => $active !== null, 'lookup' => $mac !== '' ? 'MAC' : 'IP', 'mac' => $mac ?: null,
         'session' => ['username' => $record['username'] ?? null, 'ip' => $record['framedipaddress'] ?? null, 'bras' => $record['nasipaddress'] ?? null,
