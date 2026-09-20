@@ -4831,3 +4831,50 @@ section{
     text-align:left;
 }
 .jr-diagnostic-source-note i{color:#54d7aa;margin-top:1px}
+
+
+/* ===== ACS LAN LINK STATUS EMPHASIS ===== */
+.acs-lan-port-heading{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    margin-bottom:9px;
+}
+.acs-lan-port-heading>strong{
+    color:#d9ebf2;
+    font-size:11px;
+    margin:0 !important;
+}
+.acs-lan-link-led{
+    width:8px;
+    height:8px;
+    flex:0 0 8px;
+    border-radius:50%;
+    background:#5d6878;
+    box-shadow:0 0 0 2px rgba(93,104,120,.10);
+}
+.acs-lan-link-led.on{
+    background:#35d7a2;
+    box-shadow:0 0 0 2px rgba(53,215,162,.12),0 0 9px rgba(53,215,162,.55);
+}
+.acs-lan-visual.up{
+    border:1px solid rgba(53,215,162,.34) !important;
+    border-radius:10px;
+    background:linear-gradient(180deg,rgba(24,67,56,.30),rgba(12,34,31,.18)) !important;
+}
+.acs-lan-visual.down{
+    border:1px solid rgba(105,159,187,.10) !important;
+    border-radius:10px;
+    background:rgba(9,20,31,.30);
+}
+.acs-lan-visual.up .acs-rj45-port-face{
+    border-color:#35d7a2 !important;
+    box-shadow:0 0 12px rgba(53,215,162,.24),inset 0 0 0 2px rgba(53,215,162,.08) !important;
+}
+.acs-lan-visual.up .acs-lan-state{
+    color:#6ce7bd !important;
+}
+.acs-lan-visual.up .acs-lan-device.identified{
+    color:#dff8ef;
+}

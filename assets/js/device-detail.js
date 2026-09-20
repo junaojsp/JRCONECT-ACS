@@ -165,7 +165,10 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
                 return `
                     <div class="acs-lan-visual ${isUp ? 'up' : 'down'}">
-                        <strong>${name}</strong>
+                        <div class="acs-lan-port-heading">
+                            <strong>${name}</strong>
+                            <span class="acs-lan-link-led ${isUp ? 'on' : 'off'}" title="${isUp ? 'Link ativo' : 'Sem link'}"></span>
+                        </div>
                         <div class="acs-rj45-port-face">
                             <span class="acs-rj45-slot"></span>
                             <span class="acs-rj45-pins"></span>
