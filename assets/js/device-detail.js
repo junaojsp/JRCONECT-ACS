@@ -237,13 +237,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-lan acs-approved-lan">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-diagram-3-fill"></i> Portas LAN (Ethernet)</span></div>
-                        <span class="acs-mini-badge">${lanPorts.length || 4} PORTAS</span>
-                    </div>
-                    <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
-                </section>
+
 
                 <section class="acs-overview-card acs-card-optical acs-approved-optical">
                     <div class="acs-overview-card-header">
