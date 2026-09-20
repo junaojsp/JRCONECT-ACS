@@ -3698,3 +3698,47 @@ canvas {
     .acs-lan-visual-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .acs-connected-compact-head,.acs-connected-compact-row{grid-template-columns:1fr 1fr}
 }
+
+
+/* ===== ACS DARK MODE + FONT SCALE V5 ===== */
+/* Dark mode permanente na tela de detalhes do equipamento */
+.acs-device-shell,
+.acs-device-tabs-wrap,
+#overview-content{
+    color-scheme:dark;
+}
+.acs-device-shell{
+    background:#071824 !important;
+    border-color:rgba(31,201,232,.28) !important;
+}
+.acs-device-toolbar{background:#081b28 !important}
+.acs-device-tabs-wrap #deviceTabs{background:#071923 !important}
+.acs-approved-layout .acs-overview-card,
+.acs-approved-bottom-stack .acs-overview-card{
+    background:linear-gradient(145deg,#0b2030,#081a27) !important;
+    border-color:rgba(83,163,195,.18) !important;
+    box-shadow:0 12px 28px rgba(0,0,0,.18);
+}
+
+/* Fonte levemente maior sem perder a proporcao aprovada */
+.acs-approved-layout .acs-kicker{font-size:10px !important}
+.acs-approved-layout .acs-reference-list span,
+.acs-approved-layout .acs-reference-footer-grid span,
+.acs-approved-layout .acs-reference-metrics span{font-size:9px !important}
+.acs-approved-layout .acs-reference-list strong,
+.acs-approved-layout .acs-reference-footer-grid strong,
+.acs-approved-layout .acs-reference-metrics strong{font-size:11px !important}
+.acs-approved-layout .acs-wifi-band-title{font-size:11px !important}
+.acs-approved-layout .acs-lan-visual>strong{font-size:11px !important}
+.acs-approved-layout .acs-lan-state{font-size:10px !important}
+.acs-approved-layout .acs-lan-visual small{font-size:9px !important}
+.acs-approved-layout .acs-lan-device{font-size:9px !important}
+.acs-approved-layout .acs-ai-question-only>strong{font-size:13px !important}
+.acs-approved-layout .acs-ai-question-only>span,
+.acs-approved-layout .acs-ai-answer-overview{font-size:10px !important}
+.acs-approved-layout .acs-ai-input-row input{font-size:11px !important}
+.acs-approved-layout .acs-connected-compact-head{font-size:9px !important}
+.acs-approved-layout .acs-connected-compact-row,
+.acs-approved-layout .acs-connected-compact-row strong{font-size:10px !important}
+.acs-approved-layout .acs-event-placeholder,
+.acs-approved-layout .acs-event-placeholder strong{font-size:10px !important}
