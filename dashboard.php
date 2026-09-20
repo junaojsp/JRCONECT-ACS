@@ -7,7 +7,7 @@ $pageTitle = 'Dashboard';
 $currentPage = 'dashboard';
 
 // Verificar se o Genie está configurado
-$genieacsConfigured = isGenieConfigured();
+$genieacsConfigured = isGenieACSConfigured();
 
 include __DIR__ . '/views/layouts/header.php';
 
