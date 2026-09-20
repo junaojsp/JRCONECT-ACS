@@ -4323,3 +4323,54 @@ body .topbar{
     }
     .sidebar-menu li a{width:46px !important}
 }
+
+
+/* ===== GLOBAL UNIFORM GRAY BACKGROUND V10 ===== */
+/* Uniformiza TODO o fundo do painel no mesmo cinza-azulado escuro */
+html,
+body,
+.main-content,
+.content-wrapper,
+.page-content,
+.dashboard-content,
+.container-fluid,
+.container,
+main{
+    background:#101827 !important;
+    background-image:none !important;
+}
+
+/* Remove faixas/tons diferentes entre menu, topo e area central */
+.sidebar{
+    background:#101827 !important;
+    border-right:1px solid #2a3548 !important;
+}
+.sidebar-header{
+    background:#101827 !important;
+    border-bottom:1px solid #2a3548 !important;
+}
+.topbar,
+.navbar,
+header.topbar{
+    background:#101827 !important;
+    border-bottom:1px solid #2a3548 !important;
+}
+
+/* Cards continuam um tom discretamente diferente para manter leitura */
+.card,
+.stat-card,
+.acs-overview-card,
+.dashboard-card{
+    background:#182235 !important;
+    border-color:#2a3850 !important;
+}
+
+/* Corrige wrappers que criam barras verticais/horizontais de outra cor */
+.content,
+.content-area,
+.page-wrapper,
+.dashboard-wrapper,
+.dashboard-section,
+section{
+    background-color:transparent;
+}
