@@ -21,8 +21,8 @@
     <!-- Presentation layer; existing controls and endpoints remain in place. -->
     <link rel="stylesheet" href="/assets/css/equipment-workspace.css?v=workspace-1">
     <script src="/assets/js/equipment-workspace.js?v=workspace-1"></script>
-    <link rel="stylesheet" href="/assets/css/equipment-workspace-fidelity.css?v=fidelity-3">
-    <script src="/assets/js/equipment-workspace-fidelity.js?v=fidelity-3"></script>
+    <link rel="stylesheet" href="/assets/css/equipment-workspace-fidelity.css?v=fidelity-2">
+    <script src="/assets/js/equipment-workspace-fidelity.js?v=fidelity-2"></script>
     <?php endif; ?>
 </body>
 </html>

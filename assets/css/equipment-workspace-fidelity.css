@@ -1,111 +1,57 @@
-/* JR CONECT equipment screen - strict reference layout */
-body.jr-equipment-workspace{--eq-side:178px!important;background:#071018!important}
+/* JR CONECT equipment reference fidelity layer */
+body.jr-equipment-workspace{--eq-side:178px!important;background:#061018!important}
 body.jr-equipment-workspace:not(.jr-eq-menu-open){--eq-side:64px!important}
-body.jr-equipment-workspace .content-wrapper{padding:0 14px 16px!important;background:#071018!important}
-body.jr-equipment-workspace .topbar{height:56px!important;min-height:56px!important;padding:0 18px!important;background:#06131b!important;border-bottom:1px solid #17313c!important}
+body.jr-equipment-workspace .content-wrapper{padding:0 14px 14px!important}
+body.jr-equipment-workspace .topbar{height:56px!important;min-height:56px!important;padding:0 18px!important;background:#07131b!important;border-bottom:1px solid #18313c!important}
 body.jr-equipment-workspace .topbar h4{display:none!important}
 body.jr-equipment-workspace .jr-eq-menu{border:0!important;background:transparent!important;font-size:25px!important}
 body.jr-equipment-workspace .jr-eq-search{height:38px!important;width:min(430px,34vw)!important;background:#0d1c26!important;border-color:#213c49!important}
-body.jr-equipment-workspace .topbar .user-info{min-height:56px;display:flex;align-items:center;padding:0 12px;border-left:1px solid #17303b}
-
-body.jr-equipment-workspace .jr-eq-pagehead{height:82px!important;min-height:82px!important;margin:0!important;padding:12px 16px!important;background:#07131b;border-bottom:1px solid #17313c}
-body.jr-equipment-workspace .jr-eq-pagehead nav{margin-bottom:4px!important;font-size:11px!important}
-body.jr-equipment-workspace .jr-eq-pagehead h1{font-size:24px!important}
+body.jr-equipment-workspace .jr-eq-pagehead{min-height:80px;margin:0!important;padding:12px 16px!important;background:#07131b;border-bottom:1px solid #18313c}
+body.jr-equipment-workspace .jr-eq-pagehead h1{font-size:22px!important}
 body.jr-equipment-workspace .jr-eq-assistant-toggle{display:none!important}
-body.jr-equipment-workspace .jr-eq-actions summary{min-width:92px;height:38px;display:flex;align-items:center;justify-content:center;gap:8px;border-color:#00d9ea!important;background:#081a23!important}
 
-body.jr-equipment-workspace .jr-eq-workspace{display:grid!important;grid-template-columns:minmax(0,1fr) 360px!important;gap:0!important;padding:0!important;align-items:start!important}
-body.jr-equipment-workspace .jr-eq-main{padding:12px 14px 0!important}
-body.jr-equipment-workspace .jr-eq-assistant{position:sticky;top:56px;height:calc(100vh - 56px);max-height:calc(100vh - 56px);border-left:1px solid #173743;background:#07131b;overflow:hidden;display:flex!important;flex-direction:column!important}
-body.jr-equipment-workspace .jr-eq-assistant>.acs-overview-card{flex:1;display:flex!important;flex-direction:column!important;border:0!important;border-radius:0!important;background:#07131b!important;padding:16px!important}
-body.jr-equipment-workspace .jr-eq-assistant .acs-overview-card-header{margin:-16px -16px 16px!important;padding:18px 16px!important;border-bottom:1px solid #193742!important}
-body.jr-equipment-workspace .jr-eq-ai-title{font-size:16px!important;gap:10px!important}
-body.jr-equipment-workspace .jr-eq-ai-title i{width:48px;height:48px;display:grid;place-items:center;border:1px solid #00bfd2;border-radius:50%;font-size:25px;box-shadow:0 0 20px #00d9ea38}
+body.jr-equipment-workspace .jr-eq-workspace{grid-template-columns:minmax(0,1fr) 344px!important;gap:14px!important;padding:12px 14px 0!important}
+body.jr-equipment-workspace .jr-eq-assistant{position:sticky;top:68px;min-height:calc(100vh - 82px);max-height:calc(100vh - 82px);border-left:1px solid #173743;background:#07131b;overflow:hidden;display:flex;flex-direction:column}
+body.jr-equipment-workspace .jr-eq-assistant>.acs-overview-card{flex:1;display:flex!important;flex-direction:column!important;border:0!important;border-radius:0!important;background:#07131b!important;padding:14px!important}
+body.jr-equipment-workspace .jr-eq-assistant .acs-overview-card-header{margin:-14px -14px 12px!important;padding:14px!important;border-bottom:1px solid #193742!important}
+body.jr-equipment-workspace .jr-eq-ai-title{font-size:15px!important;gap:9px!important}
+body.jr-equipment-workspace .jr-eq-ai-title i{width:42px;height:42px;display:grid;place-items:center;border:1px solid #0ab9cf;border-radius:50%;font-size:23px;box-shadow:0 0 18px #00d9ea33}
 body.jr-equipment-workspace .acs-ai-question-only{height:100%;display:flex!important;flex-direction:column!important}
-body.jr-equipment-workspace .jr-eq-ai-quick{margin-top:20px!important}
-body.jr-equipment-workspace .jr-eq-ai-quick>div{grid-template-columns:1fr 1fr!important;gap:10px!important}
-body.jr-equipment-workspace .jr-eq-ai-quick button{min-height:52px!important;background:#0c1e28!important;border:1px solid #245365!important;border-radius:10px!important}
-body.jr-equipment-workspace .acs-ai-input-row{margin-top:auto!important;padding-top:18px}
-body.jr-equipment-workspace .jr-eq-ai-foot{padding:18px!important;margin:0!important;border-top:1px solid #173742;background:#081821;text-align:center}
+body.jr-equipment-workspace .jr-eq-ai-quick>div{grid-template-columns:1fr 1fr!important}
+body.jr-equipment-workspace .jr-eq-ai-quick button{min-height:48px!important;background:#0c1e28!important;border:1px solid #245365!important;border-radius:10px!important}
+body.jr-equipment-workspace .acs-ai-input-row{margin-top:auto!important}
 
-body.jr-equipment-workspace .acs-device-toolbar{display:grid!important;grid-template-columns:minmax(440px,1.05fr) minmax(420px,.95fr)!important;min-height:114px!important;padding:12px 16px!important;margin:0 0 12px!important;background:linear-gradient(105deg,#06404d 0%,#0a2b35 34%,#091820 100%)!important;border:1px solid #176276!important;border-radius:10px!important}
-body.jr-equipment-workspace .acs-device-toolbar-left{align-items:center!important}
-body.jr-equipment-workspace .acs-device-avatar{width:120px!important;height:92px!important;flex:0 0 120px!important;border:0!important;background:transparent!important}
-body.jr-equipment-workspace .acs-device-avatar i{width:80px;height:88px;display:grid;place-items:center;margin:auto;background:linear-gradient(145deg,#18272f,#05090c);border-radius:16px;font-size:46px!important;box-shadow:0 14px 22px #0008}
+body.jr-equipment-workspace .acs-device-toolbar{display:grid!important;grid-template-columns:minmax(360px,1.1fr) minmax(410px,.9fr)!important;min-height:112px!important;padding:12px 16px!important;margin:0 0 10px!important;background:linear-gradient(110deg,#073b48 0%,#0a2630 32%,#091821 100%)!important;border:1px solid #236171!important;border-radius:10px!important}
+body.jr-equipment-workspace .acs-device-avatar{width:116px!important;height:92px!important;flex:0 0 116px!important;border:0!important;background:transparent!important}
+body.jr-equipment-workspace .acs-device-avatar i{width:82px;height:88px;display:grid;place-items:center;margin:auto;background:linear-gradient(145deg,#14232b,#05090c);border-radius:16px;font-size:46px!important;box-shadow:0 14px 22px #0008}
 body.jr-equipment-workspace .acs-device-title-row h3{font-size:24px!important}
-body.jr-equipment-workspace .acs-header-status{border-radius:999px!important;padding:6px 12px!important}
-body.jr-equipment-workspace .acs-device-subtitle{font-size:12px!important}
-body.jr-equipment-workspace .jr-eq-hero-meta{grid-template-columns:1.15fr .8fr .85fr .55fr!important;height:68px;align-self:center}
-body.jr-equipment-workspace .jr-eq-hero-meta>div{display:flex;flex-direction:column;justify-content:center;padding:0 16px!important}
+body.jr-equipment-workspace .acs-header-status{border-radius:999px!important}
+body.jr-equipment-workspace .jr-eq-hero-meta{grid-template-columns:1fr .72fr .8fr .55fr!important;height:68px;align-self:center}
 
-body.jr-equipment-workspace #deviceTabs{display:grid!important;grid-template-columns:1.1fr 1fr .8fr 1fr .7fr!important;gap:12px!important;padding:0 0 12px!important}
+body.jr-equipment-workspace #deviceTabs{display:grid!important;grid-template-columns:1.15fr 1fr .75fr 1fr .65fr!important;gap:10px!important;padding:0 0 12px!important}
 body.jr-equipment-workspace #deviceTabs>li:nth-child(n+6){display:none!important}
-body.jr-equipment-workspace #deviceTabs .nav-link{width:100%;min-height:44px!important;justify-content:center!important;border-radius:9px!important;background:#0c1b24!important;border:1px solid #203e4b!important;font-size:12px!important}
-body.jr-equipment-workspace #deviceTabs .nav-link.active{background:#063240!important;border-color:#00d9ea!important;color:#00e8f8!important;box-shadow:0 0 14px #00d9ea2a}
+body.jr-equipment-workspace #deviceTabs .nav-link{width:100%;min-height:44px!important;justify-content:center!important;border-radius:9px!important;background:#0c1b24!important;border:1px solid #203e4b!important}
+body.jr-equipment-workspace #deviceTabs .nav-link.active{background:#062f3b!important;border-color:#00d9ea!important;box-shadow:0 0 14px #00d9ea2a}
 
-body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{
- display:grid!important;
- grid-template-columns:1fr 1.35fr .9fr!important;
- grid-template-areas:
-   'device wan optical'
-   'wifi wifi tools'
-   'actions actions source'!important;
- gap:10px!important;align-items:stretch!important
-}
+body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{grid-template-columns:1fr 1.38fr .82fr!important;grid-template-areas:'device wan optical' 'wifi wifi tools' 'admin bottom bottom' 'actions actions source'!important;gap:10px!important}
 body.jr-equipment-workspace .jr-eq-overview>.acs-overview-card,
+body.jr-equipment-workspace .acs-approved-bottom-stack>.acs-overview-card,
 body.jr-equipment-workspace .jr-eq-operation-bar,
-body.jr-equipment-workspace .jr-eq-source-card{
- background:linear-gradient(180deg,#0d1b25,#09151d)!important;border:1px solid #213d49!important;border-radius:9px!important;box-shadow:none!important
-}
-body.jr-equipment-workspace .acs-approved-device{grid-area:device!important}
-body.jr-equipment-workspace .acs-approved-wan{grid-area:wan!important}
-body.jr-equipment-workspace .acs-approved-optical{grid-area:optical!important}
-body.jr-equipment-workspace .acs-approved-wifi{grid-area:wifi!important}
+body.jr-equipment-workspace .jr-eq-source-card{background:linear-gradient(180deg,#0d1b25,#09151d)!important;border:1px solid #213d49!important;border-radius:9px!important;box-shadow:none!important}
+body.jr-equipment-workspace .acs-overview-card-header{min-height:42px!important;padding:0 0 10px!important;margin-bottom:6px!important}
+body.jr-equipment-workspace .acs-reference-list>div:not(.jr-manager){padding:7px 0!important}
+body.jr-equipment-workspace .acs-reference-metrics{grid-template-columns:1fr 1fr!important}
+
 body.jr-equipment-workspace .acs-approved-lan{grid-area:tools!important}
-body.jr-equipment-workspace .acs-approved-admin,
-body.jr-equipment-workspace .acs-approved-bottom-stack{display:none!important}
-
-body.jr-equipment-workspace .acs-overview-card{padding:12px!important}
-body.jr-equipment-workspace .acs-overview-card-header{min-height:42px!important;padding:0 0 10px!important;margin:0 0 8px!important;border-bottom:1px solid #19313c!important}
-body.jr-equipment-workspace .acs-overview-card-header .acs-kicker{font-size:13px!important}
-body.jr-equipment-workspace .acs-overview-card-header .acs-kicker i{font-size:18px!important}
-body.jr-equipment-workspace .acs-reference-list>div:not(.jr-manager){padding:8px 0!important}
-body.jr-equipment-workspace .acs-reference-list span{font-size:11px!important}
-body.jr-equipment-workspace .acs-reference-list strong{font-size:12px!important}
-body.jr-equipment-workspace .acs-reference-metrics{grid-template-columns:1fr 1fr!important;gap:8px!important}
-body.jr-equipment-workspace .acs-reference-metrics>div{min-height:64px!important}
-
-body.jr-equipment-workspace .acs-approved-wifi{min-height:220px!important}
-body.jr-equipment-workspace .acs-approved-wifi .acs-wifi-reference-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
-body.jr-equipment-workspace .acs-approved-wifi .acs-wifi-band{min-height:150px!important;background:#0b1a23!important;border:1px solid #1e3b48!important;border-radius:8px!important;padding:12px!important}
-body.jr-equipment-workspace .acs-approved-wifi .jr-wng-nav{display:none!important}
-body.jr-equipment-workspace .acs-approved-wifi .jr-wng-panel{display:none!important}
-body.jr-equipment-workspace .jr-eq-unified-tile{min-height:150px;background:#0b1a23;border:1px solid #1e3b48;border-radius:8px;padding:12px}
-body.jr-equipment-workspace .jr-eq-unified-tile .jr-eq-unified-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-body.jr-equipment-workspace .jr-eq-unified-tile .jr-eq-unified-head strong{font-size:12px}
-body.jr-equipment-workspace .jr-eq-unified-tile .jr-eq-unified-head span{font-size:9px;color:#5ff2c8;border:1px solid #1a8d78;border-radius:999px;padding:3px 7px}
-body.jr-equipment-workspace .jr-eq-unified-tile dl{margin:0}
-body.jr-equipment-workspace .jr-eq-unified-tile dl>div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #19313c}
-body.jr-equipment-workspace .jr-eq-unified-tile dt{font-size:10px;color:#8fa8b4;font-weight:500}
-body.jr-equipment-workspace .jr-eq-unified-tile dd{font-size:11px;margin:0;color:#e7f4f7;text-align:right}
-body.jr-equipment-workspace .jr-eq-unified-tile button{width:100%;margin-top:10px}
-
-body.jr-equipment-workspace .acs-approved-lan>.acs-overview-card-header .acs-kicker{font-size:0!important}
-body.jr-equipment-workspace .acs-approved-lan>.acs-overview-card-header .acs-kicker::after{content:'Diagnósticos';font-size:13px!important}
-body.jr-equipment-workspace .acs-approved-lan>.acs-overview-card-header .acs-kicker i{display:none!important}
-body.jr-equipment-workspace .acs-approved-lan>.acs-lan-visual-grid{display:none!important}
-body.jr-equipment-workspace .jr-eq-tools{margin:0!important;padding:0!important;border:0!important}
-body.jr-equipment-workspace .jr-eq-tools h2{display:none!important}
-body.jr-equipment-workspace .jr-eq-tools button{min-height:54px!important;margin-top:8px!important;background:#0c1e28!important;border:1px solid #254a59!important}
-
-body.jr-equipment-workspace .jr-eq-operation-bar{grid-area:actions!important;padding:12px!important}
-body.jr-equipment-workspace .jr-eq-operation-bar h2{font-size:13px!important;margin-bottom:10px!important}
-body.jr-equipment-workspace .jr-eq-operation-bar>div{grid-template-columns:repeat(3,1fr)!important;gap:10px!important}
-body.jr-equipment-workspace .jr-eq-operation-bar button{min-height:48px!important}
+body.jr-equipment-workspace .acs-approved-lan>.acs-lan-visual-grid{grid-template-columns:repeat(2,1fr)!important}
+body.jr-equipment-workspace .jr-eq-tools{margin-top:12px!important;padding-top:10px!important}
+body.jr-equipment-workspace .jr-eq-tools button{min-height:48px!important;background:#0c1e28!important}
+body.jr-equipment-workspace .jr-eq-operation-bar{grid-area:actions!important}
+body.jr-equipment-workspace .jr-eq-operation-bar>div{grid-template-columns:repeat(3,1fr)!important}
 body.jr-equipment-workspace .jr-eq-operation-bar button:nth-child(4){display:none!important}
 
-body.jr-equipment-workspace .jr-eq-source-card{grid-area:source!important;padding:12px}
-body.jr-equipment-workspace .jr-eq-source-card h2{font-size:13px;margin:0 0 8px;display:flex;gap:8px;align-items:center}
+body.jr-equipment-workspace .jr-eq-source-card{grid-area:source!important;padding:14px}
+body.jr-equipment-workspace .jr-eq-source-card h2{font-size:13px;margin:0 0 10px;display:flex;gap:8px;align-items:center}
 body.jr-equipment-workspace .jr-eq-source-card h2 i{color:#00d9ea;font-size:18px}
 body.jr-equipment-workspace .jr-eq-source-card>div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #19313c}
 body.jr-equipment-workspace .jr-eq-source-card>div:last-child{border-bottom:0}
@@ -113,19 +59,14 @@ body.jr-equipment-workspace .jr-eq-source-card span{font-size:11px;color:#9eb4bf
 body.jr-equipment-workspace .jr-eq-source-card strong{font-size:10px;color:#d9f4f8}
 body.jr-equipment-workspace .footer{display:none!important}
 
-@media(max-width:1280px){
- body.jr-equipment-workspace .jr-eq-workspace{grid-template-columns:minmax(0,1fr) 310px!important}
- body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{grid-template-columns:1fr 1.2fr .9fr!important}
-}
-@media(max-width:1100px){
+@media(max-width:1180px){
  body.jr-equipment-workspace .jr-eq-workspace{grid-template-columns:1fr!important}
- body.jr-equipment-workspace .jr-eq-assistant{position:static;height:auto;max-height:none;border:1px solid #1d3d49;border-radius:10px}
+ body.jr-equipment-workspace .jr-eq-assistant{position:static;min-height:500px;max-height:none;border:1px solid #1d3d49;border-radius:10px}
  body.jr-equipment-workspace .acs-device-toolbar{grid-template-columns:1fr!important}
- body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{grid-template-columns:1fr 1fr!important;grid-template-areas:'device wan' 'optical tools' 'wifi wifi' 'actions actions' 'source source'!important}
+ body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{grid-template-columns:1fr 1fr!important;grid-template-areas:'device wan' 'optical tools' 'wifi wifi' 'admin bottom' 'actions actions' 'source source'!important}
 }
 @media(max-width:760px){
- body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{grid-template-columns:1fr!important;grid-template-areas:'device' 'wan' 'optical' 'wifi' 'tools' 'actions' 'source'!important}
- body.jr-equipment-workspace .acs-approved-wifi .acs-wifi-reference-grid{grid-template-columns:1fr!important}
+ body.jr-equipment-workspace .acs-approved-layout.jr-eq-overview{grid-template-columns:1fr!important;grid-template-areas:'device' 'wan' 'optical' 'wifi' 'tools' 'admin' 'bottom' 'actions' 'source'!important}
  body.jr-equipment-workspace #deviceTabs{display:flex!important;overflow:auto;flex-wrap:nowrap!important}
  body.jr-equipment-workspace #deviceTabs>li:nth-child(n+6){display:block!important}
  body.jr-equipment-workspace #deviceTabs .nav-link{white-space:nowrap;width:auto}
