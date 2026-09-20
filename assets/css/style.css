@@ -4231,3 +4231,95 @@ hr{border-color:#2a3850 !important;opacity:1}
 .main-content,.content-wrapper{
     background:#0a2130 !important;
 }
+
+
+/* ===== COMPACT SIDEBAR V9 ===== */
+/* Menu lateral compacto em todas as paginas, inclusive Discovery */
+.sidebar{
+    width:72px !important;
+    min-width:72px !important;
+    max-width:72px !important;
+    overflow:hidden !important;
+    transition:width .2s ease !important;
+}
+.main-content{
+    margin-left:72px !important;
+    width:calc(100% - 72px) !important;
+}
+.sidebar-header{
+    min-height:74px !important;
+    padding:10px 6px !important;
+}
+.sidebar-header h3,
+.sidebar-header .brand-text,
+.sidebar-header span:not(.logo-icon){
+    display:none !important;
+}
+.sidebar-header i,
+.sidebar-header .logo-icon{
+    margin:0 auto !important;
+    font-size:25px !important;
+}
+.sidebar-menu{
+    padding:8px 0 !important;
+}
+.sidebar-menu li a{
+    width:52px !important;
+    min-height:48px !important;
+    margin:4px auto !important;
+    padding:0 !important;
+    justify-content:center !important;
+    gap:0 !important;
+    border-left:0 !important;
+    border-radius:9px !important;
+}
+.sidebar-menu li a span,
+.sidebar-menu li a .menu-text{
+    display:none !important;
+}
+.sidebar-menu li a i{
+    width:auto !important;
+    min-width:0 !important;
+    margin:0 !important;
+    font-size:17px !important;
+    text-align:center !important;
+}
+.sidebar-menu li a.active{
+    background:#123348 !important;
+    border:1px solid #1b607b !important;
+    border-left:3px solid #35d7f4 !important;
+    color:#ffffff !important;
+}
+.sidebar-menu li a:hover{
+    background:#123348 !important;
+    border-left:0 !important;
+}
+.sidebar-menu li a.active:hover{
+    border-left:3px solid #35d7f4 !important;
+}
+
+/* Tooltip simples com o nome do item no menu compacto */
+.sidebar-menu li a{
+    position:relative !important;
+}
+.sidebar-menu li a[title]{
+    cursor:pointer;
+}
+
+/* Discovery e demais paginas devem respeitar a largura compacta */
+body .content-wrapper,
+body .topbar{
+    margin-left:0 !important;
+}
+@media(max-width:768px){
+    .sidebar{
+        width:60px !important;
+        min-width:60px !important;
+        max-width:60px !important;
+    }
+    .main-content{
+        margin-left:60px !important;
+        width:calc(100% - 60px) !important;
+    }
+    .sidebar-menu li a{width:46px !important}
+}
