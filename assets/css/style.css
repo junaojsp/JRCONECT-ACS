@@ -4931,3 +4931,30 @@ section{
         flex-basis:20px;
     }
 }
+
+
+/* ===== OPTICAL FOOTER ALIGNMENT FIX ===== */
+.acs-approved-layout .acs-device-optical-footer{
+    align-items:stretch;
+}
+.acs-approved-layout .acs-device-optical-footer>div{
+    grid-template-columns:minmax(0,1fr) auto !important;
+    gap:8px;
+    min-width:0;
+    min-height:36px;
+}
+.acs-approved-layout .acs-device-optical-footer>div>span{
+    min-width:0;
+    white-space:nowrap;
+}
+.acs-approved-layout .acs-device-optical-footer>div>strong{
+    min-width:0;
+    max-width:110px;
+    justify-self:end;
+    text-align:right !important;
+    overflow-wrap:anywhere;
+}
+.acs-approved-layout .acs-device-optical-footer>div:last-child>strong{
+    font-size:9px !important;
+    line-height:1.25;
+}
