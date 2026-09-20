@@ -221,6 +221,8 @@
         const box=document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
         if(!box)return;
         syncWifiSelection();
+        const activeWifi = state.wifi.filter(item => item.enabled === true).length;
+        window.dispatchEvent(new CustomEvent('jr:wifi-state', { detail: { total: state.wifi.length, active: activeWifi } }));
         box.innerHTML=`<div class="jr-wifi-summary-shell">
             <div class="jr-wifi-summary-list">
                 ${wifiCardForBand('2.4')}
