@@ -5918,3 +5918,73 @@ section{
         flex:1;
     }
 }
+
+
+/* ===== CORRECAO DE ALINHAMENTO DOS BOTOES DA IA ===== */
+#overview-content .acs-ai-topbar{
+    grid-template-columns:minmax(0,1fr) auto auto !important;
+    column-gap:16px !important;
+}
+#overview-content .acs-ai-topbar-ops{
+    justify-self:center !important;
+}
+#overview-content .acs-ai-topbar-action{
+    justify-self:end !important;
+    display:grid !important;
+    grid-template-columns:max-content max-content !important;
+    align-items:center !important;
+    gap:7px !important;
+    width:auto !important;
+    min-width:max-content !important;
+}
+#overview-content .acs-ai-topbar-action .acs-soft-btn{
+    height:34px !important;
+    min-height:34px !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:6px !important;
+    margin:0 !important;
+    padding:0 11px !important;
+    line-height:1 !important;
+    white-space:nowrap !important;
+}
+#overview-content .acs-ai-topbar-action .acs-ai-summary-btn{
+    min-width:122px !important;
+}
+#overview-content .acs-ai-topbar-action .acs-ai-open-btn{
+    min-width:86px !important;
+}
+
+@media(max-width:1250px){
+    #overview-content .acs-ai-topbar{
+        grid-template-columns:minmax(0,1fr) auto !important;
+        row-gap:9px !important;
+    }
+    #overview-content .acs-ai-topbar-main{
+        grid-column:1;
+        grid-row:1;
+    }
+    #overview-content .acs-ai-topbar-action{
+        grid-column:2;
+        grid-row:1;
+        justify-self:end !important;
+    }
+    #overview-content .acs-ai-topbar-ops{
+        grid-column:1/-1;
+        grid-row:2;
+        justify-self:start !important;
+        justify-content:flex-start !important;
+    }
+}
+@media(max-width:760px){
+    #overview-content .acs-ai-topbar-action{
+        width:100% !important;
+        min-width:0 !important;
+        grid-template-columns:1fr 1fr !important;
+    }
+    #overview-content .acs-ai-topbar-action .acs-soft-btn{
+        width:100% !important;
+        min-width:0 !important;
+    }
+}

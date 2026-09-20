@@ -479,11 +479,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </div>
 
                 <div class="acs-ai-topbar-action">
-                    <button type="button" class="acs-soft-btn" onclick="runDeviceAISummary()">
-                        <i class="bi bi-clipboard2-pulse"></i> Resumo técnico
+                    <button type="button" class="acs-soft-btn acs-ai-summary-btn" onclick="runDeviceAISummary()">
+                        <i class="bi bi-clipboard2-pulse"></i><span>Resumo técnico</span>
                     </button>
-                    <button type="button" class="acs-soft-btn primary" onclick="openDeviceAIDrawer()">
-                        <i class="bi bi-chat-dots"></i> Abrir IA
+                    <button type="button" class="acs-soft-btn primary acs-ai-open-btn" onclick="openDeviceAIDrawer()">
+                        <i class="bi bi-chat-dots"></i><span>Abrir IA</span>
                     </button>
                 </div>
             </section>
