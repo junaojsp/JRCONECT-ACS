@@ -4989,3 +4989,55 @@ section{
     text-overflow:ellipsis;
     font-size:9px !important;
 }
+
+
+/* ===== OPTICAL FOOTER FINAL GRID ===== */
+.acs-approved-layout .acs-device-optical-footer{
+    display:grid !important;
+    grid-template-columns:repeat(12,minmax(0,1fr)) !important;
+    gap:0 10px !important;
+    align-items:stretch;
+}
+.acs-approved-layout .acs-device-optical-footer>div{
+    min-width:0;
+    min-height:36px;
+    grid-template-columns:auto minmax(0,1fr) !important;
+    gap:8px !important;
+    align-items:center;
+    padding:7px 0;
+    margin:0 !important;
+    border-top:0 !important;
+    border-bottom:1px solid rgba(105,159,187,.07);
+}
+.acs-approved-layout .acs-device-optical-footer>div:nth-child(1){
+    grid-column:1 / 7 !important;
+    grid-row:1;
+}
+.acs-approved-layout .acs-device-optical-footer>div:nth-child(2){
+    grid-column:7 / 13 !important;
+    grid-row:1;
+}
+.acs-approved-layout .acs-device-optical-footer>div:nth-child(3){
+    grid-column:1 / 5 !important;
+    grid-row:2;
+}
+.acs-approved-layout .acs-device-optical-footer>div:nth-child(4){
+    grid-column:5 / 13 !important;
+    grid-row:2;
+}
+.acs-approved-layout .acs-device-optical-footer>div>span{
+    min-width:0;
+    white-space:nowrap;
+}
+.acs-approved-layout .acs-device-optical-footer>div>strong{
+    min-width:0;
+    max-width:none !important;
+    justify-self:end;
+    text-align:right !important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.acs-approved-layout .acs-device-optical-footer>div:nth-child(4)>strong{
+    font-size:9px !important;
+}
