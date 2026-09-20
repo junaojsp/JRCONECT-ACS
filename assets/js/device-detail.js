@@ -9,6 +9,74 @@ let opticalLoadedForDevice = null;
 let opticalRequestCounter = 0;
 let currentDeviceData = null;
 
+// Previous cumulative counters used to calculate average TX/RX between ACS readings.
+// No extra polling is started; rates follow the existing device-detail refresh cycle.
+const networkTrafficSamples = new Map();
+
+function formatNetworkRateMbps(value) {
+    if (value === null || value === undefined || !Number.isFinite(value)) return 'Aguardando';
+    if (value < 0.01) return value <= 0 ? '0 bps' : (value * 1000).toFixed(1) + ' Kbps';
+    if (value >= 1000) return (value / 1000).toFixed(2) + ' Gbps';
+    return value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2) + ' Mbps';
+}
+
+function formatNetworkBytes(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) return 'N/D';
+    const units = ['B','KB','MB','GB','TB'];
+    let v=n, i=0;
+    while(v>=1024 && i<units.length-1){v/=1024;i++;}
+    return v.toFixed(i===0?0:v>=100?0:v>=10?1:2)+' '+units[i];
+}
+
+function networkRates(key, rxBytes, txBytes) {
+    const rx = Number(rxBytes), tx = Number(txBytes), now = Date.now();
+    if (!Number.isFinite(rx) && !Number.isFinite(tx)) return {rx:null,tx:null};
+    const previous = networkTrafficSamples.get(key);
+    networkTrafficSamples.set(key,{rx:Number.isFinite(rx)?rx:null,tx:Number.isFinite(tx)?tx:null,time:now});
+    if (!previous || now <= previous.time) return {rx:null,tx:null};
+    const seconds=(now-previous.time)/1000;
+    const rate=(current,oldValue)=>{
+        if(!Number.isFinite(current)||!Number.isFinite(oldValue)||current<oldValue)return null;
+        return ((current-oldValue)*8)/(seconds*1000000);
+    };
+    return {rx:rate(rx,previous.rx),tx:rate(tx,previous.tx)};
+}
+
+function renderNetworkTraffic(device) {
+    const wifi = Array.isArray(device.wifi_interfaces) ? device.wifi_interfaces : [];
+    const lan = Array.isArray(device.lan_ports) ? device.lan_ports : [];
+    const wifiHtml = wifi.length ? wifi.slice(0,4).map((row,index)=>{
+        const rates=networkRates('wifi:'+String(row.id || index),row.bytes_received,row.bytes_sent);
+        const status=String(row.status || '').toLowerCase();
+        const enabled=row.enabled !== false && !['down','disabled','error'].includes(status);
+        return `<div class="acs-live-interface">
+            <div class="acs-live-head"><span><i class="bi bi-wifi"></i> ${row.label || ('Wi-Fi '+(index+1))}</span><b class="${enabled?'on':'off'}">${enabled?'ATIVA':'INATIVA'}</b></div>
+            <div class="acs-live-name">${row.ssid || 'SSID não informado'}</div>
+            <div class="acs-live-meta"><span>Canal <strong>${row.channel ?? 'N/D'}</strong></span><span>Clientes <strong>${row.clients ?? 'N/D'}</strong></span></div>
+            <div class="acs-live-rates"><div><small>RX</small><strong>${formatNetworkRateMbps(rates.rx)}</strong><em>${formatNetworkBytes(row.bytes_received)}</em></div><div><small>TX</small><strong>${formatNetworkRateMbps(rates.tx)}</strong><em>${formatNetworkBytes(row.bytes_sent)}</em></div></div>
+        </div>`;
+    }).join('') : '<div class="acs-live-empty">Contadores de tráfego Wi-Fi ainda não foram coletados pelo equipamento.</div>';
+
+    const lanHtml = lan.length ? lan.slice(0,8).map((port,index)=>{
+        const rates=networkRates('lan:'+String(port.port || port.name || index),port.bytes_received,port.bytes_sent);
+        const status=String(port.status || '').toLowerCase();
+        const up=['up','connected'].includes(status);
+        const speed=port.max_bit_rate && port.max_bit_rate!=='N/A' ? port.max_bit_rate+' Mbps' : 'N/D';
+        return `<div class="acs-live-lan ${up?'up':'down'}">
+            <div class="acs-live-head"><span><i class="bi bi-ethernet"></i> ${port.name || ('LAN'+(index+1))}</span><b>${up?'LINK':'SEM LINK'}</b></div>
+            <div class="acs-live-meta"><span>Velocidade <strong>${speed}</strong></span><span>Duplex <strong>${port.duplex_mode || 'N/D'}</strong></span></div>
+            <div class="acs-live-rates"><div><small>RX</small><strong>${formatNetworkRateMbps(rates.rx)}</strong><em>${formatNetworkBytes(port.bytes_received)}</em></div><div><small>TX</small><strong>${formatNetworkRateMbps(rates.tx)}</strong><em>${formatNetworkBytes(port.bytes_sent)}</em></div></div>
+        </div>`;
+    }).join('') : '<div class="acs-live-empty">Nenhuma porta LAN com estatísticas foi coletada.</div>';
+
+    return `<div class="acs-network-live">
+        <div class="acs-network-live-title"><span><i class="bi bi-activity"></i> Tráfego Wi-Fi e portas LAN</span><small>TX/RX médio entre as leituras do ACS</small></div>
+        <div class="acs-network-live-section"><h6>Wi-Fi</h6><div class="acs-network-live-grid">${wifiHtml}</div></div>
+        <div class="acs-network-live-section"><h6>Portas LAN</h6><div class="acs-network-live-grid lan">${lanHtml}</div></div>
+    </div>`;
+}
+
 // Helper function to get active tab name
 function getActiveTabName() {
     const activeTab = document.querySelector('.nav-link.active');
@@ -298,6 +366,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             </div>
                         </div>
                     </div>
+                    ${renderNetworkTraffic(device)}
                 </section>
 
 
