@@ -300,21 +300,9 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-admin acs-approved-admin">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-shield-lock-fill"></i> Credenciais de administração</span></div>
-                    </div>
-                    <div id="credentials-status" class="alert alert-info" style="display:none;">
-                        <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
-                    </div>
-                    <div class="acs-reference-list credentials">
-                        <div><span>Usuário admin</span><strong>${device.admin_user || 'N/A'}</strong></div>
-                        <div><span>Senha admin</span><strong><span id="admin-pass-hidden">********</span><span id="admin-pass-shown" style="display:none;">${device.admin_password || 'N/A'}</span><button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()"><i id="admin-toggle-icon" class="bi bi-eye"></i></button></strong></div>
-                        <div><span>Usuário telecom</span><strong>${device.telecom_user || 'Não disponível'}</strong></div>
-                        <div><span>Senha telecom</span><strong><span id="telecom-pass-hidden">********</span><span id="telecom-pass-shown" style="display:none;">${device.telecom_password || 'N/A'}</span><button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()"><i id="telecom-toggle-icon" class="bi bi-eye"></i></button></strong></div>
-                    </div>
-                    <button id="get-credentials-btn" class="acs-soft-btn acs-full-btn" type="button" onclick="summonForAdminCredentials()"><i class="bi bi-search"></i> Obter credenciais</button>
-                </section>
+
+
+
 
                 <div class="acs-approved-bottom-stack">
                     <section class="acs-overview-card acs-card-connected acs-approved-connected">
