@@ -118,31 +118,92 @@
             ${!canEdit ? '<p class="jr-manager-note">O equipamento não confirmou escrita para esta seleção.</p>' : ''}
         </div>`;
     }
-    function renderWifi() {
-        const box = document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
-        if (!box) return;
-        syncWifiSelection();
-        const rows=wifiRows(state.wifiBand), item=selected('wifi');
-        const missing=`<div class="jr-empty-control"><strong>${esc(wifiBandNames[state.wifiBand])}</strong>
-            <p>Nenhuma interface desta banda foi identificada na leitura atual.</p>
-            <p>Use “Detectar redes do modem” para buscar todas as interfaces. Isso não significa que a banda esteja desabilitada.</p>
-            ${wifiRows('unknown').length?'<p>Há redes em “Banda não informada”; elas não foram classificadas como 5 GHz por suposição.</p>':''}
-        </div>`;
-        box.innerHTML=`<div class="jr-wifi-bands-shell">
-            ${bandControls()}
-            <div class="jr-wifi-selected">${item ? manager('wifi',item,rows) : missing}</div>
-            <div class="jr-wifi-discover">
-                <button type="button" class="acs-soft-btn" id="jr-detect-wifi"
-                    onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}>
-                    <i class="bi bi-arrow-repeat"></i> ${state.refreshBusy?'Consultando...':'Detectar redes do modem'}
-                </button>
-                <small>Busca todas as bandas e SSIDs. Não altera senhas nem habilita redes.</small>
+    function wifiCardForBand(band) {
+        const rows=wifiRows(band);
+        const item=rows.find(row=>row.id===state.wifiByBand[band]) || rows.find(row=>row.enabled===true) || rows[0] || null;
+        const label=wifiBandNames[band] || band;
+        if(!item) {
+            return `<article class="jr-wifi-summary-card missing">
+                <div class="jr-wifi-summary-head"><div><i class="bi bi-wifi"></i><strong>${esc(label)}</strong></div><span>NÃO COLETADA</span></div>
+                <div class="jr-wifi-summary-body"><p>Nenhuma interface desta banda foi identificada.</p></div>
+                <button type="button" class="acs-soft-btn" onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}><i class="bi bi-arrow-repeat"></i> Detectar rede</button>
+            </article>`;
+        }
+        const active=item.enabled===true;
+        return `<article class="jr-wifi-summary-card">
+            <div class="jr-wifi-summary-head">
+                <div><i class="bi bi-wifi"></i><strong>${esc(label)}</strong></div>
+                <span class="${active?'on':'off'}">${esc(statusLabel(item).toUpperCase())}</span>
             </div>
-            <button type="button" id="jr-wifi-diagnostic" class="acs-soft-btn"
-                onclick="jrDownloadWifiDiagnostic()" ${!permitted('wifi')?'disabled':''}>Baixar diagnóstico Wi-Fi</button>
-            <p class="jr-wifi-scan-status" role="status" aria-live="polite">${esc(state.scanMessage)}</p>
+            <dl class="jr-wifi-summary-values">
+                <div><dt>SSID</dt><dd>${esc(val(item.ssid))}</dd></div>
+                <div><dt>Canal</dt><dd>${esc(item.auto_channel===true?'Automático':val(item.channel))}</dd></div>
+                <div><dt>Segurança</dt><dd>${esc(securityLabel(item.security))}</dd></div>
+                <div><dt>Clientes</dt><dd>${esc(val(item.clients ?? item.associated_devices ?? item.total_associations ?? 'Não informado'))}</dd></div>
+            </dl>
+            <button type="button" class="acs-soft-btn primary" onclick="jrManageBand('${band}')" ${!permitted('wifi')?'disabled':''}><i class="bi bi-sliders"></i> Gerenciar</button>
+        </article>`;
+    }
+
+    function unifiedSummaryCard() {
+        return `<article class="jr-wifi-summary-card unified">
+            <div class="jr-wifi-summary-head">
+                <div><i class="bi bi-diagram-3"></i><strong>Rede Unificada</strong></div>
+                <span>SMART</span>
+            </div>
+            <dl class="jr-wifi-summary-values">
+                <div><dt>Tipo</dt><dd>Band Steering / Smart Connect</dd></div>
+                <div><dt>Bandas</dt><dd>Conforme equipamento</dd></div>
+                <div><dt>Tecnologia</dt><dd>Wi-Fi 6/7 quando suportado</dd></div>
+                <div><dt>Estado</dt><dd>Consultar modem</dd></div>
+            </dl>
+            <button type="button" class="acs-soft-btn primary" onclick="jrOpenUnifiedWifi()"><i class="bi bi-sliders"></i> Gerenciar</button>
+        </article>`;
+    }
+
+    window.jrManageBand=band => {
+        if(!Object.prototype.hasOwnProperty.call(wifiBandNames,band)) return;
+        state.wifiBand=band;
+        const rows=wifiRows(band);
+        const item=rows.find(row=>row.id===state.wifiByBand[band]) || rows.find(row=>row.enabled===true) || rows[0];
+        if(!item){ toast('Nenhuma rede '+wifiBandNames[band]+' foi identificada.','danger'); return; }
+        state.wifiId=item.id;
+        state.wifiByBand[band]=item.id;
+        window.jrOpenControl('wifi');
+    };
+
+    window.jrOpenUnifiedWifi=() => {
+        const section=document.querySelector('.acs-approved-wifi');
+        const button=section?.querySelector('[data-wng-mode="unified"]');
+        if(button){ button.click(); section.scrollIntoView({block:'center',behavior:'smooth'}); return; }
+        toast('A identificação da rede unificada ainda não carregou. Atualize a leitura e tente novamente.','info');
+    };
+
+    function renderWifi() {
+        const box=document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
+        if(!box)return;
+        syncWifiSelection();
+        box.innerHTML=`<div class="jr-wifi-summary-shell">
+            <div class="jr-wifi-summary-grid">
+                ${wifiCardForBand('2.4')}
+                ${wifiCardForBand('5')}
+                ${unifiedSummaryCard()}
+            </div>
+            <div class="jr-wifi-summary-footer">
+                <div>
+                    <button type="button" class="acs-soft-btn" id="jr-detect-wifi" onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}>
+                        <i class="bi bi-arrow-repeat"></i> ${state.refreshBusy?'Consultando...':'Detectar redes do modem'}
+                    </button>
+                    <button type="button" id="jr-wifi-diagnostic" class="acs-soft-btn" onclick="jrDownloadWifiDiagnostic()" ${!permitted('wifi')?'disabled':''}>
+                        <i class="bi bi-download"></i> Diagnóstico Wi-Fi
+                    </button>
+                </div>
+                <small>SSID e senha podem ser alterados quando o modem confirma escrita. Canal e segurança permanecem somente leitura até o parâmetro gravável ser validado.</small>
+                <p class="jr-wifi-scan-status" role="status" aria-live="polite">${esc(state.scanMessage)}</p>
+            </div>
         </div>`;
     }
+
     function renderAccounts() {
         const box = document.querySelector('.acs-approved-admin .acs-reference-list.credentials');
         const oldButton = document.getElementById('get-credentials-btn');

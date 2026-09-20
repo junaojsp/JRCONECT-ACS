@@ -72,3 +72,130 @@
 .acs-approved-wifi .jr-wifi-discover small{flex:1 1 180px;color:#a0aec1;font-size:11px;line-height:1.5}
 .acs-approved-wifi .jr-wifi-scan-status{margin:8px 0 0;color:#adc9d4;font-size:11px;overflow-wrap:anywhere}
 .acs-approved-wifi .jr-wifi-scan-status:empty{display:none}
+
+
+/* Wi-Fi summary cards v1 */
+.acs-approved-wifi .acs-wifi-reference-grid{display:block!important}
+.acs-approved-wifi .jr-wifi-summary-shell{width:100%;min-width:0}
+.acs-approved-wifi .jr-wifi-summary-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+}
+.acs-approved-wifi .jr-wifi-summary-card{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    padding:12px;
+    border:1px solid #2d4356;
+    border-radius:10px;
+    background:linear-gradient(180deg,#131f30,#101a29);
+}
+.acs-approved-wifi .jr-wifi-summary-card.unified{border-color:#315667}
+.acs-approved-wifi .jr-wifi-summary-card.missing{opacity:.72}
+.acs-approved-wifi .jr-wifi-summary-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding-bottom:9px;
+    margin-bottom:4px;
+    border-bottom:1px solid #26384c;
+}
+.acs-approved-wifi .jr-wifi-summary-head>div{
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+.acs-approved-wifi .jr-wifi-summary-head i{color:#39cce3;font-size:16px}
+.acs-approved-wifi .jr-wifi-summary-head strong{
+    color:#eef6fb;
+    font-size:12px;
+    white-space:nowrap;
+}
+.acs-approved-wifi .jr-wifi-summary-head>span{
+    flex:0 0 auto;
+    padding:3px 6px;
+    border:1px solid #45566b;
+    border-radius:999px;
+    color:#a4b2c3;
+    font-size:7px;
+    font-weight:800;
+}
+.acs-approved-wifi .jr-wifi-summary-head>span.on{
+    color:#65e8b9;
+    border-color:#286d58;
+    background:#183a34;
+}
+.acs-approved-wifi .jr-wifi-summary-head>span.off{color:#db9ba4;border-color:#67404a}
+.acs-approved-wifi .jr-wifi-summary-values{margin:0 0 12px}
+.acs-approved-wifi .jr-wifi-summary-values>div{
+    display:grid;
+    grid-template-columns:minmax(68px,.65fr) minmax(0,1.35fr);
+    gap:8px;
+    align-items:center;
+    min-height:31px;
+    border-bottom:1px solid #26364a;
+}
+.acs-approved-wifi .jr-wifi-summary-values dt{
+    color:#8fa2b6;
+    font-size:9px;
+    font-weight:500;
+}
+.acs-approved-wifi .jr-wifi-summary-values dd{
+    min-width:0;
+    margin:0;
+    color:#e8f1f7;
+    font-size:10px;
+    font-weight:650;
+    text-align:right;
+    overflow-wrap:anywhere;
+}
+.acs-approved-wifi .jr-wifi-summary-card>button{
+    width:100%;
+    margin-top:auto;
+    min-height:34px;
+}
+.acs-approved-wifi .jr-wifi-summary-body{
+    flex:1;
+    min-height:108px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:#96a9bc;
+    font-size:10px;
+    line-height:1.45;
+}
+.acs-approved-wifi .jr-wifi-summary-footer{
+    margin-top:12px;
+    padding-top:10px;
+    border-top:1px solid #2b3a50;
+}
+.acs-approved-wifi .jr-wifi-summary-footer>div{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+.acs-approved-wifi .jr-wifi-summary-footer small{
+    display:block;
+    margin-top:8px;
+    color:#9baec1!important;
+    font-size:10px!important;
+    line-height:1.45;
+}
+.acs-approved-wifi .jr-wifi-summary-footer .jr-wifi-scan-status{
+    margin:7px 0 0;
+    color:#adc9d4;
+    font-size:10px;
+}
+.acs-approved-wifi .jr-wifi-summary-footer .jr-wifi-scan-status:empty{display:none}
+@media(max-width:1050px){
+    .acs-approved-wifi .jr-wifi-summary-grid{grid-template-columns:1fr 1fr}
+    .acs-approved-wifi .jr-wifi-summary-card.unified{grid-column:1/-1}
+}
+@media(max-width:650px){
+    .acs-approved-wifi .jr-wifi-summary-grid{grid-template-columns:1fr}
+    .acs-approved-wifi .jr-wifi-summary-card.unified{grid-column:auto}
+}
