@@ -184,3 +184,24 @@ function saveAIConfig(
         throw new RuntimeException('Não foi possível salvar a configuração de IA.');
     }
 }
+
+
+function getActiveAIConfig(mysqli $conn): ?array
+{
+    ensureAIConfigTable($conn);
+
+    $result = $conn->query("
+        SELECT *
+        FROM ai_config
+        WHERE is_connected = 1
+        ORDER BY COALESCE(last_test, updated_at) DESC, updated_at DESC, id DESC
+        LIMIT 1
+    ");
+
+    if ($result) {
+        $row = $result->fetch_assoc();
+        if ($row) return $row;
+    }
+
+    return getAIConfig($conn);
+}

@@ -3180,34 +3180,150 @@ function renderAIAssistantTab(device) {
                     <label for="acs-ai-question">Pergunte sobre este equipamento</label>
                     <textarea id="acs-ai-question" rows="5" placeholder="Ex.: Analise esta conexão e indique possíveis problemas."></textarea>
                     <button type="button" class="acs-soft-btn" onclick="runDeviceAIAnalysis()"><i class="bi bi-stars"></i> Analisar com IA</button>
-                    <div id="acs-ai-answer" class="acs-ai-answer">A integração com o provedor de IA será conectada na próxima etapa. Nenhum dado será enviado sem configuração explícita.</div>
+                    <div id="acs-ai-answer" class="acs-ai-answer">Faça uma pergunta para analisar os dados atuais deste equipamento.</div>
                 </div>
             </div>
         </div>`;
 }
 
-function runDeviceAIAnalysis() {
+function buildDeviceAIContext() {
+    const device = currentDeviceData || {};
+    const wan = typeof getPrimaryWAN === 'function' ? (getPrimaryWAN(device) || {}) : {};
+    const optical = cachedOpticalData || {};
+    const customer = cachedCustomerSummary || {};
+    const opticalValues = optical.optical || {};
+
+    return {
+        equipment: {
+            model: device.product_class || device.model || null,
+            manufacturer: device.manufacturer || null,
+            serial: device.serial_number || null,
+            status: device.status || null,
+            firmware: device.software_version || null,
+            hardware: device.hardware_version || null,
+            uptime: device.uptime || wan.uptime || null,
+            last_inform: device.last_inform || null
+        },
+        wan: {
+            name: wan.name || null,
+            status: wan.status || null,
+            type: wan.type || wan.connection_type || null,
+            external_ip: wan.external_ip || null,
+            pppoe_username: wan.username || device.pppoe_username || null,
+            vlan: wan.vlan_id || wan.vlan || null,
+            dns: wan.dns_servers || null,
+            last_error: wan.last_error || null
+        },
+        optical: {
+            rx_power_dbm: opticalValues.rx_power ?? null,
+            tx_power_dbm: opticalValues.tx_power ?? null,
+            temperature_c: opticalValues.temperature ?? null,
+            voltage_v: opticalValues.voltage ?? null,
+            olt_pon: optical.pon_id || null,
+            slot: optical.slot ?? null,
+            pon: optical.pon ?? null,
+            onu_number: optical.onu_number ?? null,
+            last_update: opticalValues.last_update || null
+        },
+        wifi: {
+            ssid: device.wifi_ssid || null
+        },
+        lan_ports: Array.isArray(device.lan_ports)
+            ? device.lan_ports.slice(0, 8).map(port => ({
+                name: port.name || ('LAN' + (port.port || '')),
+                status: port.status || null,
+                speed: port.max_bit_rate || null,
+                duplex: port.duplex_mode || null
+            }))
+            : [],
+        connected_devices_count: Number(device.connected_devices_count ?? (Array.isArray(device.connected_devices) ? device.connected_devices.length : 0)),
+        customer: {
+            plan: customer.contract?.plan || null,
+            contract_status: customer.contract?.status_label || null,
+            financial_status: customer.financial?.label || null
+        }
+    };
+}
+
+function formatDeviceAIAnswer(text, provider, model) {
+    const safe = escapeOpticalHtml(text || 'Sem resposta da IA.').replace(/\n/g, '<br>');
+    const providerLabel = provider === 'anthropic' ? 'Claude' : 'OpenAI';
+    const meta = [providerLabel, model].filter(Boolean).join(' · ');
+    return '<div class="acs-ai-response-text">' + safe + '</div>' +
+        (meta ? '<div class="acs-ai-response-meta"><i class="bi bi-stars"></i> ' + escapeOpticalHtml(meta) + '</div>' : '');
+}
+
+async function askDeviceAI(question, targetAnswer) {
+    if (!targetAnswer) return;
+
+    const cleanQuestion = String(question || '').trim();
+    if (!cleanQuestion) return;
+
+    targetAnswer.innerHTML = '<span class="acs-ai-thinking"><i class="bi bi-stars"></i> Analisando dados do equipamento...</span>';
+
+    try {
+        const response = await fetch('/api/device-ai.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                device_id: deviceId,
+                question: cleanQuestion,
+                context: buildDeviceAIContext()
+            })
+        });
+
+        const raw = await response.text();
+        let data = null;
+        try {
+            data = JSON.parse(raw);
+        } catch (_) {
+            throw new Error('Resposta inválida do servidor de IA.');
+        }
+
+        if (!response.ok || !data?.success) {
+            throw new Error(data?.message || 'Falha ao consultar a IA.');
+        }
+
+        const html = formatDeviceAIAnswer(data.answer, data.provider, data.model);
+        targetAnswer.innerHTML = html;
+
+        const overviewAnswer = document.getElementById('acs-ai-answer-overview');
+        const tabAnswer = document.getElementById('acs-ai-answer');
+        if (overviewAnswer && overviewAnswer !== targetAnswer) overviewAnswer.innerHTML = html;
+        if (tabAnswer && tabAnswer !== targetAnswer) tabAnswer.innerHTML = html;
+
+    } catch (error) {
+        const message = error && error.message ? error.message : 'Falha ao consultar a IA.';
+        targetAnswer.innerHTML = '<span class="acs-ai-error"><i class="bi bi-exclamation-triangle"></i> ' +
+            escapeOpticalHtml(message) + '</span>';
+    }
+}
+
+async function runDeviceAIAnalysis() {
+    const input = document.getElementById('acs-ai-question');
     const answer = document.getElementById('acs-ai-answer');
-    if (answer) answer.innerHTML = '<i class="bi bi-info-circle"></i> Interface de IA pronta. Agora falta definir o provedor/API que será usado no servidor para realizar as análises.';
+    if (!input || !answer) return;
+    await askDeviceAI(input.value, answer);
 }
 
 
-function runOverviewAIQuestion() {
+async function runOverviewAIQuestion() {
     const input = document.getElementById('acs-ai-question-overview');
     const answer = document.getElementById('acs-ai-answer-overview');
     if (!input || !answer) return;
+
     const question = input.value.trim();
     if (!question) return;
-    answer.innerHTML = '<i class="bi bi-stars"></i> ' + question;
+
     const tabQuestion = document.getElementById('acs-ai-question');
     if (tabQuestion) tabQuestion.value = question;
-    runDeviceAIAnalysis();
-    const tabAnswer = document.getElementById('acs-ai-answer');
-    if (tabAnswer && tabAnswer.textContent.trim()) {
-        answer.innerHTML = tabAnswer.innerHTML;
-    } else {
-        answer.innerHTML = '<i class="bi bi-info-circle"></i> Assistente preparado para responder quando o provedor de IA estiver configurado.';
-    }
+
+    await askDeviceAI(question, answer);
 }
 
 

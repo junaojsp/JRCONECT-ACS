@@ -5313,3 +5313,44 @@ section{
     .acs-customer-facts{grid-template-columns:1fr 1fr}
     .acs-customer-statuses{grid-template-columns:1fr 1fr}
 }
+
+
+/* ===== LIVE DEVICE AI RESPONSE ===== */
+.acs-ai-answer-overview,
+.acs-ai-answer{
+    line-height:1.45;
+}
+.acs-ai-response-text{
+    color:#d9e6ef;
+    font-size:11px;
+    text-align:left;
+}
+.acs-ai-response-meta{
+    margin-top:8px;
+    padding-top:7px;
+    border-top:1px solid rgba(105,159,187,.10);
+    color:#69cfe0;
+    font-size:8px;
+    text-align:left;
+}
+.acs-ai-thinking{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    color:#69cfe0;
+    font-size:10px;
+}
+.acs-ai-thinking i{
+    animation:acs-ai-pulse 1.1s ease-in-out infinite;
+}
+.acs-ai-error{
+    display:inline-flex;
+    align-items:flex-start;
+    gap:6px;
+    color:#ff9da7;
+    font-size:10px;
+}
+@keyframes acs-ai-pulse{
+    0%,100%{opacity:.45;transform:scale(.95)}
+    50%{opacity:1;transform:scale(1.05)}
+}
