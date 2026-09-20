@@ -159,8 +159,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 }
                 const portNumber = Number(port.port || (idx + 1));
                 const ethernetDevices = connectedDevices.filter(d => String(d.interface_type || '').toLowerCase() === 'ethernet');
-                const linked = ethernetDevices.find(d => Number(d.lan_port) === portNumber) || null;
-                const linkedName = linked ? (linked.hostname || linked.vendor || linked.ip_address || 'Dispositivo') : (isUp ? 'Porta ativa' : '-');
+                const linkedCandidate = ethernetDevices.find(d => Number(d.lan_port) === portNumber) || null;
+                const linked = isUp ? linkedCandidate : null;
+                const linkedName = linked
+                    ? (linked.hostname || linked.vendor || linked.ip_address || 'Dispositivo')
+                    : (isUp ? 'Porta ativa' : '-');
                 const linkedIp = linked?.ip_address || '';
 
                 return `
