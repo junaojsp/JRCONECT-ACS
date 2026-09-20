@@ -4617,3 +4617,38 @@ section{
     .acs-router-clients-zone .acs-connected-compact-head,
     .acs-router-clients-zone .acs-connected-compact-row{grid-template-columns:1fr 1fr !important}
 }
+
+
+/* ===== ACS ROUTER CARD SINGLE COLUMN ===== */
+.acs-overview-reorganized>.acs-router-local-card{
+    grid-column:auto !important;
+    align-self:start;
+}
+.acs-router-local-card{
+    width:100%;
+    max-width:none;
+}
+.acs-router-local-grid{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+}
+.acs-router-wifi-zone{
+    grid-column:auto !important;
+}
+.acs-router-zone{
+    width:100%;
+}
+.acs-router-lan-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+}
+@media(max-width:1280px){
+    .acs-overview-reorganized>.acs-router-local-card{
+        grid-column:auto !important;
+    }
+}
+@media(max-width:760px){
+    .acs-router-lan-grid{
+        grid-template-columns:1fr !important;
+    }
+}
