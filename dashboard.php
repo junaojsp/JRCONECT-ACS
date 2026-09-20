@@ -6,8 +6,8 @@ requireLogin();
 $pageTitle = 'Dashboard';
 $currentPage = 'dashboard';
 
-// Verificar se o GenieACS está configurado
-$genieacsConfigured = isGenieACSConfigured();
+// Verificar se o Genie está configurado
+$genieacsConfigured = isGenieConfigured();
 
 include __DIR__ . '/views/layouts/header.php';
 
@@ -16,8 +16,7 @@ include __DIR__ . '/views/layouts/header.php';
 <style>
 
 /* ==========================================================
-   JR CONECT ACS
-   DASHBOARD V2
+   JR CONECT DASHBOARD V2
    ========================================================== */
 
 .jrc-dashboard {
@@ -457,7 +456,7 @@ include __DIR__ . '/views/layouts/header.php';
 
 
 /* ----------------------------------------------------------
-   RESUMO ACS / IA
+   RESUMO  / IA
    ---------------------------------------------------------- */
 
 .jrc-ai-panel {
@@ -1002,7 +1001,7 @@ include __DIR__ . '/views/layouts/header.php';
 }
 
 
-/* ===== ACS NOC DASHBOARD V4 ===== */
+/* =====  NOC DASHBOARD V4 ===== */
 .acs-noc-head{
     display:flex;align-items:center;justify-content:space-between;gap:18px;
     padding:14px 16px;margin-bottom:12px;border:1px solid #2a3850;border-radius:12px;
@@ -1060,7 +1059,7 @@ include __DIR__ . '/views/layouts/header.php';
 }
 
 
-/* ===== ACS FINAL DASHBOARD V5 ===== */
+/* =====  FINAL DASHBOARD V5 ===== */
 .acs-final-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;margin-bottom:10px;border:1px solid #2a3850;border-radius:11px;background:linear-gradient(180deg,#182235,#151f30)}
 .acs-final-brand{display:flex;align-items:center;gap:12px}.acs-final-head-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:10px;background:#15364a;color:#35cfe3;font-size:22px}.acs-final-brand h2{margin:0;color:#f0f5fa;font-size:20px;font-weight:800}.acs-final-brand p{margin:3px 0 0;color:#7f8da1;font-size:9px}
 .acs-final-head-actions{display:flex;align-items:center;gap:9px}.acs-final-clock,.acs-final-operational,.acs-final-refresh{min-height:48px;border:1px solid #26384f;border-radius:9px;background:#142032}.acs-final-clock{display:flex;align-items:center;gap:10px;padding:7px 11px;color:#8fa0b5}.acs-final-clock>i{font-size:17px;color:#79dce9}.acs-final-clock span,.acs-final-refresh small{display:block;color:#7f8da1;font-size:8px}.acs-final-clock strong{display:block;color:#e8eef5;font-size:12px;margin-top:2px}
@@ -1109,6 +1108,23 @@ include __DIR__ . '/views/layouts/header.php';
 @media(max-width:1300px){.jr-ref-grid{grid-template-columns:1fr 1fr}.jr-ref-ai{grid-column:1/-1}.jr-ref-alerts-card{grid-column:1/-1}.jr-ref-search{width:300px}}
 @media(max-width:800px){.jr-ref-grid{grid-template-columns:1fr}.jr-ref-ai,.jr-ref-alerts-card{grid-column:auto}.jr-ref-network-body,.jr-ref-models-body,.jr-ref-activity-body{grid-template-columns:1fr}.jr-ref-top{align-items:flex-start;flex-direction:column}.jr-ref-search{width:100%}}
 
+
+/* ===== JR RESETS CARD V7 ===== */
+.jr-ref-resets{min-height:230px}
+.jr-ref-resets-body{min-height:185px;display:grid;grid-template-columns:.9fr 1.1fr;gap:12px;align-items:center;padding:16px}
+.jr-ref-reset-main{text-align:center}
+.jr-ref-reset-main>strong{display:block;color:#eef4f9;font-size:30px;line-height:1}
+.jr-ref-reset-main>span{display:block;margin-top:6px;color:#8a99ab;font-size:9px}
+.jr-ref-reset-ok{margin-top:16px;display:flex;align-items:center;gap:8px;text-align:left;padding:9px 10px;border:1px solid #223148;border-radius:8px;background:#151f30;color:#9fb0c0;font-size:8px;line-height:1.4}
+.jr-ref-reset-ok i{color:#27d39f;font-size:18px}
+.jr-ref-reset-week{text-align:center}
+.jr-ref-reset-week>strong{display:block;color:#dbe5ee;font-size:10px}
+.jr-ref-reset-week>span{display:block;margin-top:10px;color:#8392a5;font-size:8px}
+.jr-ref-reset-week>span b{color:#c6d2de}
+.jr-ref-reset-bars{height:72px;display:flex;align-items:end;gap:6px;margin-top:8px;padding:0 4px;border-bottom:1px dashed #4b6176}
+.jr-ref-reset-bars i{flex:1;min-width:5px;border-radius:4px 4px 0 0;background:#1c3146}
+.jr-ref-reset-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:5px;color:#7e8da2;font-size:7px}
+
 </style>
 
 
@@ -1122,7 +1138,7 @@ include __DIR__ . '/views/layouts/header.php';
 
         <i class="bi bi-exclamation-triangle"></i>
 
-        O GenieACS ainda não foi configurado.
+        O Genie ainda não foi configurado.
 
         Configure primeiro em
 
@@ -1137,14 +1153,14 @@ include __DIR__ . '/views/layouts/header.php';
 
 
     <!-- =====================================================
-         DASHBOARD ACS - MODELO REFERENCIA ESCURO
+         DASHBOARD  - MODELO REFERENCIA ESCURO
          ===================================================== -->
 
     <div class="jr-ref-shell">
         <div class="jr-ref-top">
             <div class="jr-ref-brand">
                 <div class="jr-ref-brand-icon"><i class="bi bi-diagram-3-fill"></i></div>
-                <div><strong>JR CONECT ACS</strong><span>Gestão e Monitoramento de Equipamentos</span></div>
+                <div><strong>JR CONECT</strong><span>Gestão e Monitoramento de Equipamentos</span></div>
             </div>
             <div class="jr-ref-search"><i class="bi bi-search"></i><input type="text" placeholder="Buscar equipamento, cliente, IP, MAC..." onkeydown="if(event.key==='Enter'&&this.value.trim()){window.location='/devices.php?search='+encodeURIComponent(this.value.trim())}"></div>
         </div>
@@ -1162,16 +1178,16 @@ include __DIR__ . '/views/layouts/header.php';
             </section>
 
             <section class="jr-ref-card jr-ref-network">
-                <div class="jr-ref-card-head"><i class="bi bi-diagram-2-fill"></i><strong>Estatísticas da rede</strong><div class="jr-ref-pills"><span class="active">IXC</span><span>ACS</span></div></div>
+                <div class="jr-ref-card-head"><i class="bi bi-diagram-2-fill"></i><strong>Estatísticas da rede</strong><div class="jr-ref-pills"><span class="active"></span><span></span></div></div>
                 <div class="jr-ref-network-body">
                     <div class="jr-ref-ring">
                         <canvas id="deviceChart"></canvas>
                         <div><strong id="ref-availability">-</strong><span>Disponibilidade</span></div>
                     </div>
                     <div class="jr-ref-network-side">
-                        <div class="jr-ref-auto"><i class="bi bi-check-circle-fill"></i><span>Inventário oficial via API IXC</span></div>
+                        <div class="jr-ref-auto"><i class="bi bi-check-circle-fill"></i><span>Inventário oficial do sistema</span></div>
                         <div class="jr-ref-mini-grid">
-                            <div><strong id="ref-tr069">-</strong><span>TR-069 ativo</span></div>
+                            <div><strong id="ref-tr069">-</strong><span>Dispositivos gerenciados</span></div>
                             <div><strong id="ref-critical">-</strong><span>Sinal crítico</span></div>
                             <div><strong id="ref-nosignal">-</strong><span>Sem leitura</span></div>
                         </div>
@@ -1182,7 +1198,7 @@ include __DIR__ . '/views/layouts/header.php';
             <section class="jr-ref-card jr-ref-ai">
                 <div class="jr-ref-card-head purple"><i class="bi bi-stars"></i><strong>Resumo por IA</strong><span class="beta">beta</span></div>
                 <div class="jr-ref-ai-body">
-                    <p id="ref-ai-summary">Analisando os dados atuais do IXC e do ACS...</p>
+                    <p id="ref-ai-summary">Analisando os dados atuais do  e do ...</p>
                     <button type="button" onclick="document.getElementById('ref-ai-summary').textContent=buildDashboardAISummary()">Atualizar análise <i class="bi bi-arrow-right"></i></button>
                 </div>
             </section>
@@ -1206,10 +1222,23 @@ include __DIR__ . '/views/layouts/header.php';
                 </div>
             </section>
 
-            <section class="jr-ref-card jr-ref-alerts-card">
-                <div class="jr-ref-card-head"><i class="bi bi-exclamation-circle-fill"></i><strong>Alertas</strong></div>
-                <div class="jr-ref-alert-main"><strong id="ref-alert-total">-</strong><span>alertas atuais</span></div>
-                <div id="ref-alert-list" class="jr-ref-alert-list"></div>
+            <section class="jr-ref-card jr-ref-resets">
+                <div class="jr-ref-card-head"><i class="bi bi-arrow-repeat"></i><strong>Resets</strong></div>
+                <div class="jr-ref-resets-body">
+                    <div class="jr-ref-reset-main">
+                        <strong id="ref-reset-today">0</strong>
+                        <span>Resets hoje</span>
+                        <div class="jr-ref-reset-ok"><i class="bi bi-check-circle-fill"></i><span>Nenhuma anomalia detectada no número de resets</span></div>
+                    </div>
+                    <div class="jr-ref-reset-week">
+                        <strong>Últimos 7 dias</strong>
+                        <span>Média <b id="ref-reset-average">0</b></span>
+                        <div class="jr-ref-reset-bars">
+                            <i style="height:18%"></i><i style="height:26%"></i><i style="height:22%"></i><i style="height:30%"></i><i style="height:25%"></i><i style="height:20%"></i><i style="height:24%"></i>
+                        </div>
+                        <div class="jr-ref-reset-days"><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span></div>
+                    </div>
+                </div>
             </section>
         </div>
 
@@ -1499,7 +1528,7 @@ let recentDevicesFetchInProgress = false;
    ========================================================== */
 
 async function loadDashboardData() {
-    // Dashboard principal passa a usar IXC/Discovery como fonte oficial.
+    // Dashboard principal passa a usar /Discovery como fonte oficial.
     // Mantemos esta função para compatibilidade com chamadas existentes.
     return loadFinalDiscoveryData();
 }
@@ -2769,7 +2798,6 @@ async function loadFinalDiscoveryData() {
         set('status-critical', fmt(critical));
 
         renderManufacturerBars(devices);
-        renderFinalAlerts(devices, data.generated_at);
         renderReferenceDashboard(devices, summary);
 
         const d = document.getElementById('svc-discovery');
@@ -2997,7 +3025,6 @@ function renderReferenceDashboard(devices, summary) {
     updateChart({total, online, offline});
     renderReferenceHourBars(hourly);
     renderReferenceModelBars(models);
-    renderReferenceAlerts(alerts, critical, noSignal);
 
     const topModel = Object.entries(models).sort((a,b)=>b[1]-a[1])[0];
     const topManufacturer = Object.entries(manufacturers).sort((a,b)=>b[1]-a[1])[0];
@@ -3040,19 +3067,10 @@ function renderReferenceModelBars(models) {
     }).join('');
 }
 
-function renderReferenceAlerts(alerts, critical, noSignal) {
-    const holder=document.getElementById('ref-alert-list');
-    const total=document.getElementById('ref-alert-total');
-    if(total) total.textContent=Number(critical+noSignal).toLocaleString('pt-BR');
-    if(!holder)return;
-    const list=alerts.length?alerts:[{cls:'good',text:'Nenhum alerta crítico detectado'}];
-    holder.innerHTML=list.map(a=>'<div class="jr-ref-alert-row '+a.cls+'"><i></i><span>'+escapeDashboardHtml(a.text)+'</span></div>').join('');
-}
-
 function buildDashboardAISummary() {
     const s=window.__jrDashboardState;
-    if(!s) return 'Aguardando dados do IXC para gerar o resumo operacional.';
-    return 'O IXC possui '+s.total.toLocaleString('pt-BR')+' equipamentos no inventário. '+s.online.toLocaleString('pt-BR')+' apresentaram leitura recente nas últimas 24 horas ('+s.availability+'%). Foram identificados '+s.critical.toLocaleString('pt-BR')+' equipamentos com sinal crítico e '+s.noSignal.toLocaleString('pt-BR')+' sem leitura óptica. O modelo mais encontrado é '+s.topModel+' e o fabricante predominante é '+s.topManufacturer+'.';
+    if(!s) return 'Aguardando dados do  para gerar o resumo operacional.';
+    return 'Foram analisados '+s.total.toLocaleString('pt-BR')+' equipamentos. '+s.online.toLocaleString('pt-BR')+' apresentaram atividade recente nas últimas 24 horas ('+s.availability+'%). Foram identificados '+s.critical.toLocaleString('pt-BR')+' equipamentos com sinal crítico e '+s.noSignal.toLocaleString('pt-BR')+' sem leitura óptica. O modelo mais encontrado é '+s.topModel+' e o fabricante predominante é '+s.topManufacturer+'.';
 }
 </script>
 
