@@ -332,9 +332,26 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         };
 
         document.getElementById('overview-content').innerHTML = `
-            <div class="acs-overview-grid acs-approved-layout acs-overview-reorganized">
+            <section class="acs-ai-topbar">
+                <div class="acs-ai-topbar-main">
+                    <div class="acs-ai-topbar-icon"><i class="bi bi-stars"></i></div>
+                    <div class="acs-ai-topbar-copy">
+                        <span>ASSISTENTE IA</span>
+                        <strong>Assistente técnico JR CONECT</strong>
+                        <small id="acs-ai-compact-status">IA configurada</small>
+                    </div>
+                </div>
+                <div class="acs-ai-topbar-action">
+                    <span class="acs-mini-badge success">DISPONÍVEL</span>
+                    <button type="button" class="acs-soft-btn primary" onclick="openDeviceAIDrawer()">
+                        <i class="bi bi-chat-dots"></i> Abrir IA
+                    </button>
+                </div>
+            </section>
 
-                <section class="acs-overview-card acs-card-device acs-approved-device acs-fiber-card">
+            <div class="acs-overview-grid acs-approved-layout acs-overview-reorganized acs-overview-with-ai-bar">
+
+                <section class="acs-overview-card acs-card-device acs-approved-device acs-fiber-card acs-device-wide">
                     <div class="acs-overview-card-header">
                         <div><span class="acs-kicker"><i class="bi bi-router"></i> Equipamento / Fibra</span></div>
                         <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
@@ -383,23 +400,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <div><span><i class="bi bi-diagram-2"></i>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
                         <div><span><i class="bi bi-tag"></i>VLAN</span><strong>${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
                         <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong>${primaryWan.last_error || '-'}</strong></div>
-                    </div>
-                </section>
-
-                <section class="acs-overview-card acs-card-ai acs-approved-ai acs-ai-launcher-card">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-stars"></i> Assistente IA</span></div>
-                        <span class="acs-mini-badge success">DISPONÍVEL</span>
-                    </div>
-                    <div class="acs-ai-launcher-body acs-ai-launcher-compact">
-                        <div class="acs-ai-launcher-icon"><i class="bi bi-robot"></i></div>
-                        <div class="acs-ai-launcher-copy">
-                            <strong>Assistente técnico</strong>
-                            <span id="acs-ai-compact-status">IA configurada</span>
-                        </div>
-                        <button type="button" class="acs-soft-btn primary acs-ai-launcher-btn" onclick="openDeviceAIDrawer()">
-                            <i class="bi bi-chat-dots"></i> Abrir IA
-                        </button>
                     </div>
                 </section>
 

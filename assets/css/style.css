@@ -5704,3 +5704,106 @@ section{
         width:100% !important;
     }
 }
+
+
+/* ===== IA EM BARRA SUPERIOR + GRADE SEM ESPACOS VAZIOS ===== */
+#overview-content .acs-ai-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    width:100%;
+    margin-bottom:14px;
+    padding:10px 14px;
+    border:1px solid #2a3850;
+    border-radius:12px;
+    background:linear-gradient(180deg,#1b2638,#182235);
+    box-shadow:0 8px 20px rgba(0,0,0,.10);
+}
+#overview-content .acs-ai-topbar-main{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+}
+#overview-content .acs-ai-topbar-icon{
+    width:36px;
+    height:36px;
+    flex:0 0 36px;
+    display:grid;
+    place-items:center;
+    border-radius:10px;
+    background:rgba(53,207,227,.08);
+    border:1px solid rgba(53,207,227,.18);
+    color:#55d6e8;
+    font-size:15px;
+}
+#overview-content .acs-ai-topbar-copy{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+}
+#overview-content .acs-ai-topbar-copy>span{
+    color:#55d6e8;
+    font-size:7px;
+    font-weight:800;
+    letter-spacing:.08em;
+}
+#overview-content .acs-ai-topbar-copy>strong{
+    color:#edf4fa;
+    font-size:11px;
+    line-height:1.25;
+}
+#overview-content .acs-ai-topbar-copy>small{
+    color:#7e90a4;
+    font-size:8px;
+}
+#overview-content .acs-ai-topbar-action{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    flex:0 0 auto;
+}
+#overview-content .acs-ai-topbar-action .acs-soft-btn{
+    min-height:32px;
+    padding:6px 11px;
+    white-space:nowrap;
+    font-size:9px;
+}
+
+/* Desktop: Equipamento/Fibra 2 colunas + WAN 1; segunda linha 3 cards. */
+#overview-content .acs-overview-with-ai-bar>.acs-device-wide{
+    grid-column:span 2 !important;
+}
+#overview-content .acs-overview-with-ai-bar>.acs-approved-wan,
+#overview-content .acs-overview-with-ai-bar>.acs-approved-wifi,
+#overview-content .acs-overview-with-ai-bar>.acs-approved-lan,
+#overview-content .acs-overview-with-ai-bar>.acs-approved-diagnostics{
+    grid-column:span 1 !important;
+}
+
+@media(max-width:1280px){
+    #overview-content .acs-overview-with-ai-bar>.acs-device-wide{
+        grid-column:1/-1 !important;
+    }
+    #overview-content .acs-overview-with-ai-bar>.acs-approved-wan,
+    #overview-content .acs-overview-with-ai-bar>.acs-approved-wifi,
+    #overview-content .acs-overview-with-ai-bar>.acs-approved-lan,
+    #overview-content .acs-overview-with-ai-bar>.acs-approved-diagnostics{
+        grid-column:auto !important;
+    }
+}
+@media(max-width:760px){
+    #overview-content .acs-ai-topbar{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+    #overview-content .acs-ai-topbar-action{
+        width:100%;
+        justify-content:space-between;
+    }
+    #overview-content .acs-ai-topbar-action .acs-soft-btn{
+        flex:1;
+    }
+}
