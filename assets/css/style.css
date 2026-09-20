@@ -6265,3 +6265,39 @@ section{
     #overview-content .acs-info-row>span,
     #overview-content .acs-info-row>strong{font-size:10px}
 }
+
+
+/* ===== Resumo técnico do equipamento ===== */
+#overview-content .acs-technical-summary{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:10px;
+    margin:0 0 14px;
+}
+#overview-content .acs-technical-summary-item{
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px;
+    border:1px solid rgba(117,168,198,.13);
+    border-radius:12px;
+    background:linear-gradient(145deg,rgba(11,31,46,.98),rgba(6,20,31,.98));
+}
+#overview-content .acs-technical-summary-item>i{
+    display:grid;place-items:center;flex:0 0 auto;
+    width:33px;height:33px;border-radius:9px;
+    color:#7aa4b9;background:rgba(117,168,198,.08);font-size:16px;
+}
+#overview-content .acs-technical-summary-item>div{min-width:0}
+#overview-content .acs-technical-summary-item span,
+#overview-content .acs-technical-summary-item small{display:block;color:#8ca7b7;font-size:9px;line-height:1.25}
+#overview-content .acs-technical-summary-item strong{display:block;margin:3px 0;color:#e7f2f8;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#overview-content .acs-technical-summary-item.healthy{border-color:rgba(32,213,155,.25)}
+#overview-content .acs-technical-summary-item.healthy>i{color:#52e6b1;background:rgba(32,213,155,.10)}
+#overview-content .acs-technical-summary-item.warning{border-color:rgba(246,185,74,.30)}
+#overview-content .acs-technical-summary-item.warning>i{color:#f6c260;background:rgba(246,185,74,.10)}
+#overview-content .acs-technical-summary-item.critical{border-color:rgba(240,100,114,.32)}
+#overview-content .acs-technical-summary-item.critical>i{color:#ff8591;background:rgba(240,100,114,.10)}
+@media(max-width:1100px){#overview-content .acs-technical-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){#overview-content .acs-technical-summary{grid-template-columns:1fr 1fr}#overview-content .acs-technical-summary-item{padding:10px}}
