@@ -6016,3 +6016,54 @@ section{
     overflow:hidden !important;
     text-overflow:ellipsis !important;
 }
+
+
+/* ===== IDADE POR FONTE: ACS x OPTICO/IXC ===== */
+#overview-content .acs-source-ages{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+}
+#overview-content .acs-source-age{
+    display:grid;
+    grid-template-columns:13px auto;
+    grid-template-rows:auto auto;
+    column-gap:5px;
+    align-items:center;
+    min-width:108px;
+    padding:5px 8px;
+    border:1px solid #2e3f55;
+    border-radius:8px;
+    background:#151f30;
+}
+#overview-content .acs-source-age>i{
+    grid-row:1/3;
+    color:#55d6e8;
+    font-size:10px;
+}
+#overview-content .acs-source-age>span{
+    color:#73879c;
+    font-size:7px;
+    line-height:1.1;
+}
+#overview-content .acs-source-age>strong{
+    color:#cbd8e4;
+    font-size:8px;
+    font-weight:700;
+    line-height:1.15;
+    white-space:nowrap;
+}
+@media(max-width:900px){
+    #overview-content .acs-source-ages{
+        flex-wrap:wrap;
+    }
+}
+@media(max-width:760px){
+    #overview-content .acs-source-ages{
+        width:100%;
+    }
+    #overview-content .acs-source-age{
+        flex:1 1 140px;
+    }
+}

@@ -153,13 +153,25 @@ function getDeviceHealth(device = currentDeviceData || {}) {
     }
 
     const wan = typeof getPrimaryWAN === 'function' ? (getPrimaryWAN(device) || {}) : {};
-    const wanStatus = String(wan.status || '').trim().toLowerCase();
-    const wanKnownBad = wanStatus && !['connected', 'up', 'online', 'enabled'].includes(wanStatus);
-    if (wanKnownBad) {
+    const wanStatusRaw = String(wan.status || '').trim();
+    const wanStatus = wanStatusRaw.toLowerCase();
+    const connectedStates = ['connected', 'up', 'online', 'enabled'];
+
+    // O estado atual da WAN tem prioridade sobre LastConnectionError,
+    // porque muitos CPEs mantêm no TR-069 o último erro histórico mesmo após reconectar.
+    if (connectedStates.includes(wanStatus)) {
+        return {
+            level: 'healthy',
+            label: 'SAUDÁVEL',
+            detail: 'Online · WAN conectada'
+        };
+    }
+
+    if (wanStatus && !['unknown', 'n/a', 'na', '-'].includes(wanStatus)) {
         return {
             level: 'warning',
             label: 'ATENÇÃO',
-            detail: 'WAN: ' + (wan.status || 'estado anormal')
+            detail: 'WAN: ' + wanStatusRaw
         };
     }
 
@@ -168,29 +180,134 @@ function getDeviceHealth(device = currentDeviceData || {}) {
         return {
             level: 'warning',
             label: 'ATENÇÃO',
-            detail: 'WAN reportou erro'
+            detail: 'WAN sem estado atual · erro registrado'
         };
     }
 
     return {
-        level: 'healthy',
-        label: 'SAUDÁVEL',
-        detail: 'Online e WAN operacional'
+        level: 'warning',
+        label: 'ATENÇÃO',
+        detail: 'WAN sem estado confirmado'
     };
 }
 
-function formatRefreshAge() {
-    if (!lastDeviceRefreshAt) return 'Aguardando atualização';
-    const seconds = Math.max(0, Math.floor((Date.now() - lastDeviceRefreshAt) / 1000));
-    if (seconds < 5) return 'Atualizado agora';
-    if (seconds < 60) return 'Atualizado há ' + seconds + 's';
+function parseOperationalTimestamp(value) {
+    if (!value) return null;
+
+    const text = String(value).trim();
+
+    let match = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (match) {
+        const date = new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3]),
+            Number(match[4]),
+            Number(match[5]),
+            Number(match[6] || 0)
+        );
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})[ ,T]+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (match) {
+        const date = new Date(
+            Number(match[3]),
+            Number(match[2]) - 1,
+            Number(match[1]),
+            Number(match[4]),
+            Number(match[5]),
+            Number(match[6] || 0)
+        );
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatSourceAge(timestamp) {
+    if (!timestamp) return null;
+
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+    if (seconds < 5) return 'agora';
+    if (seconds < 60) return 'há ' + seconds + 's';
+
     const minutes = Math.floor(seconds / 60);
-    return 'Atualizado há ' + minutes + ' min';
+    if (minutes < 60) return 'há ' + minutes + ' min';
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours < 24) {
+        return remainingMinutes
+            ? 'há ' + hours + 'h ' + remainingMinutes + 'min'
+            : 'há ' + hours + 'h';
+    }
+
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return remainingHours
+        ? 'há ' + days + 'd ' + remainingHours + 'h'
+        : 'há ' + days + 'd';
+}
+
+function getOpticalSourceAge() {
+    if (opticalLoading && (!cachedOpticalData || cachedOpticalData.device_id !== deviceId)) {
+        return {
+            text: 'consultando',
+            title: 'Consultando leitura óptica no IXC'
+        };
+    }
+
+    if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId) {
+        return {
+            text: 'aguardando',
+            title: 'Leitura óptica ainda não carregada'
+        };
+    }
+
+    if (cachedOpticalData.error) {
+        return {
+            text: 'indisponível',
+            title: cachedOpticalData.error
+        };
+    }
+
+    const raw = cachedOpticalData.optical?.last_update || '';
+    const parsed = parseOperationalTimestamp(raw);
+    const age = formatSourceAge(parsed);
+
+    if (age) {
+        return {
+            text: age,
+            title: 'Última leitura óptica IXC: ' + formatOpticalDate(raw)
+        };
+    }
+
+    return {
+        text: 'sem horário',
+        title: 'O IXC não informou data/hora da última leitura óptica'
+    };
 }
 
 function updateOverviewOperationalMeta() {
-    const age = document.getElementById('acs-overview-refresh-age');
-    if (age) age.textContent = formatRefreshAge();
+    const acsAge = document.getElementById('acs-overview-acs-age');
+    if (acsAge) {
+        acsAge.textContent = lastDeviceRefreshAt ? formatSourceAge(lastDeviceRefreshAt) : 'aguardando';
+        acsAge.title = lastDeviceRefreshAt
+            ? 'Última atualização do ACS: ' + new Date(lastDeviceRefreshAt).toLocaleString('pt-BR')
+            : 'Aguardando atualização do ACS';
+    }
+
+    const opticalAge = document.getElementById('acs-overview-optical-age');
+    if (opticalAge) {
+        const opticalMeta = getOpticalSourceAge();
+        opticalAge.textContent = opticalMeta.text;
+        opticalAge.title = opticalMeta.title;
+    }
 
     const health = getDeviceHealth();
     const healthEl = document.getElementById('acs-device-health');
@@ -472,9 +589,17 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <span>VERIFICANDO</span>
                         <small>Saúde operacional</small>
                     </div>
-                    <div class="acs-refresh-meta">
-                        <i class="bi bi-arrow-clockwise"></i>
-                        <span id="acs-overview-refresh-age">Atualizando...</span>
+                    <div class="acs-source-ages">
+                        <div class="acs-source-age">
+                            <i class="bi bi-router"></i>
+                            <span>ACS</span>
+                            <strong id="acs-overview-acs-age">aguardando</strong>
+                        </div>
+                        <div class="acs-source-age">
+                            <i class="bi bi-reception-4"></i>
+                            <span>Óptico/IXC</span>
+                            <strong id="acs-overview-optical-age">aguardando</strong>
+                        </div>
                     </div>
                 </div>
 
@@ -2855,6 +2980,7 @@ function updateOpticalDomFromCache() {
     if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
     updateIxcOnuSummary();
+    updateOverviewOperationalMeta();
 }
 
 function updateIxcOnuSummary() {
