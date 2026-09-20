@@ -174,8 +174,11 @@
 
     window.jrOpenUnifiedWifi=() => {
         const section=document.querySelector('.acs-approved-wifi');
-        const button=section?.querySelector('[data-wng-mode="unified"]');
-        if(button){ button.click(); section.scrollIntoView({block:'center',behavior:'smooth'}); return; }
+        if(typeof window.jrShowUnifiedPanel==='function'){
+            window.jrShowUnifiedPanel();
+            section?.scrollIntoView({block:'center',behavior:'smooth'});
+            return;
+        }
         toast('A identificação da rede unificada ainda não carregou. Atualize a leitura e tente novamente.','info');
     };
 

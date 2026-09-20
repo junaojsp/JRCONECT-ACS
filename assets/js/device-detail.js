@@ -199,32 +199,28 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         };
 
         document.getElementById('overview-content').innerHTML = `
-            <div class="acs-overview-grid acs-approved-layout">
+            <div class="acs-overview-grid acs-approved-layout acs-overview-reorganized">
 
-                <section class="acs-overview-card acs-card-device acs-approved-device acs-approved-device-combined">
+                <section class="acs-overview-card acs-card-device acs-approved-device acs-fiber-card">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-info-circle-fill"></i> Informações do dispositivo</span></div>
+                        <div><span class="acs-kicker"><i class="bi bi-router"></i> Equipamento / Fibra</span></div>
                         <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
                             <span class="acs-status-dot"></span>${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
                         </span>
                     </div>
-
-                    <div class="acs-device-combined-grid">
-                        <div class="acs-device-combined-section">
-                            <div class="acs-device-combined-title"><i class="bi bi-router"></i> Dados do equipamento</div>
+                    <div class="acs-fiber-summary-grid">
+                        <div class="acs-fiber-info">
                             <div class="acs-reference-list">
-                                <div><span>Nome do equipamento</span><strong>${device.product_class || device.model || 'Equipamento'}</strong></div>
+                                <div><span>Modelo</span><strong>${device.product_class || device.model || 'N/D'}</strong></div>
                                 <div><span>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
                                 <div><span>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
-                                <div><span>Modelo</span><strong>${device.product_class || 'N/D'}</strong></div>
-                                <div><span>Versão de firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
-                                <div><span>Versão de hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
+                                <div><span>Firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
+                                <div><span>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
                                 <div><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
                                 <div><span>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
                             </div>
                         </div>
-
-                        <div class="acs-device-combined-section optical">
+                        <div class="acs-fiber-optical">
                             <div class="acs-device-combined-title"><i class="bi bi-reception-4"></i> Sinal óptico / GPON</div>
                             <div class="acs-reference-metrics acs-device-optical-metrics">
                                 <div><span>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
@@ -236,7 +232,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                                 <div><span>PON ID</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
                                 <div><span>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
                                 <div><span>OLT</span><strong>-</strong></div>
-                                <div><span>Última atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
+                                <div><span>Atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
                             </div>
                         </div>
                     </div>
@@ -244,13 +240,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
                 <section class="acs-overview-card acs-card-wan acs-approved-wan">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-shield-fill"></i> Interface de Internet (WAN)</span></div>
-                        <span class="acs-mini-badge success">CONECTADO</span>
+                        <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span></div>
+                        <span class="acs-mini-badge ${String(primaryWan.status || '').toLowerCase()==='connected'?'success':''}">${primaryWan.status || 'STATUS'}</span>
                     </div>
                     <div class="acs-reference-list">
                         <div><span>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
                         <div><span>IP</span><strong>${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
-                        <div><span>Método de conexão</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
+                        <div><span>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
                         <div><span>Usuário PPPoE</span><strong>${primaryWan.username || 'Não disponível'}</strong></div>
                         <div><span>IPv6</span><strong>${primaryWan.ipv6 || 'Não disponível'}</strong></div>
                         <div><span>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
@@ -275,65 +271,55 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-
-
-
-
-                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
+                <section class="acs-overview-card acs-router-local-card">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span></div>
+                        <div><span class="acs-kicker"><i class="bi bi-router-fill"></i> Roteador / Rede Local</span></div>
+                        <span class="acs-mini-badge">LAN + WI-FI</span>
                     </div>
-                    <div class="acs-wifi-reference-grid">
-                        <div class="acs-wifi-band">
-                            <div class="acs-wifi-band-title"><i class="bi bi-wifi"></i><strong>Wi-Fi 2.4 GHz</strong><span>HABILITADA</span></div>
-                            <div class="acs-reference-list compact">
-                                <div><span>SSID</span><strong>${wifiName}</strong></div>
-                                <div><span>Canal</span><strong>Automático</strong></div>
-                                <div><span>Segurança</span><strong>WPA/WPA2</strong></div>
-                                <div><span>Senha</span><strong>********</strong></div>
+
+                    <div class="acs-router-local-grid">
+                        <div class="acs-router-zone acs-router-wifi-zone acs-approved-wifi">
+                            <div class="acs-router-zone-title">
+                                <span><i class="bi bi-wifi"></i> Wi-Fi</span>
+                                <small>2,4 GHz · 5 GHz · Rede Unificada</small>
                             </div>
+                            <div class="acs-wifi-reference-grid"></div>
                         </div>
-                        <div class="acs-wifi-band">
-                            <div class="acs-wifi-band-title"><i class="bi bi-wifi"></i><strong>Wi-Fi 5 GHz</strong><span>HABILITADA</span></div>
-                            <div class="acs-reference-list compact">
-                                <div><span>SSID</span><strong>${wifiName}</strong></div>
-                                <div><span>Canal</span><strong>Automático</strong></div>
-                                <div><span>Segurança</span><strong>WPA/WPA2</strong></div>
-                                <div><span>Senha</span><strong>********</strong></div>
+
+                        <div class="acs-router-zone">
+                            <div class="acs-router-zone-title">
+                                <span><i class="bi bi-ethernet"></i> Portas LAN</span>
+                                <small>Status, velocidade e dispositivo</small>
                             </div>
+                            <div class="acs-lan-visual-grid acs-router-lan-grid">${renderLanVisual(lanPorts)}</div>
+                        </div>
+
+                        <div class="acs-router-zone acs-router-clients-zone">
+                            <div class="acs-router-zone-title">
+                                <span><i class="bi bi-diagram-3-fill"></i> Dispositivos conectados</span>
+                                <span class="acs-mini-badge">${connectedDevices.length} DISPOSITIVOS</span>
+                            </div>
+                            <div class="acs-connected-compact">${renderConnectedCompact(connectedDevices.slice(0,3))}</div>
+                            <button type="button" class="acs-soft-btn acs-router-action" onclick="document.getElementById('devices-tab')?.click()">
+                                <i class="bi bi-list-ul"></i> Ver todos
+                            </button>
+                        </div>
+
+                        <div class="acs-router-zone acs-router-web-zone">
+                            <div class="acs-router-zone-title">
+                                <span><i class="bi bi-browser-chrome"></i> Acesso Web</span>
+                                <small>Gerenciamento local do roteador</small>
+                            </div>
+                            <div class="acs-router-web-status">
+                                <div><span>IP de gerenciamento</span><strong>${extractIP(device.ip_tr069) || device.ip_address || 'N/D'}</strong></div>
+                                <div><span>Status</span><strong>${device.status === 'online' ? 'Disponível' : 'Equipamento offline'}</strong></div>
+                            </div>
+                            <button type="button" class="acs-soft-btn primary acs-router-action" onclick="openWebManagement()" ${device.status === 'online' ? '' : 'disabled'}>
+                                <i class="bi bi-box-arrow-up-right"></i> Abrir gerenciamento web
+                            </button>
                         </div>
                     </div>
                 </section>
-
-
-
-
-
-
-
-                <div class="acs-approved-bottom-stack">
-                    <section class="acs-overview-card acs-card-connected acs-approved-connected">
-                        <div class="acs-overview-card-header">
-                            <div><span class="acs-kicker"><i class="bi bi-diagram-3-fill"></i> Dispositivos conectados</span></div>
-                            <span class="acs-mini-badge">${connectedDevices.length} DISPOSITIVOS</span>
-                        </div>
-                        <div class="acs-connected-compact">${renderConnectedCompact(connectedDevices)}</div>
-                    </section>
-
-                    <section class="acs-overview-card acs-card-events acs-approved-events">
-                        <div class="acs-overview-card-header">
-                            <div><span class="acs-kicker"><i class="bi bi-clock-history"></i> Eventos recentes</span></div>
-                            <span class="acs-mini-badge">EM BREVE</span>
-                        </div>
-                        <div class="acs-event-placeholder acs-reference-event">
-                            <i class="bi bi-info-circle-fill"></i>
-                            <div>
-                                <strong>Histórico operacional</strong>
-                                <span>Os eventos deste equipamento serão exibidos aqui, incluindo quedas, reinicializações e alterações.</span>
-                            </div>
-                        </div>
-                    </section>
-                </div>
 
             </div>
         `;
