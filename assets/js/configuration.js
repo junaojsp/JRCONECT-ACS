@@ -94,8 +94,54 @@ document.getElementById('form-telegram').addEventListener('submit', async functi
 });
 
 // AI Form
+const aiProviderModels = {
+    openai: ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'],
+    anthropic: ['claude-sonnet-5', 'claude-opus-5', 'claude-fable-5', 'claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6']
+};
+
+function refreshAIProviderForm(forceDefault = false) {
+    const form = document.getElementById('form-ai');
+    if (!form) return;
+
+    const providerSelect = form.querySelector('[name="provider"]');
+    const keyInput = form.querySelector('[name="api_key"]');
+    const modelInput = form.querySelector('[name="model"]');
+    const datalist = document.getElementById('ai-model-options');
+    const help = document.getElementById('ai-model-help');
+
+    const provider = providerSelect?.value || 'openai';
+    const providerConfig = (window.AI_PROVIDER_CONFIG || {})[provider] || {};
+    const models = aiProviderModels[provider] || [];
+
+    if (datalist) {
+        datalist.innerHTML = models.map(model => '<option value="' + model + '"></option>').join('');
+    }
+
+    if (modelInput && (forceDefault || !modelInput.value)) {
+        modelInput.value = providerConfig.model || models[0] || '';
+    }
+
+    if (keyInput) {
+        keyInput.value = '';
+        keyInput.placeholder = providerConfig.configured
+            ? 'Chave já configurada — deixe em branco para manter'
+            : (provider === 'anthropic' ? 'Cole sua Anthropic API key aqui' : 'Cole sua OpenAI API key aqui');
+    }
+
+    if (help) {
+        help.textContent = provider === 'anthropic'
+            ? 'Modelos Claude ativos. Sonnet 5 é o padrão desta integração.'
+            : 'Modelos OpenAI. Você também pode informar manualmente outro modelo compatível.';
+    }
+}
+
 const aiForm = document.getElementById('form-ai');
 if (aiForm) {
+    const providerSelect = aiForm.querySelector('[name="provider"]');
+    if (providerSelect) {
+        providerSelect.addEventListener('change', () => refreshAIProviderForm(true));
+    }
+    refreshAIProviderForm(false);
     aiForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         showLoading();
@@ -210,6 +256,14 @@ async function saveAI() {
             keyInput.value = '';
             keyInput.placeholder = 'Chave já configurada — deixe em branco para manter';
         }
+        const provider = form.querySelector('[name="provider"]')?.value || 'openai';
+        const model = form.querySelector('[name="model"]')?.value || '';
+        window.AI_PROVIDER_CONFIG = window.AI_PROVIDER_CONFIG || {};
+        window.AI_PROVIDER_CONFIG[provider] = {
+            ...(window.AI_PROVIDER_CONFIG[provider] || {}),
+            configured: true,
+            model
+        };
     } else {
         showToast(result?.message || 'Falha ao salvar configuração da IA', 'danger');
     }

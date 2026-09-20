@@ -18,25 +18,25 @@ if (!is_array($data)) {
 }
 
 try {
-    $provider = trim((string)($data['provider'] ?? 'openai'));
-    $model = trim((string)($data['model'] ?? 'gpt-5.6-terra'));
-
-    if ($provider !== 'openai') {
-        jsonResponse(['success' => false, 'message' => 'Provedor não suportado nesta versão.'], 400);
-    }
+    $provider = normalizeAIProvider((string)($data['provider'] ?? 'openai'));
+    $model = trim((string)($data['model'] ?? defaultAIModel($provider)));
 
     $conn = getDBConnection();
-    $existing = getAIConfig($conn);
+    $existing = getAIConfig($conn, $provider);
     $submittedKey = trim((string)($data['api_key'] ?? ''));
     $apiKey = $submittedKey !== '' ? $submittedKey : trim((string)($existing['api_key'] ?? ''));
 
     if ($apiKey === '') {
-        jsonResponse(['success' => false, 'message' => 'Informe a API key da OpenAI.'], 400);
+        $name = $provider === 'anthropic' ? 'Anthropic' : 'OpenAI';
+        jsonResponse(['success' => false, 'message' => 'Informe a API key da ' . $name . '.'], 400);
+    }
+
+    if ($model === '') {
+        jsonResponse(['success' => false, 'message' => 'Informe o modelo da IA.'], 400);
     }
 
     $sameCredentials = $existing
         && hash_equals((string)$existing['api_key'], $apiKey)
-        && (string)$existing['provider'] === $provider
         && (string)$existing['model'] === $model;
 
     $connected = $sameCredentials && !empty($existing['is_connected']);
@@ -45,7 +45,8 @@ try {
 
     jsonResponse([
         'success' => true,
-        'message' => 'Configuração da IA salva com segurança no servidor.',
+        'message' => ($provider === 'anthropic' ? 'Claude' : 'OpenAI') . ' salvo com segurança no servidor.',
+        'provider' => $provider,
         'connected' => $connected,
         'model' => $model,
     ]);

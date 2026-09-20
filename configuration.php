@@ -15,6 +15,8 @@ $telegram = $conn->query("SELECT * FROM telegram_config LIMIT 1")->fetch_assoc()
 
 ensureAIConfigTable($conn);
 $ai = getAIConfig($conn);
+$aiProviders = getAIProviderStatus($conn);
+$activeAIProvider = $ai['provider'] ?? 'openai';
 
 include __DIR__ . '/views/layouts/header.php';
 ?>
@@ -591,11 +593,14 @@ include __DIR__ . '/views/layouts/header.php';
                         <i class="bi bi-stars"></i>
                         Configuração da IA
 
-                        <?php if ($ai && !empty($ai['is_connected'])): ?>
-                            <span class="badge online float-end">
-                                Conectado
-                            </span>
-                        <?php endif; ?>
+                        <span class="float-end">
+                            <?php if (!empty($aiProviders['openai']['is_connected'])): ?>
+                                <span class="badge online me-1">OpenAI conectado</span>
+                            <?php endif; ?>
+                            <?php if (!empty($aiProviders['anthropic']['is_connected'])): ?>
+                                <span class="badge online">Claude conectado</span>
+                            <?php endif; ?>
+                        </span>
                     </div>
 
                     <div class="card-body">
@@ -606,14 +611,21 @@ include __DIR__ . '/views/layouts/header.php';
                                 <label>Provedor</label>
                                 <select
                                     name="provider"
+                                    id="ai-provider"
                                     class="form-control"
                                     required
                                 >
                                     <option
                                         value="openai"
-                                        <?php echo (($ai['provider'] ?? 'openai') === 'openai') ? 'selected' : ''; ?>
+                                        <?php echo ($activeAIProvider === 'openai') ? 'selected' : ''; ?>
                                     >
                                         OpenAI
+                                    </option>
+                                    <option
+                                        value="anthropic"
+                                        <?php echo ($activeAIProvider === 'anthropic') ? 'selected' : ''; ?>
+                                    >
+                                        Claude (Anthropic)
                                     </option>
                                 </select>
 
@@ -632,7 +644,7 @@ include __DIR__ . '/views/layouts/header.php';
                                     class="form-control"
                                     value=""
                                     autocomplete="new-password"
-                                    placeholder="<?php echo $ai ? 'Chave já configurada — deixe em branco para manter' : 'Cole sua API key aqui'; ?>"
+                                    placeholder="<?php echo !empty($aiProviders[$activeAIProvider]['configured']) ? 'Chave já configurada — deixe em branco para manter' : 'Cole sua API key aqui'; ?>"
                                 >
 
                                 <small class="text-muted">
@@ -646,20 +658,17 @@ include __DIR__ . '/views/layouts/header.php';
                                 <input
                                     type="text"
                                     name="model"
+                                    id="ai-model"
                                     class="form-control"
                                     list="ai-model-options"
-                                    value="<?php echo htmlspecialchars($ai['model'] ?? 'gpt-5.6-terra', ENT_QUOTES, 'UTF-8'); ?>"
+                                    value="<?php echo htmlspecialchars($ai['model'] ?? defaultAIModel($activeAIProvider), ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
 
-                                <datalist id="ai-model-options">
-                                    <option value="gpt-5.6-sol"></option>
-                                    <option value="gpt-5.6-terra"></option>
-                                    <option value="gpt-5.6-luna"></option>
-                                </datalist>
+                                <datalist id="ai-model-options"></datalist>
 
-                                <small class="text-muted">
-                                    Terra é uma opção equilibrada entre capacidade e custo; você pode informar outro modelo compatível.
+                                <small class="text-muted" id="ai-model-help">
+                                    Escolha o modelo disponível no provedor selecionado.
                                 </small>
                             </div>
 
@@ -706,6 +715,10 @@ include __DIR__ . '/views/layouts/header.php';
 </div>
 
 <!-- Carregar JavaScript externo -->
+<script>
+window.AI_PROVIDER_CONFIG = <?php echo json_encode($aiProviders, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+window.ACTIVE_AI_PROVIDER = <?php echo json_encode($activeAIProvider); ?>;
+</script>
 <script src="/assets/js/configuration.js?v=<?php echo time(); ?>"></script>
 
 <?php
