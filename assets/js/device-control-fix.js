@@ -233,7 +233,7 @@
                         <i class="bi bi-arrow-repeat"></i> ${state.refreshBusy?'Consultando...':'Detectar redes do modem'}
                     </button>
                     <button type="button" id="jr-wifi-diagnostic" class="acs-soft-btn" onclick="jrDownloadWifiDiagnostic()" ${!permitted('wifi')?'disabled':''}>
-                        <i class="bi bi-download"></i> Diagnóstico Wi-Fi
+                        <i class="bi bi-file-earmark-pdf"></i> Diagnóstico PDF
                     </button>
                 </div>
                 <div class="jr-wifi-health-strip" aria-live="polite">
@@ -374,15 +374,67 @@
         window.jrSelectControl('wifi',row.id);
         window.jrOpenControl('wifi');
     };
+    function wifiDiagnosticPdf(result) {
+        const printable = value => String(value ?? '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+            .replace(/[\\()]/g, ch => '\\' + ch)
+            .replace(/[^\x20-\x7E]/g,'?');
+        const lines = ['JR CONECT TELECOM - DIAGNOSTICO WI-FI', 'Gerado em: ' + new Date().toLocaleString('pt-BR'), 'Origem: ACS / TR-069', ''];
+        const add = (value, indent=0, label='') => {
+            if (value === null || value === undefined || value === '') {
+                lines.push(' '.repeat(indent) + label + 'Nao informado'); return;
+            }
+            if (Array.isArray(value)) {
+                if (label) lines.push(' '.repeat(indent) + label);
+                if (!value.length) lines.push(' '.repeat(indent + 2) + 'Sem registros');
+                value.forEach((item,index) => add(item, indent + 2, '[' + (index + 1) + '] '));
+                return;
+            }
+            if (typeof value === 'object') {
+                if (label) lines.push(' '.repeat(indent) + label);
+                Object.entries(value).forEach(([key,item]) => add(item, indent + 2, key + ': '));
+                return;
+            }
+            const prefix = ' '.repeat(indent) + label;
+            const text = prefix + String(value);
+            for (let offset=0; offset<text.length; offset+=92) lines.push(text.slice(offset, offset+92));
+        };
+        add(result.diagnostic || {}, 0);
+        const pageLines=46, pages=[];
+        for(let i=0;i<lines.length;i+=pageLines) pages.push(lines.slice(i,i+pageLines));
+        const objects=['<< /Type /Catalog /Pages 2 0 R >>',''];
+        const pageIds=[];
+        pages.forEach((page,index) => {
+            const pageId=3 + index * 2, contentId=pageId + 1;
+            pageIds.push(pageId + ' 0 R');
+            const content=['BT','/F1 10 Tf','50 795 Td'];
+            page.forEach((line,lineIndex) => {
+                if(lineIndex) content.push('0 -15 Td');
+                content.push('(' + printable(line) + ') Tj');
+            });
+            content.push('ET');
+            const stream=content.join('\n');
+            objects[pageId-1]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents ' + contentId + ' 0 R >>';
+            objects[contentId-1]='<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream';
+        });
+        objects[1]='<< /Type /Pages /Kids [' + pageIds.join(' ') + '] /Count ' + pages.length + ' >>';
+        let pdf='%PDF-1.4\n', offsets=[0];
+        objects.forEach((object,index) => { offsets[index+1]=pdf.length; pdf+=(index+1)+' 0 obj\n'+object+'\nendobj\n'; });
+        const xref=pdf.length;
+        pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+        offsets.slice(1).forEach(offset => { pdf+=String(offset).padStart(10,'0')+' 00000 n \n'; });
+        pdf+='trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+        return new Blob([pdf], {type:'application/pdf'});
+    }
     window.jrDownloadWifiDiagnostic=async () => {
         if(!permitted('wifi')) return;
         const button=document.getElementById('jr-wifi-diagnostic');
         if(button) button.disabled=true;
         try {
             const result=await request({action:'wifi_diagnostics',kind:'wifi'});
-            const blob=new Blob([JSON.stringify(result.diagnostic,null,2)],{type:'application/json'});
+            const blob=wifiDiagnosticPdf(result);
             const url=URL.createObjectURL(blob), anchor=document.createElement('a');
-            anchor.href=url; anchor.download='diagnostico-edicao-wifi.json';
+            anchor.href=url; anchor.download='diagnostico-wifi-jrconect.pdf';
             document.body.appendChild(anchor); anchor.click(); anchor.remove();
             setTimeout(()=>URL.revokeObjectURL(url),1000);
         } catch(e) {toast(e.message,'danger');}
