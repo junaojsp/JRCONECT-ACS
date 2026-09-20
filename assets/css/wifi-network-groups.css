@@ -1,0 +1,23 @@
+/* Scoped: existing individual Wi-Fi, credentials and monitoring stay intact. */
+.acs-approved-wifi .jr-wng-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;min-width:0}
+.acs-approved-wifi .jr-wng-nav button{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 120px;min-height:38px;font-size:12px;white-space:normal;line-height:1.3;border:1px solid #33475e;border-radius:8px;background:#152235;color:#adbed0}
+.acs-approved-wifi .jr-wng-nav button.primary{border-color:#3299b0;color:#c0f2f9;background:#18394b}
+.acs-approved-wifi .acs-wifi-reference-grid.jr-wng-hidden{display:none!important}
+.acs-approved-wifi .jr-wng-panel[hidden]{display:none!important}
+.acs-approved-wifi .jr-wng-panel{min-width:0;max-width:100%;color:#e7edf6;padding:0}
+.jr-wng-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.jr-wng-heading strong{font-size:14px;color:#e7edf6}
+.jr-wng-heading span{font-size:9px;color:#a2b4c7;letter-spacing:.04em}
+.jr-wng-status,.jr-wng-notice{display:flex;gap:9px;align-items:center;padding:12px;border:1px solid #354a63;border-radius:9px;background:#152235;color:#b5c8dc;font-size:12px;line-height:1.5;margin-bottom:12px}
+.jr-wng-status i{color:#69d3e7;flex:0 0 auto}
+.jr-wng-values{margin:0;padding:0}
+.jr-wng-values>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;padding:9px 0;border-bottom:1px solid #2a3b51;align-items:center}
+.jr-wng-values dt{color:#9cacc0;font-size:11px;font-weight:500;line-height:1.4}
+.jr-wng-values dd{margin:0;font-size:12px;color:#e0e9f4;line-height:1.5;overflow-wrap:anywhere}
+.jr-wng-note{margin:12px 0;font-size:11px;line-height:1.6;color:#a6b7ca;overflow-wrap:anywhere}
+.jr-wng-footnote{font-size:10px;color:#879eb5}
+.jr-wng-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.jr-wng-actions button{font-size:11px;min-height:36px;border:1px solid #34536a;border-radius:8px;background:#15293c;color:#b4e2ec;padding:8px 10px;display:flex;gap:6px;align-items:center}
+.jr-wng-actions button:disabled{opacity:.5;cursor:not-allowed}
+.jr-wng-error{padding:10px;border:1px solid #874858;border-radius:8px;color:#efb4bf;background:#352330;font-size:12px;line-height:1.5}
+@media(max-width:480px){.jr-wng-values>div{grid-template-columns:1fr;gap:4px}.jr-wng-actions button{width:100%;justify-content:center}.jr-wng-heading{flex-wrap:wrap}}

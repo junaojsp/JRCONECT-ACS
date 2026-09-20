@@ -14,5 +14,10 @@
     <link rel="stylesheet" href="/assets/css/dashboard-chart-fix.css?v=chartfix-1">
     <script src="/assets/js/dashboard-chart-fix.js?v=chartfix-1"></script>
     <?php endif; ?>
+    <?php if (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'device-detail.php'): ?>
+    <!-- Read-only unified-network identification; no device tasks on page load. -->
+    <link rel="stylesheet" href="/assets/css/wifi-network-groups.css?v=groups-1">
+    <script src="/assets/js/wifi-network-groups.js?v=groups-1"></script>
+    <?php endif; ?>
 </body>
 </html>
