@@ -5111,3 +5111,50 @@ section{
     overflow:hidden;
     text-overflow:ellipsis;
 }
+
+
+/* ===== OPTICAL FOOTER SIMPLE ROWS - FINAL OVERRIDE ===== */
+#overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer{
+    display:flex !important;
+    flex-direction:column !important;
+    gap:0 !important;
+    width:100% !important;
+    margin-top:8px !important;
+}
+#overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer>div{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:12px !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:36px !important;
+    padding:7px 0 !important;
+    margin:0 !important;
+    border-top:0 !important;
+    border-bottom:1px solid rgba(105,159,187,.07) !important;
+}
+#overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer>div>span{
+    display:flex !important;
+    align-items:center !important;
+    gap:7px !important;
+    flex:0 0 auto !important;
+    min-width:0 !important;
+    white-space:nowrap !important;
+}
+#overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer>div>strong{
+    display:block !important;
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    margin:0 !important;
+    justify-self:auto !important;
+    text-align:right !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    font-size:9px !important;
+}
+#overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer>div:last-child{
+    border-bottom:0 !important;
+}
