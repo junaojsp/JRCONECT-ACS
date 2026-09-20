@@ -142,6 +142,12 @@ function cleanOperationalValue(value) {
     return text;
 }
 
+
+window.addEventListener('jr:wifi-state', event => {
+    window.jrWifiSummaryState = event.detail || {};
+    renderTechnicalOverview();
+});
+
 function getDeviceHealth(device = currentDeviceData || {}) {
     const online = String(device.status || '').toLowerCase() === 'online';
     if (!online) {
@@ -293,6 +299,50 @@ function getOpticalSourceAge() {
     };
 }
 
+function updateTechnicalOverview() {
+    const device = currentDeviceData || {};
+    const setMetric = (name, value, detail, level='neutral') => {
+        const valueEl = document.getElementById('acs-summary-' + name + '-value');
+        const detailEl = document.getElementById('acs-summary-' + name + '-detail');
+        const itemEl = document.getElementById('acs-summary-' + name);
+        if (valueEl) valueEl.textContent = value;
+        if (detailEl) detailEl.textContent = detail;
+        if (itemEl) itemEl.className = 'acs-technical-summary-item ' + level;
+    };
+
+    const health = getDeviceHealth(device);
+    setMetric('status', health.label, health.detail, health.level);
+
+    const optical = cachedOpticalData && cachedOpticalData.device_id === deviceId && !cachedOpticalData.error
+        ? (cachedOpticalData.optical || {}) : {};
+    const rx = Number(optical.rx_power);
+    if (Number.isFinite(rx)) {
+        const level = rx < -27 ? 'critical' : (rx < -24 || rx > -8 ? 'warning' : 'healthy');
+        setMetric('signal', rx.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' dBm',
+            level === 'healthy' ? 'Sinal dentro da faixa' : 'Verificar potência óptica', level);
+    } else {
+        setMetric('signal', 'Sem leitura', 'Não informado pelo equipamento', 'neutral');
+    }
+
+    const wifi = window.jrWifiSummaryState || {};
+    if (Number.isFinite(Number(wifi.total))) {
+        const active = Number(wifi.active || 0);
+        setMetric('wifi', active + '/' + Number(wifi.total) + ' ativa(s)',
+            active ? 'Redes Wi-Fi disponíveis' : 'Nenhuma rede ativa', active ? 'healthy' : 'warning');
+    } else {
+        setMetric('wifi', device.wifi_ssid ? 'SSID detectado' : 'Aguardando',
+            device.wifi_ssid ? 'Leitura Wi-Fi pendente' : 'Sem leitura Wi-Fi', 'neutral');
+    }
+
+    const ports = Array.isArray(device.lan_ports) ? device.lan_ports : [];
+    const activePorts = ports.filter(port => ['up','connected','online'].includes(String(port.status || '').toLowerCase())).length;
+    setMetric('lan', activePorts ? activePorts + ' conectada(s)' : 'Nenhuma conectada',
+        ports.length ? 'Portas LAN monitoradas' : 'Sem leitura de portas', activePorts ? 'healthy' : 'neutral');
+
+    const age = lastDeviceRefreshAt ? formatSourceAge(lastDeviceRefreshAt) : 'Aguardando';
+    setMetric('update', age, lastDeviceRefreshAt ? 'Leitura mais recente do ACS' : 'Consultando o ACS', lastDeviceRefreshAt ? 'healthy' : 'neutral');
+}
+
 function updateOverviewOperationalMeta() {
     const acsAge = document.getElementById('acs-overview-acs-age');
     if (acsAge) {
@@ -308,6 +358,8 @@ function updateOverviewOperationalMeta() {
         opticalAge.textContent = opticalMeta.text;
         opticalAge.title = opticalMeta.title;
     }
+
+    renderTechnicalOverview();
 
     const health = getDeviceHealth();
     const healthEl = document.getElementById('acs-device-health');
@@ -610,6 +662,24 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <button type="button" class="acs-soft-btn primary acs-ai-open-btn" onclick="openDeviceAIDrawer()">
                         <i class="bi bi-chat-dots"></i><span>Abrir IA</span>
                     </button>
+                </div>
+            </section>
+
+            <section class="acs-technical-summary" aria-label="Resumo técnico do equipamento">
+                <div class="acs-technical-summary-item neutral" id="acs-summary-status">
+                    <i class="bi bi-heart-pulse"></i><div><span>Status geral</span><strong id="acs-summary-status-value">Verificando</strong><small id="acs-summary-status-detail">Consultando equipamento</small></div>
+                </div>
+                <div class="acs-technical-summary-item neutral" id="acs-summary-signal">
+                    <i class="bi bi-reception-4"></i><div><span>Sinal óptico</span><strong id="acs-summary-signal-value">Aguardando</strong><small id="acs-summary-signal-detail">Consultando leitura</small></div>
+                </div>
+                <div class="acs-technical-summary-item neutral" id="acs-summary-wifi">
+                    <i class="bi bi-wifi"></i><div><span>Wi-Fi</span><strong id="acs-summary-wifi-value">Aguardando</strong><small id="acs-summary-wifi-detail">Consultando redes</small></div>
+                </div>
+                <div class="acs-technical-summary-item neutral" id="acs-summary-lan">
+                    <i class="bi bi-ethernet"></i><div><span>Portas LAN</span><strong id="acs-summary-lan-value">Aguardando</strong><small id="acs-summary-lan-detail">Consultando portas</small></div>
+                </div>
+                <div class="acs-technical-summary-item neutral" id="acs-summary-update">
+                    <i class="bi bi-clock-history"></i><div><span>Atualização ACS</span><strong id="acs-summary-update-value">Aguardando</strong><small id="acs-summary-update-detail">Consultando dados</small></div>
                 </div>
             </section>
 
