@@ -328,7 +328,7 @@
               <div class="jr-field"><label for="jr-control-confirm">Confirmar nova senha</label><input id="jr-control-confirm" class="form-control" type="password" autocomplete="new-password"></div>
               <div class="jr-control-note" id="jr-control-note" role="status" aria-live="polite"></div>
             </div>
-            <div class="modal-footer"><button type="button" class="acs-soft-btn" data-bs-dismiss="modal">Cancelar</button><button id="jr-control-save" type="button" class="acs-soft-btn primary" onclick="jrSaveDeviceControl()"><i class="bi bi-check2"></i> Salvar nesta seleção</button></div>
+            <div class="modal-footer"><button type="button" class="acs-soft-btn" data-bs-dismiss="modal"><i class="bi bi-arrow-left"></i> Voltar para Redes Wi-Fi</button><button id="jr-control-save" type="button" class="acs-soft-btn primary" onclick="jrSaveDeviceControl()"><i class="bi bi-check2"></i> Salvar nesta seleção</button></div>
           </div></div>
         </div>`);
         const modal=document.getElementById('jrDeviceControlModal');

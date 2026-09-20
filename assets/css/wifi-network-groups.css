@@ -21,3 +21,9 @@
 .jr-wng-actions button:disabled{opacity:.5;cursor:not-allowed}
 .jr-wng-error{padding:10px;border:1px solid #874858;border-radius:8px;color:#efb4bf;background:#352330;font-size:12px;line-height:1.5}
 @media(max-width:480px){.jr-wng-values>div{grid-template-columns:1fr;gap:4px}.jr-wng-actions button{width:100%;justify-content:center}.jr-wng-heading{flex-wrap:wrap}}
+
+
+/* Explicit back navigation for unified Wi-Fi */
+.acs-approved-wifi .jr-wng-heading-copy{display:flex;flex-direction:column;gap:3px}
+.acs-approved-wifi .jr-wng-back{flex:0 0 auto;min-height:32px;padding:6px 10px;font-size:10px}
+@media(max-width:480px){.acs-approved-wifi .jr-wng-heading{align-items:stretch}.acs-approved-wifi .jr-wng-back{width:100%;justify-content:center}}

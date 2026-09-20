@@ -39,7 +39,7 @@
         const stamp=state.observedAt ? new Date(state.observedAt) : null;
         const queried=stamp && !Number.isNaN(stamp.getTime()) ? stamp.toLocaleString('pt-BR') : '\u2014';
         panel.innerHTML=`
-          <div class="jr-wng-heading"><strong>${name}</strong><span>IDENTIFICA\u00c7\u00c3O</span></div>
+          <div class="jr-wng-heading"><div class="jr-wng-heading-copy"><strong>${name}</strong><span>IDENTIFICA\u00c7\u00c3O</span></div><button type="button" class="acs-soft-btn jr-wng-back" data-wng-action="back"><i class="bi bi-arrow-left"></i> Voltar</button></div>
           ${state.error?`<p class="jr-wng-error" role="alert">${esc(state.error)}${d?' Os dados anteriores foram mantidos.':''}</p>`:''}
           <div class="jr-wng-status"><i class="bi bi-info-circle"></i><span>${esc(status)}</span></div>
           <dl class="jr-wng-values">
@@ -110,7 +110,11 @@
         section.insertBefore(panel,grid);
         panel.addEventListener('click',event=>{
             const button=event.target.closest('[data-wng-action]');if(!button || button.disabled)return;
-            if(button.dataset.wngAction==='refresh')load();
+            if(button.dataset.wngAction==='back'){
+                state.mode='individual';
+                applyMode();
+                mountedSection?.querySelector('.acs-wifi-reference-grid')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+            } else if(button.dataset.wngAction==='refresh')load();
             else if(button.dataset.wngAction==='diagnostic')diagnostic();
         });
         applyMode();
