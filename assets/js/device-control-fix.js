@@ -122,42 +122,77 @@
         const rows=wifiRows(band);
         const item=rows.find(row=>row.id===state.wifiByBand[band]) || rows.find(row=>row.enabled===true) || rows[0] || null;
         const label=wifiBandNames[band] || band;
+
         if(!item) {
-            return `<article class="jr-wifi-summary-card missing">
-                <div class="jr-wifi-summary-head"><div><i class="bi bi-wifi"></i><strong>${esc(label)}</strong></div><span>NÃO COLETADA</span></div>
-                <div class="jr-wifi-summary-body"><p>Nenhuma interface desta banda foi identificada.</p></div>
-                <button type="button" class="acs-soft-btn" onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}><i class="bi bi-arrow-repeat"></i> Detectar rede</button>
+            return `<article class="jr-wifi-summary-row missing">
+                <div class="jr-wifi-row-main">
+                    <div class="jr-wifi-row-title">
+                        <i class="bi bi-wifi"></i>
+                        <div><strong>${esc(label)}</strong><span>Nenhuma interface identificada</span></div>
+                    </div>
+                </div>
+                <div class="jr-wifi-row-actions">
+                    <button type="button" class="acs-soft-btn" onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}>
+                        <i class="bi bi-arrow-repeat"></i> Detectar
+                    </button>
+                </div>
             </article>`;
         }
+
         const active=item.enabled===true;
-        return `<article class="jr-wifi-summary-card">
-            <div class="jr-wifi-summary-head">
-                <div><i class="bi bi-wifi"></i><strong>${esc(label)}</strong></div>
-                <span class="${active?'on':'off'}">${esc(statusLabel(item).toUpperCase())}</span>
+        const channel=item.auto_channel===true?'Automático':val(item.channel);
+        const clients=val(item.clients ?? item.associated_devices ?? item.total_associations ?? 'Não informado');
+
+        return `<article class="jr-wifi-summary-row">
+            <div class="jr-wifi-row-main">
+                <div class="jr-wifi-row-title">
+                    <i class="bi bi-wifi"></i>
+                    <div>
+                        <strong>${esc(label)}</strong>
+                        <span class="${active?'on':'off'}">${esc(statusLabel(item).toUpperCase())}</span>
+                    </div>
+                </div>
+
+                <div class="jr-wifi-row-data">
+                    <div><span>SSID</span><strong>${esc(val(item.ssid))}</strong></div>
+                    <div><span>Canal</span><strong>${esc(channel)}</strong></div>
+                    <div><span>Segurança</span><strong>${esc(securityLabel(item.security))}</strong></div>
+                    <div><span>Clientes</span><strong>${esc(clients)}</strong></div>
+                </div>
             </div>
-            <dl class="jr-wifi-summary-values">
-                <div><dt>SSID</dt><dd>${esc(val(item.ssid))}</dd></div>
-                <div><dt>Canal</dt><dd>${esc(item.auto_channel===true?'Automático':val(item.channel))}</dd></div>
-                <div><dt>Segurança</dt><dd>${esc(securityLabel(item.security))}</dd></div>
-                <div><dt>Clientes</dt><dd>${esc(val(item.clients ?? item.associated_devices ?? item.total_associations ?? 'Não informado'))}</dd></div>
-            </dl>
-            <button type="button" class="acs-soft-btn primary" onclick="jrManageBand('${band}')" ${!permitted('wifi')?'disabled':''}><i class="bi bi-sliders"></i> Gerenciar</button>
+
+            <div class="jr-wifi-row-actions">
+                <button type="button" class="acs-soft-btn primary" onclick="jrManageBand('${band}')" ${!permitted('wifi')?'disabled':''}>
+                    <i class="bi bi-sliders"></i> Gerenciar
+                </button>
+            </div>
         </article>`;
     }
 
     function unifiedSummaryCard() {
-        return `<article class="jr-wifi-summary-card unified">
-            <div class="jr-wifi-summary-head">
-                <div><i class="bi bi-diagram-3"></i><strong>Rede Unificada</strong></div>
-                <span>SMART</span>
+        return `<article class="jr-wifi-summary-row unified">
+            <div class="jr-wifi-row-main">
+                <div class="jr-wifi-row-title">
+                    <i class="bi bi-diagram-3"></i>
+                    <div>
+                        <strong>Rede Unificada</strong>
+                        <span>SMART CONNECT</span>
+                    </div>
+                </div>
+
+                <div class="jr-wifi-row-data">
+                    <div><span>Tipo</span><strong>Band Steering</strong></div>
+                    <div><span>Bandas</span><strong>Conforme equipamento</strong></div>
+                    <div><span>Tecnologia</span><strong>Wi-Fi 6/7 se suportado</strong></div>
+                    <div><span>Estado</span><strong>Consultar modem</strong></div>
+                </div>
             </div>
-            <dl class="jr-wifi-summary-values">
-                <div><dt>Tipo</dt><dd>Band Steering / Smart Connect</dd></div>
-                <div><dt>Bandas</dt><dd>Conforme equipamento</dd></div>
-                <div><dt>Tecnologia</dt><dd>Wi-Fi 6/7 quando suportado</dd></div>
-                <div><dt>Estado</dt><dd>Consultar modem</dd></div>
-            </dl>
-            <button type="button" class="acs-soft-btn primary" onclick="jrOpenUnifiedWifi()"><i class="bi bi-sliders"></i> Gerenciar</button>
+
+            <div class="jr-wifi-row-actions">
+                <button type="button" class="acs-soft-btn primary" onclick="jrOpenUnifiedWifi()">
+                    <i class="bi bi-sliders"></i> Gerenciar
+                </button>
+            </div>
         </article>`;
     }
 
@@ -187,7 +222,7 @@
         if(!box)return;
         syncWifiSelection();
         box.innerHTML=`<div class="jr-wifi-summary-shell">
-            <div class="jr-wifi-summary-grid">
+            <div class="jr-wifi-summary-list">
                 ${wifiCardForBand('2.4')}
                 ${wifiCardForBand('5')}
                 ${unifiedSummaryCard()}
