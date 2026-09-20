@@ -135,66 +135,96 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('wan-count-badge').textContent = device.wan_details ? device.wan_details.length : 0;
         document.getElementById('devices-count-badge').textContent = device.connected_devices ? device.connected_devices.length : 0;
 
-        // Populate Overview Tab - JR CONECT ACS V3 (layout 3x3 inspirado na referencia)
+        // Populate Overview Tab - JR CONECT ACS V4 (modelo aprovado)
         const primaryWan = Array.isArray(device.wan_details)
             ? (device.wan_details.find(w => String(w.status || '').toLowerCase() === 'connected') || device.wan_details[0] || {})
             : {};
 
-        const connectedCount = Array.isArray(device.connected_devices) ? device.connected_devices.length : 0;
+        const connectedDevices = Array.isArray(device.connected_devices) ? device.connected_devices : [];
         const wanCount = Array.isArray(device.wan_details) ? device.wan_details.length : 0;
         const wifiName = device.wifi_ssid || 'SSID não identificado';
+        const lanPorts = Array.isArray(device.lan_ports) ? device.lan_ports : [];
+
+        const renderLanVisual = (ports) => {
+            const normalized = ports.length ? ports.slice(0, 4) : [1,2,3,4].map(i => ({ name: 'LAN ' + i, status: 'down' }));
+            return normalized.map((port, idx) => {
+                const name = port.name || ('LAN ' + (idx + 1));
+                const status = String(port.status || '').toLowerCase();
+                const isUp = status === 'up' || status === 'connected';
+                const speedRaw = port.max_bit_rate || port.speed || '';
+                let speed = '-';
+                if (speedRaw !== '' && speedRaw !== null && speedRaw !== undefined && speedRaw !== 'N/A') {
+                    const n = Number(speedRaw);
+                    speed = Number.isFinite(n) ? (n >= 1000 ? (n / 1000) + ' Gbps' : n + ' Mbps') : String(speedRaw);
+                }
+                const linked = connectedDevices.find(d => {
+                    const iface = String(d.interface || d.interface_name || d.interface_type || '').toLowerCase();
+                    return iface.includes(String(name).toLowerCase().replace(' ', '')) || iface.includes(String(idx + 1));
+                });
+                const linkedName = linked ? (linked.vendor || linked.hostname || linked.ip_address || 'Dispositivo') : '-';
+
+                return `
+                    <div class="acs-lan-visual ${isUp ? 'up' : 'down'}">
+                        <strong>${name}</strong>
+                        <div class="acs-rj45-port-face">
+                            <span class="acs-rj45-slot"></span>
+                            <span class="acs-rj45-pins"></span>
+                        </div>
+                        <span class="acs-lan-state">${isUp ? 'Conectada' : 'Desconectada'}</span>
+                        <small>${isUp ? speed : '-'}</small>
+                        <small>${isUp ? 'Full' : '-'}</small>
+                        <div class="acs-lan-device"><i class="bi bi-pc-display"></i><span>${linkedName}</span></div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const renderConnectedCompact = (items) => {
+            if (!items.length) {
+                return '<div class="acs-empty-state">Nenhum dispositivo conectado.</div>';
+            }
+            return `
+                <div class="acs-connected-compact-head">
+                    <span>Nome do dispositivo</span><span>IP</span><span>MAC</span><span>Via</span>
+                </div>
+                ${items.slice(0, 5).map((d, idx) => `
+                    <div class="acs-connected-compact-row">
+                        <strong>${d.vendor || d.hostname || 'Dispositivo ' + (idx + 1)}</strong>
+                        <span>${d.ip_address || '-'}</span>
+                        <span>${d.mac_address || '-'}</span>
+                        <span>${d.interface_type || d.interface || '-'}</span>
+                    </div>
+                `).join('')}
+            `;
+        };
 
         document.getElementById('overview-content').innerHTML = `
-            <div class="acs-overview-grid acs-reference-grid">
+            <div class="acs-overview-grid acs-approved-layout">
 
-                <section class="acs-overview-card acs-card-device acs-card-equal">
+                <section class="acs-overview-card acs-card-device acs-approved-device">
                     <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-info-circle-fill"></i> Informações do dispositivo</span>
-                        </div>
+                        <div><span class="acs-kicker"><i class="bi bi-info-circle-fill"></i> Informações do dispositivo</span></div>
                         <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
-                            <span class="acs-status-dot"></span>
-                            ${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
+                            <span class="acs-status-dot"></span>${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
                         </span>
                     </div>
-
-                    <div class="acs-reference-info-grid">
+                    <div class="acs-reference-list">
                         <div><span>Nome do equipamento</span><strong>${device.product_class || device.model || 'Equipamento'}</strong></div>
                         <div><span>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
                         <div><span>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
                         <div><span>Modelo</span><strong>${device.product_class || 'N/D'}</strong></div>
                         <div><span>Versão de firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
-                        <div><span>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
+                        <div><span>Versão de hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
                         <div><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
                         <div><span>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-ai acs-card-equal">
+                <section class="acs-overview-card acs-card-wan acs-approved-wan">
                     <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-stars"></i> Resumo por IA</span>
-                        </div>
+                        <div><span class="acs-kicker"><i class="bi bi-shield-fill"></i> Interface de Internet (WAN)</span></div>
+                        <span class="acs-mini-badge success">CONECTADO</span>
                     </div>
-
-                    <div class="acs-ai-card-body">
-                        <div class="acs-ai-icon"><i class="bi bi-robot"></i></div>
-                        <p>Clique em <strong>"Gerar resumo"</strong> para uma análise completa deste equipamento.</p>
-                        <button class="acs-ai-button" type="button" onclick="document.getElementById('ai-tab')?.click()">
-                            <i class="bi bi-lightning-charge-fill"></i>
-                            Gerar resumo por IA
-                        </button>
-                    </div>
-                </section>
-
-                <section class="acs-overview-card acs-card-wan acs-card-equal">
-                    <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-globe2"></i> Interface de Internet (WAN)</span>
-                        </div>
-                        <span class="acs-mini-badge">${wanCount} WAN</span>
-                    </div>
-
                     <div class="acs-reference-list">
                         <div><span>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
                         <div><span>IP</span><strong>${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
@@ -207,21 +237,25 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-optical acs-card-equal">
+                <section class="acs-overview-card acs-card-lan acs-approved-lan">
                     <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-reception-4"></i> Óptico / GPON</span>
-                        </div>
-                        <span class="acs-mini-badge success">ONLINE</span>
+                        <div><span class="acs-kicker"><i class="bi bi-diagram-3-fill"></i> Portas LAN (Ethernet)</span></div>
+                        <span class="acs-mini-badge">${lanPorts.length || 4} PORTAS</span>
                     </div>
+                    <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
+                </section>
 
+                <section class="acs-overview-card acs-card-optical acs-approved-optical">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-reception-4"></i> Óptico / GPON</span></div>
+                        <span class="acs-mini-badge success">NORMAL</span>
+                    </div>
                     <div class="acs-reference-metrics">
                         <div><span>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
                         <div><span>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
                         <div><span>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
                         <div><span>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
                     </div>
-
                     <div class="acs-reference-footer-grid">
                         <div><span>PON ID</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
                         <div><span>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
@@ -230,14 +264,10 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-wifi acs-card-equal">
+                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
                     <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-wifi"></i> Rede Wi-Fi</span>
-                        </div>
-                        <span class="acs-mini-badge success">ONLINE</span>
+                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span></div>
                     </div>
-
                     <div class="acs-wifi-reference-grid">
                         <div class="acs-wifi-band">
                             <div class="acs-wifi-band-title"><i class="bi bi-wifi"></i><strong>Wi-Fi 2.4 GHz</strong><span>HABILITADA</span></div>
@@ -245,106 +275,76 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                                 <div><span>SSID</span><strong>${wifiName}</strong></div>
                                 <div><span>Canal</span><strong>Automático</strong></div>
                                 <div><span>Segurança</span><strong>WPA/WPA2</strong></div>
-                                <div><span>Senha</span><strong>******** <button class="acs-eye-btn" type="button" onclick="togglePassword()"><i id="toggle-icon" class="bi bi-eye"></i></button></strong></div>
+                                <div><span>Senha</span><strong>********</strong></div>
                             </div>
                         </div>
-
                         <div class="acs-wifi-band">
                             <div class="acs-wifi-band-title"><i class="bi bi-wifi"></i><strong>Wi-Fi 5 GHz</strong><span>HABILITADA</span></div>
                             <div class="acs-reference-list compact">
                                 <div><span>SSID</span><strong>${wifiName}</strong></div>
                                 <div><span>Canal</span><strong>Automático</strong></div>
                                 <div><span>Segurança</span><strong>WPA/WPA2</strong></div>
-                                <div><span>Senha</span><strong id="wifi-pass-hidden">********</strong><span id="wifi-pass-shown" style="display:none;">${device.wifi_password || 'N/D'}</span></div>
+                                <div><span>Senha</span><strong>********</strong></div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-clients acs-card-equal">
+                <section class="acs-overview-card acs-card-ai acs-approved-ai">
                     <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-people-fill"></i> Clientes da rede</span>
+                        <div><span class="acs-kicker"><i class="bi bi-stars"></i> Assistente IA</span></div>
+                    </div>
+                    <div class="acs-ai-question-only">
+                        <div class="acs-ai-icon"><i class="bi bi-robot"></i></div>
+                        <strong>Faça uma pergunta sobre este equipamento</strong>
+                        <span>A IA vai analisar as informações e te ajudar.</span>
+                        <div id="acs-ai-answer-overview" class="acs-ai-answer-overview"></div>
+                        <div class="acs-ai-input-row">
+                            <input id="acs-ai-question-overview" type="text" placeholder="Digite sua pergunta aqui..." onkeydown="if(event.key==='Enter'){runOverviewAIQuestion()}">
+                            <button type="button" onclick="runOverviewAIQuestion()"><i class="bi bi-send-fill"></i></button>
                         </div>
-                        <span class="acs-mini-badge">${connectedCount} CLIENTES</span>
-                    </div>
-
-                    <div class="acs-big-number acs-reference-client-count">
-                        <i class="bi bi-people-fill"></i>
-                        <strong>${connectedCount}</strong>
-                        <span>clientes conectados no momento</span>
-                    </div>
-
-                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('devices-tab')?.click()">
-                        <i class="bi bi-hdd-network"></i> Ver todos os dispositivos conectados
-                    </button>
-                </section>
-
-                <section class="acs-overview-card acs-card-diagnostics acs-card-equal">
-                    <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-activity"></i> Diagnósticos</span>
-                        </div>
-                    </div>
-
-                    <div class="acs-diagnostic-list">
-                        <button type="button" onclick="startONUSpeedtest()">
-                            <i class="bi bi-speedometer2"></i>
-                            <span><strong>Teste de velocidade</strong><small>Testar conexão com o servidor</small></span>
-                            <i class="bi bi-arrow-right-circle"></i>
-                        </button>
-                        <button type="button" onclick="document.getElementById('wan-tab')?.click()">
-                            <i class="bi bi-globe2"></i>
-                            <span><strong>Conectividade WAN</strong><small>Verificar rota e latência</small></span>
-                            <i class="bi bi-arrow-right-circle"></i>
-                        </button>
-                        <button type="button" onclick="loadFiberhomeOptical(deviceId, true)">
-                            <i class="bi bi-reception-4"></i>
-                            <span><strong>Verificação de sinal óptico</strong><small>Analisar nível de sinal GPON</small></span>
-                            <i class="bi bi-arrow-right-circle"></i>
-                        </button>
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-admin acs-card-equal">
+                <section class="acs-overview-card acs-card-admin acs-approved-admin">
                     <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-shield-lock-fill"></i> Credenciais de administração</span>
-                        </div>
+                        <div><span class="acs-kicker"><i class="bi bi-shield-lock-fill"></i> Credenciais de administração</span></div>
                     </div>
-
                     <div id="credentials-status" class="alert alert-info" style="display:none;">
                         <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
                     </div>
-
                     <div class="acs-reference-list credentials">
-                        <div><span>Usuário Admin</span><strong>${device.admin_user || 'Não disponível'}</strong></div>
-                        <div><span>Senha Admin</span><strong><span id="admin-pass-hidden">********</span><span id="admin-pass-shown" style="display:none;">${device.admin_password || 'N/A'}</span><button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()"><i id="admin-toggle-icon" class="bi bi-eye"></i></button></strong></div>
-                        <div><span>Usuário Telecom</span><strong>${device.telecom_user || 'Não disponível'}</strong></div>
-                        <div><span>Senha Telecom</span><strong><span id="telecom-pass-hidden">********</span><span id="telecom-pass-shown" style="display:none;">${device.telecom_password || 'N/A'}</span><button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()"><i id="telecom-toggle-icon" class="bi bi-eye"></i></button></strong></div>
+                        <div><span>Usuário admin</span><strong>${device.admin_user || 'N/A'}</strong></div>
+                        <div><span>Senha admin</span><strong><span id="admin-pass-hidden">********</span><span id="admin-pass-shown" style="display:none;">${device.admin_password || 'N/A'}</span><button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()"><i id="admin-toggle-icon" class="bi bi-eye"></i></button></strong></div>
+                        <div><span>Usuário telecom</span><strong>${device.telecom_user || 'Não disponível'}</strong></div>
+                        <div><span>Senha telecom</span><strong><span id="telecom-pass-hidden">********</span><span id="telecom-pass-shown" style="display:none;">${device.telecom_password || 'N/A'}</span><button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()"><i id="telecom-toggle-icon" class="bi bi-eye"></i></button></strong></div>
                     </div>
-
-                    <button id="get-credentials-btn" class="acs-soft-btn acs-full-btn" type="button" onclick="summonForAdminCredentials()">
-                        <i class="bi bi-search"></i> Obter credenciais
-                    </button>
+                    <button id="get-credentials-btn" class="acs-soft-btn acs-full-btn" type="button" onclick="summonForAdminCredentials()"><i class="bi bi-search"></i> Obter credenciais</button>
                 </section>
 
-                <section class="acs-overview-card acs-card-events acs-card-equal">
-                    <div class="acs-overview-card-header">
-                        <div>
-                            <span class="acs-kicker"><i class="bi bi-clock-history"></i> Eventos recentes</span>
+                <div class="acs-approved-bottom-stack">
+                    <section class="acs-overview-card acs-card-connected acs-approved-connected">
+                        <div class="acs-overview-card-header">
+                            <div><span class="acs-kicker"><i class="bi bi-diagram-3-fill"></i> Dispositivos conectados</span></div>
+                            <span class="acs-mini-badge">${connectedDevices.length} DISPOSITIVOS</span>
                         </div>
-                        <span class="acs-mini-badge">EM BREVE</span>
-                    </div>
+                        <div class="acs-connected-compact">${renderConnectedCompact(connectedDevices)}</div>
+                    </section>
 
-                    <div class="acs-event-placeholder acs-reference-event">
-                        <i class="bi bi-info-circle-fill"></i>
-                        <div>
-                            <strong>Histórico operacional</strong>
-                            <span>Os eventos deste equipamento serão exibidos aqui, incluindo quedas, reinicializações e alterações.</span>
+                    <section class="acs-overview-card acs-card-events acs-approved-events">
+                        <div class="acs-overview-card-header">
+                            <div><span class="acs-kicker"><i class="bi bi-clock-history"></i> Eventos recentes</span></div>
+                            <span class="acs-mini-badge">EM BREVE</span>
                         </div>
-                    </div>
-                </section>
+                        <div class="acs-event-placeholder acs-reference-event">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <div>
+                                <strong>Histórico operacional</strong>
+                                <span>Os eventos deste equipamento serão exibidos aqui, incluindo quedas, reinicializações e alterações.</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
 
             </div>
         `;
@@ -3069,4 +3069,23 @@ function renderAIAssistantTab(device) {
 function runDeviceAIAnalysis() {
     const answer = document.getElementById('acs-ai-answer');
     if (answer) answer.innerHTML = '<i class="bi bi-info-circle"></i> Interface de IA pronta. Agora falta definir o provedor/API que será usado no servidor para realizar as análises.';
+}
+
+
+function runOverviewAIQuestion() {
+    const input = document.getElementById('acs-ai-question-overview');
+    const answer = document.getElementById('acs-ai-answer-overview');
+    if (!input || !answer) return;
+    const question = input.value.trim();
+    if (!question) return;
+    answer.innerHTML = '<i class="bi bi-stars"></i> ' + question;
+    const tabQuestion = document.getElementById('acs-ai-question');
+    if (tabQuestion) tabQuestion.value = question;
+    runDeviceAIAnalysis();
+    const tabAnswer = document.getElementById('acs-ai-answer');
+    if (tabAnswer && tabAnswer.textContent.trim()) {
+        answer.innerHTML = tabAnswer.innerHTML;
+    } else {
+        answer.innerHTML = '<i class="bi bi-info-circle"></i> Assistente preparado para responder quando o provedor de IA estiver configurado.';
+    }
 }
