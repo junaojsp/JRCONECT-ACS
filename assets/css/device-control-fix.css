@@ -1,0 +1,30 @@
+/* JR CONECT - CPE controls */
+.jr-control-actions{display:flex;justify-content:flex-end;align-items:center;min-height:34px;margin-top:10px;padding-top:10px;border-top:1px solid #26354a}
+.jr-readonly{display:inline-flex;align-items:center;gap:6px;color:#728399;font-size:9px}
+.jr-empty-control{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-height:72px;padding:15px;border:1px dashed #2b4058;border-radius:10px;background:#152033;color:#9caabd;font-size:10px}
+.jr-account-block{padding:9px 0;border-bottom:1px solid #26354a}.jr-account-block:last-child{border-bottom:0}
+.jr-account-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.jr-account-block>div:not(.jr-account-head){display:grid;grid-template-columns:145px 1fr;gap:10px;padding:6px 0}
+.jr-account-block span{color:#7790a8;font-size:9px}.jr-account-block strong{color:#eef4f9;font-size:10px}
+.jr-secret-row{display:flex!important;align-items:center;gap:6px}
+.jr-control-modal .modal-content{background:#172337;border:1px solid #2b4058;border-radius:14px;color:#e7edf6}
+.jr-control-modal .modal-header,.jr-control-modal .modal-footer{border-color:#26354a;background:#142031}
+.jr-control-modal .modal-body{padding:18px}.jr-field{margin-bottom:14px}.jr-field label{display:block;margin-bottom:6px;color:#9aaabd;font-size:9px}
+.jr-field .form-control{background:#111c2b!important;border:1px solid #2d4057!important;color:#eef4f9!important}
+.jr-password-input{display:grid;grid-template-columns:1fr 38px}.jr-password-input button{border:1px solid #2d4057;background:#132235;color:#55d2e5}
+.jr-control-note{padding:9px;border:1px solid #284057;border-radius:8px;background:#122031;color:#8092a6;font-size:8px}
+
+.jr-monitor-v2{--b:#2a3a51;--t:#eef4f9;--m:#7f90a5;display:flex;flex-direction:column;gap:12px;color:var(--t)}
+.jr-monitor-head,.jr-monitor-kpis>div,.jr-monitor-chart-card,.jr-monitor-report{border:1px solid var(--b);border-radius:11px;background:linear-gradient(180deg,#1b2638,#172337)}
+.jr-monitor-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px}.jr-monitor-head h4{margin:3px 0;font-size:18px}.jr-monitor-head p{margin:0;color:var(--m);font-size:9px}
+.jr-monitor-badge{padding:6px 10px;border:1px solid #3a4658;border-radius:999px;color:#8a99aa;font-size:8px;font-weight:800}.jr-monitor-badge.online{color:#6ce8bb;border-color:#2b8065}
+.jr-monitor-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.jr-monitor-kpis>div{min-height:105px;padding:14px}
+.jr-monitor-kpis span{display:block;color:#9dacbd;font-size:9px}.jr-monitor-kpis strong{display:block;margin-top:12px;font-size:27px}.jr-monitor-kpis small{display:block;margin-top:6px;color:#708196;font-size:8px}
+.jr-monitor-kpis .download strong{color:#57cfea}.jr-monitor-kpis .upload strong{color:#5cdda8}
+.jr-monitor-section-title{display:flex;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid #26354a}.jr-monitor-section-title span{color:#75879d;font-size:8px}
+.jr-monitor-chart{min-height:220px;padding:14px}.jr-monitor-wait{height:190px;display:flex;align-items:center;justify-content:center;color:#77899e;font-size:9px}
+.jr-monitor-chart-inner{height:190px;display:grid;grid-template-columns:58px 1fr;gap:8px}.jr-monitor-scale{display:flex;flex-direction:column;justify-content:space-between;padding-bottom:18px;text-align:right;color:#718196;font-size:7px}
+.jr-monitor-plot{position:relative}.jr-monitor-plot svg{position:absolute;inset:0 0 18px;width:100%;height:calc(100% - 18px)}.jr-monitor-plot .grid{fill:none;stroke:#2a3b50;stroke-width:.45;stroke-dasharray:2 2}.jr-monitor-plot polyline{fill:none;stroke-width:1.8;vector-effect:non-scaling-stroke}.jr-monitor-plot .down{stroke:#57cfea}.jr-monitor-plot .up{stroke:#5cdda8}
+.jr-monitor-times{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;color:#718196;font-size:7px}
+.jr-monitor-report-grid{display:grid;grid-template-columns:repeat(4,1fr);padding:5px 14px 14px}.jr-monitor-report-grid>div{padding:12px;border-right:1px solid #26354a}.jr-monitor-report-grid>div:last-child{border-right:0}.jr-monitor-report-grid span{display:block;color:#74869b;font-size:8px}.jr-monitor-report-grid strong{display:block;margin-top:6px;font-size:10px}
+@media(max-width:900px){.jr-monitor-kpis,.jr-monitor-report-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.jr-monitor-kpis,.jr-monitor-report-grid{grid-template-columns:1fr}}
