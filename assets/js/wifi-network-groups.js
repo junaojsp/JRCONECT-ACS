@@ -17,12 +17,8 @@
     };
     function hasMlo() { return Number(state.data?.mlo?.candidate_count || 0) > 0; }
     function drawNavigation() {
-        const nav = mountedSection?.querySelector('.jr-wng-nav');
-        if (!nav) return;
-        if (state.mode === 'mlo' && !hasMlo()) state.mode = 'unified';
-        const modes = ['unified','individual'];
-        if (hasMlo()) modes.push('mlo');
-        nav.innerHTML = modes.map(mode => `<button type="button" class="acs-soft-btn ${state.mode===mode?'primary':''}" data-wng-mode="${mode}" aria-pressed="${state.mode===mode}"><i class="bi ${mode==='individual'?'bi-wifi':'bi-diagram-3'}"></i>${modeLabels[mode]}</button>`).join('');
+        // Navigation removed from the overview card: each mini-card has its own Gerenciar action.
+        // Keep this function for compatibility with the rest of the module.
     }
     function drawPanel() {
         const panel = mountedSection?.querySelector('.jr-wng-panel');
@@ -106,18 +102,12 @@
         const section=document.querySelector('.acs-approved-wifi');
         const grid=section?.querySelector('.acs-wifi-reference-grid');
         if(!section || !grid) return;
-        if(mountedSection===section && section.querySelector('.jr-wng-nav') && section.querySelector('.jr-wng-panel')) return;
+        if(mountedSection===section && section.querySelector('.jr-wng-panel')) return;
         mountedSection=section;
-        const nav=document.createElement('div');nav.className='jr-wng-nav';nav.setAttribute('role','group');nav.setAttribute('aria-label','Tipo de rede Wi-Fi');
+        const oldNav=section.querySelector('.jr-wng-nav');
+        if(oldNav) oldNav.remove();
         const panel=document.createElement('div');panel.className='jr-wng-panel';panel.hidden=true;
-        section.insertBefore(nav,grid);section.insertBefore(panel,grid);
-        nav.addEventListener('click',event=>{
-            const button=event.target.closest('[data-wng-mode]');if(!button)return;
-            const mode=button.dataset.wngMode;
-            if(!Object.hasOwn(modeLabels,mode) || (mode==='mlo'&&!hasMlo()))return;
-            state.mode=mode;applyMode();
-            if(mode!=='individual'&&!state.data&&!state.loading&&!state.error)load();
-        });
+        section.insertBefore(panel,grid);
         panel.addEventListener('click',event=>{
             const button=event.target.closest('[data-wng-action]');if(!button || button.disabled)return;
             if(button.dataset.wngAction==='refresh')load();
@@ -125,6 +115,12 @@
         });
         applyMode();
     }
+    window.jrShowUnifiedPanel=() => {
+        state.mode='unified';
+        applyMode();
+        if(!state.data&&!state.loading&&!state.error) load();
+    };
+
     function start() {
         const root=document.getElementById('overview-content');
         if(!root || !window.DEVICE_ID)return;
