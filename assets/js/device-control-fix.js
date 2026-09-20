@@ -1,251 +1,257 @@
-/* JR CONECT - reparo de leitura/edicao do CPE e monitoramento */
+/* JR CONECT - selected Wi-Fi and router account controls; monitoring preserved. */
 (() => {
     'use strict';
 
-    const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: false };
+    const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false };
     const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0 };
-
+    let dialog = null;
+    const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
-    const val = value => (value === null || value === undefined || value === '' ? 'Não disponível' : String(value));
+    const val = value => value === null || value === undefined || value === '' ? 'Não informado' : String(value);
+    const statusLabel = item => item.enabled === true ? 'Habilitada' : item.enabled === false ? 'Desabilitada' : 'Estado não informado';
+    const shortId = item => (item.id || '').split('.').slice(-2).join('.');
+    const rowById = (kind, id) => (kind === 'wifi' ? state.wifi : state.accounts).find(row => row.id === id);
+    const selected = kind => rowById(kind, kind === 'wifi' ? state.wifiId : state.accountId);
+    const permitted = kind => !!state.permissions[kind === 'wifi' ? 'wifi' : 'admin'];
 
     function toast(message, type='info') {
         if (typeof window.showToast === 'function') window.showToast(message, type);
         else console[type === 'danger' ? 'error' : 'log']('[CPE]', message);
     }
-
-    async function controlGet() {
-        const r = await fetch('/api/device-control.php?device_id=' + encodeURIComponent(window.DEVICE_ID || ''), {
-            credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' }
-        });
-        const raw = await r.text();
-        let data;
-        try { data = JSON.parse(raw); } catch (_) { throw new Error('Resposta inválida do controle do equipamento.'); }
-        if (!r.ok || !data.success) throw new Error(data.message || 'Falha ao ler capacidades do equipamento.');
-        return data;
+    async function request(payload=null) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 25000);
+        const options = { credentials:'same-origin', cache:'no-store', signal:controller.signal, headers:{ Accept:'application/json' } };
+        let url = '/api/device-control.php';
+        if (payload) {
+            options.method = 'POST';
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['X-CSRF-Token'] = state.csrf;
+            options.body = JSON.stringify({ device_id:window.DEVICE_ID || '', ...payload });
+        } else url += '?device_id=' + encodeURIComponent(window.DEVICE_ID || '');
+        try {
+            const r = await fetch(url, options);
+            let data;
+            try { data = await r.json(); } catch (_) { throw new Error('Resposta inválida. Confirme sua sessão e atualize a página.'); }
+            if (!r.ok || !data.success) throw new Error(data.message || 'Operação não confirmada.');
+            return data;
+        } catch (e) {
+            if (e.name === 'AbortError') throw new Error('Tempo limite. Se estava salvando, confira a leitura antes de reenviar.');
+            throw e;
+        } finally { clearTimeout(timer); }
     }
-
-    async function controlPost(payload) {
-        const r = await fetch('/api/device-control.php', {
-            method: 'POST',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-Token': state.csrf
-            },
-            body: JSON.stringify({ device_id: window.DEVICE_ID || '', ...payload })
-        });
-        const raw = await r.text();
-        let data;
-        try { data = JSON.parse(raw); } catch (_) { throw new Error('Resposta inválida do controle do equipamento.'); }
-        if (!r.ok || !data.success) throw new Error(data.message || 'Operação não concluída.');
-        return data;
-    }
-
     function passwordLabel(item) {
         if (item.password_state === 'available') return '••••••••';
         if (item.password_state === 'concealed') return 'Oculta pelo equipamento';
-        return 'Não disponível';
+        if (item.password_state === 'not_collected') return 'Ainda não coletada';
+        return 'Não informada pelo equipamento';
     }
-
-    function wifiCard(item, index) {
-        const writable = !!(item.ssid_writable || item.password_writable);
-        const enabled = item.enabled === false ? 'DESABILITADA' : item.enabled === true ? 'HABILITADA' : 'STATUS N/D';
-        const channel = item.auto_channel === true ? 'Automático' : val(item.channel);
-        return `
-            <div class="acs-wifi-band jr-wifi-v2" data-wifi-id="${esc(item.id)}">
-                <div class="acs-wifi-band-title">
-                    <i class="bi bi-wifi"></i>
-                    <strong>${esc(item.label || ('Rede Wi-Fi ' + (index + 1)))}</strong>
-                    <span class="${item.enabled === false ? 'off' : ''}">${enabled}</span>
-                </div>
-                <div class="acs-reference-list compact">
-                    <div><span>SSID</span><strong>${esc(val(item.ssid))}</strong></div>
-                    <div><span>Canal</span><strong>${esc(channel)}</strong></div>
-                    <div><span>Segurança</span><strong>${esc(val(item.security))}</strong></div>
-                    <div>
-                        <span>Senha</span>
-                        <strong class="jr-secret-row">
-                            <span id="jr-wifi-pass-${index}">${esc(passwordLabel(item))}</span>
-                            ${item.password_state === 'available' ? `<button type="button" class="acs-eye-btn" onclick="jrToggleWifiSecret(${index})"><i class="bi bi-eye"></i></button>` : ''}
-                        </strong>
-                    </div>
-                </div>
-                <div class="jr-control-actions">
-                    ${writable && state.permissions.wifi ? `<button type="button" class="acs-soft-btn" onclick="jrEditWifi(${index})"><i class="bi bi-pencil"></i> Editar rede</button>` : '<span class="jr-readonly"><i class="bi bi-lock"></i> Somente leitura</span>'}
-                </div>
-            </div>`;
+    function securityLabel(raw) {
+        return ({WPAand11i:'WPA/WPA2', '11i':'WPA2', WPA:'WPA', None:'Sem segurança informada', Basic:'Basic (informado pelo modem)'})[raw] || val(raw);
     }
-
+    function dateLabel(raw) {
+        if (!raw) return 'Horário da leitura não informado';
+        const d = new Date(raw);
+        return Number.isNaN(d.getTime()) ? 'Horário da leitura não informado' : 'Última leitura: ' + d.toLocaleString('pt-BR');
+    }
+    function manager(kind, item, rows) {
+        const wifi = kind === 'wifi';
+        const options = rows.map(row => {
+            const title = wifi ? `${val(row.ssid)} · ${row.label} · ${statusLabel(row)} · ${shortId(row)}` : `${val(row.username)} · ${row.label} · ${shortId(row)}`;
+            return `<option value="${esc(row.id)}" ${row.id === item.id ? 'selected' : ''}>${esc(title)}</option>`;
+        }).join('');
+        const canEdit = permitted(kind) && (item[wifi ? 'ssid_writable' : 'username_writable'] || item.password_writable);
+        return `<div class="jr-manager" data-kind="${kind}">
+            <label for="jr-select-${kind}">${wifi ? 'Selecione a rede Wi-Fi' : 'Selecione a conta do roteador'}</label>
+            <select id="jr-select-${kind}" class="form-select" onchange="jrSelectControl('${kind}',this.value)">${options}</select>
+            <div class="jr-selection-meta"><span>${esc(item.label)}</span>${wifi ? `<span class="jr-selection-badge ${item.enabled === true ? 'on' : ''}">${esc(statusLabel(item))}</span>` : ''}</div>
+            <dl class="jr-manager-values">
+                <div><dt>${wifi ? 'SSID atual' : 'Usuário atual'}</dt><dd>${esc(val(item[wifi ? 'ssid' : 'username']))}</dd></div>
+                ${wifi ? `<div><dt>Canal</dt><dd>${esc(item.auto_channel === true ? 'Automático' : val(item.channel))}</dd></div><div><dt>Segurança</dt><dd>${esc(securityLabel(item.security))}</dd></div>` : ''}
+                <div><dt>Senha atual</dt><dd class="jr-manager-secret"><span id="jr-secret-${kind}">${esc(passwordLabel(item))}</span><button type="button" class="acs-eye-btn" aria-label="Mostrar senha atual" onclick="jrRevealControl('${kind}')" ${item.password_state !== 'available' ? 'disabled' : ''}><i class="bi bi-eye"></i></button></dd></div>
+            </dl>
+            <p class="jr-manager-note">${esc(dateLabel(item.password_reported_at))}. ${wifi ? 'A edição afeta somente a rede selecionada.' : 'A senha de acesso ao roteador é diferente da senha do Wi-Fi.'}</p>
+            <div class="jr-manager-actions">
+                <button type="button" class="acs-soft-btn" onclick="jrRefreshControl('${kind}')" ${state.refreshBusy ? 'disabled' : ''}><i class="bi bi-arrow-clockwise"></i> Atualizar leitura</button>
+                <button type="button" class="acs-soft-btn primary" onclick="jrOpenControl('${kind}')" ${!canEdit ? 'disabled' : ''}><i class="bi bi-sliders"></i> ${wifi ? 'Gerenciar Wi-Fi' : 'Alterar acesso'}</button>
+            </div>
+            ${!canEdit ? '<p class="jr-manager-note">O equipamento não confirmou escrita para esta seleção.</p>' : ''}
+        </div>`;
+    }
     function renderWifi() {
-        const container = document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
-        if (!container) return;
-        if (!state.wifi.length) {
-            container.innerHTML = '<div class="jr-empty-control"><i class="bi bi-wifi-off"></i><span>Nenhuma interface Wi-Fi foi coletada deste equipamento.</span></div>';
+        const box = document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
+        if (!box) return;
+        const item = selected('wifi');
+        box.innerHTML = item ? manager('wifi',item,state.wifi) : '<div class="jr-empty-control">Nenhuma rede Wi-Fi foi coletada deste equipamento.</div>';
+    }
+    function renderAccounts() {
+        const box = document.querySelector('.acs-approved-admin .acs-reference-list.credentials');
+        const oldButton = document.getElementById('get-credentials-btn');
+        if (oldButton) { oldButton.style.display='none'; oldButton.onclick=null; }
+        if (!box) return;
+        if (!state.permissions.admin) {
+            box.innerHTML=`<div class="jr-manager jr-permission-notice"><i class="bi bi-shield-lock"></i><p>Credenciais de acesso restritas a NOC/Admin.</p><small>Perfil verificado: ${esc(state.permissions.role || 'não informado')}. Solicite a conferência do perfil ao administrador.</small></div>`;
             return;
         }
-        container.innerHTML = state.wifi.map(wifiCard).join('');
+        const item = selected('account');
+        box.innerHTML = item ? manager('account',item,state.accounts) : `<div class="jr-manager"><p>O modem ainda não informou uma conta local compatível.</p><p class="jr-manager-note">A leitura depende dos parâmetros disponibilizados pelo firmware.</p><button type="button" class="acs-soft-btn" onclick="jrRefreshControl('account')" ${state.refreshBusy ? 'disabled' : ''}>Atualizar leitura</button></div>`;
     }
-
-    function accountRow(item, index) {
-        const canEdit = state.permissions.admin && (item.username_writable || item.password_writable);
-        return `
-            <div class="jr-account-block">
-                <div class="jr-account-head">
-                    <strong>${esc(item.label || 'Conta do equipamento')}</strong>
-                    ${canEdit ? `<button type="button" class="acs-soft-btn jr-mini" onclick="jrEditAccount(${index})"><i class="bi bi-pencil"></i> Editar</button>` : '<span class="jr-readonly"><i class="bi bi-lock"></i> Somente leitura</span>'}
-                </div>
-                <div><span>Usuário</span><strong>${esc(val(item.username))}</strong></div>
-                <div>
-                    <span>Senha</span>
-                    <strong class="jr-secret-row">
-                        <span id="jr-account-pass-${index}">${esc(passwordLabel(item))}</span>
-                        ${item.password_state === 'available' ? `<button type="button" class="acs-eye-btn" onclick="jrToggleAccountSecret(${index})"><i class="bi bi-eye"></i></button>` : ''}
-                    </strong>
-                </div>
-            </div>`;
-    }
-
-    function renderAccounts() {
-        const container = document.querySelector('.acs-approved-admin .acs-reference-list.credentials');
-        const button = document.getElementById('get-credentials-btn');
-        if (!container) return;
-        if (!state.permissions.admin) {
-            container.innerHTML = '<div class="jr-empty-control"><i class="bi bi-shield-lock"></i><span>Credenciais administrativas disponíveis apenas para NOC/Admin.</span></div>';
-        } else if (!state.accounts.length) {
-            container.innerHTML = '<div class="jr-empty-control"><i class="bi bi-key"></i><span>O equipamento ainda não informou uma conta administrativa compatível.</span></div>';
-        } else {
-            container.innerHTML = state.accounts.map(accountRow).join('');
-        }
-        if (button) {
-            button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Atualizar leitura';
-            button.onclick = () => window.jrRefreshControl('admin');
-        }
-    }
-
     async function enhanceControls() {
-        if (state.loading || !window.DEVICE_ID) return;
-        state.loading = true;
-        try {
-            const data = await controlGet();
-            state.csrf = data.csrf || '';
-            state.wifi = Array.isArray(data.wifi) ? data.wifi : [];
-            state.accounts = Array.isArray(data.accounts) ? data.accounts : [];
-            state.permissions = data.permissions || {};
-            renderWifi();
-            renderAccounts();
-        } catch (e) {
-            console.error('[CPE CONTROL]', e);
-            const wifi = document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
-            if (wifi) wifi.innerHTML = '<div class="jr-empty-control danger"><i class="bi bi-exclamation-triangle"></i><span>' + esc(e.message) + '</span></div>';
-        } finally {
-            state.loading = false;
-        }
+        if (!window.DEVICE_ID) return;
+        if (state.loading) return state.loading;
+        state.loading=(async () => {
+            try {
+                const data=await request();
+                state.csrf=data.csrf || '';
+                state.permissions=data.permissions || {};
+                state.wifi=Array.isArray(data.wifi)?data.wifi:[];
+                state.accounts=Array.isArray(data.accounts)?data.accounts:[];
+                // A stable parameter ID survives sorting, polling and insertion/removal of other SSIDs.
+                if (!selected('wifi')) state.wifiId=(state.wifi.find(x=>x.enabled===true)||state.wifi[0])?.id || '';
+                if (!selected('account')) state.accountId=state.accounts[0]?.id || '';
+                renderWifi(); renderAccounts();
+            } catch (e) {
+                for (const selector of ['.acs-approved-wifi .acs-wifi-reference-grid','.acs-approved-admin .acs-reference-list.credentials']) {
+                    const box=document.querySelector(selector);
+                    if (box) box.innerHTML=`<div class="jr-empty-control danger">${esc(e.message)}</div>`;
+                }
+            } finally { state.loading=null; }
+        })();
+        return state.loading;
     }
-
+    window.jrSelectControl=(kind,id) => {
+        if (!rowById(kind,id)) return;
+        if (kind==='wifi') state.wifiId=id; else state.accountId=id;
+        renderWifi(); renderAccounts();
+    };
+    function secretPayload(kind,item) {
+        return { action:'reveal_secret', kind, [kind==='wifi'?'interface_id':'account_id']:item.id };
+    }
+    window.jrRevealControl=async kind => {
+        const item=selected(kind), el=document.getElementById('jr-secret-'+kind);
+        if (!item || !el || item.password_state!=='available' || !permitted(kind)) return;
+        if (el.dataset.showing==='1') { el.textContent=passwordLabel(item); el.dataset.showing='0'; return; }
+        const button=el.parentElement.querySelector('button'); button.disabled=true;
+        try {
+            const result=await request(secretPayload(kind,item));
+            if (!el.isConnected || selected(kind)?.id!==item.id) return;
+            el.textContent=result.password; el.dataset.showing='1';
+            clearTimeout(secretTimers.get(kind));
+            secretTimers.set(kind,setTimeout(()=>{if(el.isConnected){el.textContent=passwordLabel(item);el.dataset.showing='0';}},30000));
+        } catch(e) { toast(e.message,'danger'); }
+        finally { if(button.isConnected) button.disabled=false; }
+    };
+    function note(text,error=false) {
+        const el=document.getElementById('jr-control-note');
+        if(el){el.textContent=text;el.classList.toggle('danger',error);}
+    }
     function ensureModal() {
-        if (document.getElementById('jrDeviceControlModal')) return;
-        document.body.insertAdjacentHTML('beforeend', `
-        <div class="modal fade jr-control-modal" id="jrDeviceControlModal" tabindex="-1">
+        if(document.getElementById('jrDeviceControlModal')) return;
+        document.body.insertAdjacentHTML('beforeend',`
+        <div class="modal fade jr-control-modal" id="jrDeviceControlModal" tabindex="-1" aria-labelledby="jr-control-title">
           <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-            <div class="modal-header"><div><small id="jr-control-kicker">EQUIPAMENTO</small><h5 id="jr-control-title" class="modal-title">Editar</h5></div><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header"><div><small id="jr-control-kicker">EQUIPAMENTO</small><h5 id="jr-control-title" class="modal-title">Gerenciar</h5></div><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
             <div class="modal-body">
-              <input type="hidden" id="jr-control-kind"><input type="hidden" id="jr-control-index">
-              <div class="jr-field" id="jr-user-field"><label id="jr-user-label">Usuário / SSID</label><input id="jr-control-user" class="form-control" autocomplete="off"></div>
-              <div class="jr-field"><label>Nova senha</label><div class="jr-password-input"><input id="jr-control-password" type="password" class="form-control" autocomplete="new-password" placeholder="Deixe em branco para manter"><button type="button" onclick="jrToggleModalPassword()"><i id="jr-modal-eye" class="bi bi-eye"></i></button></div><small>A senha atual nunca é reenviada automaticamente.</small></div>
-              <div id="jr-control-note" class="jr-control-note"></div>
+              <p id="jr-control-target" class="jr-target"></p>
+              <div class="jr-field"><label id="jr-user-label" for="jr-control-user">SSID</label><input id="jr-control-user" class="form-control" autocomplete="off"></div>
+              <div class="jr-field"><label for="jr-control-current">Senha atual informada pelo equipamento</label><div class="jr-password-input"><input id="jr-control-current" class="form-control" type="password" readonly autocomplete="off"><button id="jr-show-current" type="button" onclick="jrRevealModalCurrent()" aria-label="Mostrar senha atual"><i class="bi bi-eye"></i></button></div></div>
+              <div class="jr-field"><label for="jr-control-password">Nova senha</label><div class="jr-password-input"><input id="jr-control-password" type="password" class="form-control" autocomplete="new-password" placeholder="Em branco mantém a senha atual"><button type="button" onclick="jrToggleModalPassword()" aria-label="Mostrar nova senha"><i class="bi bi-eye"></i></button></div></div>
+              <div class="jr-field"><label for="jr-control-confirm">Confirmar nova senha</label><input id="jr-control-confirm" class="form-control" type="password" autocomplete="new-password"></div>
+              <div class="jr-control-note" id="jr-control-note" role="status" aria-live="polite"></div>
             </div>
-            <div class="modal-footer"><button type="button" class="acs-soft-btn" data-bs-dismiss="modal">Cancelar</button><button type="button" class="acs-soft-btn primary" onclick="jrSaveDeviceControl()"><i class="bi bi-check2"></i> Salvar</button></div>
+            <div class="modal-footer"><button type="button" class="acs-soft-btn" data-bs-dismiss="modal">Cancelar</button><button id="jr-control-save" type="button" class="acs-soft-btn primary" onclick="jrSaveDeviceControl()"><i class="bi bi-check2"></i> Salvar nesta seleção</button></div>
           </div></div>
         </div>`);
+        const modal=document.getElementById('jrDeviceControlModal');
+        modal.addEventListener('hide.bs.modal',event=>{if(dialog?.saving)event.preventDefault();});
+        modal.addEventListener('hidden.bs.modal',()=>{
+            dialog=null;
+            for(const id of ['jr-control-current','jr-control-password','jr-control-confirm']) document.getElementById(id).value='';
+        });
     }
-
-    window.jrToggleWifiSecret = index => {
-        const item = state.wifi[index], el = document.getElementById('jr-wifi-pass-' + index);
-        if (!item || !el || item.password_state !== 'available') return;
-        const showing = el.dataset.showing === '1';
-        el.textContent = showing ? '••••••••' : item.password;
-        el.dataset.showing = showing ? '0' : '1';
-    };
-    window.jrToggleAccountSecret = index => {
-        const item = state.accounts[index], el = document.getElementById('jr-account-pass-' + index);
-        if (!item || !el || item.password_state !== 'available') return;
-        const showing = el.dataset.showing === '1';
-        el.textContent = showing ? '••••••••' : item.password;
-        el.dataset.showing = showing ? '0' : '1';
-    };
-    window.jrToggleModalPassword = () => {
-        const input=document.getElementById('jr-control-password'), icon=document.getElementById('jr-modal-eye');
-        if(!input)return; input.type=input.type==='password'?'text':'password';
-        if(icon) icon.className=input.type==='password'?'bi bi-eye':'bi bi-eye-slash';
-    };
-
-    window.jrEditWifi = index => {
+    window.jrOpenControl=kind => {
+        const item=selected(kind);
+        if(!item || !permitted(kind)) return;
+        if(!item[kind==='wifi'?'ssid_writable':'username_writable'] && !item.password_writable) return;
         ensureModal();
-        const item=state.wifi[index]; if(!item)return;
-        document.getElementById('jr-control-kind').value='wifi';
-        document.getElementById('jr-control-index').value=String(index);
-        document.getElementById('jr-control-title').textContent='Editar ' + (item.label || 'Wi-Fi');
-        document.getElementById('jr-control-kicker').textContent=item.standard || 'WI-FI';
-        document.getElementById('jr-user-label').textContent='SSID';
+        dialog={kind,item:{...item},saving:false,currentShown:false};
+        const wifi=kind==='wifi';
+        document.getElementById('jr-control-title').textContent=wifi?'Gerenciar rede Wi-Fi':'Alterar acesso ao roteador';
+        document.getElementById('jr-control-kicker').textContent=item.label || 'EQUIPAMENTO';
+        document.getElementById('jr-control-target').textContent=wifi?val(item.ssid)+' · '+shortId(item):val(item.username)+' · '+shortId(item);
+        document.getElementById('jr-user-label').textContent=wifi?'Nome da rede (SSID)':'Usuário de acesso';
         const user=document.getElementById('jr-control-user');
-        user.value=item.ssid || ''; user.disabled=!item.ssid_writable;
-        const pass=document.getElementById('jr-control-password');
-        pass.value=''; pass.disabled=!item.password_writable;
-        document.getElementById('jr-control-note').textContent=item.password_writable?'Senha em branco mantém a senha atual.':'Este firmware não marcou a senha como editável.';
+        user.value=item[wifi?'ssid':'username'] || ''; user.disabled=!item[wifi?'ssid_writable':'username_writable'];
+        user.maxLength=wifi?32:64;
+        const current=document.getElementById('jr-control-current');
+        current.type=item.password_state==='available'?'password':'text'; current.value=passwordLabel(item);
+        document.getElementById('jr-show-current').disabled=item.password_state!=='available';
+        for(const id of ['jr-control-password','jr-control-confirm']) {
+            const input=document.getElementById(id); input.value=''; input.type='password'; input.disabled=!item.password_writable; input.maxLength=wifi?63:64;
+        }
+        note(wifi?'Somente o SSID selecionado será alterado. Canal e segurança permanecem como estão. Trocar SSID ou senha pode desconectar os clientes dessa rede.':'A alteração afeta o acesso ao roteador, não o Wi-Fi. Garanta um acesso local alternativo antes de trocar a credencial.');
+        document.getElementById('jr-control-save').disabled=false;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('jrDeviceControlModal')).show();
     };
-
-    window.jrEditAccount = index => {
-        ensureModal();
-        const item=state.accounts[index]; if(!item)return;
-        document.getElementById('jr-control-kind').value='account';
-        document.getElementById('jr-control-index').value=String(index);
-        document.getElementById('jr-control-title').textContent='Editar credencial';
-        document.getElementById('jr-control-kicker').textContent=item.label || 'ADMINISTRAÇÃO';
-        document.getElementById('jr-user-label').textContent='Usuário';
-        const user=document.getElementById('jr-control-user');
-        user.value=item.username || ''; user.disabled=!item.username_writable;
-        const pass=document.getElementById('jr-control-password');
-        pass.value=''; pass.disabled=!item.password_writable;
-        document.getElementById('jr-control-note').textContent='A alteração só é enviada quando o parâmetro é explicitamente gravável no CPE.';
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('jrDeviceControlModal')).show();
+    window.jrRevealModalCurrent=async () => {
+        const d=dialog;
+        if(!d || d.saving || d.item.password_state!=='available') return;
+        const input=document.getElementById('jr-control-current'), button=document.getElementById('jr-show-current');
+        if(d.currentShown){input.value=passwordLabel(d.item);input.type='password';d.currentShown=false;return;}
+        button.disabled=true;
+        try {
+            const result=await request(secretPayload(d.kind,d.item));
+            if(dialog!==d) return;
+            input.type='text'; input.value=result.password; d.currentShown=true;
+            setTimeout(()=>{if(dialog===d){input.type='password';input.value=passwordLabel(d.item);d.currentShown=false;}},30000);
+        } catch(e) { note(e.message,true); }
+        finally { if(dialog===d)button.disabled=false; }
     };
-
-    window.jrSaveDeviceControl = async () => {
-        const kind=document.getElementById('jr-control-kind').value;
-        const index=Number(document.getElementById('jr-control-index').value);
+    window.jrToggleModalPassword=() => {
+        const input=document.getElementById('jr-control-password');
+        if(input) input.type=input.type==='password'?'text':'password';
+    };
+    function setSaving(flag) {
+        if(!dialog) return;
+        dialog.saving=flag;
+        for(const button of document.querySelectorAll('#jrDeviceControlModal .modal-footer button, #jrDeviceControlModal .btn-close')) button.disabled=flag;
+    }
+    window.jrSaveDeviceControl=async () => {
+        const d=dialog;
+        if(!d || d.saving) return;
+        const wifi=d.kind==='wifi', item=d.item;
         const user=document.getElementById('jr-control-user').value;
         const password=document.getElementById('jr-control-password').value;
-        const payload={action:kind==='wifi'?'update_wifi':'update_account'};
-        if(kind==='wifi'){
-            const item=state.wifi[index]; if(!item)return;
-            payload.interface_id=item.id;
-            if(item.ssid_writable && user !== String(item.ssid ?? '')) payload.ssid=user;
-            if(item.password_writable && password) payload.password=password;
-        } else {
-            const item=state.accounts[index]; if(!item)return;
-            payload.account_id=item.id;
-            if(item.username_writable && user !== String(item.username ?? '')) payload.username=user;
-            if(item.password_writable && password) payload.password=password;
-        }
-        if(!('ssid' in payload)&&!('username' in payload)&&!('password' in payload)){toast('Nenhuma alteração foi informada.','info');return;}
-        try{
-            const result=await controlPost(payload);
+        const confirm=document.getElementById('jr-control-confirm').value;
+        if(password!==confirm){note('A confirmação da nova senha não confere.',true);return;}
+        const payload={action:wifi?'update_wifi':'update_account',revision:item.revision,[wifi?'interface_id':'account_id']:item.id};
+        if(item[wifi?'ssid_writable':'username_writable'] && user!==String(item[wifi?'ssid':'username']??'')) payload[wifi?'ssid':'username']=user;
+        if(item.password_writable && password) payload.password=password;
+        if(!('ssid' in payload)&&!('username' in payload)&&!('password' in payload)){note('Nenhuma alteração foi informada.');return;}
+        setSaving(true); note('Enviando alteração somente para a seleção indicada...');
+        try {
+            const result=await request(payload);
+            if(dialog!==d)return;
+            setSaving(false);
             bootstrap.Modal.getOrCreateInstance(document.getElementById('jrDeviceControlModal')).hide();
-            toast(result.queued?'Alteração enfileirada; será aplicada na próxima comunicação.':result.message,'success');
-            await window.jrRefreshControl(kind==='wifi'?'wifi':'admin', false);
-            setTimeout(enhanceControls, 1800);
-        }catch(e){toast(e.message,'danger');}
+            toast(result.message,result.queued?'info':'success');
+            setTimeout(enhanceControls,1000); // GET only; no automatic extra tasks or retries.
+        } catch(e) {if(dialog===d)note(e.message,true);}
+        finally {if(dialog===d)setSaving(false);}
     };
-
-    window.jrRefreshControl = async (kind='wifi', notify=true) => {
-        try{
-            const result=await controlPost({action:'refresh',kind});
-            if(notify) toast(result.message,'info');
-            setTimeout(enhanceControls, 1200);
-        }catch(e){toast(e.message,'danger');}
+    window.jrRefreshControl=async (kind='wifi') => {
+        if(kind==='admin')kind='account';
+        if(state.refreshBusy || !permitted(kind))return;
+        const item=selected(kind);
+        state.refreshBusy=true; renderWifi(); renderAccounts();
+        try {
+            const payload={action:'refresh',kind};
+            if(item)payload[kind==='wifi'?'interface_id':'account_id']=item.id;
+            const result=await request(payload);
+            toast(result.message,result.partial?'warning':'info');
+            await enhanceControls();
+        } catch(e) {toast(e.message,'danger');}
+        finally {state.refreshBusy=false;renderWifi();renderAccounts();}
     };
 
     /* ---------- Monitoramento ---------- */

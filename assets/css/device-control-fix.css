@@ -1,18 +1,46 @@
-/* JR CONECT - CPE controls */
-.jr-control-actions{display:flex;justify-content:flex-end;align-items:center;min-height:34px;margin-top:10px;padding-top:10px;border-top:1px solid #26354a}
-.jr-readonly{display:inline-flex;align-items:center;gap:6px;color:#728399;font-size:9px}
-.jr-empty-control{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-height:72px;padding:15px;border:1px dashed #2b4058;border-radius:10px;background:#152033;color:#9caabd;font-size:10px}
-.jr-account-block{padding:9px 0;border-bottom:1px solid #26354a}.jr-account-block:last-child{border-bottom:0}
-.jr-account-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
-.jr-account-block>div:not(.jr-account-head){display:grid;grid-template-columns:145px 1fr;gap:10px;padding:6px 0}
-.jr-account-block span{color:#7790a8;font-size:9px}.jr-account-block strong{color:#eef4f9;font-size:10px}
-.jr-secret-row{display:flex!important;align-items:center;gap:6px}
-.jr-control-modal .modal-content{background:#172337;border:1px solid #2b4058;border-radius:14px;color:#e7edf6}
-.jr-control-modal .modal-header,.jr-control-modal .modal-footer{border-color:#26354a;background:#142031}
-.jr-control-modal .modal-body{padding:18px}.jr-field{margin-bottom:14px}.jr-field label{display:block;margin-bottom:6px;color:#9aaabd;font-size:9px}
-.jr-field .form-control{background:#111c2b!important;border:1px solid #2d4057!important;color:#eef4f9!important}
-.jr-password-input{display:grid;grid-template-columns:1fr 38px}.jr-password-input button{border:1px solid #2d4057;background:#132235;color:#55d2e5}
-.jr-control-note{padding:9px;border:1px solid #284057;border-radius:8px;background:#122031;color:#8092a6;font-size:8px}
+/* Selected Wi-Fi/credentials controls; scoped to the device page. */
+.acs-approved-wifi .acs-wifi-reference-grid,
+.acs-approved-admin .acs-reference-list.credentials{display:block!important;min-width:0}
+.acs-approved-admin .acs-reference-list.credentials>.jr-manager{display:block!important;min-height:0;grid-template-columns:none;padding:0;border:0}
+.jr-manager{width:100%;min-width:0;color:#e7edf6;box-sizing:border-box}
+.jr-manager label{display:block;margin:0 0 8px;font-size:12px;color:#acb9ca}
+.jr-manager select{display:block;width:100%;max-width:100%;min-width:0;height:40px;font-size:12px;border-radius:8px;padding:0 30px 0 10px;text-overflow:ellipsis}
+.jr-manager .jr-selection-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;margin:12px 0}
+.jr-manager span{font-size:12px!important;text-transform:none!important;letter-spacing:normal!important}
+.jr-manager .jr-selection-badge{padding:4px 8px;border:1px solid #425069;border-radius:100px;color:#9caec1!important;font-size:10px!important}
+.jr-manager .jr-selection-badge.on{border-color:#286450;color:#79dbb7!important;background:#183b36}
+.jr-manager-values{margin:0;display:block}
+.jr-manager-values>div{display:grid;grid-template-columns:minmax(85px,.7fr) minmax(0,1.3fr);gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #2b3a50}
+.jr-manager-values dt{color:#9dacbf;font-weight:500;font-size:12px}
+.jr-manager-values dd{margin:0;color:#eef4fa;font-size:12px;font-weight:650;min-width:0;overflow-wrap:anywhere}
+.jr-manager .jr-manager-secret{display:flex;align-items:center;gap:8px;min-width:0}
+.jr-manager-secret>span{min-width:0;overflow-wrap:anywhere;color:#eef4fa!important}
+.jr-manager-secret>button{flex:0 0 auto;min-width:32px;min-height:30px}
+.jr-manager .jr-manager-note{display:block;margin:10px 0;color:#9baec1;font-size:11px;line-height:1.5;text-transform:none;overflow-wrap:anywhere}
+.jr-manager .jr-manager-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding-top:8px}
+.jr-manager-actions button{font-size:12px;min-height:36px}
+.jr-manager-actions .primary,.jr-control-modal .primary{border-color:#2b8295!important;color:#9ee9f4!important}
+.jr-manager button:disabled,.jr-control-modal button:disabled{opacity:.45;cursor:not-allowed}
+.jr-permission-notice{padding:16px!important;border:1px dashed #425269!important;border-radius:9px}
+.jr-permission-notice p{margin:8px 0;font-size:12px}
+.jr-permission-notice small{color:#9dacbf;font-size:11px}
+.jr-empty-control{padding:16px;border:1px dashed #394a60;border-radius:8px;color:#aebbcd;font-size:12px}
+.jr-empty-control.danger{color:#efacb5;border-color:#80414d}
+.jr-control-modal .modal-content{background:#182235!important;color:#e7edf6;border:1px solid #35465e;border-radius:12px}
+.jr-control-modal .modal-header,.jr-control-modal .modal-footer{background:#1b2638!important;border-color:#2b3a50}
+.jr-control-modal .modal-body{padding:18px}
+.jr-control-modal .jr-target{padding:9px 10px;margin:0 0 16px;border-radius:7px;background:#121c2b;color:#a6deea;font-size:12px;overflow-wrap:anywhere}
+.jr-control-modal .jr-field{margin-bottom:14px}
+.jr-control-modal .jr-field label{display:block;margin-bottom:6px;font-size:12px;color:#bac6d4}
+.jr-control-modal .form-control{width:100%;min-width:0;background:#111c2b!important;border:1px solid #32445c!important;color:#eef4f9!important;font-size:13px}
+.jr-control-modal .form-control:disabled{opacity:.55}
+.jr-control-modal .jr-password-input{display:grid;grid-template-columns:minmax(0,1fr) 38px}
+.jr-password-input button{border:1px solid #32445c;background:#152339;color:#67d7e9}
+.jr-control-modal .jr-control-note{padding:10px;border:1px solid #2d485d;border-radius:8px;color:#b2c3d5;background:#142133;font-size:12px;line-height:1.5}
+.jr-control-modal .jr-control-note.danger{border-color:#8c4652;color:#ffbcc5}
+.jr-control-modal .modal-footer button{font-size:12px;min-height:36px}
+.jr-control-modal #jr-control-kicker{color:#8da9bd}
+@media(max-width:480px){.jr-manager-values>div{grid-template-columns:1fr;gap:5px}.jr-manager-actions button{flex:1 1 100%}.jr-control-modal .modal-dialog{margin:8px}}
 
 .jr-monitor-v2{--b:#2a3a51;--t:#eef4f9;--m:#7f90a5;display:flex;flex-direction:column;gap:12px;color:var(--t)}
 .jr-monitor-head,.jr-monitor-kpis>div,.jr-monitor-chart-card,.jr-monitor-report{border:1px solid var(--b);border-radius:11px;background:linear-gradient(180deg,#1b2638,#172337)}
