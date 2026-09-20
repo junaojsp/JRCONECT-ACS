@@ -1029,7 +1029,7 @@ include __DIR__ . '/views/layouts/header.php';
 .acs-kpi-card small{display:block;margin-top:5px;color:#718096;font-size:8px}
 
 .acs-noc-grid{
-    display:grid;grid-template-columns:1.15fr .95fr .85fr;gap:12px;margin-bottom:12px;align-items:stretch;
+    display:grid;grid-template-columns:1.15fr .95fr;gap:12px;margin-bottom:12px;align-items:stretch;
 }
 .acs-network-body{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;align-items:center;min-height:240px}
 .acs-network-chart{display:flex;align-items:center;justify-content:center}
@@ -1046,30 +1046,17 @@ include __DIR__ . '/views/layouts/header.php';
 .acs-network-summary-row.offline span i{background:#ef6876}
 .acs-network-summary-row strong{color:#e7edf6;font-size:11px}
 .acs-optical-chart{max-width:230px}
-.acs-side-panel .jrc-panel-body{padding:12px}
-.acs-quick-grid{display:grid;grid-template-columns:1fr;gap:8px}
-.acs-quick-grid a{
-    min-height:39px;display:grid;grid-template-columns:28px 1fr 14px;align-items:center;gap:7px;
-    padding:7px 9px;border:1px solid #2a3850;border-radius:8px;background:#151f30;color:#b7c3d2;text-decoration:none;font-size:9px;
-}
-.acs-quick-grid a:hover{background:#1d2a3f;border-color:#3a526e;color:#eef4f9}
-.acs-quick-grid i{color:#35cfe3}
-.acs-quick-grid b{font-size:14px;font-weight:400;color:#5fa8bd}
 .acs-recent-modern{margin-bottom:0}
 
 @media(max-width:1250px){
     .acs-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .acs-noc-grid{grid-template-columns:1fr 1fr}
-    .acs-side-panel{grid-column:1/-1}
-    .acs-quick-grid{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:760px){
     .acs-noc-head{align-items:flex-start;flex-direction:column}
     .acs-noc-head-right{width:100%;flex-wrap:wrap}
     .acs-kpi-grid,.acs-noc-grid{grid-template-columns:1fr}
-    .acs-side-panel{grid-column:auto}
     .acs-network-body{grid-template-columns:1fr}
-    .acs-quick-grid{grid-template-columns:1fr}
 }
 
 </style>
@@ -1184,24 +1171,7 @@ include __DIR__ . '/views/layouts/header.php';
             </div>
         </section>
 
-        <section class="jrc-panel acs-side-panel">
-            <div class="jrc-panel-header">
-                <div class="jrc-panel-title">
-                    <i class="bi bi-grid"></i>
-                    <div><strong>Acessos rápidos</strong><small>Principais funcionalidades</small></div>
-                </div>
-            </div>
-            <div class="jrc-panel-body">
-                <div class="acs-quick-grid">
-                    <a href="/devices.php"><i class="bi bi-router"></i><span>Equipamentos</span><b>›</b></a>
-                    <a href="/map.php"><i class="bi bi-diagram-3"></i><span>Mapa da rede</span><b>›</b></a>
-                    <a href="/discovery.php"><i class="bi bi-search"></i><span>Discovery TR-069</span><b>›</b></a>
-                    <a href="/configuration.php"><i class="bi bi-gear"></i><span>Configurações</span><b>›</b></a>
-                    <a href="/users.php"><i class="bi bi-people"></i><span>Usuários</span><b>›</b></a>
-                    <a href="/devices.php"><i class="bi bi-activity"></i><span>Monitoramento</span><b>›</b></a>
-                </div>
-            </div>
-        </section>
+
     </div>
 
     <section class="jrc-panel jrc-recent-panel acs-recent-modern">
