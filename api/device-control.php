@@ -89,7 +89,7 @@ function dcNormalizeBand(mixed $value): ?string {
     return match($text) {
         '2.4','2.4g','2.4ghz' => '2.4',
         '5','5g','5ghz','5.8','5.8g','5.8ghz' => '5',
-        '6','6g','6ghz' => '6',
+        '6','6g','6ghz','6g','6' => '6',
         default => null
     };
 }
@@ -100,6 +100,21 @@ function dcBandLabel(mixed $band,int $index): string {
         '6' => 'Wi-Fi 6 GHz',
         default => 'Banda não informada'
     };
+}
+/** Parse explicit operating standards, including vendor spellings such as bgn.
+ * Reject unknown text as a whole; ax/n/be alone never determine the band.
+ */
+function dcOperatingTokens(string $raw): array {
+    $text=preg_replace('/(?:ieee\s*)?802\.11/i','',strtolower(trim($raw)));
+    $words=preg_split('/[\s,\/+_-]+/',$text,-1,PREG_SPLIT_NO_EMPTY);
+    if(!$words) return [];
+    $tokens=[];
+    foreach($words as $word) {
+        preg_match_all('/ac|ax|be|[abgn]/',$word,$matches);
+        if(implode('',$matches[0])!==$word) return [];
+        $tokens=array_merge($tokens,$matches[0]);
+    }
+    return array_values(array_unique($tokens));
 }
 function dcWifiBand(array $nodes,?string $base,bool $legacy=false): array {
     $unknown=['band'=>null,'band_source'=>null,'band_conflict'=>false];
@@ -121,8 +136,7 @@ function dcWifiBand(array $nodes,?string $base,bool $legacy=false): array {
     $field=$legacy?'Standard':'OperatingStandards';
     $raw=dcValue($nodes,$base.'.'.$field);
     if(is_string($raw)) {
-        $text=preg_replace('/(?:ieee\s*)?802\.11/i','',strtolower($raw));
-        $tokens=preg_split('/[^a-z]+/',$text,-1,PREG_SPLIT_NO_EMPTY);
+        $tokens=dcOperatingTokens($raw);
         $has24=(bool)array_intersect($tokens,['b','g']);
         $has5=(bool)array_intersect($tokens,['a','ac']);
         if($has24 xor $has5) return ['band'=>$has24?'2.4':'5','band_source'=>$field,'band_conflict'=>false];
@@ -170,6 +184,26 @@ function dcWifi(array $nodes): array {
     // Do not merge distinct interfaces just because the SSID or band is equal.
     return $rows;
 }
+/** Only parameter paths and metadata. No SSIDs, passwords, IPs or serial numbers. */
+function dcWifiDiagnostic(array $nodes,array $wifi): array {
+    return ['schema'=>'wifi-edit-diagnostic-v1','interfaces'=>array_map(function($row) use($nodes) {
+        $basis=$row['standard']==='TR-098'?$row['id']:($row['radio_id']??null);
+        $observed=[];
+        if($basis) foreach(['OperatingFrequencyBand','X_FH_OperatingFrequencyBand','X_HW_FrequencyBand','SupportedFrequencyBands','Standard','OperatingStandards'] as $field) {
+            $value=dcValue($nodes,$basis.'.'.$field);
+            if(is_string($value) && strlen($value)<=96 && preg_match('/^[A-Za-z0-9., \/+_-]+$/D',$value)) $observed[$field]=$value;
+        }
+        $fields=[];
+        foreach($row['_fields'] as $name=>$field) {
+            $paths=array_values(array_unique(array_filter([$field['read'],$field['write']],fn($p)=>is_string($p))));
+            $fields[$name]=['state'=>$row[$name.'_state'],'writable'=>$row[$name.'_writable'],
+                'parameters'=>array_map(fn($p)=>['path'=>$p,'writable'=>dcBool($nodes[$p]['_writable']??null)],$paths)];
+        }
+        return ['interface_id'=>$row['id'],'standard'=>$row['standard'],'band'=>$row['band'],
+            'band_source'=>$row['band_source'],'band_conflict'=>$row['band_conflict'],
+            'radio_id'=>$row['radio_id'],'band_metadata'=>$observed,'fields'=>$fields];
+    },$wifi)];
+}
 function dcAccounts(array $nodes): array {
     $groups=[];
     foreach(dcRoots($nodes,'~^((?:Device|InternetGatewayDevice)\.Users\.User\.\d+)(?:\.|$)~') as $base)
@@ -200,6 +234,12 @@ function dcString(array $data,string $key,int $max=512): string {
     return $value;
 }
 function dcParameters(array $row,array $body,string $kind): array {
+    if($kind==='wifi' && array_key_exists('wifi_band',$body)) {
+        $expected=$body['wifi_band'];
+        $actual=$row['band']??'unknown';
+        if(!is_string($expected) || !in_array($expected,['2.4','5','6','unknown'],true) || $expected!==$actual)
+            dcFail('A banda selecionada não corresponde à interface. Atualize a leitura antes de salvar.',409);
+    }
     $out=[]; $keys=$kind==='wifi'?['ssid','password']:['username','password'];
     foreach($keys as $key) {
         if(!array_key_exists($key,$body)) continue;
@@ -232,7 +272,7 @@ function dcRun(): never {
     }
     $deviceId=dcString($method==='GET'?$_GET:$body,'device_id');
     $action=$method==='GET'?'read':dcString($body,'action',32);
-    if(!in_array($action,['read','refresh','reveal_secret','update_wifi','update_account'],true)) dcFail('Ação inválida.',400);
+    if(!in_array($action,['read','refresh','wifi_diagnostics','reveal_secret','update_wifi','update_account'],true)) dcFail('Ação inválida.',400);
     $kind=$action==='update_account'?'account':($action==='update_wifi'?'wifi':($body['kind']??'wifi'));
     if($kind==='admin') $kind='account';
     if(!in_array($kind,['wifi','account'],true)) dcFail('Tipo de controle inválido.',400);
@@ -247,6 +287,7 @@ function dcRun(): never {
     $r=$g->getDevice($deviceId);
     if(empty($r['success'])||!is_array($r['data']??null)) dcFail('Não foi possível consultar o equipamento.',502);
     $nodes=dcFlatten($r['data']); $wifi=dcWifi($nodes);
+    if($action==='wifi_diagnostics') dcReply(['success'=>true,'diagnostic'=>dcWifiDiagnostic($nodes,$wifi)]);
     $accounts=$permissions['admin']?dcAccounts($nodes):[];
     if($action==='read') dcReply(['success'=>true,'csrf'=>$token,'permissions'=>$permissions,'wifi'=>dcPublic($wifi),'accounts'=>dcPublic($accounts)]);
     $id=$body[$kind==='wifi'?'interface_id':'account_id']??null;

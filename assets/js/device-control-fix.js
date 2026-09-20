@@ -113,7 +113,7 @@
             <p class="jr-manager-note">${esc(dateLabel(item.password_reported_at))}. ${wifi ? 'A edição afeta somente a rede selecionada.' : 'A senha de acesso ao roteador é diferente da senha do Wi-Fi.'}</p>
             <div class="jr-manager-actions">
                 <button type="button" class="acs-soft-btn" onclick="jrRefreshControl('${kind}')" ${state.refreshBusy ? 'disabled' : ''}><i class="bi bi-arrow-clockwise"></i> Atualizar leitura</button>
-                <button type="button" class="acs-soft-btn primary" onclick="jrOpenControl('${kind}')" ${!canEdit ? 'disabled' : ''}><i class="bi bi-sliders"></i> ${wifi ? 'Gerenciar Wi-Fi' : 'Alterar acesso'}</button>
+                <button type="button" class="acs-soft-btn primary" onclick="jrOpenControl('${kind}')" ${!(wifi ? permitted(kind) : canEdit) ? 'disabled' : ''}><i class="bi bi-sliders"></i> ${wifi ? 'Gerenciar Wi-Fi ' + esc(wifiBandNames[bandOf(item)]) : 'Alterar acesso'}</button>
             </div>
             ${!canEdit ? '<p class="jr-manager-note">O equipamento não confirmou escrita para esta seleção.</p>' : ''}
         </div>`;
@@ -138,6 +138,8 @@
                 </button>
                 <small>Busca todas as bandas e SSIDs. Não altera senhas nem habilita redes.</small>
             </div>
+            <button type="button" id="jr-wifi-diagnostic" class="acs-soft-btn"
+                onclick="jrDownloadWifiDiagnostic()" ${!permitted('wifi')?'disabled':''}>Baixar diagnóstico Wi-Fi</button>
             <p class="jr-wifi-scan-status" role="status" aria-live="polite">${esc(state.scanMessage)}</p>
         </div>`;
     }
@@ -203,7 +205,7 @@
             clearTimeout(secretTimers.get(kind));
             secretTimers.set(kind,setTimeout(()=>{if(el.isConnected){el.textContent=passwordLabel(item);el.dataset.showing='0';}},30000));
         } catch(e) { toast(e.message,'danger'); }
-        finally { if(button.isConnected) button.disabled=false; }
+        finally { if(button.isConnected)button.disabled=false; }
     };
     function note(text,error=false) {
         const el=document.getElementById('jr-control-note');
@@ -216,6 +218,10 @@
           <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
             <div class="modal-header"><div><small id="jr-control-kicker">EQUIPAMENTO</small><h5 id="jr-control-title" class="modal-title">Gerenciar</h5></div><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
             <div class="modal-body">
+              <div class="jr-field" id="jr-editor-wifi-field" hidden>
+                <label for="jr-editor-wifi">Qual rede deseja alterar?</label>
+                <select id="jr-editor-wifi" class="form-control" onchange="jrChangeEditorWifi(this.value)"></select>
+              </div>
               <p id="jr-control-target" class="jr-target"></p>
               <div class="jr-field"><label id="jr-user-label" for="jr-control-user">SSID</label><input id="jr-control-user" class="form-control" autocomplete="off"></div>
               <div class="jr-field"><label for="jr-control-current">Senha atual informada pelo equipamento</label><div class="jr-password-input"><input id="jr-control-current" class="form-control" type="password" readonly autocomplete="off"><button id="jr-show-current" type="button" onclick="jrRevealModalCurrent()" aria-label="Mostrar senha atual"><i class="bi bi-eye"></i></button></div></div>
@@ -233,16 +239,65 @@
             for(const id of ['jr-control-current','jr-control-password','jr-control-confirm']) document.getElementById(id).value='';
         });
     }
+    function renderEditorWifiOptions(id) {
+        const select=document.getElementById('jr-editor-wifi');
+        const bands=['2.4','5',...['6','unknown'].filter(b=>wifiRows(b).length)];
+        select.innerHTML=bands.map(band=>{
+            const rows=wifiRows(band);
+            const options=rows.length ? rows.map(row=>
+                `<option value="${esc(row.id)}">${esc(val(row.ssid)+' · '+statusLabel(row)+' · '+shortId(row))}</option>`).join('')
+                : '<option value="" disabled>Não coletada — use Detectar redes do modem</option>';
+            return `<optgroup label="${esc(wifiBandNames[band])}">${options}</optgroup>`;
+        }).join('');
+        select.value=id;
+        select.disabled=!!dialog?.saving;
+    }
+    window.jrChangeEditorWifi=id => {
+        const d=dialog, row=rowById('wifi',id);
+        const select=document.getElementById('jr-editor-wifi');
+        if(!d || d.kind!=='wifi' || d.saving || !row) {
+            if(d && select) select.value=d.item.id;
+            return;
+        }
+        if(row.id===d.item.id) return;
+        const dirty=document.getElementById('jr-control-user').value!==String(d.item.ssid??'')
+            || document.getElementById('jr-control-password').value!=='' || document.getElementById('jr-control-confirm').value!=='';
+        if(dirty && !window.confirm('Descartar os campos ainda não salvos e escolher outra rede?')) {
+            select.value=d.item.id;
+            return;
+        }
+        // jrOpenControl creates a new immutable target snapshot. Polling cannot change it.
+        window.jrSelectControl('wifi',row.id);
+        window.jrOpenControl('wifi');
+    };
+    window.jrDownloadWifiDiagnostic=async () => {
+        if(!permitted('wifi')) return;
+        const button=document.getElementById('jr-wifi-diagnostic');
+        if(button) button.disabled=true;
+        try {
+            const result=await request({action:'wifi_diagnostics',kind:'wifi'});
+            const blob=new Blob([JSON.stringify(result.diagnostic,null,2)],{type:'application/json'});
+            const url=URL.createObjectURL(blob), anchor=document.createElement('a');
+            anchor.href=url; anchor.download='diagnostico-edicao-wifi.json';
+            document.body.appendChild(anchor); anchor.click(); anchor.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),1000);
+        } catch(e) {toast(e.message,'danger');}
+        finally {if(button?.isConnected)button.disabled=false;}
+    };
     window.jrOpenControl=kind => {
         const item=selected(kind);
         if(!item || !permitted(kind)) return;
-        if(!item[kind==='wifi'?'ssid_writable':'username_writable'] && !item.password_writable) return;
+        if(dialog?.saving) return;
+        if(kind!=='wifi' && !item.username_writable && !item.password_writable) return;
         ensureModal();
         dialog={kind,item:{...item},saving:false,currentShown:false};
         const wifi=kind==='wifi';
-        document.getElementById('jr-control-title').textContent=wifi?'Gerenciar rede Wi-Fi':'Alterar acesso ao roteador';
+        const choiceField=document.getElementById('jr-editor-wifi-field');
+        choiceField.hidden=!wifi;
+        if(wifi) renderEditorWifiOptions(item.id);
+        document.getElementById('jr-control-title').textContent=wifi?'Gerenciar Wi-Fi '+wifiBandNames[bandOf(item)]:'Alterar acesso ao roteador';
         document.getElementById('jr-control-kicker').textContent=item.label || 'EQUIPAMENTO';
-        document.getElementById('jr-control-target').textContent=wifi?val(item.ssid)+' · '+shortId(item):val(item.username)+' · '+shortId(item);
+        document.getElementById('jr-control-target').textContent=wifi?wifiBandNames[bandOf(item)]+' · '+val(item.ssid)+' · '+shortId(item):val(item.username)+' · '+shortId(item);
         document.getElementById('jr-user-label').textContent=wifi?'Nome da rede (SSID)':'Usuário de acesso';
         const user=document.getElementById('jr-control-user');
         user.value=item[wifi?'ssid':'username'] || ''; user.disabled=!item[wifi?'ssid_writable':'username_writable'];
@@ -254,7 +309,9 @@
             const input=document.getElementById(id); input.value=''; input.type='password'; input.disabled=!item.password_writable; input.maxLength=wifi?63:64;
         }
         note(wifi?'Somente o SSID selecionado será alterado. Canal e segurança permanecem como estão. Trocar SSID ou senha pode desconectar os clientes dessa rede.':'A alteração afeta o acesso ao roteador, não o Wi-Fi. Garanta um acesso local alternativo antes de trocar a credencial.');
-        document.getElementById('jr-control-save').disabled=false;
+        const editable=item[wifi?'ssid_writable':'username_writable'] || item.password_writable;
+        if(!editable) note('Esta interface foi identificada, mas o modem não confirmou escrita. Atualize a leitura; não será utilizada outra banda como substituta.');
+        document.getElementById('jr-control-save').disabled=!editable;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('jrDeviceControlModal')).show();
     };
     window.jrRevealModalCurrent=async () => {
@@ -278,17 +335,21 @@
     function setSaving(flag) {
         if(!dialog) return;
         dialog.saving=flag;
+        const choice=document.getElementById('jr-editor-wifi');
+        if(choice) choice.disabled=flag;
         for(const button of document.querySelectorAll('#jrDeviceControlModal .modal-footer button, #jrDeviceControlModal .btn-close')) button.disabled=flag;
     }
     window.jrSaveDeviceControl=async () => {
         const d=dialog;
         if(!d || d.saving) return;
         const wifi=d.kind==='wifi', item=d.item;
+        if(!permitted(d.kind) || (!item[wifi?'ssid_writable':'username_writable'] && !item.password_writable)) return;
         const user=document.getElementById('jr-control-user').value;
         const password=document.getElementById('jr-control-password').value;
         const confirm=document.getElementById('jr-control-confirm').value;
         if(password!==confirm){note('A confirmação da nova senha não confere.',true);return;}
         const payload={action:wifi?'update_wifi':'update_account',revision:item.revision,[wifi?'interface_id':'account_id']:item.id};
+        if(wifi) payload.wifi_band=bandOf(item);
         if(item[wifi?'ssid_writable':'username_writable'] && user!==String(item[wifi?'ssid':'username']??'')) payload[wifi?'ssid':'username']=user;
         if(item.password_writable && password) payload.password=password;
         if(!('ssid' in payload)&&!('username' in payload)&&!('password' in payload)){note('Nenhuma alteração foi informada.');return;}
