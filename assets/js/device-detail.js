@@ -157,11 +157,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     const n = Number(speedRaw);
                     speed = Number.isFinite(n) ? (n >= 1000 ? (n / 1000) + ' Gbps' : n + ' Mbps') : String(speedRaw);
                 }
-                const linked = connectedDevices.find(d => {
-                    const iface = String(d.interface || d.interface_name || d.interface_type || '').toLowerCase();
-                    return iface.includes(String(name).toLowerCase().replace(' ', '')) || iface.includes(String(idx + 1));
-                });
-                const linkedName = linked ? (linked.vendor || linked.hostname || linked.ip_address || 'Dispositivo') : '-';
+                const portNumber = Number(port.port || (idx + 1));
+                const ethernetDevices = connectedDevices.filter(d => String(d.interface_type || '').toLowerCase() === 'ethernet');
+                const linked = ethernetDevices.find(d => Number(d.lan_port) === portNumber) || null;
+                const linkedName = linked ? (linked.hostname || linked.vendor || linked.ip_address || 'Dispositivo') : (isUp ? 'Porta ativa' : '-');
+                const linkedIp = linked?.ip_address || '';
 
                 return `
                     <div class="acs-lan-visual ${isUp ? 'up' : 'down'}">
@@ -173,7 +173,11 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <span class="acs-lan-state">${isUp ? 'Conectada' : 'Desconectada'}</span>
                         <small>${isUp ? speed : '-'}</small>
                         <small>${isUp ? 'Full' : '-'}</small>
-                        <div class="acs-lan-device"><i class="bi bi-pc-display"></i><span>${linkedName}</span></div>
+                        <div class="acs-lan-device ${linked ? 'identified' : ''}">
+                            <i class="bi bi-pc-display"></i>
+                            <span>${linkedName}</span>
+                            ${linkedIp ? `<small>${linkedIp}</small>` : ''}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -192,7 +196,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <strong>${d.vendor || d.hostname || 'Dispositivo ' + (idx + 1)}</strong>
                         <span>${d.ip_address || '-'}</span>
                         <span>${d.mac_address || '-'}</span>
-                        <span>${d.interface_type || d.interface || '-'}</span>
+                        <span>${d.lan_port ? ('LAN' + d.lan_port) : (d.interface_type || d.interface || '-')}</span>
                     </div>
                 `).join('')}
             `;

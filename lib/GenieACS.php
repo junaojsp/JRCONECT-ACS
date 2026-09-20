@@ -1000,6 +1000,37 @@ class GenieACS {
                 $active = isset($hostData['Active']['_value']) ? $hostData['Active']['_value'] : null;
                 $timestamp = isset($hostData['_timestamp']) ? $hostData['_timestamp'] : null;
 
+                // Physical/local interface reported by some TR-098/TR-181 firmwares.
+                // Do not infer a LAN port when the CPE only says "Ethernet".
+                $hostInterfacePath = null;
+                foreach ([
+                    'Layer2Interface',
+                    'Interface',
+                    'AssociatedDevice',
+                    'X_CT-COM_Layer2Interface',
+                    'X_HW_Layer2Interface',
+                    'X_CU_Layer2Interface',
+                    'X_FH_Layer2Interface',
+                    'X_FH_Interface',
+                    'X_CT-COM_Interface'
+                ] as $interfaceField) {
+                    if (isset($hostData[$interfaceField]['_value']) && $hostData[$interfaceField]['_value'] !== '') {
+                        $hostInterfacePath = (string)$hostData[$interfaceField]['_value'];
+                        break;
+                    }
+                }
+
+                $lanPortNumber = null;
+                if ($hostInterfacePath) {
+                    if (preg_match('/LANEthernetInterfaceConfig\.(\d+)/i', $hostInterfacePath, $m)) {
+                        $lanPortNumber = (int)$m[1];
+                    } elseif (preg_match('/Ethernet\.Interface\.(\d+)/i', $hostInterfacePath, $m)) {
+                        $lanPortNumber = (int)$m[1];
+                    } elseif (preg_match('/(?:LAN|ETH|Ethernet)[ _-]?(\d+)/i', $hostInterfacePath, $m)) {
+                        $lanPortNumber = (int)$m[1];
+                    }
+                }
+
                 // Only add devices with valid IP and MAC
                 if ($ipAddress && $macAddress) {
                     // Filter strategy: Only count hosts that were updated recently relative to device last inform
@@ -1047,6 +1078,8 @@ class GenieACS {
                         'ip_address' => $ipAddress,
                         'mac_address' => $macAddress,
                         'interface_type' => $connectionType,
+                        'interface_path' => $hostInterfacePath,
+                        'lan_port' => $lanPortNumber,
                         'active' => $active ?? true, // Default to active if not specified
                     ];
                 }

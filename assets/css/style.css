@@ -4538,3 +4538,82 @@ section{
     .acs-overview-reorganized>.acs-approved-ai{grid-column:auto !important}
     .acs-router-lan-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
 }
+
+
+/* ===== ACS ROUTER LOCAL VISUAL REFINEMENT ===== */
+.acs-router-local-grid{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+    align-items:start;
+}
+.acs-router-wifi-zone{
+    grid-column:1/-1 !important;
+}
+.acs-router-zone{
+    padding:14px !important;
+    background:linear-gradient(180deg,rgba(11,29,42,.72),rgba(7,20,31,.72)) !important;
+}
+.acs-router-zone-title{
+    min-height:32px;
+}
+.acs-router-zone-title>span:first-child{
+    font-size:11px !important;
+}
+.acs-router-lan-grid{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:10px !important;
+}
+.acs-router-lan-grid .acs-lan-visual{
+    min-width:0;
+    padding:11px 8px !important;
+    border:1px solid rgba(105,159,187,.10) !important;
+    border-radius:9px;
+    background:rgba(5,17,26,.48);
+}
+.acs-router-lan-grid .acs-lan-visual:last-child{
+    border-right:1px solid rgba(105,159,187,.10) !important;
+}
+.acs-router-lan-grid .acs-lan-visual.up{
+    border-color:rgba(32,213,155,.20) !important;
+    background:rgba(20,55,48,.20);
+}
+.acs-router-lan-grid .acs-rj45-port-face{
+    width:38px;
+    height:34px;
+    margin-bottom:6px;
+}
+.acs-router-lan-grid .acs-lan-device{
+    min-height:42px;
+    margin-top:7px;
+    padding-top:7px;
+    border-top:1px solid rgba(105,159,187,.07);
+}
+.acs-router-lan-grid .acs-lan-device.identified span{
+    color:#dcecf3;
+    font-weight:700;
+}
+.acs-router-lan-grid .acs-lan-device small{
+    margin-top:1px;
+    color:#65879a !important;
+    font-size:7px !important;
+}
+.acs-router-clients-zone,
+.acs-router-web-zone{
+    min-height:100%;
+}
+.acs-router-clients-zone .acs-connected-compact-head,
+.acs-router-clients-zone .acs-connected-compact-row{
+    grid-template-columns:1.35fr .85fr 1.15fr .55fr !important;
+}
+.acs-router-web-status>div{
+    padding:9px 0 !important;
+}
+@media(max-width:1050px){
+    .acs-router-local-grid{grid-template-columns:1fr !important}
+    .acs-router-wifi-zone{grid-column:auto !important}
+}
+@media(max-width:560px){
+    .acs-router-lan-grid{grid-template-columns:1fr !important}
+    .acs-router-clients-zone .acs-connected-compact-head,
+    .acs-router-clients-zone .acs-connected-compact-row{grid-template-columns:1fr 1fr !important}
+}
