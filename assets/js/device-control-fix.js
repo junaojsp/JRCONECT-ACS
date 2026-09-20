@@ -2,14 +2,14 @@
 (() => {
     'use strict';
 
-    const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false };
+    const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
     const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0 };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
     const val = value => value === null || value === undefined || value === '' ? 'Não informado' : String(value);
     const statusLabel = item => item.enabled === true ? 'Habilitada' : item.enabled === false ? 'Desabilitada' : 'Estado não informado';
-    const shortId = item => (item.id || '').split('.').slice(-2).join('.');
+    const shortId = item => item.instance_label || (item.id || '').split('.').slice(-4).join('.');
     const rowById = (kind, id) => (kind === 'wifi' ? state.wifi : state.accounts).find(row => row.id === id);
     const selected = kind => rowById(kind, kind === 'wifi' ? state.wifiId : state.accountId);
     const permitted = kind => !!state.permissions[kind === 'wifi' ? 'wifi' : 'admin'];
@@ -54,6 +54,46 @@
         const d = new Date(raw);
         return Number.isNaN(d.getTime()) ? 'Horário da leitura não informado' : 'Última leitura: ' + d.toLocaleString('pt-BR');
     }
+
+    const wifiBandNames = {'2.4':'2,4 GHz','5':'5 GHz (5,8)','6':'6 GHz','unknown':'Banda não informada'};
+    const bandOf = item => ['2.4','5','6'].includes(item.band) ? item.band : 'unknown';
+    function wifiRows(band) { return state.wifi.filter(row => bandOf(row) === band); }
+    function syncWifiSelection() {
+        if (!state.wifiBand) {
+            state.wifiBand=['2.4','5','6','unknown'].find(band=>wifiRows(band).length) || '2.4';
+        }
+        const rows=wifiRows(state.wifiBand);
+        const current=selected('wifi');
+        if (current && bandOf(current)===state.wifiBand) return;
+        const saved=rows.find(row=>row.id===state.wifiByBand[state.wifiBand]);
+        state.wifiId=(saved || rows.find(row=>row.enabled===true) || rows[0])?.id || '';
+        if(state.wifiId) state.wifiByBand[state.wifiBand]=state.wifiId;
+    }
+    function bandControls() {
+        const bands=['2.4','5'];
+        if(wifiRows('6').length) bands.push('6');
+        if(wifiRows('unknown').length) bands.push('unknown');
+        return `<div class="jr-wifi-band-switch" role="group" aria-label="Banda Wi-Fi">
+            ${bands.map(band=>{
+                const count=wifiRows(band).length;
+                const selectedBand=state.wifiBand===band;
+                return `<button type="button" class="acs-soft-btn ${selectedBand?'primary':''}"
+                    data-band="${band}" aria-pressed="${selectedBand}" onclick="jrSelectWifiBand('${band}')">
+                    <i class="bi bi-wifi"></i><span>${wifiBandNames[band]}</span>
+                    <small>${count?count+' SSID'+(count>1?'s':''):'Não coletada'}</small>
+                </button>`;
+            }).join('')}
+        </div>`;
+    }
+    window.jrSelectWifiBand=band => {
+        if(!Object.prototype.hasOwnProperty.call(wifiBandNames,band)) return;
+        state.wifiBand=band;
+        const saved=state.wifiByBand[band];
+        state.wifiId=saved || '';
+        syncWifiSelection();
+        renderWifi();
+    };
+
     function manager(kind, item, rows) {
         const wifi = kind === 'wifi';
         const options = rows.map(row => {
@@ -81,8 +121,25 @@
     function renderWifi() {
         const box = document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
         if (!box) return;
-        const item = selected('wifi');
-        box.innerHTML = item ? manager('wifi',item,state.wifi) : '<div class="jr-empty-control">Nenhuma rede Wi-Fi foi coletada deste equipamento.</div>';
+        syncWifiSelection();
+        const rows=wifiRows(state.wifiBand), item=selected('wifi');
+        const missing=`<div class="jr-empty-control"><strong>${esc(wifiBandNames[state.wifiBand])}</strong>
+            <p>Nenhuma interface desta banda foi identificada na leitura atual.</p>
+            <p>Use “Detectar redes do modem” para buscar todas as interfaces. Isso não significa que a banda esteja desabilitada.</p>
+            ${wifiRows('unknown').length?'<p>Há redes em “Banda não informada”; elas não foram classificadas como 5 GHz por suposição.</p>':''}
+        </div>`;
+        box.innerHTML=`<div class="jr-wifi-bands-shell">
+            ${bandControls()}
+            <div class="jr-wifi-selected">${item ? manager('wifi',item,rows) : missing}</div>
+            <div class="jr-wifi-discover">
+                <button type="button" class="acs-soft-btn" id="jr-detect-wifi"
+                    onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}>
+                    <i class="bi bi-arrow-repeat"></i> ${state.refreshBusy?'Consultando...':'Detectar redes do modem'}
+                </button>
+                <small>Busca todas as bandas e SSIDs. Não altera senhas nem habilita redes.</small>
+            </div>
+            <p class="jr-wifi-scan-status" role="status" aria-live="polite">${esc(state.scanMessage)}</p>
+        </div>`;
     }
     function renderAccounts() {
         const box = document.querySelector('.acs-approved-admin .acs-reference-list.credentials');
@@ -104,10 +161,13 @@
                 const data=await request();
                 state.csrf=data.csrf || '';
                 state.permissions=data.permissions || {};
-                state.wifi=Array.isArray(data.wifi)?data.wifi:[];
+                // Remove duplicate IDs, not distinct SSIDs on the same band.
+                state.wifi=Array.isArray(data.wifi)
+                    ? [...new Map(data.wifi.filter(row=>row && typeof row.id==='string').map(row=>[row.id,row])).values()]
+                    : [];
                 state.accounts=Array.isArray(data.accounts)?data.accounts:[];
                 // A stable parameter ID survives sorting, polling and insertion/removal of other SSIDs.
-                if (!selected('wifi')) state.wifiId=(state.wifi.find(x=>x.enabled===true)||state.wifi[0])?.id || '';
+                syncWifiSelection();
                 if (!selected('account')) state.accountId=state.accounts[0]?.id || '';
                 renderWifi(); renderAccounts();
             } catch (e) {
@@ -121,7 +181,11 @@
     }
     window.jrSelectControl=(kind,id) => {
         if (!rowById(kind,id)) return;
-        if (kind==='wifi') state.wifiId=id; else state.accountId=id;
+        if (kind==='wifi') {
+            state.wifiId=id;
+            state.wifiBand=bandOf(rowById('wifi',id));
+            state.wifiByBand[state.wifiBand]=id;
+        } else state.accountId=id;
         renderWifi(); renderAccounts();
     };
     function secretPayload(kind,item) {
@@ -239,18 +303,30 @@
         } catch(e) {if(dialog===d)note(e.message,true);}
         finally {if(dialog===d)setSaving(false);}
     };
-    window.jrRefreshControl=async (kind='wifi') => {
+    window.jrRefreshControl=async (kind='wifi', allWifi=false) => {
         if(kind==='admin')kind='account';
         if(state.refreshBusy || !permitted(kind))return;
         const item=selected(kind);
+        const scanAll=kind==='wifi' && allWifi===true;
+        if(scanAll) state.scanMessage='Buscando as interfaces Wi-Fi do modem...';
         state.refreshBusy=true; renderWifi(); renderAccounts();
         try {
             const payload={action:'refresh',kind};
-            if(item)payload[kind==='wifi'?'interface_id':'account_id']=item.id;
+            if(scanAll) payload.scope='all';
+            else if(item)payload[kind==='wifi'?'interface_id':'account_id']=item.id;
             const result=await request(payload);
+            if(scanAll) state.scanMessage=result.message;
             toast(result.message,result.partial?'warning':'info');
             await enhanceControls();
-        } catch(e) {toast(e.message,'danger');}
+            // Read cache again after asynchronous refresh; never submit duplicate tasks.
+            if(scanAll) {
+                setTimeout(enhanceControls,3000);
+                setTimeout(enhanceControls,8000);
+            }
+        } catch(e) {
+            if(scanAll) state.scanMessage=e.message;
+            toast(e.message,'danger');
+        }
         finally {state.refreshBusy=false;renderWifi();renderAccounts();}
     };
 

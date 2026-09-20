@@ -79,19 +79,73 @@ function dcRow(array $nodes,string $id,array $fields,array $extra=[]): array {
     $row['revision']=hash('sha256',json_encode($revision,JSON_INVALID_UTF8_SUBSTITUTE));
     return $row;
 }
+/**
+ * Resolve a band from the reported radio/configuration, never from SSID suffix
+ * or instance number. 802.11n/ax/be and a channel number alone are ambiguous.
+ */
+function dcNormalizeBand(mixed $value): ?string {
+    if(!is_scalar($value) || is_bool($value)) return null;
+    $text=strtolower(preg_replace('/\s+/','',str_replace(',','.',trim((string)$value))));
+    return match($text) {
+        '2.4','2.4g','2.4ghz' => '2.4',
+        '5','5g','5ghz','5.8','5.8g','5.8ghz' => '5',
+        '6','6g','6ghz' => '6',
+        default => null
+    };
+}
 function dcBandLabel(mixed $band,int $index): string {
-    $b=strtolower(trim(is_scalar($band)?(string)$band:''));
-    if(in_array($b,['2.4ghz','2.4 ghz','2.4g','2.4'],true)) return 'Wi-Fi 2.4 GHz';
-    if(in_array($b,['5ghz','5 ghz','5g','5'],true)) return 'Wi-Fi 5 GHz';
-    if(in_array($b,['6ghz','6 ghz','6g','6'],true)) return 'Wi-Fi 6 GHz';
-    return 'Rede Wi-Fi '.$index; // ax, channel and SSID suffix alone do not identify a band.
+    return match(dcNormalizeBand($band)) {
+        '2.4' => 'Wi-Fi 2,4 GHz',
+        '5' => 'Wi-Fi 5 GHz (5,8)',
+        '6' => 'Wi-Fi 6 GHz',
+        default => 'Banda não informada'
+    };
+}
+function dcWifiBand(array $nodes,?string $base,bool $legacy=false): array {
+    $unknown=['band'=>null,'band_source'=>null,'band_conflict'=>false];
+    if(!$base) return $unknown;
+    $observed=[];
+    foreach(['OperatingFrequencyBand','X_FH_OperatingFrequencyBand','X_HW_FrequencyBand'] as $field) {
+        $band=dcNormalizeBand(dcValue($nodes,$base.'.'.$field));
+        if($band!==null) $observed[$band]=$field;
+    }
+    if(count($observed)>1) return array_replace($unknown,['band_conflict'=>true]);
+    if($observed) return ['band'=>(string)array_key_first($observed),'band_source'=>reset($observed),'band_conflict'=>false];
+    // A single supported band is enough. A multi-band capability is NOT the current band.
+    $supported=dcValue($nodes,$base.'.SupportedFrequencyBands');
+    if(is_string($supported)) {
+        $parts=array_values(array_filter(array_map('trim',explode(',',$supported)),fn($p)=>$p!==''));
+        if(count($parts)===1 && ($band=dcNormalizeBand($parts[0]))!==null)
+            return ['band'=>$band,'band_source'=>'SupportedFrequencyBands','band_conflict'=>false];
+    }
+    $field=$legacy?'Standard':'OperatingStandards';
+    $raw=dcValue($nodes,$base.'.'.$field);
+    if(is_string($raw)) {
+        $text=preg_replace('/(?:ieee\s*)?802\.11/i','',strtolower($raw));
+        $tokens=preg_split('/[^a-z]+/',$text,-1,PREG_SPLIT_NO_EMPTY);
+        $has24=(bool)array_intersect($tokens,['b','g']);
+        $has5=(bool)array_intersect($tokens,['a','ac']);
+        if($has24 xor $has5) return ['band'=>$has24?'2.4':'5','band_source'=>$field,'band_conflict'=>false];
+    }
+    return $unknown;
+}
+/** Full discovery is explicit and read-only; selected refreshes remain narrow. */
+function dcWifiRefreshRoots(array $nodes): array {
+    $roots=[];
+    if(isset($nodes['InternetGatewayDevice'])) $roots[]='InternetGatewayDevice.LANDevice';
+    if(isset($nodes['Device'])) $roots[]='Device.WiFi';
+    return $roots;
 }
 function dcWifi(array $nodes): array {
     $rows=[]; $n=0;
     foreach(dcRoots($nodes,'~^(InternetGatewayDevice\.LANDevice\.\d+\.WLANConfiguration\.\d+)(?:\.|$)~') as $base) {
         $fields=['ssid'=>dcField($nodes,[$base.'.SSID']), 'password'=>dcField($nodes,[$base.'.KeyPassphrase',$base.'.PreSharedKey.1.KeyPassphrase',$base.'.PreSharedKey.1.PreSharedKey'])];
-        $band=dcValue($nodes,$base.'.OperatingFrequencyBand')??dcValue($nodes,$base.'.X_FH_OperatingFrequencyBand')??dcValue($nodes,$base.'.X_HW_FrequencyBand');
-        $rows[]=dcRow($nodes,$base,$fields,['standard'=>'TR-098','label'=>dcBandLabel($band,++$n),
+        $band=dcWifiBand($nodes,$base,true);
+        preg_match('/LANDevice\.(\d+)\.WLANConfiguration\.(\d+)$/',$base,$ids);
+        $rows[]=dcRow($nodes,$base,$fields,$band+[
+            'standard'=>'TR-098','label'=>dcBandLabel($band['band'],++$n),
+            'instance_label'=>'LAN '.$ids[1].' / SSID '.$ids[2],
+            'radio_id'=>null,
             'enabled'=>dcBool(dcValue($nodes,$base.'.Enable')),'channel'=>dcValue($nodes,$base.'.Channel'),
             'auto_channel'=>dcBool(dcValue($nodes,$base.'.AutoChannelEnable')),
             'security'=>dcValue($nodes,$base.'.BeaconType')??dcValue($nodes,$base.'.BasicEncryptionModes'),'_refresh'=>[$base]]);
@@ -100,15 +154,20 @@ function dcWifi(array $nodes): array {
     foreach(dcRoots($nodes,'~^(Device\.WiFi\.SSID\.\d+)(?:\.|$)~') as $base) {
         $matches=array_values(array_filter($aps,fn($p)=>rtrim(trim((string)dcValue($nodes,$p.'.SSIDReference')),'.')===$base));
         $ap=count($matches)===1?$matches[0]:null;
-        $layers=array_map(fn($p)=>rtrim(trim($p),'.'),explode(',',(string)dcValue($nodes,$base.'.LowerLayers')));
+        $layers=array_unique(array_map(fn($p)=>rtrim(trim($p),'.'),explode(',',(string)dcValue($nodes,$base.'.LowerLayers'))));
         $radios=array_values(array_filter($layers,fn($p)=>preg_match('~^Device\.WiFi\.Radio\.\d+$~',$p)&&isset($nodes[$p])));
         $radio=count($radios)===1?$radios[0]:null;
+        $band=dcWifiBand($nodes,$radio);
         $fields=['ssid'=>dcField($nodes,[$base.'.SSID']), 'password'=>dcField($nodes,$ap?[$ap.'.Security.KeyPassphrase',$ap.'.Security.PreSharedKey']:[])];
-        $rows[]=dcRow($nodes,$base,$fields,['standard'=>'TR-181','label'=>dcBandLabel($radio?dcValue($nodes,$radio.'.OperatingFrequencyBand'):null,++$n),
+        $rows[]=dcRow($nodes,$base,$fields,$band+[
+            'standard'=>'TR-181','label'=>dcBandLabel($band['band'],++$n),
+            'instance_label'=>'SSID '.substr($base,strrpos($base,'.')+1).' (TR-181)',
+            'radio_id'=>$radio,
             'enabled'=>dcBool(dcValue($nodes,($ap??$base).'.Enable')), 'channel'=>$radio?dcValue($nodes,$radio.'.Channel'):null,
             'auto_channel'=>$radio?dcBool(dcValue($nodes,$radio.'.AutoChannelEnable')):null, 'security'=>$ap?dcValue($nodes,$ap.'.Security.ModeEnabled'):null,
             '_refresh'=>array_values(array_filter([$base,$ap,$radio]))]);
     }
+    // Do not merge distinct interfaces just because the SSID or band is equal.
     return $rows;
 }
 function dcAccounts(array $nodes): array {
@@ -193,8 +252,16 @@ function dcRun(): never {
     $id=$body[$kind==='wifi'?'interface_id':'account_id']??null;
     $row=$id!==null?dcSelect($kind==='wifi'?$wifi:$accounts,dcString($body,$kind==='wifi'?'interface_id':'account_id')):null;
     if($action==='refresh') {
-        $roots=$row['_refresh']??($kind==='wifi'?['Device.WiFi','InternetGatewayDevice.LANDevice']:['Device.Users','Device.UserInterface','Device.DeviceInfo','Device.LANConfigSecurity','InternetGatewayDevice.Users','InternetGatewayDevice.UserInterface','InternetGatewayDevice.DeviceInfo','InternetGatewayDevice.LANConfigSecurity','VirtualParameters']);
-        $roots=array_values(array_filter(array_unique($roots),fn($p)=>isset($nodes[$p])));
+        $scope=$body['scope']??'selection';
+        if(!in_array($scope,['selection','all'],true)) dcFail('Escopo de leitura inválido.',400);
+        if($scope==='all' && ($kind!=='wifi' || $id!==null)) dcFail('A busca completa exige Wi-Fi sem interface selecionada.',400);
+        if($kind==='wifi' && ($scope==='all' || !$row)) {
+            // Discover all LANDevice/WiFi instances, including a band missing from cache.
+            $roots=dcWifiRefreshRoots($nodes);
+        } else {
+            $roots=$row['_refresh']??['Device.Users','Device.UserInterface','Device.DeviceInfo','Device.LANConfigSecurity','InternetGatewayDevice.Users','InternetGatewayDevice.UserInterface','InternetGatewayDevice.DeviceInfo','InternetGatewayDevice.LANConfigSecurity','VirtualParameters'];
+            $roots=array_values(array_filter(array_unique($roots),fn($p)=>isset($nodes[$p])));
+        }
         if(!$roots) dcFail('Nenhum parâmetro compatível foi coletado para atualizar.',409);
         $completed=0; $queued=0; $failed=0;
         foreach(array_slice($roots,0,9) as $p) {
