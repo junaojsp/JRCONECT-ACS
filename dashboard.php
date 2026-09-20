@@ -1484,164 +1484,9 @@ let recentDevicesFetchInProgress = false;
    ========================================================== */
 
 async function loadDashboardData() {
-
-    if (dashboardFetchInProgress) {
-
-        console.debug(
-            '[DASHBOARD] Consulta de estatísticas já em andamento...'
-        );
-
-        return;
-    }
-
-    dashboardFetchInProgress = true;
-
-    try {
-
-        const result = await fetchAPI(
-            '/api/dashboard-stats.php',
-            {
-                timeout: 25000
-            }
-        );
-
-
-        if (
-            result &&
-            result.success
-        ) {
-
-            const stats = result.stats;
-
-
-            document
-                .getElementById('stat-total')
-                .textContent =
-                stats.total;
-
-
-            document
-                .getElementById('stat-online')
-                .textContent =
-                stats.online;
-
-
-            document
-                .getElementById('stat-offline')
-                .textContent =
-                stats.offline;
-
-
-            const onlinePercentage =
-                stats.total > 0
-                    ? Math.round(
-                        (
-                            stats.online /
-                            stats.total
-                        ) * 100
-                    )
-                    : 0;
-
-
-            document
-                .getElementById('stat-uptime')
-                .textContent =
-                onlinePercentage + '%';
-
-            const summaryTotal = document.getElementById('summary-total');
-            const summaryOnline = document.getElementById('summary-online');
-            const summaryOffline = document.getElementById('summary-offline');
-            const summaryAvailability = document.getElementById('summary-availability');
-            if (summaryTotal) summaryTotal.textContent = stats.total;
-            if (summaryOnline) summaryOnline.textContent = stats.online;
-            if (summaryOffline) summaryOffline.textContent = stats.offline;
-            if (summaryAvailability) summaryAvailability.textContent = onlinePercentage + '%';
-
-
-            /*
-             * Atualizar barra da disponibilidade.
-             */
-
-            const progress =
-                document.getElementById(
-                    'availability-progress'
-                );
-
-
-            if (progress) {
-
-                progress.style.width =
-                    onlinePercentage + '%';
-
-            }
-
-
-
-            const setDash = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-            const totalDash = Number(stats.total || 0);
-            const onlineDash = Number(stats.online || 0);
-            const offlineDash = Number(stats.offline || 0);
-            const pctOnlineDash = totalDash > 0 ? Math.round((onlineDash / totalDash) * 100) : 0;
-            const pctOfflineDash = totalDash > 0 ? Math.round((offlineDash / totalDash) * 100) : 0;
-            setDash('kpi-online', onlineDash.toLocaleString('pt-BR'));
-            setDash('kpi-offline', offlineDash.toLocaleString('pt-BR'));
-            setDash('status-online', onlineDash.toLocaleString('pt-BR'));
-            setDash('status-offline', offlineDash.toLocaleString('pt-BR'));
-            setDash('status-online-pct', pctOnlineDash + '%');
-            setDash('status-offline-pct', pctOfflineDash + '%');
-            setDash('donut-total', totalDash.toLocaleString('pt-BR'));
-
-            const genie = document.getElementById('svc-genie');
-            const genieDot = document.getElementById('svc-genie-dot');
-            if (genie) genie.textContent = 'Online';
-            if (genieDot) genieDot.style.background = '#27d39f';
-            updateServicesSummary();
-
-            updateChart(stats);
-
-
-        } else {
-
-
-            if (
-                result &&
-                result.error !== 'timeout'
-            ) {
-
-                showToast(
-                    'Falha ao carregar os dados do dashboard',
-                    'danger'
-                );
-
-            }
-
-
-        }
-
-
-    } catch (error) {
-
-
-        if (
-            window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1'
-        ) {
-
-            console.error(
-                'Erro ao carregar o dashboard:',
-                error
-            );
-
-        }
-
-
-    } finally {
-
-        dashboardFetchInProgress =
-            false;
-
-    }
-
+    // Dashboard principal passa a usar IXC/Discovery como fonte oficial.
+    // Mantemos esta função para compatibilidade com chamadas existentes.
+    return loadFinalDiscoveryData();
 }
 
 
@@ -2890,6 +2735,13 @@ async function loadFinalDiscoveryData() {
             else if (rx <= -28) critical++;
         });
 
+        const ixcDashboardStats = deriveIxcDashboardStats(devices, {
+            ...summary,
+            critical,
+            noSignal
+        });
+        updateIxcDashboardVisuals(ixcDashboardStats);
+
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
         const fmt = (n) => Number(n || 0).toLocaleString('pt-BR');
 
@@ -2985,12 +2837,83 @@ function updateServicesSummary() {
 }
 
 function refreshFinalDashboard() {
-    loadDashboardData();
     loadFinalDiscoveryData();
     loadRecentDevices();
 }
 
 setInterval(updateDashboardClock, 1000);
+
+
+function deriveIxcDashboardStats(devices, summary) {
+    const now = Date.now();
+    let online = 0;
+    let offline = 0;
+    let stale = 0;
+    let critical = 0;
+    let noSignal = 0;
+
+    const getRx = (value) => {
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(String(value).replace(',', '.'));
+        if (!Number.isFinite(n) || Math.abs(n) < 0.001) return null;
+        return n;
+    };
+
+    devices.forEach(d => {
+        const rx = getRx(d?.ixc?.rx_power);
+        if (rx === null) noSignal++;
+        else if (rx <= -28) critical++;
+
+        const lastSignal = d?.ixc?.signal_updated_at ? new Date(d.ixc.signal_updated_at).getTime() : null;
+        const hasRecentSignal = Number.isFinite(lastSignal) && (now - lastSignal) <= 24 * 60 * 60 * 1000;
+
+        const status = String(d?.status || '').toUpperCase();
+        if (status === 'TR069_ACTIVE' || hasRecentSignal) {
+            online++;
+        } else {
+            offline++;
+            if (status === 'TR069_STALE') stale++;
+        }
+    });
+
+    return {
+        total: Number(summary?.total_ixc_fiber || devices.length || 0),
+        online,
+        offline,
+        stale: Number(summary?.tr069_stale || stale || 0),
+        tr069_active: Number(summary?.tr069_active || 0),
+        critical,
+        noSignal
+    };
+}
+
+function updateIxcDashboardVisuals(stats) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const fmt = (n) => Number(n || 0).toLocaleString('pt-BR');
+    const total = Number(stats.total || 0);
+    const online = Number(stats.online || 0);
+    const offline = Number(stats.offline || 0);
+    const pctOnline = total > 0 ? Math.round((online / total) * 100) : 0;
+    const pctOffline = total > 0 ? Math.round((offline / total) * 100) : 0;
+
+    set('kpi-total', fmt(total));
+    set('kpi-online', fmt(online));
+    set('kpi-offline', fmt(offline));
+    set('kpi-tr069', fmt(stats.tr069_active));
+    set('kpi-critical', fmt(stats.critical));
+    set('kpi-nosignal', fmt(stats.noSignal));
+
+    set('donut-total', fmt(total));
+    set('status-online', fmt(online));
+    set('status-offline', fmt(offline));
+    set('status-stale', fmt(stats.stale));
+    set('status-nosignal', fmt(stats.noSignal));
+    set('status-critical', fmt(stats.critical));
+    set('status-online-pct', pctOnline + '%');
+    set('status-offline-pct', pctOffline + '%');
+
+    updateChart({ total, online, offline });
+}
 </script>
 
 
