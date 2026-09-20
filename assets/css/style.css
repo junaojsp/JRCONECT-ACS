@@ -5354,3 +5354,297 @@ section{
     0%,100%{opacity:.45;transform:scale(.95)}
     50%{opacity:1;transform:scale(1.05)}
 }
+
+
+/* ===== JR CONECT IA - PERSISTENT SIDE DRAWER ===== */
+.acs-ai-launcher-card .acs-overview-card-header{
+    margin-bottom:0 !important;
+}
+.acs-ai-launcher-body{
+    min-height:190px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:20px 18px;
+    text-align:center;
+}
+.acs-ai-launcher-icon{
+    width:48px;
+    height:48px;
+    display:grid;
+    place-items:center;
+    border-radius:14px;
+    background:rgba(53,207,227,.07);
+    border:1px solid rgba(53,207,227,.18);
+    color:#55d6e8;
+    font-size:20px;
+}
+.acs-ai-launcher-copy{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+}
+.acs-ai-launcher-copy>strong{
+    color:#edf4fa;
+    font-size:13px;
+}
+.acs-ai-launcher-copy>span{
+    color:#64d9e9;
+    font-size:9px;
+    font-weight:700;
+}
+.acs-ai-launcher-copy>small{
+    max-width:310px;
+    color:#7e90a4;
+    font-size:9px;
+    line-height:1.45;
+}
+.acs-ai-launcher-btn{
+    margin-top:4px;
+}
+
+.jr-ai-drawer{
+    --bs-offcanvas-width:min(430px,96vw);
+    background:#0f1726 !important;
+    color:#e7edf6 !important;
+    border-left:1px solid #2a3850 !important;
+    box-shadow:-20px 0 55px rgba(0,0,0,.34) !important;
+}
+.jr-ai-drawer-header{
+    min-height:74px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 16px;
+    background:#121d2e;
+    border-bottom:1px solid #2a3850;
+}
+.jr-ai-drawer-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+}
+.jr-ai-drawer-logo{
+    width:38px;
+    height:38px;
+    flex:0 0 38px;
+    display:grid;
+    place-items:center;
+    border-radius:10px;
+    background:rgba(53,207,227,.08);
+    border:1px solid rgba(53,207,227,.20);
+    color:#55d6e8;
+    font-size:16px;
+}
+.jr-ai-drawer-title>div:last-child{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+}
+.jr-ai-drawer-title span{
+    color:#55d6e8;
+    font-size:8px;
+    font-weight:800;
+    letter-spacing:.08em;
+}
+.jr-ai-drawer-title strong{
+    color:#f0f5fb;
+    font-size:13px;
+}
+.jr-ai-drawer-title small{
+    color:#7e90a4;
+    font-size:8px;
+}
+.jr-ai-drawer-actions{
+    display:flex;
+    gap:6px;
+}
+.jr-ai-drawer-actions button{
+    width:32px;
+    height:32px;
+    display:grid;
+    place-items:center;
+    border-radius:8px;
+    border:1px solid #2a3a53;
+    background:#142236;
+    color:#aebdcb;
+}
+.jr-ai-drawer-actions button:hover{
+    color:#fff;
+    border-color:#3d5875;
+    background:#192a40;
+}
+.jr-ai-drawer-device{
+    display:grid;
+    grid-template-columns:1.2fr 1.5fr .7fr;
+    gap:8px;
+    padding:10px 14px;
+    background:#111b2b;
+    border-bottom:1px solid #223148;
+}
+.jr-ai-drawer-device>div{
+    min-width:0;
+}
+.jr-ai-drawer-device span{
+    display:block;
+    margin-bottom:3px;
+    color:#687f96;
+    font-size:7px;
+    text-transform:uppercase;
+}
+.jr-ai-drawer-device strong{
+    display:block;
+    color:#dce7f0;
+    font-size:9px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.jr-ai-drawer-device strong.online{
+    color:#6ce5bb;
+}
+.jr-ai-drawer-messages{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    padding:16px 14px 22px;
+    background:
+        radial-gradient(circle at top right,rgba(53,207,227,.035),transparent 32%),
+        #0f1726;
+}
+.jr-ai-drawer-empty{
+    min-height:55vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    padding:30px;
+    text-align:center;
+}
+.jr-ai-drawer-empty-icon{
+    width:54px;
+    height:54px;
+    display:grid;
+    place-items:center;
+    border-radius:16px;
+    background:#151f30;
+    border:1px solid #29374d;
+    color:#55d6e8;
+    font-size:20px;
+}
+.jr-ai-drawer-empty strong{
+    color:#eef4fa;
+    font-size:13px;
+}
+.jr-ai-drawer-empty span{
+    max-width:300px;
+    color:#8191a5;
+    font-size:10px;
+    line-height:1.55;
+}
+.jr-ai-message{
+    display:flex;
+    flex-direction:column;
+    margin-bottom:14px;
+}
+.jr-ai-message.user{
+    align-items:flex-end;
+}
+.jr-ai-message.assistant{
+    align-items:flex-start;
+}
+.jr-ai-message-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0 4px 4px;
+}
+.jr-ai-message-head strong{
+    color:#8597aa;
+    font-size:8px;
+    text-transform:uppercase;
+}
+.jr-ai-message-head small{
+    color:#4fbfd0;
+    font-size:7px;
+}
+.jr-ai-message-bubble{
+    max-width:88%;
+    padding:10px 12px;
+    border-radius:12px;
+    font-size:10px;
+    line-height:1.55;
+}
+.jr-ai-message.user .jr-ai-message-bubble{
+    background:#17324b;
+    border:1px solid #28526c;
+    color:#eff8fb;
+    border-bottom-right-radius:4px;
+}
+.jr-ai-message.assistant .jr-ai-message-bubble{
+    background:#172235;
+    border:1px solid #29384e;
+    color:#dce7ef;
+    border-bottom-left-radius:4px;
+}
+.jr-ai-message.error .jr-ai-message-bubble{
+    border-color:rgba(239,104,118,.28);
+    background:rgba(239,104,118,.06);
+}
+.jr-ai-drawer-composer{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 42px;
+    gap:8px;
+    padding:12px 14px 14px;
+    background:#121d2e;
+    border-top:1px solid #2a3850;
+}
+.jr-ai-drawer-composer textarea{
+    width:100%;
+    min-height:46px;
+    max-height:120px;
+    resize:vertical;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #2d4058;
+    background:#0f1928;
+    color:#edf4fa;
+    font-size:10px;
+    outline:none;
+}
+.jr-ai-drawer-composer textarea:focus{
+    border-color:#2b91aa;
+    box-shadow:0 0 0 2px rgba(53,207,227,.06);
+}
+.jr-ai-drawer-composer button{
+    width:42px;
+    height:42px;
+    align-self:end;
+    display:grid;
+    place-items:center;
+    border-radius:10px;
+    border:1px solid #2a82a0;
+    background:#15304a;
+    color:#55d6e8;
+}
+.jr-ai-drawer-composer button:disabled,
+.jr-ai-drawer-composer textarea:disabled{
+    opacity:.55;
+}
+@media(max-width:520px){
+    .jr-ai-drawer-device{
+        grid-template-columns:1fr 1fr;
+    }
+    .jr-ai-drawer-device>div:last-child{
+        grid-column:1/-1;
+    }
+    .jr-ai-message-bubble{
+        max-width:94%;
+    }
+}

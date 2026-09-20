@@ -134,6 +134,7 @@ try {
 
     $deviceId = trim((string)($data['device_id'] ?? ''));
     $context = jrContextValue(is_array($data['context'] ?? null) ? $data['context'] : []);
+    $conversation = jrContextValue(is_array($data['conversation'] ?? null) ? $data['conversation'] : []);
 
     $conn = getDBConnection();
     $ai = getActiveAIConfig($conn);
@@ -170,6 +171,7 @@ try {
     $contextJson = json_encode([
         'device_id' => $deviceId,
         'equipment_context' => $context,
+        'recent_conversation' => $conversation,
         'technician_question' => $question,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 

@@ -18,7 +18,8 @@ let deviceAIState = {
     answer: '',
     provider: '',
     model: '',
-    error: ''
+    error: '',
+    messages: []
 };
 
 try {
@@ -40,36 +41,85 @@ function saveDeviceAIState(patch = {}) {
     } catch (_) {}
 }
 
-function renderStoredDeviceAIState() {
-    const overviewInput = document.getElementById('acs-ai-question-overview');
-    const tabInput = document.getElementById('acs-ai-question');
-    const overviewAnswer = document.getElementById('acs-ai-answer-overview');
-    const tabAnswer = document.getElementById('acs-ai-answer');
+function escapeAIMessage(value) {
+    return escapeOpticalHtml(value || '').replace(/\n/g, '<br>');
+}
 
-    if (deviceAIState.question) {
-        if (overviewInput) overviewInput.value = deviceAIState.question;
-        if (tabInput) tabInput.value = deviceAIState.question;
-    }
+function renderDeviceAIConversation() {
+    const body = document.getElementById('jr-ai-drawer-messages');
+    if (!body) return;
 
+    const messages = Array.isArray(deviceAIState.messages) ? deviceAIState.messages : [];
     let html = '';
 
-    if (deviceAIState.status === 'loading') {
-        html = '<span class="acs-ai-thinking"><i class="bi bi-stars"></i> Analisando dados do equipamento...</span>';
-    } else if (deviceAIState.status === 'done' && deviceAIState.answer) {
-        html = formatDeviceAIAnswer(
-            deviceAIState.answer,
-            deviceAIState.provider,
-            deviceAIState.model
-        );
-    } else if (deviceAIState.status === 'error' && deviceAIState.error) {
-        html = '<span class="acs-ai-error"><i class="bi bi-exclamation-triangle"></i> ' +
-            escapeOpticalHtml(deviceAIState.error) + '</span>';
+    if (!messages.length) {
+        html = `
+            <div class="jr-ai-drawer-empty">
+                <div class="jr-ai-drawer-empty-icon"><i class="bi bi-stars"></i></div>
+                <strong>Assistente técnico JR CONECT</strong>
+                <span>Pergunte sobre sinal óptico, WAN, Wi-Fi, portas LAN, cliente ou diagnóstico deste equipamento.</span>
+            </div>`;
+    } else {
+        html = messages.map(message => {
+            const role = message.role === 'assistant' ? 'assistant' : 'user';
+            const label = role === 'assistant' ? 'IA' : 'Você';
+            const meta = role === 'assistant' && message.provider
+                ? '<small>' + escapeOpticalHtml((message.provider === 'anthropic' ? 'Claude' : 'OpenAI') + (message.model ? ' · ' + message.model : '')) + '</small>'
+                : '';
+            return `
+                <div class="jr-ai-message ${role}">
+                    <div class="jr-ai-message-head"><strong>${label}</strong>${meta}</div>
+                    <div class="jr-ai-message-bubble">${escapeAIMessage(message.content)}</div>
+                </div>`;
+        }).join('');
     }
 
-    if (!html) return;
+    if (deviceAIState.status === 'loading') {
+        html += `
+            <div class="jr-ai-message assistant pending">
+                <div class="jr-ai-message-head"><strong>IA</strong></div>
+                <div class="jr-ai-message-bubble">
+                    <span class="acs-ai-thinking"><i class="bi bi-stars"></i> Analisando dados atuais do equipamento...</span>
+                </div>
+            </div>`;
+    }
 
-    if (overviewAnswer) overviewAnswer.innerHTML = html;
-    if (tabAnswer) tabAnswer.innerHTML = html;
+    if (deviceAIState.status === 'error' && deviceAIState.error) {
+        html += `
+            <div class="jr-ai-message assistant error">
+                <div class="jr-ai-message-head"><strong>IA</strong></div>
+                <div class="jr-ai-message-bubble">
+                    <span class="acs-ai-error"><i class="bi bi-exclamation-triangle"></i> ${escapeOpticalHtml(deviceAIState.error)}</span>
+                </div>
+            </div>`;
+    }
+
+    body.innerHTML = html;
+    requestAnimationFrame(() => {
+        body.scrollTop = body.scrollHeight;
+    });
+}
+
+function renderStoredDeviceAIState() {
+    renderDeviceAIConversation();
+
+    const drawerInput = document.getElementById('jr-ai-drawer-input');
+    if (drawerInput && deviceAIState.question && document.activeElement !== drawerInput) {
+        drawerInput.value = '';
+    }
+
+    const providerLabel = document.getElementById('jr-ai-drawer-provider');
+    if (providerLabel && deviceAIState.provider) {
+        providerLabel.textContent = (deviceAIState.provider === 'anthropic' ? 'Claude' : 'OpenAI') +
+            (deviceAIState.model ? ' · ' + deviceAIState.model : '');
+    }
+
+    const compactStatus = document.getElementById('acs-ai-compact-status');
+    if (compactStatus) {
+        compactStatus.textContent = deviceAIState.provider
+            ? ((deviceAIState.provider === 'anthropic' ? 'Claude' : 'OpenAI') + ' disponível')
+            : 'IA configurada';
+    }
 }
 
 // Helper function to get active tab name
@@ -189,6 +239,16 @@ async function loadDeviceDetail(isAutoRefresh = false) {
             statusHeader.textContent = online ? 'ONLINE' : 'OFFLINE';
             statusHeader.classList.toggle('online', online);
             statusHeader.classList.toggle('offline', !online);
+        }
+
+        const drawerModel = document.getElementById('jr-ai-drawer-device-model');
+        const drawerStatus = document.getElementById('jr-ai-drawer-device-status');
+        if (drawerModel) {
+            drawerModel.textContent = device.product_class || device.model || device.manufacturer || 'Equipamento';
+        }
+        if (drawerStatus) {
+            drawerStatus.textContent = String(device.status || '').toLowerCase() === 'online' ? 'ONLINE' : 'OFFLINE';
+            drawerStatus.classList.toggle('online', String(device.status || '').toLowerCase() === 'online');
         }
 
         // Update tags badge
@@ -326,19 +386,21 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-ai acs-approved-ai">
+                <section class="acs-overview-card acs-card-ai acs-approved-ai acs-ai-launcher-card">
                     <div class="acs-overview-card-header">
                         <div><span class="acs-kicker"><i class="bi bi-stars"></i> Assistente IA</span></div>
+                        <span class="acs-mini-badge success">DISPONÍVEL</span>
                     </div>
-                    <div class="acs-ai-question-only">
-                        <div class="acs-ai-icon"><i class="bi bi-robot"></i></div>
-                        <strong>Faça uma pergunta sobre este equipamento</strong>
-                        <span>A IA vai analisar as informações e te ajudar.</span>
-                        <div id="acs-ai-answer-overview" class="acs-ai-answer-overview"></div>
-                        <div class="acs-ai-input-row">
-                            <input id="acs-ai-question-overview" type="text" placeholder="Digite sua pergunta aqui..." onkeydown="if(event.key==='Enter'){runOverviewAIQuestion()}">
-                            <button type="button" onclick="runOverviewAIQuestion()"><i class="bi bi-send-fill"></i></button>
+                    <div class="acs-ai-launcher-body">
+                        <div class="acs-ai-launcher-icon"><i class="bi bi-robot"></i></div>
+                        <div class="acs-ai-launcher-copy">
+                            <strong>Assistente técnico</strong>
+                            <span id="acs-ai-compact-status">IA configurada</span>
+                            <small>Analise fibra, WAN, Wi-Fi, LAN e dados do cliente sem interferir na Visão Geral.</small>
                         </div>
+                        <button type="button" class="acs-soft-btn primary acs-ai-launcher-btn" onclick="openDeviceAIDrawer()">
+                            <i class="bi bi-chat-dots"></i> Conversar com IA
+                        </button>
                     </div>
                 </section>
 
@@ -2852,6 +2914,11 @@ function renderCustomerSummary(data) {
         const clientId = data?.customer?.id;
         source.textContent = clientId ? 'IXC · Cliente #' + clientId : 'IXC';
     }
+
+    const drawerClient = document.getElementById('jr-ai-drawer-client');
+    if (drawerClient) {
+        drawerClient.textContent = customerValue(data?.customer?.name || cachedOpticalData?.nome, 'Cliente não identificado');
+    }
 }
 
 function renderCustomerSummaryLoading(optical) {
@@ -3221,7 +3288,6 @@ async function updateRadiusBandwidthSample() {
 
 function renderAIAssistantTab(device) {
     const wan = getPrimaryWAN(device);
-    const optical = cachedOpticalData || {};
     const context = [
         'Modelo: ' + (device.product_class || device.model || 'N/A'),
         'Serial: ' + (device.serial_number || 'N/A'),
@@ -3231,20 +3297,32 @@ function renderAIAssistantTab(device) {
         'Último erro WAN: ' + (wan ? (wan.last_error || 'N/A') : 'N/A'),
         'Dispositivos conectados: ' + (device.connected_devices_count ?? 0)
     ];
+
     return `
         <div class="acs-ai-shell">
             <div class="acs-ai-hero">
                 <div class="acs-ai-icon"><i class="bi bi-stars"></i></div>
-                <div><span class="acs-kicker">JR CONECT IA</span><h4>Assistente técnico do equipamento</h4><p>Área preparada para analisar diagnóstico, WAN, sinal óptico, Wi-Fi, clientes e histórico da conexão.</p></div>
-                <span class="acs-mini-badge">PREPARADO</span>
+                <div>
+                    <span class="acs-kicker">JR CONECT IA</span>
+                    <h4>Assistente técnico do equipamento</h4>
+                    <p>O chat agora abre em um painel lateral independente do auto-refresh da tela.</p>
+                </div>
+                <button type="button" class="acs-soft-btn primary" onclick="openDeviceAIDrawer()">
+                    <i class="bi bi-chat-dots"></i> Abrir assistente
+                </button>
             </div>
             <div class="acs-ai-grid">
-                <div class="acs-ai-context"><strong>Contexto técnico disponível</strong>${context.map(x => '<span><i class="bi bi-check-circle"></i>'+x+'</span>').join('')}</div>
-                <div class="acs-ai-chat">
-                    <label for="acs-ai-question">Pergunte sobre este equipamento</label>
-                    <textarea id="acs-ai-question" rows="5" placeholder="Ex.: Analise esta conexão e indique possíveis problemas."></textarea>
-                    <button type="button" class="acs-soft-btn" onclick="runDeviceAIAnalysis()"><i class="bi bi-stars"></i> Analisar com IA</button>
-                    <div id="acs-ai-answer" class="acs-ai-answer">Faça uma pergunta para analisar os dados atuais deste equipamento.</div>
+                <div class="acs-ai-context">
+                    <strong>Contexto técnico disponível</strong>
+                    ${context.map(x => '<span><i class="bi bi-check-circle"></i>'+x+'</span>').join('')}
+                </div>
+                <div class="acs-ai-context">
+                    <strong>Como a IA pode ajudar</strong>
+                    <span><i class="bi bi-reception-4"></i>Analisar sinal óptico e GPON</span>
+                    <span><i class="bi bi-globe2"></i>Revisar WAN, PPPoE e último erro</span>
+                    <span><i class="bi bi-wifi"></i>Analisar Wi-Fi e dispositivos conectados</span>
+                    <span><i class="bi bi-ethernet"></i>Interpretar portas LAN e estado do link</span>
+                    <span><i class="bi bi-person-vcard"></i>Usar plano/contrato e contexto do cliente</span>
                 </div>
             </div>
         </div>`;
@@ -3317,23 +3395,70 @@ function formatDeviceAIAnswer(text, provider, model) {
         (meta ? '<div class="acs-ai-response-meta"><i class="bi bi-stars"></i> ' + escapeOpticalHtml(meta) + '</div>' : '');
 }
 
-async function askDeviceAI(question, targetAnswer) {
-    if (!targetAnswer) return;
+function openDeviceAIDrawer() {
+    const drawerEl = document.getElementById('jrDeviceAIDrawer');
+    if (!drawerEl || typeof bootstrap === 'undefined') return;
 
+    renderStoredDeviceAIState();
+    const drawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+    drawer.show();
+
+    setTimeout(() => {
+        const input = document.getElementById('jr-ai-drawer-input');
+        if (input) input.focus();
+    }, 250);
+}
+
+function clearDeviceAIConversation() {
+    saveDeviceAIState({
+        question: '',
+        status: 'idle',
+        answer: '',
+        provider: '',
+        model: '',
+        error: '',
+        messages: []
+    });
+    renderStoredDeviceAIState();
+
+    const input = document.getElementById('jr-ai-drawer-input');
+    if (input) input.value = '';
+}
+
+async function askDeviceAI(question) {
     const cleanQuestion = String(question || '').trim();
-    if (!cleanQuestion) return;
+    if (!cleanQuestion || deviceAIState.status === 'loading') return;
+
+    const messages = Array.isArray(deviceAIState.messages) ? [...deviceAIState.messages] : [];
+    messages.push({
+        role: 'user',
+        content: cleanQuestion,
+        created_at: Date.now()
+    });
 
     saveDeviceAIState({
         question: cleanQuestion,
         status: 'loading',
         answer: '',
-        provider: '',
-        model: '',
-        error: ''
+        error: '',
+        messages
     });
     renderStoredDeviceAIState();
 
+    const input = document.getElementById('jr-ai-drawer-input');
+    const sendButton = document.getElementById('jr-ai-drawer-send');
+    if (input) {
+        input.value = '';
+        input.disabled = true;
+    }
+    if (sendButton) sendButton.disabled = true;
+
     try {
+        const recentConversation = messages.slice(-8).map(message => ({
+            role: message.role,
+            content: message.content
+        }));
+
         const response = await fetch('/api/device-ai.php', {
             method: 'POST',
             credentials: 'same-origin',
@@ -3345,7 +3470,8 @@ async function askDeviceAI(question, targetAnswer) {
             body: JSON.stringify({
                 device_id: deviceId,
                 question: cleanQuestion,
-                context: buildDeviceAIContext()
+                context: buildDeviceAIContext(),
+                conversation: recentConversation
             })
         });
 
@@ -3361,57 +3487,60 @@ async function askDeviceAI(question, targetAnswer) {
             throw new Error(data?.message || 'Falha ao consultar a IA.');
         }
 
+        const updatedMessages = Array.isArray(deviceAIState.messages)
+            ? [...deviceAIState.messages]
+            : messages;
+
+        updatedMessages.push({
+            role: 'assistant',
+            content: data.answer || 'Sem resposta da IA.',
+            provider: data.provider || '',
+            model: data.model || '',
+            created_at: Date.now()
+        });
+
         saveDeviceAIState({
-            question: cleanQuestion,
+            question: '',
             status: 'done',
             answer: data.answer || '',
             provider: data.provider || '',
             model: data.model || '',
-            error: ''
+            error: '',
+            messages: updatedMessages.slice(-20)
         });
-        renderStoredDeviceAIState();
 
     } catch (error) {
         const message = error && error.message ? error.message : 'Falha ao consultar a IA.';
         saveDeviceAIState({
-            question: cleanQuestion,
+            question: '',
             status: 'error',
             answer: '',
-            provider: '',
-            model: '',
             error: message
         });
+    } finally {
         renderStoredDeviceAIState();
+        const latestInput = document.getElementById('jr-ai-drawer-input');
+        const latestButton = document.getElementById('jr-ai-drawer-send');
+        if (latestInput) {
+            latestInput.disabled = false;
+            latestInput.focus();
+        }
+        if (latestButton) latestButton.disabled = false;
     }
 }
 
-async function runDeviceAIAnalysis() {
-    const input = document.getElementById('acs-ai-question');
-    const answer = document.getElementById('acs-ai-answer');
-    if (!input || !answer) return;
-
-    const question = input.value.trim();
-    if (!question) return;
-
-    const overviewInput = document.getElementById('acs-ai-question-overview');
-    if (overviewInput) overviewInput.value = question;
-
-    await askDeviceAI(question, answer);
+async function sendDeviceAIDrawerMessage() {
+    const input = document.getElementById('jr-ai-drawer-input');
+    if (!input) return;
+    await askDeviceAI(input.value);
 }
 
+async function runDeviceAIAnalysis() {
+    openDeviceAIDrawer();
+}
 
 async function runOverviewAIQuestion() {
-    const input = document.getElementById('acs-ai-question-overview');
-    const answer = document.getElementById('acs-ai-answer-overview');
-    if (!input || !answer) return;
-
-    const question = input.value.trim();
-    if (!question) return;
-
-    const tabQuestion = document.getElementById('acs-ai-question');
-    if (tabQuestion) tabQuestion.value = question;
-
-    await askDeviceAI(question, answer);
+    openDeviceAIDrawer();
 }
 
 

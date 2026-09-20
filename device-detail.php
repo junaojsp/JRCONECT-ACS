@@ -360,6 +360,67 @@ include __DIR__ . '/views/layouts/header.php';
 
 
 <!-- =========================================================
+     ASSISTENTE IA - PAINEL LATERAL PERSISTENTE
+     ========================================================= -->
+<div
+    class="offcanvas offcanvas-end jr-ai-drawer"
+    tabindex="-1"
+    id="jrDeviceAIDrawer"
+    aria-labelledby="jrDeviceAIDrawerLabel"
+    data-bs-scroll="true"
+>
+    <div class="jr-ai-drawer-header">
+        <div class="jr-ai-drawer-title">
+            <div class="jr-ai-drawer-logo"><i class="bi bi-stars"></i></div>
+            <div>
+                <span>JR CONECT IA</span>
+                <strong id="jrDeviceAIDrawerLabel">Assistente técnico</strong>
+                <small id="jr-ai-drawer-provider">IA configurada</small>
+            </div>
+        </div>
+
+        <div class="jr-ai-drawer-actions">
+            <button type="button" onclick="clearDeviceAIConversation()" title="Limpar conversa">
+                <i class="bi bi-trash3"></i>
+            </button>
+            <button type="button" data-bs-dismiss="offcanvas" aria-label="Fechar" title="Fechar">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="jr-ai-drawer-device">
+        <div>
+            <span>Equipamento</span>
+            <strong id="jr-ai-drawer-device-model">Carregando...</strong>
+        </div>
+        <div>
+            <span>Cliente</span>
+            <strong id="jr-ai-drawer-client">Carregando...</strong>
+        </div>
+        <div>
+            <span>Status</span>
+            <strong id="jr-ai-drawer-device-status">...</strong>
+        </div>
+    </div>
+
+    <div id="jr-ai-drawer-messages" class="jr-ai-drawer-messages"></div>
+
+    <div class="jr-ai-drawer-composer">
+        <textarea
+            id="jr-ai-drawer-input"
+            rows="2"
+            placeholder="Pergunte sobre este equipamento..."
+            onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendDeviceAIDrawerMessage();}"
+        ></textarea>
+        <button type="button" id="jr-ai-drawer-send" onclick="sendDeviceAIDrawerMessage()" title="Enviar">
+            <i class="bi bi-send-fill"></i>
+        </button>
+    </div>
+</div>
+
+
+<!-- =========================================================
      MODAL RESULTADO DO SPEEDTEST - NOVO LAYOUT
      ========================================================= -->
 
