@@ -3742,3 +3742,215 @@ canvas {
 .acs-approved-layout .acs-connected-compact-row strong{font-size:10px !important}
 .acs-approved-layout .acs-event-placeholder,
 .acs-approved-layout .acs-event-placeholder strong{font-size:10px !important}
+
+
+/* ===== ACS REFERENCE COLOR PALETTE V6 ===== */
+:root{
+    --acs-ref-bg:#0f1726;
+    --acs-ref-bg-deep:#0b1320;
+    --acs-ref-panel:#182235;
+    --acs-ref-panel-2:#1b2638;
+    --acs-ref-panel-soft:#141f30;
+    --acs-ref-border:#2a3850;
+    --acs-ref-border-soft:#223148;
+    --acs-ref-text:#e7edf6;
+    --acs-ref-muted:#8592a8;
+    --acs-ref-cyan:#35cfe3;
+    --acs-ref-cyan-soft:#79dce9;
+    --acs-ref-green:#27d39f;
+    --acs-ref-yellow:#d6ad38;
+}
+
+/* Fundo geral e estrutura */
+body{
+    background:var(--acs-ref-bg-deep) !important;
+    color:var(--acs-ref-text) !important;
+}
+.main-content,
+.content-wrapper{
+    background:var(--acs-ref-bg-deep) !important;
+}
+.topbar{
+    background:#121c2c !important;
+    border-bottom:1px solid var(--acs-ref-border) !important;
+    box-shadow:none !important;
+}
+.topbar h4,
+.topbar .user-info,
+.topbar .user-info *{
+    color:var(--acs-ref-text) !important;
+}
+
+/* Sidebar no mesmo azul-marinho da referência */
+.sidebar{
+    background:#111b2b !important;
+    box-shadow:none !important;
+    border-right:1px solid #26354c !important;
+}
+.sidebar-menu a{
+    color:#8f9caf !important;
+}
+.sidebar-menu a:hover{
+    background:#172336 !important;
+    color:#dfe8f2 !important;
+}
+.sidebar-menu a.active{
+    background:#172336 !important;
+    color:#dfe8f2 !important;
+    border-left-color:var(--acs-ref-cyan) !important;
+}
+
+/* Cabeçalho do equipamento */
+.acs-device-shell{
+    background:var(--acs-ref-bg) !important;
+    border:1px solid var(--acs-ref-border) !important;
+    box-shadow:none !important;
+}
+.acs-device-toolbar{
+    background:#121d2e !important;
+    border-bottom:1px solid var(--acs-ref-border) !important;
+}
+.acs-device-tabs-wrap{
+    background:var(--acs-ref-bg) !important;
+}
+.acs-device-tabs-wrap #deviceTabs{
+    background:#121c2c !important;
+    border-bottom:1px solid var(--acs-ref-border) !important;
+}
+.acs-device-tabs-wrap #deviceTabs .nav-link{
+    color:#93a0b3 !important;
+}
+.acs-device-tabs-wrap #deviceTabs .nav-link.active{
+    color:#f0f5fb !important;
+    border-bottom-color:var(--acs-ref-cyan) !important;
+}
+
+/* Cards */
+.acs-approved-layout .acs-overview-card,
+.acs-approved-bottom-stack .acs-overview-card{
+    background:linear-gradient(180deg,var(--acs-ref-panel-2),var(--acs-ref-panel)) !important;
+    border:1px solid var(--acs-ref-border) !important;
+    box-shadow:0 8px 20px rgba(0,0,0,.12) !important;
+}
+.acs-approved-layout .acs-overview-card-header{
+    border-bottom:1px solid var(--acs-ref-border-soft) !important;
+}
+.acs-approved-layout .acs-kicker{
+    color:#d8e0ea !important;
+}
+.acs-approved-layout .acs-kicker i{
+    color:var(--acs-ref-cyan) !important;
+}
+
+/* Textos */
+.acs-approved-layout .acs-reference-list span,
+.acs-approved-layout .acs-reference-footer-grid span,
+.acs-approved-layout .acs-reference-metrics span,
+.acs-approved-layout .acs-connected-compact-head,
+.acs-approved-layout .acs-lan-device,
+.acs-approved-layout .acs-ai-question-only>span,
+.acs-approved-layout .acs-ai-answer-overview{
+    color:var(--acs-ref-muted) !important;
+}
+.acs-approved-layout .acs-reference-list strong,
+.acs-approved-layout .acs-reference-footer-grid strong,
+.acs-approved-layout .acs-reference-metrics strong,
+.acs-approved-layout .acs-wifi-band-title,
+.acs-approved-layout .acs-connected-compact-row strong,
+.acs-approved-layout .acs-lan-visual>strong,
+.acs-approved-layout .acs-ai-question-only>strong{
+    color:var(--acs-ref-text) !important;
+}
+
+/* Linhas e subcards */
+.acs-reference-list>div,
+.acs-reference-footer-grid>div,
+.acs-connected-compact-head,
+.acs-connected-compact-row{
+    border-bottom-color:var(--acs-ref-border-soft) !important;
+}
+.acs-reference-metrics>div,
+.acs-wifi-band,
+.acs-event-placeholder,
+.acs-ai-input-row input{
+    background:#151f30 !important;
+    border-color:#29374d !important;
+}
+.acs-ai-input-row input{
+    color:#eef4fb !important;
+}
+.acs-ai-input-row input::placeholder{
+    color:#7f8ca0 !important;
+}
+
+/* Botões no tom da referência */
+.acs-toolbar-action,
+.acs-soft-btn,
+.acs-icon-btn,
+.acs-eye-btn{
+    background:#142336 !important;
+    border-color:#28435b !important;
+    color:#b7c4d4 !important;
+}
+.acs-toolbar-action:hover,
+.acs-soft-btn:hover,
+.acs-icon-btn:hover,
+.acs-eye-btn:hover{
+    background:#192a40 !important;
+    border-color:#3a5c78 !important;
+    color:#eef5fb !important;
+}
+.acs-ai-input-row button{
+    background:#152d48 !important;
+    border-color:#2a82a0 !important;
+    color:var(--acs-ref-cyan) !important;
+}
+
+/* Status */
+.acs-status-pill.online,
+.acs-mini-badge.success,
+.acs-wifi-band-title>span{
+    color:#83f0c8 !important;
+    background:rgba(39,211,159,.08) !important;
+    border-color:rgba(39,211,159,.35) !important;
+}
+.acs-status-pill.offline{
+    color:#a5adba !important;
+    background:rgba(130,145,165,.08) !important;
+    border-color:rgba(130,145,165,.25) !important;
+}
+.acs-mini-badge{
+    color:#b9c6d6 !important;
+    background:#142236 !important;
+    border-color:#2a3a53 !important;
+}
+
+/* Links e ícones */
+.acs-approved-layout a,
+.acs-approved-layout .acs-eye-btn i,
+.acs-lan-device i{
+    color:var(--acs-ref-cyan-soft) !important;
+}
+
+/* Portas LAN */
+.acs-rj45-port-face{
+    background:linear-gradient(180deg,#111a28,#1a2434) !important;
+    border-color:#566379 !important;
+}
+.acs-lan-visual.up .acs-rj45-port-face{
+    border-color:#35d7a2 !important;
+    box-shadow:0 0 8px rgba(53,215,162,.18), inset 0 0 0 2px rgba(53,215,162,.06) !important;
+}
+.acs-lan-visual.up .acs-lan-state{
+    color:#62e1b6 !important;
+}
+
+/* Pequenos detalhes */
+.acs-wan-ip,
+.acs-device-icon,
+.acs-ai-icon,
+.acs-diagnostic-list button,
+.acs-admin-note{
+    background:#151f30 !important;
+    border-color:#29374d !important;
+}
