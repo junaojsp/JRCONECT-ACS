@@ -237,6 +237,22 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
+                <section class="acs-overview-card acs-card-ai acs-approved-ai">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-stars"></i> Assistente IA</span></div>
+                    </div>
+                    <div class="acs-ai-question-only">
+                        <div class="acs-ai-icon"><i class="bi bi-robot"></i></div>
+                        <strong>Faça uma pergunta sobre este equipamento</strong>
+                        <span>A IA vai analisar as informações e te ajudar.</span>
+                        <div id="acs-ai-answer-overview" class="acs-ai-answer-overview"></div>
+                        <div class="acs-ai-input-row">
+                            <input id="acs-ai-question-overview" type="text" placeholder="Digite sua pergunta aqui..." onkeydown="if(event.key==='Enter'){runOverviewAIQuestion()}">
+                            <button type="button" onclick="runOverviewAIQuestion()"><i class="bi bi-send-fill"></i></button>
+                        </div>
+                    </div>
+                </section>
+
 
 
                 <section class="acs-overview-card acs-card-optical acs-approved-optical">
@@ -284,21 +300,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-ai acs-approved-ai">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-stars"></i> Assistente IA</span></div>
-                    </div>
-                    <div class="acs-ai-question-only">
-                        <div class="acs-ai-icon"><i class="bi bi-robot"></i></div>
-                        <strong>Faça uma pergunta sobre este equipamento</strong>
-                        <span>A IA vai analisar as informações e te ajudar.</span>
-                        <div id="acs-ai-answer-overview" class="acs-ai-answer-overview"></div>
-                        <div class="acs-ai-input-row">
-                            <input id="acs-ai-question-overview" type="text" placeholder="Digite sua pergunta aqui..." onkeydown="if(event.key==='Enter'){runOverviewAIQuestion()}">
-                            <button type="button" onclick="runOverviewAIQuestion()"><i class="bi bi-send-fill"></i></button>
-                        </div>
-                    </div>
-                </section>
+
 
 
 
