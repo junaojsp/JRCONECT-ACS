@@ -1059,6 +1059,30 @@ include __DIR__ . '/views/layouts/header.php';
     .acs-network-body{grid-template-columns:1fr}
 }
 
+
+/* ===== ACS FINAL DASHBOARD V5 ===== */
+.acs-final-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;margin-bottom:10px;border:1px solid #2a3850;border-radius:11px;background:linear-gradient(180deg,#182235,#151f30)}
+.acs-final-brand{display:flex;align-items:center;gap:12px}.acs-final-head-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:10px;background:#15364a;color:#35cfe3;font-size:22px}.acs-final-brand h2{margin:0;color:#f0f5fa;font-size:20px;font-weight:800}.acs-final-brand p{margin:3px 0 0;color:#7f8da1;font-size:9px}
+.acs-final-head-actions{display:flex;align-items:center;gap:9px}.acs-final-clock,.acs-final-operational,.acs-final-refresh{min-height:48px;border:1px solid #26384f;border-radius:9px;background:#142032}.acs-final-clock{display:flex;align-items:center;gap:10px;padding:7px 11px;color:#8fa0b5}.acs-final-clock>i{font-size:17px;color:#79dce9}.acs-final-clock span,.acs-final-refresh small{display:block;color:#7f8da1;font-size:8px}.acs-final-clock strong{display:block;color:#e8eef5;font-size:12px;margin-top:2px}
+.acs-final-operational{display:flex;align-items:center;gap:9px;padding:7px 12px}.acs-final-operational>i{width:10px;height:10px;border-radius:50%;background:#27d39f;box-shadow:0 0 10px rgba(39,211,159,.35)}.acs-final-operational strong{display:block;color:#69ebba;font-size:10px}.acs-final-operational span{display:block;color:#709084;font-size:8px;margin-top:2px}.acs-final-refresh{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:6px 12px;color:#c5d2df}.acs-final-refresh>i{position:absolute;opacity:0}.acs-final-refresh span{font-size:10px;font-weight:700}.acs-final-refresh:hover{border-color:#35cfe3}
+
+.acs-final-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;margin-bottom:10px}.acs-final-kpi{min-height:104px;display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #2a3850;border-radius:10px;background:linear-gradient(180deg,#1b2638,#182235)}.acs-final-kpi-icon{width:39px;height:39px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;font-size:18px}.acs-final-kpi-icon.cyan{background:rgba(53,207,227,.10);color:#35cfe3}.acs-final-kpi-icon.green{background:rgba(39,211,159,.10);color:#27d39f}.acs-final-kpi-icon.red{background:rgba(239,104,118,.10);color:#ef6876}.acs-final-kpi-icon.amber{background:rgba(214,173,56,.11);color:#e1b949}.acs-final-kpi-icon.slate{background:rgba(120,145,170,.11);color:#9fb1c4}.acs-final-kpi span{display:block;color:#a9b4c3;font-size:9px}.acs-final-kpi strong{display:block;margin-top:7px;color:#f0f5fa;font-size:25px;line-height:1}.acs-final-kpi small{display:block;margin-top:6px;color:#718096;font-size:8px}
+
+.acs-final-main-grid{display:grid;grid-template-columns:1.05fr .92fr .82fr;gap:10px;margin-bottom:10px}.acs-final-card{border:1px solid #2a3850;border-radius:10px;background:linear-gradient(180deg,#1b2638,#182235);overflow:hidden}.acs-final-card-head{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-bottom:1px solid #223148}.acs-final-card-head>div{display:flex;align-items:center;gap:9px}.acs-final-card-head>div>i{width:28px;height:28px;display:grid;place-items:center;border-radius:7px;background:rgba(53,207,227,.06);color:#35cfe3}.acs-final-card-head strong{display:block;color:#e7edf6;font-size:11px}.acs-final-card-head small{display:block;margin-top:2px;color:#748297;font-size:8px}.acs-final-card-head a{color:#70dbe8;font-size:9px;text-decoration:none}.acs-final-card-head em{font-style:normal;color:#6ce8bb;font-size:8px;border:1px solid rgba(39,211,159,.25);border-radius:999px;padding:4px 7px}
+
+.acs-final-status-body{min-height:242px;display:grid;grid-template-columns:1.05fr .95fr;gap:8px;align-items:center;padding:12px}.acs-final-donut-wrap{position:relative;max-width:225px;margin:0 auto}.acs-final-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}.acs-final-donut-center strong{color:#f0f5fa;font-size:21px}.acs-final-donut-center span{color:#8c9bae;font-size:8px}.acs-final-status-list{display:flex;flex-direction:column;gap:7px}.acs-final-status-list>div{display:grid;grid-template-columns:1fr 55px 42px;align-items:center;gap:8px;color:#a8b5c5;font-size:9px}.acs-final-status-list span{display:flex;align-items:center;gap:7px}.acs-final-status-list i{width:12px;height:12px;border-radius:4px;background:#718096}.acs-final-status-list i.green{background:#27d39f}.acs-final-status-list i.red{background:#ef6876}.acs-final-status-list i.blue{background:#8aa0b8}.acs-final-status-list i.pink{background:#ee6f99}.acs-final-status-list strong{color:#e7edf6;text-align:right}.acs-final-status-list b{color:#9fb0c2;font-weight:500;text-align:right}
+
+.acs-manufacturer-bars{padding:14px 14px 13px;display:flex;flex-direction:column;gap:10px}.acs-mfr-row{display:grid;grid-template-columns:80px 1fr 50px 42px;gap:9px;align-items:center;font-size:9px}.acs-mfr-row>span{color:#c3ceda;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.acs-mfr-track{height:10px;border-radius:999px;background:#111c2b;overflow:hidden}.acs-mfr-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#35cfe3,#397af6)}.acs-mfr-row strong{color:#dbe4ed;text-align:right}.acs-mfr-row b{color:#8493a7;font-weight:500;text-align:right}
+
+.acs-final-right-stack{display:grid;grid-template-rows:1fr 1fr;gap:10px}.acs-final-alert-list{padding:8px 12px}.acs-final-alert-item{min-height:29px;display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:7px;border-bottom:1px solid #223148;color:#bcc7d4;font-size:8px}.acs-final-alert-item:last-child{border-bottom:0}.acs-final-alert-item i{width:8px;height:8px;border-radius:50%;background:#d6ad38}.acs-final-alert-item.critical i{background:#ef6876}.acs-final-alert-item.offline i{background:#ef6876}.acs-final-alert-item.good i{background:#27d39f}.acs-final-alert-item time{color:#748297}.acs-final-empty{padding:18px;color:#78879a;font-size:9px;text-align:center}
+.acs-final-service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:9px 10px 11px}.acs-final-service-grid>div{min-height:43px;display:flex;align-items:center;gap:8px;padding:7px;border:1px solid #223148;border-radius:7px;background:#151f30}.acs-final-service-grid>div>i{width:8px;height:8px;border-radius:50%;background:#27d39f}.acs-final-service-grid>div>i.neutral{background:#35cfe3}.acs-final-service-grid strong{display:block;color:#d9e2ec;font-size:8px}.acs-final-service-grid small{display:block;color:#728096;font-size:7px;margin-top:2px}
+
+.acs-final-recent{margin-bottom:0}.acs-final-recent #recent-devices{padding:0 10px 10px}.acs-final-recent .table-responsive{border:1px solid #223148;border-radius:7px;overflow:auto}.acs-final-recent .table{margin:0}.acs-final-recent .table thead th{background:#141f30!important;color:#8898ad!important;font-size:7px!important;padding:8px!important}.acs-final-recent .table tbody td{background:#182235!important;color:#c2ccd8!important;border-color:#223148!important;font-size:8px!important;padding:8px!important}.acs-final-recent .table tbody tr:hover td{background:#1d2a3f!important}
+
+@media(max-width:1400px){.acs-final-kpis{grid-template-columns:repeat(3,1fr)}.acs-final-main-grid{grid-template-columns:1fr 1fr}.acs-final-right-stack{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto}}
+@media(max-width:900px){.acs-final-head{align-items:flex-start;flex-direction:column}.acs-final-head-actions{flex-wrap:wrap}.acs-final-kpis{grid-template-columns:repeat(2,1fr)}.acs-final-main-grid{grid-template-columns:1fr}.acs-final-right-stack{grid-column:auto;grid-template-columns:1fr}.acs-final-status-body{grid-template-columns:1fr}}
+@media(max-width:560px){.acs-final-kpis{grid-template-columns:1fr}.acs-final-head-actions{flex-direction:column;align-items:stretch;width:100%}}
+
 </style>
 
 
@@ -1087,104 +1111,100 @@ include __DIR__ . '/views/layouts/header.php';
 
 
     <!-- =====================================================
-         DASHBOARD ACS - MODELO NOC
+         DASHBOARD ACS - MODELO FINAL
          ===================================================== -->
 
-    <div class="acs-noc-head">
-        <div class="acs-noc-head-left">
-            <div class="acs-noc-head-icon"><i class="bi bi-activity"></i></div>
+    <div class="acs-final-head">
+        <div class="acs-final-brand">
+            <div class="acs-final-head-icon"><i class="bi bi-graph-up-arrow"></i></div>
             <div>
                 <h2>Visão Geral</h2>
-                <p>Saúde da rede e equipamentos gerenciados pelo JR CONECT ACS</p>
+                <p>Visão completa da sua rede e dispositivos gerenciados pelo JR CONECT ACS</p>
             </div>
         </div>
-        <div class="acs-noc-head-right">
-            <span class="jrc-live-status"><span class="jrc-live-dot"></span> ACS OPERACIONAL</span>
-            <button type="button" class="jrc-action" onclick="loadDashboardData();loadUplinkData();loadRecentDevices();">
-                <i class="bi bi-arrow-clockwise"></i> Atualizar dados
-            </button>
+        <div class="acs-final-head-actions">
+            <div class="acs-final-clock">
+                <i class="bi bi-calendar3"></i>
+                <div><span id="dashboard-date">--</span><strong id="dashboard-time">--:--:--</strong></div>
+            </div>
+            <div class="acs-final-operational"><i></i><div><strong>ACS OPERACIONAL</strong><span>Serviços principais disponíveis</span></div></div>
+            <button class="acs-final-refresh" onclick="refreshFinalDashboard()"><i class="bi bi-arrow-clockwise"></i><span>Atualizar dados</span><small>Atualização manual</small></button>
         </div>
     </div>
 
-    <div class="acs-kpi-grid">
-        <section class="acs-kpi-card">
-            <div class="acs-kpi-icon cyan"><i class="bi bi-hdd-network"></i></div>
-            <div><span>Total de equipamentos</span><strong id="stat-total">-</strong><small>Cadastrados no ACS</small></div>
+    <div class="acs-final-kpis">
+        <section class="acs-final-kpi">
+            <div class="acs-final-kpi-icon cyan"><i class="bi bi-display"></i></div>
+            <div><span>Total de equipamentos</span><strong id="kpi-total">-</strong><small>Inventário IXC</small></div>
         </section>
-
-        <section class="acs-kpi-card">
-            <div class="acs-kpi-icon green"><i class="bi bi-wifi"></i></div>
-            <div><span>Equipamentos online</span><strong id="stat-online">-</strong><small>Conectados agora</small></div>
+        <section class="acs-final-kpi">
+            <div class="acs-final-kpi-icon green"><i class="bi bi-wifi"></i></div>
+            <div><span>Equipamentos online</span><strong id="kpi-online">-</strong><small>Conectados agora</small></div>
         </section>
-
-        <section class="acs-kpi-card">
-            <div class="acs-kpi-icon red"><i class="bi bi-wifi-off"></i></div>
-            <div><span>Equipamentos offline</span><strong id="stat-offline">-</strong><small>Sem comunicação</small></div>
+        <section class="acs-final-kpi">
+            <div class="acs-final-kpi-icon red"><i class="bi bi-wifi-off"></i></div>
+            <div><span>Equipamentos offline</span><strong id="kpi-offline">-</strong><small>Sem comunicação</small></div>
         </section>
-
-        <section class="acs-kpi-card">
-            <div class="acs-kpi-icon blue"><i class="bi bi-activity"></i></div>
-            <div><span>Disponibilidade</span><strong id="stat-uptime">-</strong><small>Percentual online</small></div>
+        <section class="acs-final-kpi">
+            <div class="acs-final-kpi-icon green"><i class="bi bi-check-circle"></i></div>
+            <div><span>TR-069 ativo</span><strong id="kpi-tr069">-</strong><small>Ativos no Discovery</small></div>
+        </section>
+        <section class="acs-final-kpi">
+            <div class="acs-final-kpi-icon amber"><i class="bi bi-exclamation-triangle"></i></div>
+            <div><span>Com sinal crítico</span><strong id="kpi-critical">-</strong><small>Potência fora do padrão</small></div>
+        </section>
+        <section class="acs-final-kpi">
+            <div class="acs-final-kpi-icon slate"><i class="bi bi-file-earmark-text"></i></div>
+            <div><span>Sem leitura</span><strong id="kpi-nosignal">-</strong><small>Sem dados ópticos</small></div>
         </section>
     </div>
 
-    <div class="acs-noc-grid">
-        <section class="jrc-panel acs-network-status">
-            <div class="jrc-panel-header">
-                <div class="jrc-panel-title">
-                    <i class="bi bi-diagram-3"></i>
-                    <div><strong>Status da Rede</strong><small>Visão geral da disponibilidade</small></div>
-                </div>
-                <a href="/devices.php" class="jrc-action">Equipamentos <i class="bi bi-arrow-up-right"></i></a>
-            </div>
-            <div class="jrc-panel-body acs-network-body">
-                <div class="acs-network-chart">
-                    <div class="jrc-chart-box"><canvas id="deviceChart"></canvas></div>
-                </div>
-                <div class="acs-network-summary">
-                    <div class="acs-network-summary-row online">
-                        <span><i></i> Online</span><strong id="summary-online">-</strong>
-                    </div>
-                    <div class="acs-network-summary-row offline">
-                        <span><i></i> Offline</span><strong id="summary-offline">-</strong>
-                    </div>
-                    <div class="acs-network-summary-row">
-                        <span><i></i> Total</span><strong id="summary-total">-</strong>
-                    </div>
-                    <div class="acs-network-summary-row">
-                        <span><i></i> Disponibilidade</span><strong id="summary-availability">-</strong>
-                    </div>
+    <div class="acs-final-main-grid">
+        <section class="acs-final-card acs-final-status">
+            <div class="acs-final-card-head"><div><i class="bi bi-diagram-3"></i><span><strong>Status da Rede</strong><small>Visão geral do estado da rede</small></span></div></div>
+            <div class="acs-final-status-body">
+                <div class="acs-final-donut-wrap"><canvas id="deviceChart"></canvas><div class="acs-final-donut-center"><strong id="donut-total">-</strong><span>Equipamentos</span></div></div>
+                <div class="acs-final-status-list">
+                    <div><span><i class="green"></i>Online</span><strong id="status-online">-</strong><b id="status-online-pct">-</b></div>
+                    <div><span><i class="red"></i>Offline</span><strong id="status-offline">-</strong><b id="status-offline-pct">-</b></div>
+                    <div><span><i class="gray"></i>Sem comunicação</span><strong id="status-stale">-</strong><b>-</b></div>
+                    <div><span><i class="blue"></i>Sem leitura</span><strong id="status-nosignal">-</strong><b>-</b></div>
+                    <div><span><i class="pink"></i>Sinal crítico</span><strong id="status-critical">-</strong><b>-</b></div>
                 </div>
             </div>
         </section>
 
-        <section class="jrc-panel acs-optical-health">
-            <div class="jrc-panel-header">
-                <div class="jrc-panel-title">
-                    <i class="bi bi-reception-4"></i>
-                    <div><strong>Saúde da rede óptica</strong><small>Distribuição do sinal PON</small></div>
-                </div>
-                <button type="button" class="jrc-action" onclick="loadUplinkData()"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
-            </div>
-            <div class="jrc-panel-body">
-                <div class="jrc-chart-box acs-optical-chart"><canvas id="uplinkChart"></canvas></div>
-            </div>
+        <section class="acs-final-card acs-final-manufacturers">
+            <div class="acs-final-card-head"><div><i class="bi bi-bar-chart-fill"></i><span><strong>Equipamentos por Fabricante</strong><small>Distribuição do inventário identificado</small></span></div></div>
+            <div id="manufacturer-bars" class="acs-manufacturer-bars"><div class="spinner"></div></div>
         </section>
 
+        <div class="acs-final-right-stack">
+            <section class="acs-final-card acs-final-alerts">
+                <div class="acs-final-card-head"><div><i class="bi bi-bell-fill"></i><span><strong>Últimos alertas</strong><small>Condições atuais detectadas</small></span></div></div>
+                <div id="dashboard-alerts" class="acs-final-alert-list"><div class="acs-final-empty">Consultando Discovery...</div></div>
+            </section>
 
+            <section class="acs-final-card acs-final-services">
+                <div class="acs-final-card-head"><div><i class="bi bi-gear-fill"></i><span><strong>Serviços do Sistema</strong><small>Estado das integrações consultadas</small></span></div><em id="services-summary">Verificando</em></div>
+                <div class="acs-final-service-grid">
+                    <div><i id="svc-tr069-dot"></i><span><strong>TR-069</strong><small id="svc-tr069">Verificando</small></span></div>
+                    <div><i id="svc-genie-dot"></i><span><strong>GenieACS</strong><small id="svc-genie">Verificando</small></span></div>
+                    <div><i id="svc-discovery-dot"></i><span><strong>Discovery</strong><small id="svc-discovery">Verificando</small></span></div>
+                    <div><i class="neutral"></i><span><strong>Banco de Dados</strong><small>Conectado ao painel</small></span></div>
+                    <div><i class="neutral"></i><span><strong>API</strong><small>Dashboard ativo</small></span></div>
+                    <div><i class="neutral"></i><span><strong>Sessão</strong><small>Autenticada</small></span></div>
+                </div>
+            </section>
+        </div>
     </div>
 
-    <section class="jrc-panel jrc-recent-panel acs-recent-modern">
-        <div class="jrc-panel-header">
-            <div class="jrc-panel-title">
-                <i class="bi bi-pc-display"></i>
-                <div><strong>Equipamentos recentes</strong><small>Últimos equipamentos visualizados ou com alteração de status</small></div>
-            </div>
-            <a href="/devices.php" class="jrc-action">Ver todos <i class="bi bi-arrow-right"></i></a>
+    <section class="acs-final-card acs-final-recent">
+        <div class="acs-final-card-head">
+            <div><i class="bi bi-display"></i><span><strong>Equipamentos recentes</strong><small>Últimos equipamentos visualizados ou com alteração de status</small></span></div>
+            <a href="/devices.php">Ver todos <i class="bi bi-arrow-right"></i></a>
         </div>
-        <div class="jrc-recent-body">
-            <div id="recent-devices"><div class="spinner"></div></div>
-        </div>
+        <div id="recent-devices"><div class="spinner"></div></div>
     </section>
 
 <?php endif; ?>
@@ -1555,6 +1575,27 @@ async function loadDashboardData() {
 
             }
 
+
+
+            const setDash = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+            const totalDash = Number(stats.total || 0);
+            const onlineDash = Number(stats.online || 0);
+            const offlineDash = Number(stats.offline || 0);
+            const pctOnlineDash = totalDash > 0 ? Math.round((onlineDash / totalDash) * 100) : 0;
+            const pctOfflineDash = totalDash > 0 ? Math.round((offlineDash / totalDash) * 100) : 0;
+            setDash('kpi-online', onlineDash.toLocaleString('pt-BR'));
+            setDash('kpi-offline', offlineDash.toLocaleString('pt-BR'));
+            setDash('status-online', onlineDash.toLocaleString('pt-BR'));
+            setDash('status-offline', offlineDash.toLocaleString('pt-BR'));
+            setDash('status-online-pct', pctOnlineDash + '%');
+            setDash('status-offline-pct', pctOfflineDash + '%');
+            setDash('donut-total', totalDash.toLocaleString('pt-BR'));
+
+            const genie = document.getElementById('svc-genie');
+            const genieDot = document.getElementById('svc-genie-dot');
+            if (genie) genie.textContent = 'Online';
+            if (genieDot) genieDot.style.background = '#27d39f';
+            updateServicesSummary();
 
             updateChart(stats);
 
@@ -2823,6 +2864,133 @@ document.addEventListener(
 
 );
 
+
+
+async function loadFinalDiscoveryData() {
+    try {
+        const response = await fetch('/api/discovery-ixc-tr069.php', { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Discovery indisponível');
+
+        const devices = Array.isArray(data.devices) ? data.devices : [];
+        const summary = data.summary || {};
+        let critical = 0;
+        let noSignal = 0;
+
+        const getRx = (value) => {
+            if (value === null || value === undefined || value === '') return null;
+            const n = Number(String(value).replace(',', '.'));
+            if (!Number.isFinite(n) || Math.abs(n) < 0.001) return null;
+            return n;
+        };
+
+        devices.forEach(d => {
+            const rx = getRx(d?.ixc?.rx_power);
+            if (rx === null) noSignal++;
+            else if (rx <= -28) critical++;
+        });
+
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        const fmt = (n) => Number(n || 0).toLocaleString('pt-BR');
+
+        set('kpi-total', fmt(summary.total_ixc_fiber || devices.length));
+        set('kpi-tr069', fmt(summary.tr069_active));
+        set('kpi-critical', fmt(critical));
+        set('kpi-nosignal', fmt(noSignal));
+        set('status-stale', fmt(summary.tr069_stale));
+        set('status-nosignal', fmt(noSignal));
+        set('status-critical', fmt(critical));
+
+        renderManufacturerBars(devices);
+        renderFinalAlerts(devices, data.generated_at);
+
+        const d = document.getElementById('svc-discovery');
+        const dd = document.getElementById('svc-discovery-dot');
+        if (d) d.textContent = 'Online';
+        if (dd) dd.style.background = '#27d39f';
+        const t = document.getElementById('svc-tr069');
+        const td = document.getElementById('svc-tr069-dot');
+        if (t) t.textContent = Number(summary.tr069_active || 0) > 0 ? 'Ativo' : 'Sem ativos';
+        if (td) td.style.background = Number(summary.tr069_active || 0) > 0 ? '#27d39f' : '#d6ad38';
+        updateServicesSummary();
+    } catch (e) {
+        const d = document.getElementById('svc-discovery');
+        const dd = document.getElementById('svc-discovery-dot');
+        if (d) d.textContent = 'Indisponível';
+        if (dd) dd.style.background = '#ef6876';
+        const alerts = document.getElementById('dashboard-alerts');
+        if (alerts) alerts.innerHTML = '<div class="acs-final-empty">Discovery indisponível no momento.</div>';
+        updateServicesSummary();
+    }
+}
+
+function renderManufacturerBars(devices) {
+    const holder = document.getElementById('manufacturer-bars');
+    if (!holder) return;
+    const counts = {};
+    devices.forEach(d => {
+        const name = (d?.acs?.manufacturer || d?.ixc?.onu_tipo || 'Não identificado').trim() || 'Não identificado';
+        counts[name] = (counts[name] || 0) + 1;
+    });
+    const rows = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,7);
+    const total = rows.reduce((sum, [,v]) => sum + v, 0) || 1;
+    if (!rows.length) {
+        holder.innerHTML = '<div class="acs-final-empty">Nenhum fabricante identificado.</div>';
+        return;
+    }
+    holder.innerHTML = rows.map(([name,count]) => {
+        const pct = Math.round((count/total)*1000)/10;
+        return '<div class="acs-mfr-row"><span>'+escapeDashboardHtml(name)+'</span><div class="acs-mfr-track"><div class="acs-mfr-fill" style="width:'+pct+'%"></div></div><strong>'+Number(count).toLocaleString('pt-BR')+'</strong><b>'+pct.toLocaleString('pt-BR')+'%</b></div>';
+    }).join('');
+}
+
+function renderFinalAlerts(devices, generatedAt) {
+    const holder = document.getElementById('dashboard-alerts');
+    if (!holder) return;
+    const alerts = [];
+    const rxNum = (v) => {
+        const n = Number(String(v ?? '').replace(',', '.'));
+        return Number.isFinite(n) && Math.abs(n) >= .001 ? n : null;
+    };
+    devices.forEach(d => {
+        const serial = d?.serial || 'ONU';
+        const rx = rxNum(d?.ixc?.rx_power);
+        if (rx !== null && rx <= -28) alerts.push({cls:'critical', text:'Sinal crítico detectado - '+serial});
+        if (d?.status === 'TR069_STALE') alerts.push({cls:'offline', text:'Sem comunicação recente - '+serial});
+        if (rx === null) alerts.push({cls:'', text:'Sem leitura óptica - '+serial});
+    });
+    const display = alerts.slice(0,5);
+    if (!display.length) display.push({cls:'good', text:'Nenhum alerta crítico detectado'});
+    const time = generatedAt ? String(generatedAt).slice(11,16) : '';
+    holder.innerHTML = display.map(a => '<div class="acs-final-alert-item '+a.cls+'"><i></i><span>'+escapeDashboardHtml(a.text)+'</span><time>'+escapeDashboardHtml(time)+'</time></div>').join('');
+}
+
+function escapeDashboardHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+}
+
+function updateDashboardClock() {
+    const now = new Date();
+    const date = document.getElementById('dashboard-date');
+    const time = document.getElementById('dashboard-time');
+    if (date) date.textContent = now.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+    if (time) time.textContent = now.toLocaleTimeString('pt-BR');
+}
+
+function updateServicesSummary() {
+    const genie = document.getElementById('svc-genie')?.textContent || '';
+    const discovery = document.getElementById('svc-discovery')?.textContent || '';
+    const out = document.getElementById('services-summary');
+    if (out) out.textContent = (genie === 'Online' && discovery === 'Online') ? 'Principais ativos' : 'Verificar';
+}
+
+function refreshFinalDashboard() {
+    loadDashboardData();
+    loadFinalDiscoveryData();
+    loadRecentDevices();
+}
+
+setInterval(updateDashboardClock, 1000);
 </script>
 
 
