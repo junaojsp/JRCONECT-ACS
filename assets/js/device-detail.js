@@ -289,15 +289,58 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
                 </section>
 
-                <section class="acs-overview-card acs-card-connected acs-approved-connected">
+                <section class="acs-overview-card acs-card-diagnostics acs-approved-diagnostics">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-diagram-3-fill"></i> Dispositivos conectados</span></div>
-                        <span class="acs-mini-badge">${connectedDevices.length} DISPOSITIVOS</span>
+                        <div><span class="acs-kicker"><i class="bi bi-tools"></i> Diagnósticos</span></div>
                     </div>
-                    <div class="acs-connected-compact">${renderConnectedCompact(connectedDevices.slice(0,5))}</div>
-                    <button type="button" class="acs-soft-btn acs-router-action" onclick="document.getElementById('devices-tab')?.click()">
-                        <i class="bi bi-list-ul"></i> Ver todos
-                    </button>
+
+                    <div class="acs-diagnostic-list">
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('ping')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-geo-alt"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Teste de ping</strong>
+                                <small class="acs-diagnostic-services">
+                                    <i class="bi bi-instagram"></i>
+                                    <i class="bi bi-google"></i>
+                                    <i class="bi bi-facebook"></i>
+                                    <i class="bi bi-youtube"></i>
+                                </small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('traceroute')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-bezier2"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Traceroute</strong>
+                                <small class="acs-diagnostic-services">
+                                    <i class="bi bi-instagram"></i>
+                                    <i class="bi bi-google"></i>
+                                    <i class="bi bi-facebook"></i>
+                                    <i class="bi bi-youtube"></i>
+                                </small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('nearby')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-broadcast-pin"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Redes próximas</strong>
+                                <small>Wi-Fi · canal · sinal · interferência</small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('speedtest')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-speedometer2"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Teste de velocidade</strong>
+                                <small>Download · Upload · Ping</small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+                    </div>
                 </section>
 
                 <section class="acs-overview-card acs-card-web acs-approved-web">
@@ -3056,4 +3099,102 @@ function runOverviewAIQuestion() {
     } else {
         answer.innerHTML = '<i class="bi bi-info-circle"></i> Assistente preparado para responder quando o provedor de IA estiver configurado.';
     }
+}
+
+
+function ensureNetworkDiagnosticModal() {
+    let modalEl = document.getElementById('networkDiagnosticModal');
+    if (modalEl) return modalEl;
+
+    modalEl = document.createElement('div');
+    modalEl.className = 'modal fade jr-network-diagnostic-modal';
+    modalEl.id = 'networkDiagnosticModal';
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <small id="network-diagnostic-kicker">Diagnóstico de rede</small>
+                        <h5 class="modal-title" id="network-diagnostic-title">Diagnóstico</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="network-diagnostic-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="acs-soft-btn" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(modalEl);
+    return modalEl;
+}
+
+function diagnosticTargetChips() {
+    return `
+        <div class="jr-diagnostic-targets">
+            <span><i class="bi bi-google"></i> Google</span>
+            <span><i class="bi bi-instagram"></i> Instagram</span>
+            <span><i class="bi bi-facebook"></i> Facebook</span>
+            <span><i class="bi bi-youtube"></i> YouTube</span>
+            <span><i class="bi bi-whatsapp"></i> WhatsApp</span>
+        </div>`;
+}
+
+function openPendingNetworkDiagnostic(tool) {
+    const modalEl = ensureNetworkDiagnosticModal();
+    const title = modalEl.querySelector('#network-diagnostic-title');
+    const body = modalEl.querySelector('#network-diagnostic-body');
+
+    const data = {
+        ping: {
+            title: 'Teste de ping',
+            icon: 'bi-geo-alt',
+            text: 'A interface está pronta. O próximo passo é executar o ping pelo próprio equipamento do cliente via diagnóstico TR-069/TR-181, para que a latência represente a conexão real do assinante.'
+        },
+        traceroute: {
+            title: 'Traceroute',
+            icon: 'bi-bezier2',
+            text: 'A interface está pronta. A rota deverá ser coletada pelo CPE compatível, evitando que o traceroute represente apenas o caminho do servidor ACS.'
+        },
+        nearby: {
+            title: 'Redes próximas',
+            icon: 'bi-broadcast-pin',
+            text: 'A varredura precisa ser feita pelo rádio Wi-Fi do equipamento do cliente. Quando o modelo disponibilizar o scan, serão exibidos SSID, canal, nível de sinal e interferência.'
+        }
+    }[tool];
+
+    if (!data) return;
+
+    title.textContent = data.title;
+    body.innerHTML = `
+        <div class="jr-diagnostic-pending">
+            <div class="jr-diagnostic-pending-icon"><i class="bi ${data.icon}"></i></div>
+            <strong>Integração CPE pendente</strong>
+            <p>${data.text}</p>
+            ${tool === 'nearby' ? '' : diagnosticTargetChips()}
+            <div class="jr-diagnostic-source-note">
+                <i class="bi bi-shield-check"></i>
+                Nenhum resultado será simulado ou executado a partir do servidor ACS como se fosse o equipamento do cliente.
+            </div>
+        </div>`;
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function runNetworkDiagnostic(tool) {
+    if (tool === 'speedtest') {
+        if (typeof window.startONUSpeedtest === 'function') {
+            window.startONUSpeedtest();
+            return;
+        }
+        if (typeof startONUSpeedtest === 'function') {
+            startONUSpeedtest();
+            return;
+        }
+        showToast('O teste de velocidade da ONU não está disponível nesta tela.', 'warning', 4000);
+        return;
+    }
+    openPendingNetworkDiagnostic(tool);
 }
