@@ -3454,7 +3454,7 @@ async function askDeviceAI(question) {
     if (sendButton) sendButton.disabled = true;
 
     try {
-        const recentConversation = messages.slice(-8).map(message => ({
+        const recentConversation = messages.slice(0, -1).slice(-8).map(message => ({
             role: message.role,
             content: message.content
         }));
