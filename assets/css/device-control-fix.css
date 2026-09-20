@@ -353,3 +353,39 @@
         gap:6px;
     }
 }
+
+
+/* Legibilidade reforçada — card Redes Wi‑Fi */
+.acs-approved-wifi .jr-wifi-summary-row{
+    padding:12px 13px;
+}
+.acs-approved-wifi .jr-wifi-row-title strong{
+    font-size:13px;
+}
+.acs-approved-wifi .jr-wifi-row-title span{
+    font-size:9px!important;
+}
+.acs-approved-wifi .jr-wifi-row-data span{
+    font-size:9px!important;
+}
+.acs-approved-wifi .jr-wifi-row-data strong{
+    font-size:10.5px;
+}
+.acs-approved-wifi .jr-wifi-row-actions button{
+    font-size:10px;
+}
+.acs-approved-wifi .jr-wifi-summary-footer small,
+.acs-approved-wifi .jr-wifi-summary-footer .jr-wifi-scan-status{
+    font-size:11px!important;
+}
+.acs-approved-wifi .jr-wifi-health-strip{
+    gap:8px 16px;
+    padding:10px 12px;
+    font-size:11px;
+}
+.acs-approved-wifi .jr-wifi-health-strip i{
+    font-size:12px;
+}
+.acs-approved-wifi .jr-wifi-health-strip strong{
+    font-size:12px;
+}
