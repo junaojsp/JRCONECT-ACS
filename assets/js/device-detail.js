@@ -740,6 +740,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
             </div>
         `;
 
+        renderWifiHealthCard(device);
+
         renderStoredDeviceAIState();
         updateOverviewOperationalMeta();
 
@@ -3863,4 +3865,65 @@ function runNetworkDiagnostic(tool) {
         return;
     }
     openPendingNetworkDiagnostic(tool);
+}
+
+function renderWifiHealthCard(device) {
+    const container = document.querySelector('.acs-wifi-reference-grid');
+    if (!container) return;
+
+    const escapeHtml = (value) => String(value ?? 'Não disponível')
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;').replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const valueOf = (...values) => {
+        const value = values.find(item => item !== null && item !== undefined && String(item).trim() !== '' && String(item).trim() !== 'N/A');
+        return value === undefined ? 'Não disponível' : String(value);
+    };
+
+    const ssid24 = valueOf(device.wifi_ssid_24ghz, device.wifi_ssid_2g, device.wifi_ssid);
+    const ssid5 = valueOf(device.wifi_ssid_5ghz, device.wifi_ssid_5g, device.wifi_ssid_5g_name, device.wifi_ssid);
+    const connectedDevices = Array.isArray(device.connected_devices) ? device.connected_devices.length : null;
+    const clientText = connectedDevices === null ? 'Não informado' : String(connectedDevices);
+    const lastInform = valueOf(device.last_inform, device.last_update, device.last_seen);
+    const safeForAttribute = value => String(value ?? '').replaceAll("'", "\\'");
+
+    const renderBand = (band, icon, ssid) => `
+        <article class="acs-wifi-health-row">
+            <div class="acs-wifi-health-state">
+                <i class="bi ${icon}"></i>
+                <div><strong>${band}</strong><span><i class="bi bi-circle-fill"></i> Habilitada</span></div>
+            </div>
+            <div class="acs-wifi-health-detail"><small>SSID</small><strong title="${escapeHtml(ssid)}">${escapeHtml(ssid)}</strong></div>
+            <div class="acs-wifi-health-detail"><small>Canal</small><strong>Automático</strong></div>
+            <div class="acs-wifi-health-detail"><small>Segurança</small><strong>WPA/WPA2</strong></div>
+            <div class="acs-wifi-health-detail"><small>Clientes</small><strong>${clientText}</strong></div>
+            <button class="acs-wifi-edit-btn" type="button"
+                onclick="openEditWiFiModal('${safeForAttribute(device.device_id)}', '${safeForAttribute(ssid)}', '${safeForAttribute(device.wifi_password)}')"
+                title="Editar rede ${band}"><i class="bi bi-sliders"></i> Editar</button>
+        </article>`;
+
+    container.innerHTML = `
+        <div class="acs-wifi-health-list">
+            ${renderBand('2,4 GHz', 'bi-wifi', ssid24)}
+            ${renderBand('5 GHz (5,8)', 'bi-wifi', ssid5)}
+            <article class="acs-wifi-health-row acs-wifi-unified-row">
+                <div class="acs-wifi-health-state">
+                    <i class="bi bi-diagram-3"></i>
+                    <div><strong>Rede Unificada</strong><span>Smart Connect</span></div>
+                </div>
+                <div class="acs-wifi-health-detail"><small>Tipo</small><strong>Band Steering</strong></div>
+                <div class="acs-wifi-health-detail"><small>Bandas</small><strong>Conforme modem</strong></div>
+                <div class="acs-wifi-health-detail acs-wifi-health-wide"><small>Status</small><strong>Consulta disponível</strong></div>
+                <button class="acs-wifi-edit-btn" type="button"
+                    onclick="openEditWiFiModal('${safeForAttribute(device.device_id)}', '${safeForAttribute(ssid24)}', '${safeForAttribute(device.wifi_password)}')"
+                    title="Gerenciar Rede Unificada"><i class="bi bi-sliders"></i> Gerenciar</button>
+            </article>
+        </div>
+        <footer class="acs-wifi-health-footer">
+            <span><i class="bi bi-arrow-repeat"></i> Última leitura Wi-Fi: <strong>${escapeHtml(lastInform)}</strong></span>
+            <span><i class="bi bi-shield-check"></i> TR-069 conectado</span>
+            <span><i class="bi bi-people"></i> ${clientText} dispositivo(s) identificado(s)</span>
+            <button type="button" onclick="loadDeviceDetail()" title="Atualizar dados do Wi-Fi"><i class="bi bi-arrow-clockwise"></i> Atualizar dados Wi-Fi</button>
+        </footer>`;
 }
