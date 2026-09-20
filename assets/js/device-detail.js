@@ -11,6 +11,67 @@ let currentDeviceData = null;
 let customerSummaryRequestCounter = 0;
 let cachedCustomerSummary = null;
 
+const deviceAIStorageKey = 'jrconect-device-ai:' + String(deviceId || 'unknown');
+let deviceAIState = {
+    question: '',
+    status: 'idle',
+    answer: '',
+    provider: '',
+    model: '',
+    error: ''
+};
+
+try {
+    const savedAIState = sessionStorage.getItem(deviceAIStorageKey);
+    if (savedAIState) {
+        const parsedAIState = JSON.parse(savedAIState);
+        if (parsedAIState && typeof parsedAIState === 'object') {
+            deviceAIState = { ...deviceAIState, ...parsedAIState };
+        }
+    }
+} catch (_) {
+    // A IA continua funcionando mesmo se sessionStorage estiver indisponível.
+}
+
+function saveDeviceAIState(patch = {}) {
+    deviceAIState = { ...deviceAIState, ...patch };
+    try {
+        sessionStorage.setItem(deviceAIStorageKey, JSON.stringify(deviceAIState));
+    } catch (_) {}
+}
+
+function renderStoredDeviceAIState() {
+    const overviewInput = document.getElementById('acs-ai-question-overview');
+    const tabInput = document.getElementById('acs-ai-question');
+    const overviewAnswer = document.getElementById('acs-ai-answer-overview');
+    const tabAnswer = document.getElementById('acs-ai-answer');
+
+    if (deviceAIState.question) {
+        if (overviewInput) overviewInput.value = deviceAIState.question;
+        if (tabInput) tabInput.value = deviceAIState.question;
+    }
+
+    let html = '';
+
+    if (deviceAIState.status === 'loading') {
+        html = '<span class="acs-ai-thinking"><i class="bi bi-stars"></i> Analisando dados do equipamento...</span>';
+    } else if (deviceAIState.status === 'done' && deviceAIState.answer) {
+        html = formatDeviceAIAnswer(
+            deviceAIState.answer,
+            deviceAIState.provider,
+            deviceAIState.model
+        );
+    } else if (deviceAIState.status === 'error' && deviceAIState.error) {
+        html = '<span class="acs-ai-error"><i class="bi bi-exclamation-triangle"></i> ' +
+            escapeOpticalHtml(deviceAIState.error) + '</span>';
+    }
+
+    if (!html) return;
+
+    if (overviewAnswer) overviewAnswer.innerHTML = html;
+    if (tabAnswer) tabAnswer.innerHTML = html;
+}
+
 // Helper function to get active tab name
 function getActiveTabName() {
     const activeTab = document.querySelector('.nav-link.active');
@@ -354,6 +415,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
             </div>
         `;
 
+        renderStoredDeviceAIState();
+
         // Buscar dados ópticos FiberHome via TL1 sem bloquear o carregamento principal.
         // No auto-refresh, não inicia uma nova consulta se já existir uma em andamento
         // ou se já houver dados em cache para este equipamento.
@@ -381,6 +444,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate Monitoring and AI tabs
         document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
         document.getElementById('ai-content').innerHTML = renderAIAssistantTab(device);
+        renderStoredDeviceAIState();
         updateRadiusBandwidthSample();
 
         // Restore hotspot data after re-render (if available)
@@ -3259,7 +3323,15 @@ async function askDeviceAI(question, targetAnswer) {
     const cleanQuestion = String(question || '').trim();
     if (!cleanQuestion) return;
 
-    targetAnswer.innerHTML = '<span class="acs-ai-thinking"><i class="bi bi-stars"></i> Analisando dados do equipamento...</span>';
+    saveDeviceAIState({
+        question: cleanQuestion,
+        status: 'loading',
+        answer: '',
+        provider: '',
+        model: '',
+        error: ''
+    });
+    renderStoredDeviceAIState();
 
     try {
         const response = await fetch('/api/device-ai.php', {
@@ -3289,18 +3361,27 @@ async function askDeviceAI(question, targetAnswer) {
             throw new Error(data?.message || 'Falha ao consultar a IA.');
         }
 
-        const html = formatDeviceAIAnswer(data.answer, data.provider, data.model);
-        targetAnswer.innerHTML = html;
-
-        const overviewAnswer = document.getElementById('acs-ai-answer-overview');
-        const tabAnswer = document.getElementById('acs-ai-answer');
-        if (overviewAnswer && overviewAnswer !== targetAnswer) overviewAnswer.innerHTML = html;
-        if (tabAnswer && tabAnswer !== targetAnswer) tabAnswer.innerHTML = html;
+        saveDeviceAIState({
+            question: cleanQuestion,
+            status: 'done',
+            answer: data.answer || '',
+            provider: data.provider || '',
+            model: data.model || '',
+            error: ''
+        });
+        renderStoredDeviceAIState();
 
     } catch (error) {
         const message = error && error.message ? error.message : 'Falha ao consultar a IA.';
-        targetAnswer.innerHTML = '<span class="acs-ai-error"><i class="bi bi-exclamation-triangle"></i> ' +
-            escapeOpticalHtml(message) + '</span>';
+        saveDeviceAIState({
+            question: cleanQuestion,
+            status: 'error',
+            answer: '',
+            provider: '',
+            model: '',
+            error: message
+        });
+        renderStoredDeviceAIState();
     }
 }
 
@@ -3308,7 +3389,14 @@ async function runDeviceAIAnalysis() {
     const input = document.getElementById('acs-ai-question');
     const answer = document.getElementById('acs-ai-answer');
     if (!input || !answer) return;
-    await askDeviceAI(input.value, answer);
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    const overviewInput = document.getElementById('acs-ai-question-overview');
+    if (overviewInput) overviewInput.value = question;
+
+    await askDeviceAI(question, answer);
 }
 
 
