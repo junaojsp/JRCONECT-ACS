@@ -2195,7 +2195,9 @@ function restoreSpeedtestButton() {
 </script>
 
 
+<link rel="stylesheet" href="/assets/css/device-control-fix.css?v=<?php echo time(); ?>">
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
+<script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 
 
 <?php
