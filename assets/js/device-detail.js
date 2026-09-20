@@ -391,15 +391,14 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <div><span class="acs-kicker"><i class="bi bi-stars"></i> Assistente IA</span></div>
                         <span class="acs-mini-badge success">DISPONÍVEL</span>
                     </div>
-                    <div class="acs-ai-launcher-body">
+                    <div class="acs-ai-launcher-body acs-ai-launcher-compact">
                         <div class="acs-ai-launcher-icon"><i class="bi bi-robot"></i></div>
                         <div class="acs-ai-launcher-copy">
                             <strong>Assistente técnico</strong>
                             <span id="acs-ai-compact-status">IA configurada</span>
-                            <small>Analise fibra, WAN, Wi-Fi, LAN e dados do cliente sem interferir na Visão Geral.</small>
                         </div>
                         <button type="button" class="acs-soft-btn primary acs-ai-launcher-btn" onclick="openDeviceAIDrawer()">
-                            <i class="bi bi-chat-dots"></i> Conversar com IA
+                            <i class="bi bi-chat-dots"></i> Abrir IA
                         </button>
                     </div>
                 </section>
