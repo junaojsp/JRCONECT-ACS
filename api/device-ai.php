@@ -93,7 +93,7 @@ function jrContextValue(mixed $value): mixed
 {
     if (is_string($value)) {
         $value = trim($value);
-        return mb_strlen($value) > 500 ? mb_substr($value, 0, 500) : $value;
+        return strlen($value) > 500 ? substr($value, 0, 500) : $value;
     }
 
     if (is_array($value)) {
@@ -128,7 +128,7 @@ try {
     if ($question === '') {
         jrDeviceAIOut(['success' => false, 'message' => 'Digite uma pergunta para a IA.'], 400);
     }
-    if (mb_strlen($question) > 1500) {
+    if (strlen($question) > 1500) {
         jrDeviceAIOut(['success' => false, 'message' => 'Pergunta muito longa.'], 400);
     }
 
