@@ -275,7 +275,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-router-local-card">
+                <section class="acs-overview-card acs-router-local-card" style="grid-column:1 / 2 !important; grid-row:auto !important; width:auto !important; min-width:0 !important; align-self:start !important;">
                     <div class="acs-overview-card-header">
                         <div><span class="acs-kicker"><i class="bi bi-router-fill"></i> Roteador / Rede Local</span></div>
                         <span class="acs-mini-badge">LAN + WI-FI</span>
