@@ -18,11 +18,6 @@
     <!-- Read-only unified-network identification; no device tasks on page load. -->
     <link rel="stylesheet" href="/assets/css/wifi-network-groups.css?v=groups-1">
     <script src="/assets/js/wifi-network-groups.js?v=groups-1"></script>
-    <!-- Presentation layer; existing controls and endpoints remain in place. -->
-    <link rel="stylesheet" href="/assets/css/equipment-workspace.css?v=workspace-1">
-    <script src="/assets/js/equipment-workspace.js?v=workspace-1"></script>
-    <link rel="stylesheet" href="/assets/css/equipment-workspace-fidelity.css?v=fidelity-2">
-    <script src="/assets/js/equipment-workspace-fidelity.js?v=fidelity-2"></script>
     <?php endif; ?>
 </body>
 </html>
