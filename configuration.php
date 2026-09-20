@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/lib/AIConfig.php';
 requireLogin();
 
 $pageTitle = 'Configurações';
@@ -11,6 +12,9 @@ $conn = getDBConnection();
 $genieacs = $conn->query("SELECT * FROM genieacs_credentials LIMIT 1")->fetch_assoc();
 $mikrotik = $conn->query("SELECT * FROM mikrotik_credentials LIMIT 1")->fetch_assoc();
 $telegram = $conn->query("SELECT * FROM telegram_config LIMIT 1")->fetch_assoc();
+
+ensureAIConfigTable($conn);
+$ai = getAIConfig($conn);
 
 include __DIR__ . '/views/layouts/header.php';
 ?>
@@ -82,6 +86,20 @@ include __DIR__ . '/views/layouts/header.php';
                 >
                     <i class="fab fa-telegram"></i>
                     Configuração do Bot
+                </button>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link"
+                    id="ai-config-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#ai-config"
+                    type="button"
+                    role="tab"
+                >
+                    <i class="bi bi-stars"></i>
+                    Configuração IA
                 </button>
             </li>
 
@@ -558,6 +576,127 @@ include __DIR__ . '/views/layouts/header.php';
 
                 </div>
 
+            </div>
+
+
+            <!-- Configuração IA -->
+            <div
+                class="tab-pane fade"
+                id="ai-config"
+                role="tabpanel"
+            >
+                <div class="card mt-3">
+
+                    <div class="card-header">
+                        <i class="bi bi-stars"></i>
+                        Configuração da IA
+
+                        <?php if ($ai && !empty($ai['is_connected'])): ?>
+                            <span class="badge online float-end">
+                                Conectado
+                            </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="card-body">
+
+                        <form id="form-ai">
+
+                            <div class="form-group">
+                                <label>Provedor</label>
+                                <select
+                                    name="provider"
+                                    class="form-control"
+                                    required
+                                >
+                                    <option
+                                        value="openai"
+                                        <?php echo (($ai['provider'] ?? 'openai') === 'openai') ? 'selected' : ''; ?>
+                                    >
+                                        OpenAI
+                                    </option>
+                                </select>
+
+                                <small class="text-muted">
+                                    O painel usa a API do provedor pelo backend.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Token / API Key</label>
+
+                                <input
+                                    type="password"
+                                    name="api_key"
+                                    id="ai-api-key"
+                                    class="form-control"
+                                    value=""
+                                    autocomplete="new-password"
+                                    placeholder="<?php echo $ai ? 'Chave já configurada — deixe em branco para manter' : 'Cole sua API key aqui'; ?>"
+                                >
+
+                                <small class="text-muted">
+                                    A chave não é exibida novamente no navegador.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Modelo</label>
+
+                                <input
+                                    type="text"
+                                    name="model"
+                                    class="form-control"
+                                    list="ai-model-options"
+                                    value="<?php echo htmlspecialchars($ai['model'] ?? 'gpt-5.6-terra', ENT_QUOTES, 'UTF-8'); ?>"
+                                    required
+                                >
+
+                                <datalist id="ai-model-options">
+                                    <option value="gpt-5.6-sol"></option>
+                                    <option value="gpt-5.6-terra"></option>
+                                    <option value="gpt-5.6-luna"></option>
+                                </datalist>
+
+                                <small class="text-muted">
+                                    Terra é uma opção equilibrada entre capacidade e custo; você pode informar outro modelo compatível.
+                                </small>
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="btn btn-success me-2"
+                            >
+                                <i class="bi bi-check-circle"></i>
+                                Testar conexão
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                onclick="saveAI()"
+                            >
+                                <i class="bi bi-save"></i>
+                                Salvar
+                            </button>
+
+                            <?php if ($ai && !empty($ai['last_test'])): ?>
+                                <small class="text-muted d-block mt-2">
+                                    Último teste:
+                                    <?php echo timeAgo($ai['last_test']); ?>
+                                </small>
+                            <?php endif; ?>
+
+                            <div class="alert alert-secondary mt-3 mb-0">
+                                <i class="bi bi-shield-lock"></i>
+                                O token fica no servidor e não é enviado para o JavaScript da tela.
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
             </div>
 
         </div>
