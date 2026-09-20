@@ -503,9 +503,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate Connected Devices Tab
         document.getElementById('devices-content').innerHTML = renderConnectedDevicesTab(device.connected_devices);
 
-        // Populate Monitoring and AI tabs
+        // Populate Monitoring tab
         document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
-        document.getElementById('ai-content').innerHTML = renderAIAssistantTab(device);
         renderStoredDeviceAIState();
         updateRadiusBandwidthSample();
 
@@ -3284,48 +3283,6 @@ async function updateRadiusBandwidthSample() {
         const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
         chart.innerHTML = renderModernBandwidthChart(valid);
     } catch (_) { /* mantém a última amostra válida */ }
-}
-
-function renderAIAssistantTab(device) {
-    const wan = getPrimaryWAN(device);
-    const context = [
-        'Modelo: ' + (device.product_class || device.model || 'N/A'),
-        'Serial: ' + (device.serial_number || 'N/A'),
-        'Status: ' + (device.status || 'N/A'),
-        'WAN: ' + (wan ? (wan.status || 'N/A') : 'N/A'),
-        'Uptime: ' + (wan ? formatUptimeValue(wan.uptime) : 'N/A'),
-        'Último erro WAN: ' + (wan ? (wan.last_error || 'N/A') : 'N/A'),
-        'Dispositivos conectados: ' + (device.connected_devices_count ?? 0)
-    ];
-
-    return `
-        <div class="acs-ai-shell">
-            <div class="acs-ai-hero">
-                <div class="acs-ai-icon"><i class="bi bi-stars"></i></div>
-                <div>
-                    <span class="acs-kicker">JR CONECT IA</span>
-                    <h4>Assistente técnico do equipamento</h4>
-                    <p>O chat agora abre em um painel lateral independente do auto-refresh da tela.</p>
-                </div>
-                <button type="button" class="acs-soft-btn primary" onclick="openDeviceAIDrawer()">
-                    <i class="bi bi-chat-dots"></i> Abrir assistente
-                </button>
-            </div>
-            <div class="acs-ai-grid">
-                <div class="acs-ai-context">
-                    <strong>Contexto técnico disponível</strong>
-                    ${context.map(x => '<span><i class="bi bi-check-circle"></i>'+x+'</span>').join('')}
-                </div>
-                <div class="acs-ai-context">
-                    <strong>Como a IA pode ajudar</strong>
-                    <span><i class="bi bi-reception-4"></i>Analisar sinal óptico e GPON</span>
-                    <span><i class="bi bi-globe2"></i>Revisar WAN, PPPoE e último erro</span>
-                    <span><i class="bi bi-wifi"></i>Analisar Wi-Fi e dispositivos conectados</span>
-                    <span><i class="bi bi-ethernet"></i>Interpretar portas LAN e estado do link</span>
-                    <span><i class="bi bi-person-vcard"></i>Usar plano/contrato e contexto do cliente</span>
-                </div>
-            </div>
-        </div>`;
 }
 
 function buildDeviceAIContext() {
