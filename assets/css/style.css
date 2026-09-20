@@ -5080,3 +5080,34 @@ section{
     text-overflow:ellipsis;
     font-size:9px !important;
 }
+
+
+/* ===== OPTICAL FOOTER WITHOUT SOURCE ===== */
+.acs-approved-layout .acs-device-optical-footer{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:0 !important;
+}
+.acs-approved-layout .acs-device-optical-footer>div{
+    grid-column:1 / -1 !important;
+    grid-row:auto !important;
+    min-width:0;
+    grid-template-columns:auto minmax(0,1fr) !important;
+    gap:10px !important;
+}
+.acs-approved-layout .acs-device-optical-footer>div:first-child>strong{
+    justify-self:end;
+    text-align:right !important;
+    max-width:none !important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.acs-approved-layout .acs-device-optical-footer>div:last-child>strong{
+    justify-self:end;
+    text-align:right !important;
+    max-width:none !important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}

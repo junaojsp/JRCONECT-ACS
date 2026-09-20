@@ -240,7 +240,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                             </div>
                             <div class="acs-reference-footer-grid acs-device-optical-footer acs-icon-footer-list">
                                 <div><span><i class="bi bi-broadcast-pin"></i>OLT / PON</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
-                                <div><span><i class="bi bi-database"></i>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
                                 <div><span><i class="bi bi-arrow-clockwise"></i>Atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
                             </div>
                         </div>
