@@ -10,6 +10,13 @@ let opticalRequestCounter = 0;
 let currentDeviceData = null;
 let customerSummaryRequestCounter = 0;
 let cachedCustomerSummary = null;
+let aiRuntimeStatus = {
+    configured: false,
+    provider: '',
+    model: '',
+    connected: false
+};
+let lastDeviceRefreshAt = null;
 
 const deviceAIStorageKey = 'jrconect-device-ai:' + String(deviceId || 'unknown');
 let deviceAIState = {
@@ -109,17 +116,133 @@ function renderStoredDeviceAIState() {
     }
 
     const providerLabel = document.getElementById('jr-ai-drawer-provider');
-    if (providerLabel && deviceAIState.provider) {
-        providerLabel.textContent = (deviceAIState.provider === 'anthropic' ? 'Claude' : 'OpenAI') +
-            (deviceAIState.model ? ' · ' + deviceAIState.model : '');
+    const compactStatus = document.getElementById('acs-ai-compact-status');
+
+    const provider = aiRuntimeStatus.provider || deviceAIState.provider;
+    const model = aiRuntimeStatus.model || deviceAIState.model;
+
+    if (provider) {
+        const text = providerDisplayName(provider) +
+            (model ? ' · ' + model : '') +
+            (aiRuntimeStatus.configured ? (aiRuntimeStatus.connected ? ' · conectado' : ' · não testado') : '');
+        if (providerLabel) providerLabel.textContent = text;
+        if (compactStatus) compactStatus.textContent = text;
+    }
+}
+
+function providerDisplayName(provider) {
+    return provider === 'anthropic' ? 'Claude' : provider === 'openai' ? 'OpenAI' : 'IA';
+}
+
+function cleanOperationalValue(value) {
+    const text = String(value ?? '').trim();
+    if (!text || /^(n\/?a|none|null|undefined|-|sem erro|no error|error_none)$/i.test(text)) {
+        return '';
+    }
+    return text;
+}
+
+function getDeviceHealth(device = currentDeviceData || {}) {
+    const online = String(device.status || '').toLowerCase() === 'online';
+    if (!online) {
+        return {
+            level: 'critical',
+            label: 'CRÍTICO',
+            detail: 'Equipamento offline'
+        };
     }
 
-    const compactStatus = document.getElementById('acs-ai-compact-status');
-    if (compactStatus) {
-        compactStatus.textContent = deviceAIState.provider
-            ? ((deviceAIState.provider === 'anthropic' ? 'Claude' : 'OpenAI') + ' disponível')
-            : 'IA configurada';
+    const wan = typeof getPrimaryWAN === 'function' ? (getPrimaryWAN(device) || {}) : {};
+    const wanStatus = String(wan.status || '').trim().toLowerCase();
+    const wanKnownBad = wanStatus && !['connected', 'up', 'online', 'enabled'].includes(wanStatus);
+    if (wanKnownBad) {
+        return {
+            level: 'warning',
+            label: 'ATENÇÃO',
+            detail: 'WAN: ' + (wan.status || 'estado anormal')
+        };
     }
+
+    const lastError = cleanOperationalValue(wan.last_error);
+    if (lastError) {
+        return {
+            level: 'warning',
+            label: 'ATENÇÃO',
+            detail: 'WAN reportou erro'
+        };
+    }
+
+    return {
+        level: 'healthy',
+        label: 'SAUDÁVEL',
+        detail: 'Online e WAN operacional'
+    };
+}
+
+function formatRefreshAge() {
+    if (!lastDeviceRefreshAt) return 'Aguardando atualização';
+    const seconds = Math.max(0, Math.floor((Date.now() - lastDeviceRefreshAt) / 1000));
+    if (seconds < 5) return 'Atualizado agora';
+    if (seconds < 60) return 'Atualizado há ' + seconds + 's';
+    const minutes = Math.floor(seconds / 60);
+    return 'Atualizado há ' + minutes + ' min';
+}
+
+function updateOverviewOperationalMeta() {
+    const age = document.getElementById('acs-overview-refresh-age');
+    if (age) age.textContent = formatRefreshAge();
+
+    const health = getDeviceHealth();
+    const healthEl = document.getElementById('acs-device-health');
+    if (healthEl) {
+        healthEl.className = 'acs-health-pill ' + health.level;
+        healthEl.innerHTML = '<i class="bi bi-heart-pulse"></i><span>' +
+            escapeOpticalHtml(health.label) + '</span><small>' +
+            escapeOpticalHtml(health.detail) + '</small>';
+    }
+
+    const aiStatus = document.getElementById('acs-ai-compact-status');
+    const drawerProvider = document.getElementById('jr-ai-drawer-provider');
+    if (aiRuntimeStatus.configured) {
+        const text = providerDisplayName(aiRuntimeStatus.provider) +
+            (aiRuntimeStatus.model ? ' · ' + aiRuntimeStatus.model : '') +
+            (aiRuntimeStatus.connected ? ' · conectado' : ' · não testado');
+        if (aiStatus) aiStatus.textContent = text;
+        if (drawerProvider) drawerProvider.textContent = text;
+    }
+}
+
+async function loadAIStatus() {
+    try {
+        const response = await fetch('/api/ai-status.php', {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/json' }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) return;
+
+        aiRuntimeStatus = {
+            configured: !!data.configured,
+            provider: data.provider || '',
+            model: data.model || '',
+            connected: !!data.connected
+        };
+        updateOverviewOperationalMeta();
+    } catch (_) {
+        // Mantém a interface funcional mesmo se o status da IA estiver indisponível.
+    }
+}
+
+function runDeviceAISummary() {
+    openDeviceAIDrawer();
+    const prompt = [
+        'Faça um resumo técnico deste equipamento para o suporte da JR CONECT.',
+        'Use somente os dados atuais disponíveis.',
+        'Organize em: Estado geral, Fibra/GPON, WAN/PPPoE, Wi-Fi/LAN, possíveis alertas e próximos testes recomendados.',
+        'Não invente medições nem ações executadas.'
+    ].join(' ');
+    setTimeout(() => askDeviceAI(prompt), 180);
 }
 
 // Helper function to get active tab name
@@ -216,6 +339,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
     if (result && result.success) {
         const device = result.device;
         currentDeviceData = device;
+        lastDeviceRefreshAt = Date.now();
 
         // Fetch ONU location from map
         const locationResult = await fetchAPI('/api/get-onu-location.php?serial_number=' + encodeURIComponent(device.serial_number));
@@ -338,11 +462,26 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <div class="acs-ai-topbar-copy">
                         <span>ASSISTENTE IA</span>
                         <strong>Assistente técnico JR CONECT</strong>
-                        <small id="acs-ai-compact-status">IA configurada</small>
+                        <small id="acs-ai-compact-status">Consultando provedor...</small>
                     </div>
                 </div>
+
+                <div class="acs-ai-topbar-ops">
+                    <div id="acs-device-health" class="acs-health-pill neutral">
+                        <i class="bi bi-heart-pulse"></i>
+                        <span>VERIFICANDO</span>
+                        <small>Saúde operacional</small>
+                    </div>
+                    <div class="acs-refresh-meta">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        <span id="acs-overview-refresh-age">Atualizando...</span>
+                    </div>
+                </div>
+
                 <div class="acs-ai-topbar-action">
-                    <span class="acs-mini-badge success">DISPONÍVEL</span>
+                    <button type="button" class="acs-soft-btn" onclick="runDeviceAISummary()">
+                        <i class="bi bi-clipboard2-pulse"></i> Resumo técnico
+                    </button>
                     <button type="button" class="acs-soft-btn primary" onclick="openDeviceAIDrawer()">
                         <i class="bi bi-chat-dots"></i> Abrir IA
                     </button>
@@ -477,6 +616,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         `;
 
         renderStoredDeviceAIState();
+        updateOverviewOperationalMeta();
 
         // Buscar dados ópticos FiberHome via TL1 sem bloquear o carregamento principal.
         // No auto-refresh, não inicia uma nova consulta se já existir uma em andamento
@@ -2990,9 +3130,11 @@ function escapeOpticalHtml(value) {
 
 document.addEventListener('DOMContentLoaded', function() {
     loadDeviceDetail(); // Initial load (manual, scroll to top)
+    loadAIStatus();
     // Auto refresh every 30 seconds (preserve scroll position)
     setInterval(() => loadDeviceDetail(true), 30000);
     setInterval(updateRadiusBandwidthSample, 1000);
+    setInterval(updateOverviewOperationalMeta, 1000);
 
     // Auto-start/stop hotspot monitoring based on Connected Devices tab visibility
     const allTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
