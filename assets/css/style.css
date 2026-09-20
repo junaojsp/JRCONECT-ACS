@@ -3575,6 +3575,7 @@ canvas {
     padding:14px 16px;
 }
 .acs-approved-device,.acs-approved-wan,.acs-approved-lan{min-height:310px}
+.acs-approved-device-combined{min-height:310px}
 .acs-approved-optical,.acs-approved-wifi,.acs-approved-ai{min-height:230px}
 .acs-approved-admin{min-height:245px}
 .acs-approved-bottom-stack{
@@ -4373,4 +4374,53 @@ header.topbar{
 .dashboard-section,
 section{
     background-color:transparent;
+}
+
+
+/* ===== ACS DEVICE + GPON COMBINED ===== */
+.acs-approved-device-combined{
+    grid-column:auto !important;
+}
+.acs-device-combined-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);
+    gap:14px;
+    margin-top:4px;
+}
+.acs-device-combined-section{
+    min-width:0;
+    padding:10px 12px;
+    border:1px solid rgba(105,159,187,.10);
+    border-radius:9px;
+    background:rgba(7,21,31,.32);
+}
+.acs-device-combined-section.optical{
+    background:rgba(7,25,35,.44);
+    border-color:rgba(38,200,232,.16);
+}
+.acs-device-combined-title{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-bottom:8px;
+    padding-bottom:7px;
+    border-bottom:1px solid rgba(105,159,187,.08);
+    color:#dceef5;
+    font-size:10px;
+    font-weight:700;
+}
+.acs-device-combined-title i{color:#26c8e8;font-size:13px}
+.acs-device-optical-metrics{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:8px !important;
+}
+.acs-device-optical-metrics>div{
+    min-height:62px;
+}
+.acs-device-optical-footer{
+    margin-top:8px;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+}
+@media(max-width:1200px){
+    .acs-device-combined-grid{grid-template-columns:1fr}
 }

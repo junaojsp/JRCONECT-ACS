@@ -201,22 +201,44 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('overview-content').innerHTML = `
             <div class="acs-overview-grid acs-approved-layout">
 
-                <section class="acs-overview-card acs-card-device acs-approved-device">
+                <section class="acs-overview-card acs-card-device acs-approved-device acs-approved-device-combined">
                     <div class="acs-overview-card-header">
                         <div><span class="acs-kicker"><i class="bi bi-info-circle-fill"></i> Informações do dispositivo</span></div>
                         <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
                             <span class="acs-status-dot"></span>${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
                         </span>
                     </div>
-                    <div class="acs-reference-list">
-                        <div><span>Nome do equipamento</span><strong>${device.product_class || device.model || 'Equipamento'}</strong></div>
-                        <div><span>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
-                        <div><span>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
-                        <div><span>Modelo</span><strong>${device.product_class || 'N/D'}</strong></div>
-                        <div><span>Versão de firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
-                        <div><span>Versão de hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
-                        <div><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
-                        <div><span>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
+
+                    <div class="acs-device-combined-grid">
+                        <div class="acs-device-combined-section">
+                            <div class="acs-device-combined-title"><i class="bi bi-router"></i> Dados do equipamento</div>
+                            <div class="acs-reference-list">
+                                <div><span>Nome do equipamento</span><strong>${device.product_class || device.model || 'Equipamento'}</strong></div>
+                                <div><span>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
+                                <div><span>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
+                                <div><span>Modelo</span><strong>${device.product_class || 'N/D'}</strong></div>
+                                <div><span>Versão de firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
+                                <div><span>Versão de hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
+                                <div><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
+                                <div><span>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="acs-device-combined-section optical">
+                            <div class="acs-device-combined-title"><i class="bi bi-reception-4"></i> Sinal óptico / GPON</div>
+                            <div class="acs-reference-metrics acs-device-optical-metrics">
+                                <div><span>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
+                                <div><span>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
+                                <div><span>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
+                                <div><span>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
+                            </div>
+                            <div class="acs-reference-footer-grid acs-device-optical-footer">
+                                <div><span>PON ID</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
+                                <div><span>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
+                                <div><span>OLT</span><strong>-</strong></div>
+                                <div><span>Última atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -255,24 +277,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
 
 
-                <section class="acs-overview-card acs-card-optical acs-approved-optical">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-reception-4"></i> Óptico / GPON</span></div>
-                        <span class="acs-mini-badge success">NORMAL</span>
-                    </div>
-                    <div class="acs-reference-metrics">
-                        <div><span>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
-                        <div><span>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
-                        <div><span>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
-                        <div><span>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
-                    </div>
-                    <div class="acs-reference-footer-grid">
-                        <div><span>PON ID</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
-                        <div><span>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
-                        <div><span>OLT</span><strong>-</strong></div>
-                        <div><span>Última atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
-                    </div>
-                </section>
+
 
                 <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
                     <div class="acs-overview-card-header">
