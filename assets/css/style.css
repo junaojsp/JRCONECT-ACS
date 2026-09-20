@@ -6067,3 +6067,162 @@ section{
         flex:1 1 140px;
     }
 }
+
+
+/* ===== Card de saúde Wi-Fi ===== */
+.acs-approved-wifi {
+    grid-column: span 2 !important;
+    min-height: 0 !important;
+}
+
+.acs-wifi-reference-grid {
+    display: block;
+}
+
+.acs-wifi-health-list {
+    display: grid;
+    gap: 9px;
+}
+
+.acs-wifi-health-row {
+    display: grid;
+    grid-template-columns: 1.35fr 1.15fr .72fr .9fr .72fr auto;
+    align-items: center;
+    gap: 11px;
+    min-height: 56px;
+    padding: 9px 11px;
+    border: 1px solid var(--acs-ref-border-soft);
+    border-radius: 9px;
+    background: #151f30;
+}
+
+.acs-wifi-health-state {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+
+.acs-wifi-health-state > i {
+    color: var(--acs-ref-cyan);
+    font-size: 17px;
+}
+
+.acs-wifi-health-state strong,
+.acs-wifi-health-detail strong {
+    display: block;
+    overflow: hidden;
+    color: var(--acs-ref-text);
+    font-size: 10px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.acs-wifi-health-state span,
+.acs-wifi-health-detail small {
+    display: block;
+    margin-top: 2px;
+    color: var(--acs-ref-muted);
+    font-size: 8px;
+}
+
+.acs-wifi-health-state span i {
+    color: var(--acs-ref-green);
+    font-size: 6px;
+    vertical-align: 1px;
+}
+
+.acs-wifi-health-detail {
+    min-width: 0;
+}
+
+.acs-wifi-unified-row .acs-wifi-health-state > i {
+    color: #79dce9;
+}
+
+.acs-wifi-unified-row .acs-wifi-health-state span {
+    color: #79dce9;
+}
+
+.acs-wifi-edit-btn,
+.acs-wifi-health-footer button {
+    border: 1px solid #28435b;
+    border-radius: 7px;
+    background: #142336;
+    color: #b7c4d4;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.acs-wifi-edit-btn {
+    min-height: 34px;
+    padding: 0 10px;
+}
+
+.acs-wifi-edit-btn:hover,
+.acs-wifi-health-footer button:hover {
+    border-color: #3a5c78;
+    background: #192a40;
+    color: #eef5fb;
+}
+
+.acs-wifi-health-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-top: 10px;
+    padding: 9px 2px 0;
+    border-top: 1px solid var(--acs-ref-border-soft);
+    color: var(--acs-ref-muted);
+    font-size: 8px;
+}
+
+.acs-wifi-health-footer span i {
+    color: var(--acs-ref-cyan);
+    margin-right: 4px;
+}
+
+.acs-wifi-health-footer strong {
+    color: #d8e0ea;
+    font-weight: 700;
+}
+
+.acs-wifi-health-footer button {
+    min-height: 30px;
+    margin-left: auto;
+    padding: 0 10px;
+}
+
+@media (max-width: 980px) {
+    .acs-approved-wifi {
+        grid-column: auto !important;
+    }
+
+    .acs-wifi-health-row {
+        grid-template-columns: 1.4fr 1fr 1fr auto;
+    }
+
+    .acs-wifi-health-detail:nth-of-type(3) {
+        display: none;
+    }
+}
+
+@media (max-width: 620px) {
+    .acs-wifi-health-row {
+        grid-template-columns: 1fr 1fr auto;
+        gap: 9px;
+    }
+
+    .acs-wifi-health-detail:nth-of-type(2),
+    .acs-wifi-health-detail:nth-of-type(3) {
+        display: none;
+    }
+
+    .acs-wifi-health-footer button {
+        width: 100%;
+        margin-left: 0;
+    }
+}
