@@ -220,29 +220,29 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                     <div class="acs-fiber-summary-grid">
                         <div class="acs-fiber-info">
-                            <div class="acs-reference-list">
-                                <div><span>Modelo</span><strong>${device.product_class || device.model || 'N/D'}</strong></div>
-                                <div><span>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
-                                <div><span>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
-                                <div><span>Firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
-                                <div><span>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
-                                <div><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
-                                <div><span>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
+                            <div class="acs-reference-list acs-icon-info-list">
+                                <div><span><i class="bi bi-router"></i>Modelo</span><strong>${device.product_class || device.model || 'N/D'}</strong></div>
+                                <div><span><i class="bi bi-upc-scan"></i>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
+                                <div><span><i class="bi bi-building"></i>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
+                                <div><span><i class="bi bi-cpu"></i>Firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
+                                <div><span><i class="bi bi-box-seam"></i>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
+                                <div><span><i class="bi bi-stopwatch"></i>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
+                                <div><span><i class="bi bi-clock-history"></i>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
                             </div>
                         </div>
                         <div class="acs-fiber-optical">
                             <div class="acs-device-combined-title"><i class="bi bi-reception-4"></i> Sinal óptico / GPON</div>
-                            <div class="acs-reference-metrics acs-device-optical-metrics">
-                                <div><span>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
-                                <div><span>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
-                                <div><span>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
-                                <div><span>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
+                            <div class="acs-reference-metrics acs-device-optical-metrics acs-icon-metric-list">
+                                <div><span><i class="bi bi-arrow-down-circle"></i>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
+                                <div><span><i class="bi bi-arrow-up-circle"></i>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
+                                <div><span><i class="bi bi-thermometer-half"></i>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
+                                <div><span><i class="bi bi-lightning-charge"></i>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
                             </div>
-                            <div class="acs-reference-footer-grid acs-device-optical-footer">
-                                <div><span>PON ID</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
-                                <div><span>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
-                                <div><span>OLT</span><strong>-</strong></div>
-                                <div><span>Atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
+                            <div class="acs-reference-footer-grid acs-device-optical-footer acs-icon-footer-list">
+                                <div><span><i class="bi bi-broadcast-pin"></i>PON ID</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
+                                <div><span><i class="bi bi-database"></i>Fonte</span><strong id="optical-source">${renderOpticalSource()}</strong></div>
+                                <div><span><i class="bi bi-hdd-rack"></i>OLT</span><strong>-</strong></div>
+                                <div><span><i class="bi bi-arrow-clockwise"></i>Atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
                             </div>
                         </div>
                     </div>
@@ -253,15 +253,15 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span></div>
                         <span class="acs-mini-badge ${String(primaryWan.status || '').toLowerCase()==='connected'?'success':''}">${primaryWan.status || 'STATUS'}</span>
                     </div>
-                    <div class="acs-reference-list">
-                        <div><span>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
-                        <div><span>IP</span><strong>${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
-                        <div><span>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
-                        <div><span>Usuário PPPoE</span><strong>${primaryWan.username || 'Não disponível'}</strong></div>
-                        <div><span>IPv6</span><strong>${primaryWan.ipv6 || 'Não disponível'}</strong></div>
-                        <div><span>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
-                        <div><span>VLAN</span><strong>${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
-                        <div><span>Último erro</span><strong>${primaryWan.last_error || '-'}</strong></div>
+                    <div class="acs-reference-list acs-icon-info-list">
+                        <div><span><i class="bi bi-ethernet"></i>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
+                        <div><span><i class="bi bi-globe2"></i>IP</span><strong>${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
+                        <div><span><i class="bi bi-diagram-3"></i>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
+                        <div><span><i class="bi bi-person-circle"></i>Usuário PPPoE</span><strong>${primaryWan.username || 'Não disponível'}</strong></div>
+                        <div><span><i class="bi bi-globe-americas"></i>IPv6</span><strong>${primaryWan.ipv6 || 'Não disponível'}</strong></div>
+                        <div><span><i class="bi bi-diagram-2"></i>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
+                        <div><span><i class="bi bi-tag"></i>VLAN</span><strong>${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
+                        <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong>${primaryWan.last_error || '-'}</strong></div>
                     </div>
                 </section>
 
