@@ -349,19 +349,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-card-web acs-approved-web">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-browser-chrome"></i> Acesso Web</span></div>
-                        <span class="acs-mini-badge ${device.status === 'online' ? 'success' : ''}">${device.status === 'online' ? 'DISPONÍVEL' : 'OFFLINE'}</span>
-                    </div>
-                    <div class="acs-reference-list">
-                        <div><span>IP de gerenciamento</span><strong>${extractIP(device.ip_tr069) || device.ip_address || 'N/D'}</strong></div>
-                        <div><span>Status</span><strong>${device.status === 'online' ? 'Disponível' : 'Equipamento offline'}</strong></div>
-                    </div>
-                    <button type="button" class="acs-soft-btn primary acs-router-action" onclick="openWebManagement()" ${device.status === 'online' ? '' : 'disabled'}>
-                        <i class="bi bi-box-arrow-up-right"></i> Abrir gerenciamento web
-                    </button>
-                </section>
+
 
             </div>
         `;
