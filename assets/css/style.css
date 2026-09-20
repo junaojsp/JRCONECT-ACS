@@ -4652,3 +4652,24 @@ section{
         grid-template-columns:1fr !important;
     }
 }
+
+
+/* ===== FORCE ROUTER CARD INTO FIRST GRID COLUMN ===== */
+#overview-content .acs-approved-layout.acs-overview-reorganized > .acs-router-local-card{
+    grid-column:1 / 2 !important;
+    grid-row:auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    justify-self:stretch !important;
+    align-self:start !important;
+}
+@media(max-width:1280px){
+    #overview-content .acs-approved-layout.acs-overview-reorganized > .acs-router-local-card{
+        grid-column:1 / 2 !important;
+    }
+}
+@media(max-width:760px){
+    #overview-content .acs-approved-layout.acs-overview-reorganized > .acs-router-local-card{
+        grid-column:1 / -1 !important;
+    }
+}
