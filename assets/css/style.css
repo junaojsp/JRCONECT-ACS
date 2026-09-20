@@ -3954,3 +3954,200 @@ body{
     background:#151f30 !important;
     border-color:#29374d !important;
 }
+
+
+/* ===== JR CONECT GLOBAL REFERENCE THEME V7 ===== */
+/* Tema global alinhado ao padrao aprovado da tela de equipamentos */
+:root{
+    --primary-color:#35cfe3 !important;
+    --primary-dark:#2499b0 !important;
+    --primary-light:#79dce9 !important;
+    --secondary-color:#8592a8 !important;
+    --success-color:#27d39f !important;
+    --warning-color:#d6ad38 !important;
+    --danger-color:#ef6876 !important;
+    --info-color:#35cfe3 !important;
+    --dark-color:#e7edf6 !important;
+    --darker-color:#0b1320 !important;
+    --light-color:#0f1726 !important;
+    --gray-100:#141f30 !important;
+    --gray-200:#223148 !important;
+    --gray-300:#2a3850 !important;
+    --sidebar-bg:#111b2b !important;
+    --sidebar-hover:#172336 !important;
+    --topbar-bg:#121c2c !important;
+    --jr-bg:#0b1320 !important;
+    --jr-bg-2:#0f1726 !important;
+    --jr-panel:#182235 !important;
+    --jr-panel-2:#1b2638 !important;
+    --jr-border:#2a3850 !important;
+    --jr-text:#e7edf6 !important;
+    --jr-muted:#8592a8 !important;
+    --jr-primary:#35cfe3 !important;
+    --jr-primary-hover:#79dce9 !important;
+}
+
+/* Superficies globais */
+html,body,.main-content,.content-wrapper{
+    background:#0b1320 !important;
+    color:#e7edf6 !important;
+}
+.sidebar{
+    background:#111b2b !important;
+    border-right:1px solid #26354c !important;
+}
+.sidebar-header{
+    background:#101a29 !important;
+    border-bottom-color:#26354c !important;
+}
+.sidebar-menu li a{color:#8f9caf !important}
+.sidebar-menu li a:hover{background:#172336 !important;color:#e7edf6 !important}
+.sidebar-menu li a.active{
+    background:#1b293d !important;
+    color:#f0f5fb !important;
+    border-left-color:#35cfe3 !important;
+}
+.topbar{
+    background:#121c2c !important;
+    border-bottom:1px solid #2a3850 !important;
+    color:#e7edf6 !important;
+    box-shadow:none !important;
+}
+.content-wrapper{color:#e7edf6 !important}
+
+/* Cards de todas as telas */
+.card,.stat-card,.login-card,.modal-content,.dropdown-menu,.list-group-item{
+    background:#182235 !important;
+    color:#e7edf6 !important;
+    border-color:#2a3850 !important;
+    box-shadow:0 8px 20px rgba(0,0,0,.12) !important;
+}
+.card-header,.modal-header,.modal-footer{
+    background:#1b2638 !important;
+    color:#e7edf6 !important;
+    border-color:#2a3850 !important;
+}
+.card-body{background:#182235 !important;color:#e7edf6 !important}
+.stat-card p,.text-muted,.form-text,small.text-muted{color:#8592a8 !important}
+
+/* Tabelas */
+.table,table{color:#e7edf6 !important;border-color:#2a3850 !important}
+.table thead,.table thead th,table thead,table th{
+    background:#141f30 !important;
+    color:#aeb9c9 !important;
+    border-color:#2a3850 !important;
+}
+.table tbody td,table td{
+    background:#182235 !important;
+    color:#d8e0ea !important;
+    border-color:#223148 !important;
+}
+.table-hover tbody tr:hover td,table tbody tr:hover td{background:#1d2a3f !important}
+.table-striped>tbody>tr:nth-of-type(odd)>*{background:#172134 !important;color:#d8e0ea !important}
+
+/* Formularios e filtros */
+.form-control,.form-select,input:not([type=checkbox]):not([type=radio]),textarea,select{
+    background:#141f30 !important;
+    color:#e7edf6 !important;
+    border-color:#2a3850 !important;
+}
+.form-control:focus,.form-select:focus,input:focus,textarea:focus,select:focus{
+    background:#172336 !important;
+    color:#f3f7fb !important;
+    border-color:#35cfe3 !important;
+    box-shadow:0 0 0 .18rem rgba(53,207,227,.10) !important;
+}
+.form-control::placeholder,input::placeholder,textarea::placeholder{color:#738198 !important}
+.input-group-text{
+    background:#1b2638 !important;
+    color:#c4cfdd !important;
+    border-color:#2a3850 !important;
+}
+label,.form-label{color:#c8d2df !important}
+
+/* Navegacao, paginacao e listas */
+.nav-tabs{border-bottom-color:#2a3850 !important}
+.nav-tabs .nav-link{color:#8f9caf !important}
+.nav-tabs .nav-link:hover{background:#172336 !important;color:#e7edf6 !important}
+.nav-tabs .nav-link.active{
+    background:#1b2638 !important;
+    color:#f0f5fb !important;
+    border-color:#2a3850 #2a3850 #1b2638 !important;
+}
+.pagination .page-link{
+    background:#182235 !important;
+    color:#aeb9c9 !important;
+    border-color:#2a3850 !important;
+}
+.pagination .page-item.active .page-link{
+    background:#1d3b50 !important;
+    color:#79dce9 !important;
+    border-color:#35cfe3 !important;
+}
+.dropdown-item{color:#cbd5e1 !important}
+.dropdown-item:hover,.dropdown-item:focus{background:#1d2a3f !important;color:#fff !important}
+
+/* Botoes */
+.btn-secondary,.btn-light,.btn-outline-secondary{
+    background:#172336 !important;
+    color:#cbd5e1 !important;
+    border-color:#2a3850 !important;
+}
+.btn-primary{
+    background:#173b52 !important;
+    color:#bff4fb !important;
+    border:1px solid #2c7890 !important;
+}
+.btn-primary:hover{
+    background:#1b4963 !important;
+    color:#fff !important;
+    box-shadow:0 4px 12px rgba(53,207,227,.10) !important;
+}
+.btn-success{background:#174638 !important;border-color:#278d6c !important;color:#9bf0cf !important}
+.btn-danger{background:#4a252f !important;border-color:#8c4454 !important;color:#ffc0ca !important}
+.btn-warning{background:#463a20 !important;border-color:#8e7733 !important;color:#f5d77c !important}
+
+/* Alertas sem blocos claros */
+.alert-info{background:#172b3c !important;color:#9eddea !important;border-color:#2d7285 !important}
+.alert-success{background:#16382f !important;color:#8de5c1 !important;border-color:#27785f !important}
+.alert-warning{background:#3a321e !important;color:#e7cc79 !important;border-color:#78662e !important}
+.alert-danger{background:#3d232b !important;color:#f0a8b3 !important;border-color:#824151 !important}
+
+/* Badges */
+.badge.online,.badge.bg-success{
+    background:rgba(39,211,159,.12) !important;
+    color:#83f0c8 !important;
+}
+.badge.offline,.badge.bg-secondary{
+    background:rgba(133,146,168,.12) !important;
+    color:#aeb9c9 !important;
+}
+.badge.bg-primary,.badge.bg-info{
+    background:rgba(53,207,227,.12) !important;
+    color:#79dce9 !important;
+}
+
+/* Modais */
+.modal-backdrop.show{opacity:.72 !important}
+.btn-close{filter:invert(1) grayscale(100%) brightness(180%)}
+.modal-title{color:#e7edf6 !important}
+
+/* Rodape, codigo, links e divisores */
+.footer{
+    background:#121c2c !important;
+    color:#8592a8 !important;
+    border-top:1px solid #2a3850 !important;
+}
+a{color:#79dce9}
+a:hover{color:#a8edf4}
+code,pre{
+    background:#101a29 !important;
+    color:#a7dce7 !important;
+    border-color:#2a3850 !important;
+}
+hr{border-color:#2a3850 !important;opacity:1}
+
+/* Elementos Bootstrap que ainda poderiam ficar claros */
+.bg-white,.bg-light{background:#182235 !important;color:#e7edf6 !important}
+.text-dark{color:#e7edf6 !important}
+.border,.border-top,.border-bottom,.border-start,.border-end{border-color:#2a3850 !important}
