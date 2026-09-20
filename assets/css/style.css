@@ -5988,3 +5988,31 @@ section{
         min-width:0 !important;
     }
 }
+
+
+/* ===== FIX: BARRA IA OCUPA TODA A LARGURA DO OVERVIEW ===== */
+#overview-content > .acs-ai-topbar{
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    min-width:0 !important;
+    justify-self:stretch !important;
+}
+
+#overview-content > .acs-overview-grid{
+    grid-column:1 / -1 !important;
+    width:100% !important;
+}
+
+/* Mantém o conteúdo interno da barra estável quando houver muito texto */
+#overview-content .acs-ai-topbar-main{
+    min-width:0 !important;
+}
+#overview-content .acs-ai-topbar-copy{
+    min-width:0 !important;
+}
+#overview-content .acs-ai-topbar-copy>strong,
+#overview-content .acs-ai-topbar-copy>small{
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+}
