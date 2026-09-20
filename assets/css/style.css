@@ -6226,3 +6226,42 @@ section{
         margin-left: 0;
     }
 }
+
+
+/* ===== ACS — escala de leitura confortável ===== */
+#overview-content .acs-overview-card-header h5{font-size:16px}
+#overview-content .acs-kicker{font-size:10px}
+#overview-content .acs-status-pill,
+#overview-content .acs-mini-badge{font-size:9px;padding:6px 9px}
+#overview-content .acs-device-identity strong,
+#overview-content .acs-wifi-hero strong{font-size:14px}
+#overview-content .acs-device-identity span,
+#overview-content .acs-wifi-hero span{font-size:10px}
+#overview-content .acs-info-row{min-height:39px;padding:8px 0}
+#overview-content .acs-info-row>span{font-size:11px}
+#overview-content .acs-info-row>strong{font-size:11px}
+#overview-content .acs-card-meta{font-size:10px}
+#overview-content .acs-wan-ip span,
+#overview-content .acs-optical-primary span{font-size:9px}
+#overview-content .acs-wan-ip strong{font-size:17px}
+#overview-content .acs-optical-primary strong{font-size:15px}
+#overview-content .acs-soft-btn,
+#overview-content .acs-icon-btn,
+#overview-content .acs-eye-btn{font-size:11px}
+#overview-content .acs-diagnostic-list strong{font-size:11px}
+#overview-content .acs-diagnostic-list small{font-size:9px}
+#overview-content .acs-admin-note,
+#overview-content .acs-event-placeholder{font-size:11px}
+#overview-content .acs-reference-info-grid span,
+#overview-content .acs-reference-list span,
+#overview-content .acs-reference-footer-grid span,
+#overview-content .acs-reference-metrics span{font-size:9px}
+#overview-content .acs-reference-info-grid strong,
+#overview-content .acs-reference-list strong,
+#overview-content .acs-reference-footer-grid strong,
+#overview-content .acs-reference-metrics strong{font-size:11px}
+@media(max-width:650px){
+    #overview-content .acs-overview-card-header h5{font-size:15px}
+    #overview-content .acs-info-row>span,
+    #overview-content .acs-info-row>strong{font-size:10px}
+}
