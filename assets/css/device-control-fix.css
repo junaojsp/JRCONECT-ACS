@@ -316,3 +316,40 @@
         grid-template-columns:1fr 1fr;
     }
 }
+
+
+/* Faixa operacional do card Redes Wi-Fi */
+.acs-approved-wifi .jr-wifi-health-strip{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px 14px;
+    margin-top:9px;
+    padding:8px 10px;
+    border:1px solid #294257;
+    border-radius:8px;
+    background:rgba(8,28,42,.58);
+    color:#9eb4c3;
+    font-size:9px;
+}
+.acs-approved-wifi .jr-wifi-health-strip span{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+}
+.acs-approved-wifi .jr-wifi-health-strip i{
+    color:#40cfe7;
+    font-size:10px;
+}
+.acs-approved-wifi .jr-wifi-health-strip strong{
+    color:#e8f4f8;
+    font-size:10px;
+}
+@media(max-width:650px){
+    .acs-approved-wifi .jr-wifi-health-strip{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:6px;
+    }
+}
