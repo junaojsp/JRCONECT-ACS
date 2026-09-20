@@ -4151,3 +4151,83 @@ hr{border-color:#2a3850 !important;opacity:1}
 .bg-white,.bg-light{background:#182235 !important;color:#e7edf6 !important}
 .text-dark{color:#e7edf6 !important}
 .border,.border-top,.border-bottom,.border-start,.border-end{border-color:#2a3850 !important}
+
+
+/* ===== SIDEBAR DISCOVERY REFERENCE V8 ===== */
+/* Menu lateral igual ao visual aprovado da tela Discovery */
+.sidebar{
+    background:#0b2232 !important;
+    border-right:1px solid #355168 !important;
+    box-shadow:none !important;
+}
+.sidebar-header{
+    min-height:108px;
+    background:#0b2232 !important;
+    border-bottom:1px solid #355168 !important;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:16px 10px !important;
+}
+.sidebar-header i{
+    color:#24c9ee !important;
+}
+.sidebar-header h3{
+    color:#ffffff !important;
+    font-weight:800 !important;
+}
+.sidebar-menu{
+    padding-top:4px !important;
+}
+.sidebar-menu li{
+    border-bottom:0 !important;
+}
+.sidebar-menu li a{
+    min-height:56px;
+    padding:0 20px !important;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:transparent !important;
+    color:#f2f6fb !important;
+    border-left:3px solid transparent !important;
+    font-weight:500;
+}
+.sidebar-menu li a i{
+    width:18px;
+    margin:0 !important;
+    color:#b7d4e4 !important;
+    text-align:center;
+}
+.sidebar-menu li a:hover{
+    background:#123348 !important;
+    color:#ffffff !important;
+    border-left-color:#25c9ee !important;
+}
+.sidebar-menu li a:hover i{
+    color:#4bd9f4 !important;
+}
+.sidebar-menu li a.active{
+    background:#1497bd !important;
+    color:#ffffff !important;
+    border-left:3px solid #35d7f4 !important;
+    box-shadow:none !important;
+}
+.sidebar-menu li a.active i{
+    color:#ffffff !important;
+}
+.sidebar-toggle{
+    background:#123348 !important;
+    border-color:#355168 !important;
+    color:#dbeaf3 !important;
+}
+
+/* Topo e fundo no mesmo conjunto cromatico da referencia */
+.topbar{
+    background:#081e2d !important;
+    border-bottom:1px solid #355168 !important;
+}
+.main-content,.content-wrapper{
+    background:#0a2130 !important;
+}
