@@ -101,6 +101,36 @@ include __DIR__ . '/views/layouts/header.php';
 
         </div>
 
+        <section id="acs-customer-strip" class="acs-customer-strip" hidden aria-live="polite">
+            <div class="acs-customer-identity">
+                <div class="acs-customer-avatar"><i class="bi bi-person-vcard"></i></div>
+                <div>
+                    <span>CLIENTE IXC</span>
+                    <strong id="acs-customer-name">Consultando...</strong>
+                    <small id="acs-customer-address">Cadastro vinculado ao equipamento</small>
+                </div>
+            </div>
+
+            <div class="acs-customer-facts">
+                <div><span><i class="bi bi-speedometer2"></i> Plano</span><strong id="acs-customer-plan">—</strong></div>
+                <div><span><i class="bi bi-file-earmark-text"></i> Contrato</span><strong id="acs-customer-contract">—</strong></div>
+                <div><span><i class="bi bi-person-lock"></i> Login PPPoE</span><strong id="acs-customer-login">—</strong></div>
+                <div><span><i class="bi bi-telephone"></i> Telefone</span><strong id="acs-customer-phone">—</strong></div>
+            </div>
+
+            <div class="acs-customer-statuses">
+                <div>
+                    <span>Contrato</span>
+                    <strong id="acs-customer-contract-status" class="acs-customer-pill neutral">Consultando</strong>
+                </div>
+                <div>
+                    <span>Financeiro</span>
+                    <strong id="acs-customer-financial" class="acs-customer-pill neutral">Consultando</strong>
+                </div>
+                <small id="acs-customer-source">IXC</small>
+            </div>
+        </section>
+
         <div class="acs-device-tabs-wrap">
 
             <div

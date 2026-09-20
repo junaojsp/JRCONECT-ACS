@@ -8,6 +8,8 @@ let opticalLoading = false;
 let opticalLoadedForDevice = null;
 let opticalRequestCounter = 0;
 let currentDeviceData = null;
+let customerSummaryRequestCounter = 0;
+let cachedCustomerSummary = null;
 
 // Helper function to get active tab name
 function getActiveTabName() {
@@ -2639,6 +2641,7 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
         !cachedOpticalData.error
     ) {
         updateOpticalDomFromCache();
+        loadCustomerSummary(cachedOpticalData);
         return;
     }
 
@@ -2714,6 +2717,7 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
         // Busca os elementos atuais do DOM e atualiza a tela atual,
         // mesmo que o auto-refresh tenha acontecido durante a consulta.
         updateOpticalDomFromCache();
+        loadCustomerSummary(cachedOpticalData);
 
         console.log('[IXC] Dados ópticos carregados:', data);
 
@@ -2742,6 +2746,119 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
         if (currentRequest === opticalRequestCounter) {
             opticalLoading = false;
         }
+    }
+}
+
+function customerValue(value, fallback = 'Não informado') {
+    return value === null || value === undefined || String(value).trim() === '' ? fallback : String(value);
+}
+
+function setCustomerText(id, value, fallback = 'Não informado') {
+    const el = document.getElementById(id);
+    if (el) el.textContent = customerValue(value, fallback);
+}
+
+function customerPillClass(value, kind) {
+    const text = String(value || '').toLowerCase();
+    if (kind === 'financial') {
+        if (text.includes('em dia')) return 'ok';
+        if (text.includes('vencid') || text.includes('atras')) return 'danger';
+        return 'neutral';
+    }
+    if (text.includes('ativo')) return 'ok';
+    if (text.includes('cancel') || text.includes('inativ') || text.includes('desativ')) return 'danger';
+    if (text.includes('pend')) return 'warning';
+    return 'neutral';
+}
+
+function renderCustomerSummary(data) {
+    const strip = document.getElementById('acs-customer-strip');
+    if (!strip) return;
+
+    strip.hidden = false;
+    setCustomerText('acs-customer-name', data?.customer?.name || cachedOpticalData?.nome, 'Cliente não identificado');
+    setCustomerText('acs-customer-address', data?.customer?.address, 'Endereço não informado');
+    setCustomerText('acs-customer-plan', data?.contract?.plan);
+    setCustomerText('acs-customer-contract', data?.contract?.id || cachedOpticalData?.id_contrato);
+    setCustomerText('acs-customer-login', data?.login?.username || data?.login?.id || cachedOpticalData?.id_login);
+    setCustomerText('acs-customer-phone', data?.customer?.phone);
+
+    const contractStatus = document.getElementById('acs-customer-contract-status');
+    if (contractStatus) {
+        contractStatus.textContent = customerValue(data?.contract?.status_label, 'Não informado');
+        contractStatus.className = 'acs-customer-pill ' + customerPillClass(data?.contract?.status_label, 'contract');
+    }
+
+    const financial = document.getElementById('acs-customer-financial');
+    if (financial) {
+        financial.textContent = customerValue(data?.financial?.label, 'Não informado');
+        financial.className = 'acs-customer-pill ' + customerPillClass(data?.financial?.label, 'financial');
+    }
+
+    const source = document.getElementById('acs-customer-source');
+    if (source) {
+        const clientId = data?.customer?.id;
+        source.textContent = clientId ? 'IXC · Cliente #' + clientId : 'IXC';
+    }
+}
+
+function renderCustomerSummaryLoading(optical) {
+    const strip = document.getElementById('acs-customer-strip');
+    if (!strip) return;
+    strip.hidden = false;
+    setCustomerText('acs-customer-name', optical?.nome, 'Consultando cliente...');
+    setCustomerText('acs-customer-address', null, 'Consultando cadastro no IXC...');
+    setCustomerText('acs-customer-plan', null, 'Consultando...');
+    setCustomerText('acs-customer-contract', optical?.id_contrato, '—');
+    setCustomerText('acs-customer-login', optical?.id_login, '—');
+    setCustomerText('acs-customer-phone', null, 'Consultando...');
+}
+
+async function loadCustomerSummary(optical) {
+    if (!optical || optical.error || (!optical.id_contrato && !optical.id_login)) return;
+
+    if (
+        cachedCustomerSummary &&
+        String(cachedCustomerSummary.contract?.id || '') === String(optical.id_contrato || '') &&
+        String(cachedCustomerSummary.login?.id || '') === String(optical.id_login || '')
+    ) {
+        renderCustomerSummary(cachedCustomerSummary);
+        return;
+    }
+
+    renderCustomerSummaryLoading(optical);
+    const requestId = ++customerSummaryRequestCounter;
+    const params = new URLSearchParams();
+    if (optical.id_contrato) params.set('id_contrato', optical.id_contrato);
+    if (optical.id_login) params.set('id_login', optical.id_login);
+
+    try {
+        const response = await fetch('/api/get-client-summary.php?' + params.toString(), {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/json' }
+        });
+        const data = await response.json();
+        if (requestId !== customerSummaryRequestCounter) return;
+        if (!response.ok || !data.success) throw new Error(data.message || 'Falha ao consultar cliente no IXC.');
+        cachedCustomerSummary = data;
+        renderCustomerSummary(data);
+    } catch (error) {
+        if (requestId !== customerSummaryRequestCounter) return;
+        const strip = document.getElementById('acs-customer-strip');
+        if (strip) strip.hidden = false;
+        setCustomerText('acs-customer-address', null, 'Cadastro complementar indisponível');
+        const contractStatus = document.getElementById('acs-customer-contract-status');
+        if (contractStatus) {
+            contractStatus.textContent = 'IXC indisponível';
+            contractStatus.className = 'acs-customer-pill neutral';
+        }
+        const financial = document.getElementById('acs-customer-financial');
+        if (financial) {
+            financial.textContent = 'Não consultado';
+            financial.className = 'acs-customer-pill neutral';
+        }
+        console.warn('[IXC] Resumo do cliente indisponível:', error);
     }
 }
 
