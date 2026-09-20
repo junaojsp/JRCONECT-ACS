@@ -275,54 +275,43 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
-                <section class="acs-overview-card acs-router-local-card" style="grid-column:1 / 2 !important; grid-row:auto !important; width:auto !important; min-width:0 !important; align-self:start !important;">
+                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-router-fill"></i> Roteador / Rede Local</span></div>
-                        <span class="acs-mini-badge">LAN + WI-FI</span>
+                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span></div>
                     </div>
+                    <div class="acs-wifi-reference-grid"></div>
+                </section>
 
-                    <div class="acs-router-local-grid">
-                        <div class="acs-router-zone acs-router-wifi-zone acs-approved-wifi">
-                            <div class="acs-router-zone-title">
-                                <span><i class="bi bi-wifi"></i> Wi-Fi</span>
-                                <small>2,4 GHz · 5 GHz · Rede Unificada</small>
-                            </div>
-                            <div class="acs-wifi-reference-grid"></div>
-                        </div>
-
-                        <div class="acs-router-zone">
-                            <div class="acs-router-zone-title">
-                                <span><i class="bi bi-ethernet"></i> Portas LAN</span>
-                                <small>Status, velocidade e dispositivo</small>
-                            </div>
-                            <div class="acs-lan-visual-grid acs-router-lan-grid">${renderLanVisual(lanPorts)}</div>
-                        </div>
-
-                        <div class="acs-router-zone acs-router-clients-zone">
-                            <div class="acs-router-zone-title">
-                                <span><i class="bi bi-diagram-3-fill"></i> Dispositivos conectados</span>
-                                <span class="acs-mini-badge">${connectedDevices.length} DISPOSITIVOS</span>
-                            </div>
-                            <div class="acs-connected-compact">${renderConnectedCompact(connectedDevices.slice(0,3))}</div>
-                            <button type="button" class="acs-soft-btn acs-router-action" onclick="document.getElementById('devices-tab')?.click()">
-                                <i class="bi bi-list-ul"></i> Ver todos
-                            </button>
-                        </div>
-
-                        <div class="acs-router-zone acs-router-web-zone">
-                            <div class="acs-router-zone-title">
-                                <span><i class="bi bi-browser-chrome"></i> Acesso Web</span>
-                                <small>Gerenciamento local do roteador</small>
-                            </div>
-                            <div class="acs-router-web-status">
-                                <div><span>IP de gerenciamento</span><strong>${extractIP(device.ip_tr069) || device.ip_address || 'N/D'}</strong></div>
-                                <div><span>Status</span><strong>${device.status === 'online' ? 'Disponível' : 'Equipamento offline'}</strong></div>
-                            </div>
-                            <button type="button" class="acs-soft-btn primary acs-router-action" onclick="openWebManagement()" ${device.status === 'online' ? '' : 'disabled'}>
-                                <i class="bi bi-box-arrow-up-right"></i> Abrir gerenciamento web
-                            </button>
-                        </div>
+                <section class="acs-overview-card acs-card-lan acs-approved-lan">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-ethernet"></i> Portas LAN</span></div>
                     </div>
+                    <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
+                </section>
+
+                <section class="acs-overview-card acs-card-connected acs-approved-connected">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-diagram-3-fill"></i> Dispositivos conectados</span></div>
+                        <span class="acs-mini-badge">${connectedDevices.length} DISPOSITIVOS</span>
+                    </div>
+                    <div class="acs-connected-compact">${renderConnectedCompact(connectedDevices.slice(0,5))}</div>
+                    <button type="button" class="acs-soft-btn acs-router-action" onclick="document.getElementById('devices-tab')?.click()">
+                        <i class="bi bi-list-ul"></i> Ver todos
+                    </button>
+                </section>
+
+                <section class="acs-overview-card acs-card-web acs-approved-web">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-browser-chrome"></i> Acesso Web</span></div>
+                        <span class="acs-mini-badge ${device.status === 'online' ? 'success' : ''}">${device.status === 'online' ? 'DISPONÍVEL' : 'OFFLINE'}</span>
+                    </div>
+                    <div class="acs-reference-list">
+                        <div><span>IP de gerenciamento</span><strong>${extractIP(device.ip_tr069) || device.ip_address || 'N/D'}</strong></div>
+                        <div><span>Status</span><strong>${device.status === 'online' ? 'Disponível' : 'Equipamento offline'}</strong></div>
+                    </div>
+                    <button type="button" class="acs-soft-btn primary acs-router-action" onclick="openWebManagement()" ${device.status === 'online' ? '' : 'disabled'}>
+                        <i class="bi bi-box-arrow-up-right"></i> Abrir gerenciamento web
+                    </button>
                 </section>
 
             </div>
