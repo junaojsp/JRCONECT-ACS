@@ -236,6 +236,11 @@
                         <i class="bi bi-download"></i> Diagnóstico Wi-Fi
                     </button>
                 </div>
+                <div class="jr-wifi-health-strip" aria-live="polite">
+                    <span><i class="bi bi-wifi"></i> <strong>${state.wifi.length}</strong> rede(s) identificada(s)</span>
+                    <span><i class="bi bi-shield-check"></i> Leitura via TR-069</span>
+                    <span><i class="bi bi-${state.refreshBusy ? 'arrow-repeat' : 'clock-history'}"></i> ${state.refreshBusy ? 'Consulta em andamento' : 'Dados disponíveis para suporte'}</span>
+                </div>
                 <small>SSID e senha podem ser alterados quando o modem confirma escrita. Canal e segurança permanecem somente leitura até o parâmetro gravável ser validado.</small>
                 <p class="jr-wifi-scan-status" role="status" aria-live="polite">${esc(state.scanMessage)}</p>
             </div>
