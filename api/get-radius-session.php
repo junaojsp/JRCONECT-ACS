@@ -112,8 +112,23 @@ try {
         }
     }
     if ($record === null) radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => false, 'lookup' => $lookup, 'message' => 'Nenhuma sessão RADIUS encontrada.']);
+    $sampleTime = $record['acctupdatetime'] ?? $record['updated_at'] ?? $record['last_update'] ?? null;
     radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => $active !== null, 'lookup' => $lookup, 'mac' => $mac ?: null,
-        'session' => ['username' => $record['username'] ?? null, 'ip' => $record['framedipaddress'] ?? null, 'bras' => $record['nasipaddress'] ?? null,
-            'interface' => $record['nasportid'] ?? null, 'started_at' => $record['acctstarttime'] ?? null, 'stopped_at' => $record['acctstoptime'] ?? null,
-            'seconds' => numberOrNull($record['acctsessiontime'] ?? null), 'bytes_received' => numberOrNull($record['acctinputoctets'] ?? null), 'bytes_sent' => numberOrNull($record['acctoutputoctets'] ?? null)]]);
+        'session' => [
+            'session_id' => $record['radacctid'] ?? null,
+            'username' => $record['username'] ?? null,
+            'ip' => $record['framedipaddress'] ?? null,
+            'bras' => $record['nasipaddress'] ?? null,
+            'interface' => $record['nasportid'] ?? null,
+            'started_at' => $record['acctstarttime'] ?? null,
+            'stopped_at' => $record['acctstoptime'] ?? null,
+            'sample_time' => $sampleTime,
+            'seconds' => numberOrNull($record['acctsessiontime'] ?? null),
+            // No RADIUS, input = upload do assinante e output = download do assinante.
+            'upload_bytes' => numberOrNull($record['acctinputoctets'] ?? null),
+            'download_bytes' => numberOrNull($record['acctoutputoctets'] ?? null),
+            // Mantidos por compatibilidade com telas antigas.
+            'bytes_received' => numberOrNull($record['acctinputoctets'] ?? null),
+            'bytes_sent' => numberOrNull($record['acctoutputoctets'] ?? null)
+        ]]);
 } catch (Throwable $e) { radiusOut(['success' => false, 'source' => 'IXC/RADIUS', 'message' => $e->getMessage()], 502); }
