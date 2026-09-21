@@ -3,7 +3,7 @@
     'use strict';
 
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
-    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null };
+    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, report: null, reportLoading: false, reportLoadedFor: null };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -677,63 +677,156 @@
         setMonitorText('jr-monitor-loss','Não coletada');
         setMonitorText('jr-monitor-jitter','Não coletado');
     }
+    function reportBytes(value) {
+        const n=Number(value);
+        if(!Number.isFinite(n)||n<0)return '0 B';
+        return fmtBytes(n);
+    }
+    function reportDateLabel(value) {
+        if(!value)return '';
+        const d=new Date(value);
+        return Number.isNaN(d.getTime())?String(value):d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    }
+    function renderIxcEventHistory(report) {
+        const daily=Array.isArray(report?.last_7_days?.daily)?report.last_7_days.daily:[];
+        if(!daily.length)return '<div class="jr-ixc-empty">Sem histórico disponível nos últimos 7 dias.</div>';
+
+        const series=[
+            {key:'user',label:'Requisitado pelo usuário',cls:'user'},
+            {key:'admin',label:'Requisitado pelo Administrador',cls:'admin'},
+            {key:'nas',label:'Requisitado pelo Concentrador',cls:'nas'},
+            {key:'nas_reboot',label:'Reboot de concentrador',cls:'reboot'},
+            {key:'lost',label:'Perda de Conexão',cls:'lost'}
+        ];
+        const max=Math.max(1,...daily.flatMap(d=>series.map(s=>Number(d[s.key]||0))));
+        const x=i=>daily.length===1?50:(i/(daily.length-1))*100;
+        const y=v=>90-(Number(v||0)/max)*72;
+        const grid='<path d="M0 18H100M0 54H100M0 90H100" class="grid"/>';
+        const lines=series.map(s=>{
+            const pts=daily.map((d,i)=>x(i).toFixed(2)+','+y(d[s.key]).toFixed(2)).join(' ');
+            const dots=daily.map((d,i)=>'<circle cx="'+x(i).toFixed(2)+'" cy="'+y(d[s.key]).toFixed(2)+'" r="1.2" class="'+s.cls+'"/>').join('');
+            return '<polyline points="'+pts+'" class="'+s.cls+'"/>'+dots;
+        }).join('');
+        const labels=daily.map(d=>'<span>'+reportDateLabel(d.date)+'</span>').join('');
+        const legend=series.map(s=>'<span><i class="'+s.cls+'"></i>'+s.label+'</span>').join('');
+        return '<div class="jr-ixc-event-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none">'+grid+lines+'</svg><div class="jr-ixc-event-dates">'+labels+'</div></div><div class="jr-ixc-event-legend">'+legend+'</div>';
+    }
+    function renderIxcConsumption(report) {
+        const daily=Array.isArray(report?.last_30_days?.daily)?report.last_30_days.daily:[];
+        if(!daily.length)return '<div class="jr-ixc-empty">Sem consumo disponível nos últimos 30 dias.</div>';
+        const values=daily.map(d=>({
+            date:d.date,
+            down:Number(d.download_bytes||0),
+            up:Number(d.upload_bytes||0)
+        }));
+        const max=Math.max(1,...values.flatMap(v=>[v.down,v.up]));
+        const bars=values.map(v=>{
+            const dh=Math.max(2,(v.down/max)*100);
+            const uh=Math.max(2,(v.up/max)*100);
+            const title=reportDateLabel(v.date)+' • ↓ '+reportBytes(v.down)+' • ↑ '+reportBytes(v.up);
+            return '<div class="jr-ixc-cons-day" title="'+esc(title)+'"><i class="down" style="height:'+dh.toFixed(1)+'%"></i><i class="up" style="height:'+uh.toFixed(1)+'%"></i></div>';
+        }).join('');
+        const total=report?.last_30_days?.total_bytes||0;
+        return '<div class="jr-ixc-consumption"><div class="jr-ixc-cons-total">'+reportBytes(total)+'</div><div class="jr-ixc-cons-bars">'+bars+'</div><div class="jr-ixc-cons-axis"><span>'+reportDateLabel(values[0]?.date)+'</span><span>'+reportDateLabel(values[values.length-1]?.date)+'</span></div></div><div class="jr-ixc-event-legend"><span><i class="download"></i>Download</span><span><i class="upload"></i>Upload</span></div>';
+    }
+    function renderIxcAccessSummary(report) {
+        const login=report?.login||{};
+        const conc=report?.concentrator||{};
+        const session=report?.current_session||{};
+        const connected=fmtDuration(login.connected_seconds??session.seconds??0);
+        const rows=[
+            ['Login',login.username||'N/D','bi-person-check'],
+            ['Conectado a',connected,'bi-clock-history'],
+            ['IPv4',login.ipv4||'N/D','bi-hdd-network'],
+            ['IPv6',login.ipv6||'Sem resultado','bi-diagram-3'],
+            ['Concentrador',conc.name||conc.ip||'N/D','bi-router'],
+            ['Tecnologia',login.technology||'N/D','bi-broadcast'],
+            ['Tipo de autenticação',login.auth_type||'N/D','bi-key'],
+            ['Interface de conexão',login.interface||'N/D','bi-ethernet'],
+            ['MAC',login.mac||'N/D','bi-upc-scan']
+        ];
+        return rows.map(([label,value,icon])=>'<div><span><i class="bi '+icon+'"></i>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>').join('');
+    }
+    async function loadIxcReplicaReport(force=false) {
+        if(!traffic.ixcLoginId || traffic.reportLoading)return;
+        if(!force && traffic.reportLoadedFor===String(traffic.ixcLoginId) && traffic.report)return;
+        traffic.reportLoading=true;
+        try{
+            const r=await fetch('/api/get-ixc-login-report.php?login_id='+encodeURIComponent(traffic.ixcLoginId),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+            const data=await r.json();
+            if(!r.ok||!data?.success)return;
+            traffic.report=data;
+            traffic.reportLoadedFor=String(traffic.ixcLoginId);
+            const summary=document.getElementById('jr-ixc-access-summary');
+            const events=document.getElementById('jr-ixc-events');
+            const consumption=document.getElementById('jr-ixc-consumption');
+            if(summary)summary.innerHTML=renderIxcAccessSummary(data);
+            if(events)events.innerHTML=renderIxcEventHistory(data);
+            if(consumption)consumption.innerHTML=renderIxcConsumption(data);
+        }catch(e){
+            console.warn('[IXC MONITOR] relatório indisponível',e);
+        }finally{traffic.reportLoading=false;}
+    }
+
     function chartHtml(samples) {
-        if(samples.length<1)return '<div class="jr-monitor-wait"><i class="bi bi-activity"></i><span>Aguardando uma nova contabilização da sessão...</span></div>';
-        const plan=monitorPlanMbps();
-        const sampleMax=Math.max(1,...samples.flatMap(s=>[s.down,s.up]));
-        const max=Math.max(sampleMax,plan||0,1);
-        const pts=field=>samples.map((s,i)=>{
-            const x=samples.length===1?0:i/(samples.length-1)*100;
+        const cutoff=Date.now()-(5*60*1000);
+        const recent=samples.filter(s=>Number(s.at)>=cutoff && Number.isFinite(s.down)&&Number.isFinite(s.up));
+        if(recent.length<1)return '<div class="jr-monitor-wait"><i class="bi bi-activity"></i><span>Aguardando dados de tráfego do IXC/concentrador...</span></div>';
+        const max=Math.max(1,...recent.flatMap(s=>[s.down,s.up]));
+        const pts=field=>recent.map((s,i)=>{
+            const x=recent.length===1?0:i/(recent.length-1)*100;
             const y=94-(s[field]/max)*86;
             return x.toFixed(2)+','+Math.max(4,Math.min(94,y)).toFixed(2);
         }).join(' ');
-        const first=new Date(samples[0].at).toLocaleTimeString('pt-BR');
-        const last=new Date(samples[samples.length-1].at).toLocaleTimeString('pt-BR');
-        let planLine='';
-        if(plan){
-            const y=94-(plan/max)*86;
-            planLine='<line x1="0" x2="100" y1="'+Math.max(4,Math.min(94,y)).toFixed(2)+'" y2="'+Math.max(4,Math.min(94,y)).toFixed(2)+'" class="plan"/>';
-        }
+        const area=field=>'0,94 '+pts(field)+' 100,94';
+        const first=new Date(recent[0].at).toLocaleTimeString('pt-BR');
+        const last=new Date(recent[recent.length-1].at).toLocaleTimeString('pt-BR');
         return '<div class="jr-monitor-chart-inner">'+
-          '<div class="jr-monitor-scale"><span>'+max.toFixed(1)+' Mbps</span><span>'+(max/2).toFixed(1)+' Mbps</span><span>0 Mbps</span></div>'+
-          '<div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 50H100M0 94H100" class="grid"/>'+planLine+'<polyline points="'+pts('down')+'" class="down"/><polyline points="'+pts('up')+'" class="up"/></svg><div class="jr-monitor-times"><span>'+first+'</span><span>'+last+'</span></div></div>'+
-          '</div><div class="jr-monitor-chart-legend"><span><i class="down"></i>Download</span><span><i class="up"></i>Upload</span>'+(plan?'<span><i class="plan"></i>Plano '+plan.toLocaleString('pt-BR')+' Mbps</span>':'')+'</div>';
+          '<div class="jr-monitor-scale"><span>'+max.toFixed(0)+' Mbps</span><span>'+(max/2).toFixed(0)+' Mbps</span><span>0 Mbps</span></div>'+
+          '<div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 36H100M0 64H100M0 94H100" class="grid"/><polygon points="'+area('down')+'" class="down-area"/><polygon points="'+area('up')+'" class="up-area"/><polyline points="'+pts('down')+'" class="down"/><polyline points="'+pts('up')+'" class="up"/></svg><div class="jr-monitor-times"><span>'+first+'</span><span>'+last+'</span></div></div>'+
+          '</div><div class="jr-monitor-chart-legend"><span><i class="down"></i>Download</span><span><i class="up"></i>Upload</span><span>Últimos 5 minutos</span></div>';
     }
 
     window.renderMonitoringTab = function(device) {
-        const wan = typeof getPrimaryWAN === 'function' ? getPrimaryWAN(device) : null;
-        return '<div class="jr-monitor-v2">'+
-          '<div class="jr-monitor-head">'+
-            '<div><span class="acs-kicker"><i class="bi bi-graph-up-arrow"></i> MONITORAMENTO · IXC/RADIUS</span><h4>Uso da conexão em tempo real</h4><p>Velocidade calculada somente quando uma nova contabilização da sessão PPPoE é recebida.</p></div>'+
-            '<div class="jr-monitor-head-actions"><span id="jr-radius-status" class="jr-monitor-badge">AGUARDANDO</span><button type="button" class="jr-monitor-refresh" onclick="window.updateRadiusBandwidthSample(true)"><i class="bi bi-arrow-clockwise"></i> Atualizar agora</button></div>'+
+        const wan=typeof getPrimaryWAN==='function'?getPrimaryWAN(device):null;
+        return '<div class="jr-monitor-v3">'+
+          '<div class="jr-ixc-report-card">'+
+            '<div class="jr-ixc-report-title"><strong>Relatório</strong><span id="jr-radius-status" class="jr-monitor-badge">AGUARDANDO</span></div>'+
+            '<div id="jr-ixc-access-summary" class="jr-ixc-access-summary">'+
+              '<div><span><i class="bi bi-person-check"></i>Login</span><strong>'+esc(wan?.username||'N/D')+'</strong></div>'+
+              '<div><span><i class="bi bi-clock-history"></i>Conectado a</span><strong>N/D</strong></div>'+
+              '<div><span><i class="bi bi-hdd-network"></i>IPv4</span><strong>'+esc(wan?.external_ip||'N/D')+'</strong></div>'+
+              '<div><span><i class="bi bi-router"></i>Concentrador</span><strong>N/D</strong></div>'+
+            '</div>'+
+            '<div class="jr-ixc-actions">'+
+              '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateIxcLiveTraffic(true); loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
+              '<button type="button" onclick="document.getElementById(\'wifi-tab\')?.click()"><i class="bi bi-gear"></i> Dados Roteador</button>'+
+            '</div>'+
           '</div>'+
-          '<div class="jr-monitor-kpis">'+
-            '<div class="download"><span><i class="bi bi-arrow-down-circle"></i> Download</span><strong id="live-rx-mbps">--</strong><small>Mbps agora</small></div>'+
-            '<div class="upload"><span><i class="bi bi-arrow-up-circle"></i> Upload</span><strong id="live-tx-mbps">--</strong><small>Mbps agora</small></div>'+
-            '<div><span><i class="bi bi-database-down"></i> Baixado na sessão</span><strong id="live-rx-total">--</strong><small>IXC/RADIUS</small></div>'+
-            '<div><span><i class="bi bi-database-up"></i> Enviado na sessão</span><strong id="live-tx-total">--</strong><small>IXC/RADIUS</small></div>'+
+          '<div class="jr-ixc-section">'+
+            '<div class="jr-ixc-section-title"><strong>Eventos e conexões dos últimos 7 dias</strong><span>IXC/RADIUS</span></div>'+
+            '<div id="jr-ixc-events" class="jr-ixc-events"><div class="jr-ixc-empty">Carregando histórico...</div></div>'+
           '</div>'+
-          '<div class="jr-monitor-insights">'+
-            '<div><span>Plano contratado</span><strong id="jr-monitor-plan">'+esc(monitorPlanLabel())+'</strong><small id="jr-monitor-plan-use">Uso atual: aguardando amostra</small><div class="jr-monitor-plan-track"><i id="jr-monitor-plan-bar"></i></div></div>'+
-            '<div><span>Pico desde abertura</span><strong id="jr-monitor-peak">--</strong><small>Download ↓ / Upload ↑ em Mbps</small></div>'+
-            '<div><span>Média desde abertura</span><strong id="jr-monitor-average">--</strong><small>Download ↓ / Upload ↑ em Mbps</small></div>'+
-            '<div><span>Última contabilização</span><strong id="jr-monitor-accounting-age">Aguardando</strong><small id="jr-monitor-last-accounting-text">N/D</small></div>'+
+          '<div class="jr-ixc-section">'+
+            '<div class="jr-ixc-section-title"><strong>Tráfego em tempo real dos últimos 5 minutos</strong><span id="bandwidth-sample-status">Aguardando dados do concentrador...</span></div>'+
+            '<div class="jr-monitor-live-head"><div><span>Download</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div><div><span>Upload</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div><div><span>Baixado na sessão</span><strong id="live-rx-total">--</strong><small>RADIUS</small></div><div><span>Enviado na sessão</span><strong id="live-tx-total">--</strong><small>RADIUS</small></div></div>'+
+            '<div id="bandwidth-bars" class="jr-monitor-chart"></div>'+
           '</div>'+
-          '<div id="jr-monitor-diagnosis" class="jr-monitor-diagnosis collecting">'+
-            '<div><span>Diagnóstico automático da sessão</span><strong id="jr-monitor-diagnosis-title">Coletando dados</strong><p id="jr-monitor-diagnosis-text">Aguardando contabilizações consecutivas do IXC/RADIUS.</p></div>'+
-            '<div class="jr-monitor-quality"><div><span>Latência</span><strong id="jr-monitor-latency">Não coletada</strong></div><div><span>Perda</span><strong id="jr-monitor-loss">Não coletada</strong></div><div><span>Jitter</span><strong id="jr-monitor-jitter">Não coletado</strong></div></div>'+
+          '<div class="jr-ixc-section">'+
+            '<div class="jr-ixc-section-title"><strong>Consumo dos últimos 30 dias</strong><span>Download + Upload</span></div>'+
+            '<div id="jr-ixc-consumption"><div class="jr-ixc-empty">Carregando consumo...</div></div>'+
           '</div>'+
-          '<div class="jr-monitor-chart-card"><div class="jr-monitor-section-title"><strong>Tráfego da sessão</strong><span id="bandwidth-sample-status">Abra esta aba para iniciar as amostras.</span></div><div id="bandwidth-bars" class="jr-monitor-chart"></div></div>'+
-          '<div class="jr-monitor-report"><div class="jr-monitor-section-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>'+
+          '<div class="jr-monitor-report">'+
+            '<div class="jr-monitor-section-title"><strong>Detalhes da sessão atual</strong><span id="jr-monitor-source">IXC/RADIUS</span></div>'+
             '<div class="jr-monitor-report-grid">'+
-              '<div><span>Usuário PPPoE</span><strong id="jr-radius-user">'+esc(wan?.username || 'N/D')+'</strong></div>'+
-              '<div><span>IP WAN</span><strong id="jr-radius-ip">'+esc(wan?.external_ip || 'N/D')+'</strong></div>'+
-              '<div><span>Interface</span><strong id="jr-radius-interface">'+esc(wan?.name || 'N/D')+'</strong></div>'+
-              '<div><span>Tempo de sessão</span><strong id="jr-radius-uptime">'+esc(wan?.uptime ? fmtDuration(wan.uptime) : 'N/D')+'</strong></div>'+
+              '<div><span>Usuário PPPoE</span><strong id="jr-radius-user">'+esc(wan?.username||'N/D')+'</strong></div>'+
+              '<div><span>IP WAN</span><strong id="jr-radius-ip">'+esc(wan?.external_ip||'N/D')+'</strong></div>'+
+              '<div><span>Interface</span><strong id="jr-radius-interface">'+esc(wan?.name||'N/D')+'</strong></div>'+
+              '<div><span>Tempo de sessão</span><strong id="jr-radius-uptime">'+esc(wan?.uptime?fmtDuration(wan.uptime):'N/D')+'</strong></div>'+
               '<div><span>Plano</span><strong id="jr-radius-plan">'+esc(monitorPlanLabel())+'</strong></div>'+
               '<div><span>BRAS / Concentrador</span><strong id="jr-monitor-bras">N/D</strong></div>'+
-              '<div><span>Fonte</span><strong id="jr-monitor-source">IXC/RADIUS</strong></div>'+
-              '<div><span>Contabilização</span><strong id="jr-monitor-last-accounting">N/D</strong></div>'+
+              '<div><span>Última contabilização</span><strong id="jr-monitor-last-accounting">N/D</strong></div>'+
+              '<div><span>Origem ao vivo</span><strong id="jr-monitor-live-source">Aguardando</strong></div>'+
             '</div>'+
           '</div>'+
         '</div>';
@@ -768,6 +861,7 @@
 
                 const source=document.getElementById('jr-monitor-source');
                 if(source && source.textContent!=='IXC/RADIUS') source.textContent='IXC/RADIUS';
+                setMonitorText('jr-monitor-live-source','RADIUS fallback');
 
                 return;
             }
@@ -783,11 +877,12 @@
             const at=parseRadiusTime(data.live.sample_time) || Date.now();
 
             traffic.samples.push({at,down,up,source:'ixc-live'});
-            if(traffic.samples.length>90) traffic.samples.shift();
+            if(traffic.samples.length>150) traffic.samples.shift();
 
             setMonitorText('live-rx-mbps',fmtMbps(down));
             setMonitorText('live-tx-mbps',fmtMbps(up));
             setMonitorText('jr-monitor-source','IXC / Concentrador ao vivo');
+            setMonitorText('jr-monitor-live-source',data.source||'IXC / Concentrador ao vivo');
 
             const status=document.getElementById('bandwidth-sample-status');
             if(status){
@@ -797,7 +892,6 @@
             const chart=document.getElementById('bandwidth-bars');
             if(chart) chart.innerHTML=chartHtml(traffic.samples);
 
-            updateMonitoringInsights();
         }catch(e){
             traffic.liveAvailable=false;
             traffic.liveReason='request_failed';
@@ -831,6 +925,7 @@
             const s=data.session;
             traffic.online=true; traffic.latestSession=s;
             traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
+            if(traffic.ixcLoginId) loadIxcReplicaReport();
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
             // RADIUS: output = download do assinante; input = upload do assinante.
@@ -882,7 +977,6 @@
 
             const chart=document.getElementById('bandwidth-bars');
             if(chart)chart.innerHTML=chartHtml(traffic.samples);
-            updateMonitoringInsights();
             window.updateIxcLiveTraffic(true);
         }catch(e){
             const status=document.getElementById('bandwidth-sample-status');
@@ -910,7 +1004,7 @@
         }, 2000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.samples=[]; traffic.sessionKey=null;
-            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0;
+            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.report=null; traffic.reportLoadedFor=null;
             window.updateRadiusBandwidthSample(true);
         });
     });
