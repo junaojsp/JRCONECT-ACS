@@ -137,6 +137,28 @@ function trCachePath(string $deviceId, string $downloadPath, string $uploadPath)
         . '.json';
 }
 
+function trRefreshStatePath(string $deviceId): string {
+    return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+        . DIRECTORY_SEPARATOR
+        . 'jrconect_tr069_refresh_'
+        . sha1($deviceId)
+        . '.json';
+}
+
+function trLoadState(string $path): array {
+    if (!is_file($path)) return [];
+    $decoded = json_decode((string)@file_get_contents($path), true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function trSaveState(string $path, array $state): void {
+    @file_put_contents(
+        $path,
+        json_encode($state, JSON_UNESCAPED_SLASHES),
+        LOCK_EX
+    );
+}
+
 function trDelta(float $current, float $previous): ?float {
     if ($current >= $previous) return $current - $previous;
 
@@ -240,12 +262,31 @@ try {
     $device = $first['data'];
     $pair = trSelectPair($device);
     if (!$pair) {
+        $discoverStateFile = trRefreshStatePath($deviceId . '|discover');
+        $discoverState = trLoadState($discoverStateFile);
+        $lastDiscover = (float)($discoverState['at'] ?? 0);
+        $refreshQueued = false;
+
+        if (microtime(true) - $lastDiscover >= 30) {
+            trSaveState($discoverStateFile, ['at'=>microtime(true)]);
+            $diagnosticRefresh = $genieacs->refreshDeviceDiagnostics($deviceId);
+            $refreshQueued = !empty($diagnosticRefresh['success']);
+        }
+
         trOut([
             'success'=>true,
             'available'=>false,
             'reason'=>'traffic_counters_not_found',
-            'message'=>'O CPE não publicou contadores WAN de bytes reconhecidos pelo TR-069.',
+            'message'=>$refreshQueued
+                ? 'Solicitei ao TR-069 os contadores WAN. Aguarde a ONU responder e atualize novamente.'
+                : 'O CPE ainda não publicou contadores WAN de bytes reconhecidos pelo TR-069.',
             'source'=>'TR-069 / GenieACS',
+            'refresh'=>[
+                'requested'=>$refreshQueued,
+                'success'=>false,
+                'queued'=>$refreshQueued,
+                'minimum_interval_seconds'=>10,
+            ],
             'device'=>[
                 'manufacturer'=>$device['_deviceId']['_Manufacturer'] ?? null,
                 'model'=>$device['_deviceId']['_ProductClass'] ?? null,
@@ -253,12 +294,51 @@ try {
         ]);
     }
 
-    // Atualiza apenas os dois contadores selecionados. A requisição ao CPE
-    // acontece somente enquanto a aba Monitoramento está aberta no navegador.
+    // Evita Connection Request agressivo: no máximo uma atualização dos
+    // contadores a cada 10 segundos por CPE.
+    $refreshStateFile = trRefreshStatePath($deviceId);
+    $refreshState = trLoadState($refreshStateFile);
+    $now = microtime(true);
+    $lastRefresh = (float)($refreshState['at'] ?? 0);
+
+    if ($now - $lastRefresh < 10) {
+        trOut([
+            'success'=>true,
+            'available'=>false,
+            'reason'=>'waiting_next_refresh',
+            'message'=>'Aguardando a próxima amostra dos contadores TR-069.',
+            'source'=>'TR-069 / GenieACS',
+            'transport'=>'cwmp',
+            'profile'=>$pair['kind'],
+            'paths'=>[
+                'download'=>$pair['download'],
+                'upload'=>$pair['upload'],
+            ],
+            'refresh'=>[
+                'requested'=>false,
+                'success'=>false,
+                'queued'=>false,
+                'minimum_interval_seconds'=>10,
+                'next_in_seconds'=>max(1, (int)ceil(10 - ($now - $lastRefresh))),
+            ],
+            'device'=>[
+                'manufacturer'=>$device['_deviceId']['_Manufacturer'] ?? null,
+                'model'=>$device['_deviceId']['_ProductClass'] ?? null,
+            ],
+        ]);
+    }
+
+    trSaveState($refreshStateFile, [
+        'at'=>$now,
+        'download'=>$pair['download'],
+        'upload'=>$pair['upload'],
+    ]);
+
+    // Atualiza apenas os dois contadores selecionados.
     $refresh = $genieacs->getParameterValues(
         $deviceId,
         [$pair['download'], $pair['upload']],
-        4500
+        7000
     );
 
     $second = $genieacs->getDevice($deviceId);
@@ -269,7 +349,9 @@ try {
         }
     }
 
-    $refreshSucceeded = !empty($refresh['success']);
+    $refreshAccepted = !empty($refresh['success']);
+    $refreshSucceeded = $refreshAccepted && (int)($refresh['http_code'] ?? 0) === 200;
+    $refreshQueued = $refreshAccepted && !$refreshSucceeded;
     $rate = trCalculate($deviceId, $pair, $refreshSucceeded);
 
     $message = null;
@@ -298,7 +380,9 @@ try {
         'refresh'=>[
             'requested'=>true,
             'success'=>$refreshSucceeded,
+            'queued'=>$refreshQueued,
             'http_code'=>$refresh['http_code'] ?? null,
+            'minimum_interval_seconds'=>10,
         ],
         'counters'=>[
             'download_bytes'=>$pair['download_bytes'],
