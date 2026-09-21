@@ -2886,9 +2886,18 @@ function formatOpticalValue(value, unit, status) {
 
     if (status) {
         const statusText = String(status).trim();
+        const normalizedStatus = statusText
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
 
-        if (statusText.toLowerCase() === 'normal') {
+        if (normalizedStatus === 'normal') {
             statusHtml = ' <span class="badge bg-success ms-2">Normal</span>';
+        } else if (normalizedStatus === 'critico' || normalizedStatus === 'critical') {
+            statusHtml =
+                ' <span class="badge bg-danger ms-2">' +
+                escapeOpticalHtml(statusText) +
+                '</span>';
         } else {
             statusHtml =
                 ' <span class="badge bg-warning text-dark ms-2">' +
