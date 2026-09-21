@@ -857,13 +857,20 @@
 
                 if(data?.reason==='web_session_required'){
                     traffic.liveDisabledUntil=Date.now()+60000;
+                } else if(data?.reason==='collecting_second_sample' || data?.reason==='counter_window_invalid'){
+                    traffic.liveDisabledUntil=Date.now()+1200;
                 } else {
-                    traffic.liveDisabledUntil=Date.now()+15000;
+                    traffic.liveDisabledUntil=Date.now()+5000;
                 }
 
                 const source=document.getElementById('jr-monitor-source');
                 if(source && source.textContent!=='IXC/RADIUS') source.textContent='IXC/RADIUS';
                 setMonitorText('jr-monitor-live-source','RADIUS fallback');
+
+                const status=document.getElementById('bandwidth-sample-status');
+                if(status && data?.message){
+                    status.textContent=data.message;
+                }
 
                 return;
             }
