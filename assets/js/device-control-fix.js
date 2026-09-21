@@ -781,9 +781,11 @@
             const summary=document.getElementById('jr-ixc-access-summary');
             const events=document.getElementById('jr-ixc-events');
             const consumption=document.getElementById('jr-ixc-consumption');
+            const consumptionSource=document.getElementById('jr-ixc-consumption-source');
             if(summary)summary.innerHTML=renderIxcAccessSummary(data);
             if(events)events.innerHTML=renderIxcEventHistory(data);
             if(consumption)consumption.innerHTML=renderIxcConsumption(data);
+            if(consumptionSource)consumptionSource.textContent=data?.last_30_days?.source||'IXC/RADIUS';
         }catch(e){
             console.warn('[IXC MONITOR] relatório indisponível',e);
         }finally{traffic.reportLoading=false;}
@@ -852,7 +854,7 @@
             '<div id="bandwidth-bars" class="jr-monitor-chart"></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
-            '<div class="jr-ixc-section-title"><strong>Consumo dos últimos 30 dias</strong><span>Download + Upload</span></div>'+
+            '<div class="jr-ixc-section-title"><strong>Consumo dos últimos 30 dias</strong><span id="jr-ixc-consumption-source">Carregando fonte...</span></div>'+
             '<div id="jr-ixc-consumption"><div class="jr-ixc-empty">Carregando consumo...</div></div>'+
           '</div>'+
           '<div class="jr-monitor-report">'+
