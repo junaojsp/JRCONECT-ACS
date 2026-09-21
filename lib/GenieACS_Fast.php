@@ -8,6 +8,100 @@ namespace App;
 class GenieACS_Fast {
 
     /**
+     * Huawei ONTs can expose equivalent TR-069 values under vendor-specific
+     * branches. These helpers provide a bounded recursive fallback only when
+     * the normal fast paths did not return a useful value.
+     */
+    private static function scalarValue($value) {
+        if (is_array($value) && array_key_exists('_value', $value)) {
+            return $value['_value'];
+        }
+        return is_scalar($value) ? $value : null;
+    }
+
+    private static function findFirstByKeys($node, array $keys, int $depth = 0) {
+        if (!is_array($node) || $depth > 12) {
+            return null;
+        }
+
+        foreach ($node as $key => $value) {
+            if (in_array(strtolower((string)$key), $keys, true)) {
+                $scalar = self::scalarValue($value);
+                if ($scalar !== null && trim((string)$scalar) !== '') {
+                    return $scalar;
+                }
+            }
+        }
+
+        foreach ($node as $key => $value) {
+            if (strpos((string)$key, '_') === 0 || !is_array($value)) {
+                continue;
+            }
+            $found = self::findFirstByKeys($value, $keys, $depth + 1);
+            if ($found !== null && trim((string)$found) !== '') {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    private static function findPppoeUsername($node, int $depth = 0) {
+        if (!is_array($node) || $depth > 12) {
+            return null;
+        }
+
+        foreach ($node as $key => $value) {
+            if (strcasecmp((string)$key, 'Username') === 0) {
+                $scalar = self::scalarValue($value);
+                if ($scalar !== null) {
+                    $text = trim((string)$scalar);
+                    if ($text !== '' && stripos($text, 'acs') === false) {
+                        return $text;
+                    }
+                }
+            }
+        }
+
+        foreach ($node as $key => $value) {
+            if (strpos((string)$key, '_') === 0 || !is_array($value)) {
+                continue;
+            }
+            $found = self::findPppoeUsername($value, $depth + 1);
+            if ($found !== null) return $found;
+        }
+
+        return null;
+    }
+
+    private static function countHostsRecursive($node, int $depth = 0) {
+        if (!is_array($node) || $depth > 12) return 0;
+
+        $count = 0;
+        foreach ($node as $key => $value) {
+            if (strcasecmp((string)$key, 'Host') === 0 && is_array($value)) {
+                foreach ($value as $hostId => $hostData) {
+                    if (strpos((string)$hostId, '_') === 0 || !is_array($hostData)) continue;
+                    $ip = self::findFirstByKeys($hostData, ['ipaddress'], 0);
+                    $mac = self::findFirstByKeys($hostData, ['macaddress', 'physaddress'], 0);
+                    $active = self::findFirstByKeys($hostData, ['active'], 0);
+                    if (($ip && $mac) || $active === true || $active === 1 || $active === '1') {
+                        $count++;
+                    }
+                }
+            }
+        }
+
+        if ($count > 0) return $count;
+
+        foreach ($node as $key => $value) {
+            if (strpos((string)$key, '_') === 0 || !is_array($value)) continue;
+            $count += self::countHostsRecursive($value, $depth + 1);
+        }
+        return $count;
+    }
+
+    /**
      * Fast device data parser - optimized for performance
      * Uses direct array access instead of complex getParam function
      * Improved version with more complete data extraction
@@ -229,6 +323,79 @@ class GenieACS_Fast {
         }
 
         $data['connected_devices_count'] = $connectedDevices;
+
+        // Huawei EG8145V5 fallback: vendor firmware may publish these fields
+        // outside the standard paths used above.
+        $modelText = strtoupper((string)($data['product_class'] ?? ''));
+        $manufacturerText = strtoupper((string)($data['manufacturer'] ?? ''));
+        $isHuaweiEg8145 = str_contains($modelText, 'EG8145V5') ||
+                          (str_contains($manufacturerText, 'HUAWEI') && str_contains($modelText, 'EG8145'));
+
+        if ($isHuaweiEg8145) {
+            if (($data['wifi_ssid'] ?? 'N/A') === 'N/A' || trim((string)$data['wifi_ssid']) === '') {
+                $value = self::findFirstByKeys($device, ['ssid']);
+                if ($value !== null) $data['wifi_ssid'] = (string)$value;
+            }
+
+            if (($data['pppoe_username'] ?? 'N/A') === 'N/A' || trim((string)$data['pppoe_username']) === '') {
+                $value = self::findPppoeUsername($device);
+                if ($value !== null) $data['pppoe_username'] = (string)$value;
+            }
+
+            if (($data['ip_address'] ?? 'N/A') === 'N/A' || trim((string)$data['ip_address']) === '') {
+                $value = self::findFirstByKeys($device, ['externalipaddress', 'ipaddress']);
+                if ($value !== null && filter_var((string)$value, FILTER_VALIDATE_IP)) {
+                    $data['ip_address'] = (string)$value;
+                }
+            }
+
+            if (($data['mac_address'] ?? 'N/A') === 'N/A' || trim((string)$data['mac_address']) === '') {
+                $value = self::findFirstByKeys($device, ['macaddress', 'bssid']);
+                if ($value !== null) $data['mac_address'] = (string)$value;
+            }
+
+            if (($data['rx_power'] ?? 'N/A') === 'N/A') {
+                $value = self::findFirstByKeys($device, [
+                    'rxpower',
+                    'receivepower',
+                    'opticalrxpower',
+                    'transceiverrxpower'
+                ]);
+                if ($value !== null && is_numeric($value)) {
+                    $number = (float)$value;
+                    if ($number > 100) $number = ($number / 100) - 40;
+                    elseif ($number < -1000) $number = $number / 100;
+                    $data['rx_power'] = number_format($number, 2);
+                }
+            }
+
+            if (($data['temperature'] ?? 'N/A') === 'N/A') {
+                $value = self::findFirstByKeys($device, [
+                    'temperature',
+                    'transceivertemperature',
+                    'optictemperature'
+                ]);
+                if ($value !== null && is_numeric($value)) {
+                    $number = (float)$value;
+                    if ($number > 1000) $number = $number / 256;
+                    $data['temperature'] = number_format($number, 1);
+                }
+            }
+
+            if (($data['connected_devices_count'] ?? 0) === 0) {
+                $data['connected_devices_count'] = self::countHostsRecursive($device);
+            }
+
+            if (($data['hardware_version'] ?? 'N/A') === 'N/A') {
+                $value = self::findFirstByKeys($device, ['hardwareversion']);
+                if ($value !== null) $data['hardware_version'] = (string)$value;
+            }
+
+            if (($data['software_version'] ?? 'N/A') === 'N/A') {
+                $value = self::findFirstByKeys($device, ['softwareversion', 'softwareversionext', 'firmwareversion']);
+                if ($value !== null) $data['software_version'] = (string)$value;
+            }
+        }
 
         // Tags - extract from _tags field (array of tag names)
         $tags = [];
