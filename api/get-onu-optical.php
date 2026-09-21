@@ -626,6 +626,26 @@ function jrOpticalStatus(
         return null;
     }
 
+    return 'Normal';
+}
+
+function jrRxOpticalStatus(?float $value): ?string
+{
+    if ($value === null) {
+        return null;
+    }
+
+    // Política JR CONECT:
+    // > -25 dBm = Normal
+    // -25 até acima de -27 dBm = Atenção
+    // -27 dBm ou pior = Crítico
+    if ($value <= -27.0) {
+        return 'Crítico';
+    }
+
+    if ($value <= -25.0) {
+        return 'Atenção';
+    }
 
     return 'Normal';
 }
@@ -945,7 +965,7 @@ try {
                     'pon' => null,
                     'optical' => [
                         'rx_power' => $profileOptical['rx_power'] ?? null,
-                        'rx_status' => jrOpticalStatus($profileOptical['rx_power'] ?? null),
+                        'rx_status' => jrRxOpticalStatus($profileOptical['rx_power'] ?? null),
                         'tx_power' => $profileOptical['tx_power'] ?? null,
                         'tx_status' => jrOpticalStatus($profileOptical['tx_power'] ?? null),
                         'temperature' => $profileOptical['temperature'] ?? null,
@@ -1271,7 +1291,7 @@ try {
                         $rx,
 
                     'rx_status' =>
-                        jrOpticalStatus($rx),
+                        jrRxOpticalStatus($rx),
 
                     'tx_power' =>
                         $tx,
