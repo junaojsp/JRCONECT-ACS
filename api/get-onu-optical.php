@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\CPEProfiles;
+
 /*
  * =========================================================
  * JR CONECT ACS
@@ -648,6 +650,15 @@ try {
             $device
         );
 
+    // Perfil CPE: permite usar dados ópticos diretamente do TR-069
+    // quando o IXC não possui leitura para este modelo.
+    $profileOptical = CPEProfiles::optical($device);
+    $hasProfileOptical =
+        (($profileOptical['rx_power'] ?? null) !== null) ||
+        (($profileOptical['tx_power'] ?? null) !== null) ||
+        (($profileOptical['temperature'] ?? null) !== null) ||
+        (($profileOptical['voltage'] ?? null) !== null);
+
 
     /* =====================================================
        CONSULTAR IXC
@@ -842,28 +853,47 @@ try {
 
     if (count($records) === 0) {
 
+        if ($hasProfileOptical) {
+            jrOpticalJson(
+                [
+                    'success' => true,
+                    'source' => 'TR-069 / Perfil CPE',
+                    'device_id' => $deviceId,
+                    'serial' => $serial,
+                    'manufacturer' => $manufacturer,
+                    'profile' => $profileOptical['profile'] ?? null,
+                    'ixc_id' => null,
+                    'nome' => null,
+                    'id_login' => null,
+                    'id_contrato' => null,
+                    'pon_id' => null,
+                    'onu_number' => null,
+                    'slot' => null,
+                    'pon' => null,
+                    'optical' => [
+                        'rx_power' => $profileOptical['rx_power'] ?? null,
+                        'rx_status' => jrOpticalStatus($profileOptical['rx_power'] ?? null),
+                        'tx_power' => $profileOptical['tx_power'] ?? null,
+                        'tx_status' => jrOpticalStatus($profileOptical['tx_power'] ?? null),
+                        'temperature' => $profileOptical['temperature'] ?? null,
+                        'temperature_status' => jrOpticalStatus($profileOptical['temperature'] ?? null),
+                        'voltage' => $profileOptical['voltage'] ?? null,
+                        'voltage_status' => jrOpticalStatus($profileOptical['voltage'] ?? null),
+                        'last_update' => null,
+                    ],
+                ]
+            );
+        }
+
         jrOpticalJson(
             [
-                'success' =>
-                    false,
-
-                'source' =>
-                    'IXC',
-
-                'stage' =>
-                    'search',
-
-                'device_id' =>
-                    $deviceId,
-
-                'serial' =>
-                    $serial,
-
-                'manufacturer' =>
-                    $manufacturer,
-
-                'message' =>
-                    'ONU não encontrada no Cliente Fibra do IXC.'
+                'success' => false,
+                'source' => 'IXC',
+                'stage' => 'search',
+                'device_id' => $deviceId,
+                'serial' => $serial,
+                'manufacturer' => $manufacturer,
+                'message' => 'ONU não encontrada no Cliente Fibra do IXC e sem leitura óptica no perfil CPE.'
             ],
             404
         );
@@ -980,6 +1010,12 @@ try {
             ?? null
         );
 
+    // Completa campos ausentes do IXC com o perfil TR-069 do equipamento.
+    if ($rx === null) $rx = $profileOptical['rx_power'] ?? null;
+    if ($tx === null) $tx = $profileOptical['tx_power'] ?? null;
+    if ($temperature === null) $temperature = $profileOptical['temperature'] ?? null;
+    if ($voltage === null) $voltage = $profileOptical['voltage'] ?? null;
+
 
     /* =====================================================
        PON
@@ -1020,7 +1056,7 @@ try {
                 true,
 
             'source' =>
-                'IXC',
+                ($hasProfileOptical ? 'IXC + TR-069 / Perfil CPE' : 'IXC'),
 
             'device_id' =>
                 $deviceId,
