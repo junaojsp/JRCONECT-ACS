@@ -2274,7 +2274,7 @@ async function loadRecentDevices() {
 
 
                         if (
-                            rxPower > -20
+                            rxPower > -25
                         ) {
 
 
@@ -2283,7 +2283,7 @@ async function loadRecentDevices() {
 
 
                         } else if (
-                            rxPower >= -23
+                            rxPower > -27
                         ) {
 
 
@@ -2776,7 +2776,7 @@ async function loadFinalDiscoveryData() {
         devices.forEach(d => {
             const rx = getRx(d?.ixc?.rx_power);
             if (rx === null) noSignal++;
-            else if (rx <= -28) critical++;
+            else if (rx <= -27) critical++;
         });
 
         const ixcDashboardStats = deriveIxcDashboardStats(devices, {
@@ -2851,7 +2851,7 @@ function renderFinalAlerts(devices, generatedAt) {
     devices.forEach(d => {
         const serial = d?.serial || 'ONU';
         const rx = rxNum(d?.ixc?.rx_power);
-        if (rx !== null && rx <= -28) alerts.push({cls:'critical', text:'Sinal crítico detectado - '+serial});
+        if (rx !== null && rx <= -27) alerts.push({cls:'critical', text:'Sinal crítico detectado - '+serial});
         if (d?.status === 'TR069_STALE') alerts.push({cls:'offline', text:'Sem comunicação recente - '+serial});
         if (rx === null) alerts.push({cls:'', text:'Sem leitura óptica - '+serial});
     });
@@ -2906,7 +2906,7 @@ function deriveIxcDashboardStats(devices, summary) {
     devices.forEach(d => {
         const rx = getRx(d?.ixc?.rx_power);
         if (rx === null) noSignal++;
-        else if (rx <= -28) critical++;
+        else if (rx <= -27) critical++;
 
         const lastSignal = d?.ixc?.signal_updated_at ? new Date(d.ixc.signal_updated_at).getTime() : null;
         const hasRecentSignal = Number.isFinite(lastSignal) && (now - lastSignal) <= 24 * 60 * 60 * 1000;
@@ -2993,7 +2993,7 @@ function renderReferenceDashboard(devices, summary) {
         if (rx === null) {
             noSignal++;
             if (alerts.length < 5) alerts.push({cls:'', text:'Sem leitura óptica - ' + (d?.serial || 'ONU')});
-        } else if (rx <= -28) {
+        } else if (rx <= -27) {
             critical++;
             if (alerts.length < 5) alerts.push({cls:'critical', text:'Sinal crítico - ' + (d?.serial || 'ONU')});
         }
