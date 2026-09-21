@@ -605,12 +605,15 @@ include __DIR__ . '/views/layouts/header.php';
                 <div class="card mt-3">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <span><i class="bi bi-router"></i> Perfis de Equipamentos / CPE</span>
-                        <span class="badge bg-info"><?php echo count($cpeProfiles); ?> perfis</span>
+                        <span>
+                            <span class="badge bg-success me-1">Auto-discovery ativo</span>
+                            <span class="badge bg-info"><?php echo count($cpeProfiles); ?> perfis fixos</span>
+                        </span>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            O painel identifica fabricante/modelo automaticamente e usa o perfil para localizar Wi-Fi, PPPoE e dados ópticos no TR-069.
+                            O painel usa primeiro os perfis conhecidos e, quando o modelo é novo ou possui caminhos diferentes, executa descoberta automática somente-leitura na árvore TR-069 para localizar Wi-Fi, PPPoE e dados ópticos.
                         </div>
 
                         <div class="table-responsive">
@@ -656,7 +659,7 @@ include __DIR__ . '/views/layouts/header.php';
 
                         <div class="alert alert-secondary mb-0">
                             <i class="bi bi-diagram-3"></i>
-                            Perfis iniciais: Huawei EG8145V5, Huawei HG8145V5, FiberHome HG6143D3 e Nokia G-240W-A. Novos modelos podem ser adicionados centralmente sem alterar as telas.
+                            Perfis fixos: Huawei EG8145V5, Huawei HG8145V5, FiberHome HG6143D3 e Nokia G-240W-A. Modelos novos também podem funcionar automaticamente pelo mecanismo de discovery; perfis fixos continuam disponíveis para ajustes específicos de fabricante/firmware.
                         </div>
                     </div>
                 </div>
