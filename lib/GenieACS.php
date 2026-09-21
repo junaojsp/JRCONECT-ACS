@@ -178,7 +178,7 @@ class GenieACS {
      */
     public function addRefreshTask($deviceId, $parameterPath) {
         $encodedId = rawurlencode($deviceId);
-        $endpoint = "/devices/{$encodedId}/tasks?timeout=3000&connection_request";
+        $endpoint = "/devices/{$encodedId}/tasks?connection_request";
 
         $data = [
             'name' => 'refreshObject',
@@ -226,7 +226,7 @@ class GenieACS {
         $encodedId = rawurlencode($deviceId);
 
         // Connection request + Refresh VirtualParameters object
-        $endpoint = "/devices/{$encodedId}/tasks?timeout=3000&connection_request";
+        $endpoint = "/devices/{$encodedId}/tasks?connection_request";
 
         // Refresh all VirtualParameters - this triggers evaluation of superAdmin/superPassword
         $data = [
@@ -235,6 +235,28 @@ class GenieACS {
         ];
 
         return $this->request($endpoint, 'POST', $data);
+    }
+
+    /** Queue refreshes for the TR-098 and TR-181 objects used in device details. */
+    public function refreshDeviceDiagnostics($deviceId) {
+        $paths = [
+            'InternetGatewayDevice.WANDevice',
+            'InternetGatewayDevice.LANDevice',
+            // Explicit WAN subtree required by FiberHome HG6143D3 to refresh
+            // PPP connection statistics used by the bandwidth monitor.
+            'InternetGatewayDevice.WANDevice.1.WANConnectionDevice',
+            'Device.PPP',
+            'Device.IP',
+            'Device.Ethernet',
+        ];
+        $results = [];
+        foreach ($paths as $path) {
+            $results[] = $this->addRefreshTask($deviceId, $path);
+        }
+        return [
+            'success' => (bool)array_filter($results, fn($result) => !empty($result['success'])),
+            'results' => $results,
+        ];
     }
 
     /**
@@ -717,6 +739,18 @@ class GenieACS {
                     $name = $serviceList ? "WAN_{$serviceList}_{$i}" : "WAN_PPP_Connection_{$i}";
                 }
 
+                // HG6143D3 reports live byte/packet totals in the WAN common
+                // interface, not under WANPPPConnection.Stats.
+                $commonBase = 'InternetGatewayDevice.WANDevice.1.WANCommonInterfaceConfig';
+                $bytesReceived = $getParam("{$basePath}.Stats.BytesReceived");
+                $bytesSent = $getParam("{$basePath}.Stats.BytesSent");
+                $packetsReceived = $getParam("{$basePath}.Stats.PacketsReceived");
+                $packetsSent = $getParam("{$basePath}.Stats.PacketsSent");
+                if (!is_numeric($bytesReceived) || (float)$bytesReceived <= 0) $bytesReceived = $getParam("{$commonBase}.TotalBytesReceived");
+                if (!is_numeric($bytesSent) || (float)$bytesSent <= 0) $bytesSent = $getParam("{$commonBase}.TotalBytesSent");
+                if (!is_numeric($packetsReceived) || (float)$packetsReceived <= 0) $packetsReceived = $getParam("{$commonBase}.TotalPacketsReceived");
+                if (!is_numeric($packetsSent) || (float)$packetsSent <= 0) $packetsSent = $getParam("{$commonBase}.TotalPacketsSent");
+
                 $wanDetails[] = [
                     'type' => 'PPPoE',
                     'name' => $name,
@@ -731,9 +765,48 @@ class GenieACS {
                     'uptime' => $getParam("{$basePath}.Uptime") ?? 'N/A',
                     'last_error' => $getParam("{$basePath}.LastConnectionError") ?? 'N/A',
                     'mru_size' => $getParam("{$basePath}.MaxMRUSize") ?? 'N/A',
+                    'bytes_received' => $bytesReceived,
+                    'bytes_sent' => $bytesSent,
+                    'packets_received' => $packetsReceived,
+                    'packets_sent' => $packetsSent,
+                    'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived") ?? 0,
+                    'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent") ?? 0,
                     'binding' => $bindingInfo,
                 ];
             }
+        }
+
+        // TR-181 WAN: used by Nokia and newer FiberHome firmware.
+        for ($i = 1; $i <= 16; $i++) {
+            $basePath = "Device.PPP.Interface.{$i}";
+            $status = $getParam("{$basePath}.Status");
+            $enable = $getParam("{$basePath}.Enable");
+            $name = $getParam("{$basePath}.Name") ?? $getParam("{$basePath}.Alias");
+            $username = $getParam("{$basePath}.Username");
+            $bytesReceived = $getParam("{$basePath}.Stats.BytesReceived");
+            $bytesSent = $getParam("{$basePath}.Stats.BytesSent");
+            if ($status === null && $enable === null && $name === null && $username === null && $bytesReceived === null && $bytesSent === null) continue;
+
+            $wanDetails[] = [
+                'type' => 'PPPoE',
+                'name' => $name ?: "PPP{$i}",
+                'status' => $status ?? ($enable ? 'Up' : 'Unknown'),
+                'connection_type' => 'PPPoE',
+                'external_ip' => $getParam("{$basePath}.IPCP.LocalIPAddress") ?? 'N/A',
+                'gateway' => $getParam("{$basePath}.IPCP.RemoteIPAddress") ?? 'N/A',
+                'subnet_mask' => 'N/A', 'dns_servers' => 'N/A', 'mac_address' => 'N/A',
+                'username' => $username ?? 'N/A',
+                'uptime' => $getParam("{$basePath}.Uptime") ?? 'N/A',
+                'last_error' => $getParam("{$basePath}.LastConnectionError") ?? 'N/A',
+                'mru_size' => $getParam("{$basePath}.MaxMRUSize") ?? 'N/A',
+                'bytes_received' => $bytesReceived,
+                'bytes_sent' => $bytesSent,
+                'packets_received' => $getParam("{$basePath}.Stats.PacketsReceived"),
+                'packets_sent' => $getParam("{$basePath}.Stats.PacketsSent"),
+                'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived"),
+                'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent"),
+                'binding' => $getParam("{$basePath}.LowerLayers") ?? 'N/A',
+            ];
         }
 
         // Try WANIPConnection (for DHCP/Static IP)
@@ -816,6 +889,12 @@ class GenieACS {
                     'username' => 'N/A', // IP connections don't have username
                     'last_error' => 'N/A', // IP connections don't have last error
                     'mru_size' => 'N/A', // IP connections don't have MRU size
+                    'bytes_received' => $getParam("{$basePath}.Stats.BytesReceived") ?? 0,
+                    'bytes_sent' => $getParam("{$basePath}.Stats.BytesSent") ?? 0,
+                    'packets_received' => $getParam("{$basePath}.Stats.PacketsReceived") ?? 0,
+                    'packets_sent' => $getParam("{$basePath}.Stats.PacketsSent") ?? 0,
+                    'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived") ?? 0,
+                    'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent") ?? 0,
                 ];
             }
         }
@@ -976,6 +1055,72 @@ class GenieACS {
 
         $data['connected_devices'] = $connectedDevices;
         $data['connected_devices_count'] = count($connectedDevices);
+
+        // Physical LAN Ethernet ports
+        // TR-098: InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceConfig.{i}
+        $lanPorts = [];
+        $lanPortCount = (int)($getParam('InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceNumberOfEntries') ?? 0);
+        $maxLanPorts = $lanPortCount > 0 ? min($lanPortCount, 8) : 8;
+
+        for ($i = 1; $i <= $maxLanPorts; $i++) {
+            $lanBase = "InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceConfig.{$i}";
+            $status = $getParam("{$lanBase}.Status");
+            $enable = $getParam("{$lanBase}.Enable");
+            $maxBitRate = $getParam("{$lanBase}.MaxBitRate");
+            $duplexMode = $getParam("{$lanBase}.DuplexMode");
+
+            // Ignore non-existent instances. A port is considered present when
+            // at least one commonly exposed parameter was collected by GenieACS.
+            if ($status === null && $enable === null && $maxBitRate === null && $duplexMode === null) {
+                continue;
+            }
+
+            $statsBase = "{$lanBase}.Stats";
+
+            $lanPorts[] = [
+                'port' => $i,
+                'name' => "LAN{$i}",
+                'enabled' => $enable,
+                'status' => $status ?? 'Unknown',
+                'max_bit_rate' => $maxBitRate ?? 'N/A',
+                'duplex_mode' => $duplexMode ?? 'N/A',
+                'bytes_received' => $getParam("{$statsBase}.BytesReceived") ?? 0,
+                'bytes_sent' => $getParam("{$statsBase}.BytesSent") ?? 0,
+                'packets_received' => $getParam("{$statsBase}.PacketsReceived") ?? 0,
+                'packets_sent' => $getParam("{$statsBase}.PacketsSent") ?? 0,
+                'errors_received' => $getParam("{$statsBase}.ErrorsReceived") ?? 0,
+                'errors_sent' => $getParam("{$statsBase}.ErrorsSent") ?? 0,
+            ];
+        }
+
+        // TR-181 physical LAN ports, used by Nokia and some FiberHome RP firmware.
+        if (empty($lanPorts)) {
+            for ($i = 1; $i <= 16; $i++) {
+                $lanBase = "Device.Ethernet.Interface.{$i}";
+                $status = $getParam("{$lanBase}.Status");
+                $enable = $getParam("{$lanBase}.Enable");
+                $name = $getParam("{$lanBase}.Name") ?? $getParam("{$lanBase}.Alias");
+                $maxBitRate = $getParam("{$lanBase}.MaxBitRate");
+                $duplexMode = $getParam("{$lanBase}.DuplexMode");
+                if ($status === null && $enable === null && $name === null && $maxBitRate === null && $duplexMode === null) continue;
+                if ($name && preg_match('/^(br|bridge|lo|cpu|veip)/i', $name)) continue;
+
+                $statsBase = "{$lanBase}.Stats";
+                $lanPorts[] = [
+                    'port' => $i, 'name' => $name ?: "LAN{$i}", 'enabled' => $enable,
+                    'status' => $status ?? 'Unknown', 'max_bit_rate' => $maxBitRate ?? 'N/A',
+                    'duplex_mode' => $duplexMode ?? 'N/A',
+                    'bytes_received' => $getParam("{$statsBase}.BytesReceived"),
+                    'bytes_sent' => $getParam("{$statsBase}.BytesSent"),
+                    'packets_received' => $getParam("{$statsBase}.PacketsReceived"),
+                    'packets_sent' => $getParam("{$statsBase}.PacketsSent"),
+                    'errors_received' => $getParam("{$statsBase}.ErrorsReceived"),
+                    'errors_sent' => $getParam("{$statsBase}.ErrorsSent"),
+                ];
+            }
+        }
+
+        $data['lan_ports'] = $lanPorts;
 
         // DHCP Server Configuration
         $dhcpServer = [];
