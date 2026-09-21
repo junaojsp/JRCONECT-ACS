@@ -605,6 +605,27 @@
         const n=Number(value);
         return Number.isFinite(n)?n.toFixed(n>=100?1:2):'--';
     }
+    function fmtLiveRate(valueMbps) {
+        const n=Number(valueMbps);
+        if(!Number.isFinite(n) || n < 0) return {value:'--',unit:'Mbps'};
+        if(n >= 1) return {
+            value:n.toFixed(n>=100?1:n>=10?2:3),
+            unit:'Mbps'
+        };
+        if(n >= 0.001) return {
+            value:(n*1000).toFixed(n*1000>=100?0:n*1000>=10?1:2),
+            unit:'Kbps'
+        };
+        return {
+            value:(n*1000000).toFixed(n*1000000>=100?0:n*1000000>=10?1:2),
+            unit:'bps'
+        };
+    }
+    function setLiveRate(prefix, valueMbps) {
+        const formatted=fmtLiveRate(valueMbps);
+        setMonitorText(prefix+'-mbps',formatted.value);
+        setMonitorText(prefix+'-unit',formatted.unit);
+    }
     function fmtAccountingAge(ms) {
         if(!Number.isFinite(ms)||ms<0)return 'N/D';
         const seconds=Math.floor(ms/1000);
@@ -774,17 +795,33 @@
         const cutoff=Date.now()-(5*60*1000);
         const recent=samples.filter(s=>Number(s.at)>=cutoff && Number.isFinite(s.down)&&Number.isFinite(s.up));
         if(recent.length<1)return '<div class="jr-monitor-wait"><i class="bi bi-activity"></i><span>Aguardando dados de tráfego do IXC/concentrador...</span></div>';
-        const max=Math.max(1,...recent.flatMap(s=>[s.down,s.up]));
+
+        const rawMax=Math.max(0.000001,...recent.flatMap(s=>[s.down,s.up]));
+        let factor=1,unit='Mbps';
+        if(rawMax<0.001){factor=1000000;unit='bps';}
+        else if(rawMax<1){factor=1000;unit='Kbps';}
+
+        const displayMax=Math.max(1,rawMax*factor);
         const pts=field=>recent.map((s,i)=>{
             const x=recent.length===1?0:i/(recent.length-1)*100;
-            const y=94-(s[field]/max)*86;
+            const y=94-((s[field]*factor)/displayMax)*86;
             return x.toFixed(2)+','+Math.max(4,Math.min(94,y)).toFixed(2);
         }).join(' ');
+
         const area=field=>'0,94 '+pts(field)+' 100,94';
         const first=new Date(recent[0].at).toLocaleTimeString('pt-BR');
         const last=new Date(recent[recent.length-1].at).toLocaleTimeString('pt-BR');
+
+        const topLabel=displayMax>=100
+            ? displayMax.toFixed(0)
+            : displayMax>=10
+                ? displayMax.toFixed(1)
+                : displayMax.toFixed(2);
+        const mid=displayMax/2;
+        const midLabel=mid>=100?mid.toFixed(0):mid>=10?mid.toFixed(1):mid.toFixed(2);
+
         return '<div class="jr-monitor-chart-inner">'+
-          '<div class="jr-monitor-scale"><span>'+max.toFixed(0)+' Mbps</span><span>'+(max/2).toFixed(0)+' Mbps</span><span>0 Mbps</span></div>'+
+          '<div class="jr-monitor-scale"><span>'+topLabel+' '+unit+'</span><span>'+midLabel+' '+unit+'</span><span>0 '+unit+'</span></div>'+
           '<div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 36H100M0 64H100M0 94H100" class="grid"/><polygon points="'+area('down')+'" class="down-area"/><polygon points="'+area('up')+'" class="up-area"/><polyline points="'+pts('down')+'" class="down"/><polyline points="'+pts('up')+'" class="up"/></svg><div class="jr-monitor-times"><span>'+first+'</span><span>'+last+'</span></div></div>'+
           '</div><div class="jr-monitor-chart-legend"><span><i class="down"></i>Download</span><span><i class="up"></i>Upload</span><span>Últimos 5 minutos</span></div>';
     }
@@ -811,7 +848,7 @@
           '</div>'+
           '<div class="jr-ixc-section">'+
             '<div class="jr-ixc-section-title"><strong>Tráfego em tempo real dos últimos 5 minutos</strong><span id="bandwidth-sample-status">Aguardando dados do concentrador...</span></div>'+
-            '<div class="jr-monitor-live-head"><div><span>Download</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div><div><span>Upload</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div><div><span>Baixado na sessão</span><strong id="live-rx-total">--</strong><small>RADIUS</small></div><div><span>Enviado na sessão</span><strong id="live-tx-total">--</strong><small>RADIUS</small></div></div>'+
+            '<div class="jr-monitor-live-head"><div><span>Download</span><strong id="live-rx-mbps">--</strong><small id="live-rx-unit">Mbps</small></div><div><span>Upload</span><strong id="live-tx-mbps">--</strong><small id="live-tx-unit">Mbps</small></div><div><span>Baixado na sessão</span><strong id="live-rx-total">--</strong><small>RADIUS</small></div><div><span>Enviado na sessão</span><strong id="live-tx-total">--</strong><small>RADIUS</small></div></div>'+
             '<div id="bandwidth-bars" class="jr-monitor-chart"></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
@@ -888,8 +925,8 @@
             traffic.samples.push({at,down,up,source:'ixc-live'});
             if(traffic.samples.length>150) traffic.samples.shift();
 
-            setMonitorText('live-rx-mbps',fmtMbps(down));
-            setMonitorText('live-tx-mbps',fmtMbps(up));
+            setLiveRate('live-rx',down);
+            setLiveRate('live-tx',up);
             setMonitorText('jr-monitor-source','IXC / Concentrador ao vivo');
             setMonitorText('jr-monitor-live-source',data.source||'IXC / Concentrador ao vivo');
 
@@ -928,6 +965,8 @@
                 if(badge){badge.textContent='SEM SESSÃO';badge.classList.remove('online');}
                 setMonitorText('live-rx-mbps','--');
                 setMonitorText('live-tx-mbps','--');
+                setMonitorText('live-rx-unit','Mbps');
+                setMonitorText('live-tx-unit','Mbps');
                 setMonitorText('live-rx-total','--');
                 setMonitorText('live-tx-total','--');
                 if(status)status.textContent=data?.message||'Nenhuma sessão PPPoE ativa.';
@@ -972,8 +1011,8 @@
                         if(!traffic.liveAvailable){
                             traffic.samples.push({at:accountAt,down:downMbps,up:upMbps,source:'radius'});
                             if(traffic.samples.length>60)traffic.samples.shift();
-                            setMonitorText('live-rx-mbps',fmtMbps(downMbps));
-                            setMonitorText('live-tx-mbps',fmtMbps(upMbps));
+                            setLiveRate('live-rx',downMbps);
+                            setLiveRate('live-tx',upMbps);
                             if(status)status.textContent='Fallback RADIUS • nova contabilização às '+new Date(accountAt).toLocaleTimeString('pt-BR')+' • intervalo '+dt+'s';
                             newSample=true;
                         }
