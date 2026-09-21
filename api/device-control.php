@@ -310,9 +310,26 @@ function dcRun(): never {
     $r=$g->getDevice($deviceId);
     if(empty($r['success'])||!is_array($r['data']??null)) dcFail('Não foi possível consultar o equipamento.',502);
     $nodes=dcFlatten($r['data']); $wifi=dcWifi($nodes);
-    if($action==='wifi_diagnostics') dcReply(['success'=>true,'diagnostic'=>dcWifiDiagnostic($nodes,$wifi)]);
+    if($action==='wifi_diagnostics') dcReply([
+        'success'=>true,
+        'source'=>'TR-069 / GenieACS',
+        'source_policy'=>['wifi_read'=>'TR-069 / GenieACS','wifi_write'=>'TR-069 / GenieACS'],
+        'diagnostic'=>dcWifiDiagnostic($nodes,$wifi)
+    ]);
     $accounts=$permissions['admin']?dcAccounts($nodes):[];
-    if($action==='read') dcReply(['success'=>true,'csrf'=>$token,'permissions'=>$permissions,'wifi'=>dcPublic($wifi),'accounts'=>dcPublic($accounts)]);
+    if($action==='read') dcReply([
+        'success'=>true,
+        'source'=>'TR-069 / GenieACS',
+        'source_policy'=>[
+            'wifi_read'=>'TR-069 / GenieACS',
+            'wifi_write'=>'TR-069 / GenieACS',
+            'equipment_accounts'=>'TR-069 / GenieACS'
+        ],
+        'csrf'=>$token,
+        'permissions'=>$permissions,
+        'wifi'=>dcPublic($wifi),
+        'accounts'=>dcPublic($accounts)
+    ]);
     $id=$body[$kind==='wifi'?'interface_id':'account_id']??null;
     $row=$id!==null?dcSelect($kind==='wifi'?$wifi:$accounts,dcString($body,$kind==='wifi'?'interface_id':'account_id')):null;
     if($action==='refresh') {
@@ -349,7 +366,12 @@ function dcRun(): never {
     $task=$g->setParameterValues($deviceId,$params,5000);
     if(empty($task['success'])) dcFail('Envio não confirmado. Confira a leitura antes de repetir a alteração.',502);
     $queued=($task['http_code']??0)!==200;
-    dcReply(['success'=>true,'queued'=>$queued,'message'=>$queued?'Alteração enfileirada, ainda não aplicada.':'Comando executado. Atualize a leitura para conferir.']);
+    dcReply([
+        'success'=>true,
+        'source'=>'TR-069 / GenieACS',
+        'queued'=>$queued,
+        'message'=>$queued?'Alteração enfileirada, ainda não aplicada.':'Comando executado. Atualize a leitura para conferir.'
+    ]);
 }
 
 try {
