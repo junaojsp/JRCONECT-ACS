@@ -158,7 +158,7 @@ if (aiForm) {
 
         if (result && result.success) {
             showToast(result.message, 'success');
-            setTimeout(() => { window.location.href = '/configuration.php#concentrators-config'; }, 1200);
+            setTimeout(() => location.reload(), 1200);
         } else {
             showToast(result?.message || 'Falha ao conectar com a IA', 'danger');
         }
