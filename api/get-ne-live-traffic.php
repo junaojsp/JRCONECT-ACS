@@ -138,6 +138,29 @@ function neCleanTerminalOutput(string $output): string
     return str_replace("\\0", '', is_string($clean) ? $clean : $output);
 }
 
+function neDiagnosticPreview(string $output): string
+{
+    $clean = neCleanTerminalOutput($output);
+    $clean = preg_replace('/[\t ]+/', ' ', $clean) ?? $clean;
+    $clean = preg_replace('/\r?\n\s*\r?\n+/', "\n", $clean) ?? $clean;
+    $clean = trim($clean);
+
+    // Remove eco do comando e o prompt final para deixar apenas o retorno útil.
+    $lines = preg_split('/\r\n|\r|\n/', $clean) ?: [];
+    $useful = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') continue;
+        if (preg_match('/^(?:<[^<>]+>|\[[^\[\]]+\])$/', $line)) continue;
+        if (preg_match('/^(?:display|screen-length)\s+/i', $line)) continue;
+        $useful[] = $line;
+        if (count($useful) >= 8) break;
+    }
+
+    $preview = implode(' | ', $useful);
+    return mb_substr($preview, 0, 700);
+}
+
 function nePrepareInteractiveShell(SSH2 $ssh): void
 {
     // Alguns NE8000 aceitam autenticação SSH mas fecham CHANNEL_EXEC.
@@ -150,7 +173,7 @@ function nePrepareInteractiveShell(SSH2 $ssh): void
 function neRunReadOnly(SSH2 $ssh, string $command): string
 {
     if (!preg_match(
-        '/^(?:screen-length 0 temporary|display access-user (?:ip-address [0-9.]+(?: detail)?|username [A-Za-z0-9_.@:-]+(?: detail)?|user-id \\d+))$/',
+        '/^(?:screen-length 0 temporary|display (?:aaa )?access-user (?:ip-address [0-9.]+(?: detail)?|username [A-Za-z0-9_.@:-]+(?: detail)?|user-id \\d+))$/',
         $command
     )) {
         throw new RuntimeException('Comando de leitura não autorizado pelo monitoramento.');
@@ -191,122 +214,106 @@ function neReadSession(SSH2 $ssh, string $ip, ?string $username): array
         return $base;
     };
 
-    // 1) Consulta detalhada diretamente pelo IPv4.
-    // Em Huawei VRP, esta forma pode retornar User ID + contadores no mesmo bloco.
-    if ($ip !== '') {
-        $detailByIpOutput = neRunReadOnly(
-            $ssh,
-            'display access-user ip-address ' . $ip . ' detail'
-        );
-        $detailByIp = neParseSession($detailByIpOutput);
-        $detailByIp['user_id'] = $detailByIp['user_id']
-            ?? neExtractUserIdForIp($detailByIpOutput, $ip);
-        $best = $merge($best, $detailByIp);
-
+    $recordAttempt = static function(
+        array &$attempts,
+        string $commandName,
+        string $output,
+        array $parsed
+    ): void {
         $attempts[] = [
-            'command' => 'ip-detail',
-            'user_id_found' => $detailByIp['user_id'] !== null,
-            'counters_found' => neHasCounters($detailByIp),
+            'command' => $commandName,
+            'user_id_found' => ($parsed['user_id'] ?? null) !== null,
+            'counters_found' => neHasCounters($parsed),
+            'preview' => neDiagnosticPreview($output),
         ];
+    };
 
-        if (neHasCounters($detailByIp)) {
-            return [$best, $attempts];
-        }
+    $tryUserIdDetail = static function(
+        SSH2 $ssh,
+        int $userId,
+        array &$best,
+        array &$attempts,
+        callable $merge,
+        string $label = 'user-id-detail'
+    ): bool {
+        $output = neRunReadOnly(
+            $ssh,
+            'display access-user user-id ' . $userId
+        );
+        $parsed = neParseSession($output);
+        $parsed['user_id'] = $parsed['user_id'] ?? $userId;
+        $best = $merge($best, $parsed);
+        $attempts[] = [
+            'command' => $label,
+            'user_id_found' => true,
+            'counters_found' => neHasCounters($parsed),
+            'preview' => neDiagnosticPreview($output),
+        ];
+        return neHasCounters($best);
+    };
 
-        // 2) Se a versão do VRP não detalhar por IP, usa a tabela resumida.
-        if ($detailByIp['user_id'] === null) {
-            $summaryOutput = neRunReadOnly(
-                $ssh,
-                'display access-user ip-address ' . $ip
-            );
-            $summary = neParseSession($summaryOutput);
-            $summary['user_id'] = $summary['user_id']
-                ?? neExtractUserIdForIp($summaryOutput, $ip);
-            $best = $merge($best, $summary);
-
-            $attempts[] = [
-                'command' => 'ip-summary',
-                'user_id_found' => $summary['user_id'] !== null,
-                'counters_found' => neHasCounters($summary),
-            ];
-        }
-
-        // 3) Com UserID em mãos, consulta a visão detalhada canônica.
-        if (($best['user_id'] ?? null) !== null) {
-            $userId = (int)$best['user_id'];
-            $userDetailOutput = neRunReadOnly(
-                $ssh,
-                'display access-user user-id ' . $userId
-            );
-            $userDetail = neParseSession($userDetailOutput);
-            $userDetail['user_id'] = $userDetail['user_id'] ?? $userId;
-            $best = $merge($best, $userDetail);
-
-            $attempts[] = [
-                'command' => 'user-id-detail',
-                'user_id_found' => true,
-                'counters_found' => neHasCounters($userDetail),
-            ];
+    if ($ip !== '') {
+        foreach ([
+            ['command' => 'display access-user ip-address ' . $ip . ' detail', 'label' => 'ip-detail'],
+            ['command' => 'display access-user ip-address ' . $ip, 'label' => 'ip-summary'],
+            ['command' => 'display aaa access-user ip-address ' . $ip, 'label' => 'aaa-ip-summary'],
+        ] as $attempt) {
+            $output = neRunReadOnly($ssh, $attempt['command']);
+            $parsed = neParseSession($output);
+            $parsed['user_id'] = $parsed['user_id']
+                ?? neExtractUserIdForIp($output, $ip);
+            $best = $merge($best, $parsed);
+            $recordAttempt($attempts, $attempt['label'], $output, $parsed);
 
             if (neHasCounters($best)) {
                 return [$best, $attempts];
             }
+
+            if (($best['user_id'] ?? null) !== null) {
+                if ($tryUserIdDetail(
+                    $ssh,
+                    (int)$best['user_id'],
+                    $best,
+                    $attempts,
+                    $merge
+                )) {
+                    return [$best, $attempts];
+                }
+                break;
+            }
         }
     }
 
-    // 4) Fallback por login PPPoE, incluindo username@dominio.
     if ($username !== null) {
-        $detailByUserOutput = neRunReadOnly(
-            $ssh,
-            'display access-user username ' . $username . ' detail'
-        );
-        $detailByUser = neParseSession($detailByUserOutput);
-        $detailByUser['user_id'] = $detailByUser['user_id']
-            ?? neExtractUserIdForUsername($detailByUserOutput, $username);
-        $best = $merge($best, $detailByUser);
+        foreach ([
+            ['command' => 'display access-user username ' . $username . ' detail', 'label' => 'username-detail'],
+            ['command' => 'display access-user username ' . $username, 'label' => 'username-summary'],
+            ['command' => 'display aaa access-user username ' . $username, 'label' => 'aaa-username-summary'],
+        ] as $attempt) {
+            $output = neRunReadOnly($ssh, $attempt['command']);
+            $parsed = neParseSession($output);
+            $parsed['user_id'] = $parsed['user_id']
+                ?? neExtractUserIdForUsername($output, $username);
+            $best = $merge($best, $parsed);
+            $recordAttempt($attempts, $attempt['label'], $output, $parsed);
 
-        $attempts[] = [
-            'command' => 'username-detail',
-            'user_id_found' => $detailByUser['user_id'] !== null,
-            'counters_found' => neHasCounters($detailByUser),
-        ];
+            if (neHasCounters($best)) {
+                return [$best, $attempts];
+            }
 
-        if (neHasCounters($best)) {
-            return [$best, $attempts];
-        }
-
-        if (($best['user_id'] ?? null) === null) {
-            $summaryOutput = neRunReadOnly(
-                $ssh,
-                'display access-user username ' . $username
-            );
-            $summary = neParseSession($summaryOutput);
-            $summary['user_id'] = $summary['user_id']
-                ?? neExtractUserIdForUsername($summaryOutput, $username);
-            $best = $merge($best, $summary);
-
-            $attempts[] = [
-                'command' => 'username-summary',
-                'user_id_found' => $summary['user_id'] !== null,
-                'counters_found' => neHasCounters($summary),
-            ];
-        }
-
-        if (($best['user_id'] ?? null) !== null) {
-            $userId = (int)$best['user_id'];
-            $userDetailOutput = neRunReadOnly(
-                $ssh,
-                'display access-user user-id ' . $userId
-            );
-            $userDetail = neParseSession($userDetailOutput);
-            $userDetail['user_id'] = $userDetail['user_id'] ?? $userId;
-            $best = $merge($best, $userDetail);
-
-            $attempts[] = [
-                'command' => 'username-user-id-detail',
-                'user_id_found' => true,
-                'counters_found' => neHasCounters($userDetail),
-            ];
+            if (($best['user_id'] ?? null) !== null) {
+                if ($tryUserIdDetail(
+                    $ssh,
+                    (int)$best['user_id'],
+                    $best,
+                    $attempts,
+                    $merge,
+                    'username-user-id-detail'
+                )) {
+                    return [$best, $attempts];
+                }
+                break;
+            }
         }
     }
 
