@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title><?php echo $pageTitle ?? 'JR CONECT ACS'; ?></title>
+    <title><?php echo $pageTitle ?? 'JR CONECT ACS'; ?></title>\n    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
 
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,14 +49,11 @@
 
         <div class="sidebar-header">
 
-            <i
-                class="bi bi-hdd-network"
-                style="font-size: 2.5rem; margin-bottom: 0.5rem;"
-            ></i>
-
-            <h3 style="font-size: 1rem; line-height: 1.3;">
-                JR CONECT ACS
-            </h3>
+            <img
+                src="/assets/img/jrconect-logo.svg?v=20260921"
+                alt="JR CONECT Telecom"
+                class="sidebar-brand-logo"
+            >
 
         </div>
 
