@@ -656,7 +656,7 @@ include __DIR__ . '/views/layouts/header.php';
 
                         <div class="alert alert-secondary mb-0">
                             <i class="bi bi-diagram-3"></i>
-                            Perfis iniciais: Huawei EG8145V5, FiberHome HG6143D3 e Nokia G-240W-A. Novos modelos podem ser adicionados centralmente sem alterar as telas.
+                            Perfis iniciais: Huawei EG8145V5, Huawei HG8145V5, FiberHome HG6143D3 e Nokia G-240W-A. Novos modelos podem ser adicionados centralmente sem alterar as telas.
                         </div>
                     </div>
                 </div>
