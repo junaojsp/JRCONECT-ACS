@@ -186,6 +186,69 @@ class CPEProfiles
     }
 
 
+    public static function normalizeSerial(string $value): string
+    {
+        return strtoupper((string)preg_replace(
+            '/[^A-Z0-9]/i',
+            '',
+            trim($value)
+        ));
+    }
+
+    public static function serialAliases(string $value): array
+    {
+        $serial = self::normalizeSerial($value);
+        if ($serial === '') return [];
+
+        $aliases = [$serial];
+
+        // Alguns CPEs anunciam os 4 primeiros caracteres do vendor
+        // codificados como 8 dígitos hexadecimais.
+        // Ex.: 48575443 = HWTC.
+        if (strlen($serial) >= 12 && preg_match('/^[0-9A-F]{8}/', $serial)) {
+            $decoded = @hex2bin(substr($serial, 0, 8));
+
+            if (
+                $decoded !== false &&
+                preg_match('/^[A-Z0-9]{4}$/i', $decoded)
+            ) {
+                $aliases[] = self::normalizeSerial(
+                    $decoded . substr($serial, 8)
+                );
+            }
+        }
+
+        // Também gera a forma hexadecimal inversa quando os quatro
+        // primeiros caracteres são ASCII alfanuméricos e não puro hex.
+        if (
+            strlen($serial) >= 12 &&
+            !preg_match('/^[0-9A-F]{4}$/i', substr($serial, 0, 4))
+        ) {
+            $aliases[] = strtoupper(
+                bin2hex(substr($serial, 0, 4)) . substr($serial, 4)
+            );
+        }
+
+        return array_values(array_unique(array_filter($aliases)));
+    }
+
+    private static function deviceSerial(array $device): string
+    {
+        $candidates = [
+            $device['_deviceId']['_SerialNumber'] ?? null,
+            self::get($device, 'InternetGatewayDevice.DeviceInfo.SerialNumber'),
+            self::get($device, 'Device.DeviceInfo.SerialNumber'),
+        ];
+
+        foreach ($candidates as $serial) {
+            if (is_scalar($serial) && trim((string)$serial) !== '') {
+                return self::normalizeSerial((string)$serial);
+            }
+        }
+
+        return '';
+    }
+
     private static function deviceIdentity(array $device): array
     {
         $manufacturer = (string)(
@@ -299,6 +362,8 @@ class CPEProfiles
     public static function discover(array $device): array
     {
         [$manufacturer, $model] = self::deviceIdentity($device);
+        $serial = self::deviceSerial($device);
+        $serialAliases = self::serialAliases($serial);
         $leaves = [];
         self::collectLeaves($device, '', $leaves);
 
@@ -397,6 +462,11 @@ class CPEProfiles
             'model' => $model,
             'match' => [],
             'source' => 'auto-discovery',
+            'identity' => [
+                'serial' => $serial !== '' ? $serial : null,
+                'serial_aliases' => $serialAliases,
+                'has_serial_alias' => count($serialAliases) > 1,
+            ],
             'wifi' => $wifi,
             'optical' => $optical,
             'pppoe' => $pppoe,
@@ -410,6 +480,8 @@ class CPEProfiles
             'has_optical_rx' => !empty($optical['rx']),
             'has_optical_tx' => !empty($optical['tx']),
             'has_pppoe' => !empty($pppoe),
+            'serial_alias_count' => count($serialAliases),
+            'has_serial_alias' => count($serialAliases) > 1,
         ];
 
         return $profile;
@@ -420,6 +492,7 @@ class CPEProfiles
         $merged = $static;
         $merged['source'] = 'static+auto-discovery';
         $merged['discovery'] = $auto['discovery'] ?? [];
+        $merged['identity'] = $auto['identity'] ?? [];
 
         foreach (['wifi', 'optical'] as $section) {
             if (!isset($merged[$section])) $merged[$section] = [];
@@ -468,6 +541,11 @@ class CPEProfiles
             'vendor' => $profile['vendor'] ?? null,
             'model' => $profile['model'] ?? null,
             'source' => $profile['source'] ?? 'static',
+            'identity' => $profile['identity'] ?? [
+                'serial' => self::deviceSerial($device) ?: null,
+                'serial_aliases' => self::serialAliases(self::deviceSerial($device)),
+                'has_serial_alias' => count(self::serialAliases(self::deviceSerial($device))) > 1,
+            ],
             'discovery' => $profile['discovery'] ?? [],
             'wifi' => $profile['wifi'] ?? [],
             'optical' => $profile['optical'] ?? [],
@@ -646,6 +724,9 @@ class CPEProfiles
         $data['cpe_profile_model'] = $profile['model'] ?? null;
         $data['cpe_profile_source'] = $profile['source'] ?? 'static';
         $data['cpe_profile_discovery'] = $profile['discovery'] ?? [];
+        $identity = $profile['identity'] ?? [];
+        $data['cpe_serial_normalized'] = $identity['serial'] ?? self::deviceSerial($device) ?: null;
+        $data['cpe_serial_aliases'] = $identity['serial_aliases'] ?? self::serialAliases(self::deviceSerial($device));
 
         $wifi = $profile['wifi'] ?? [];
         $ssid24 = self::first($device, $wifi['ssid_24'] ?? []);
