@@ -92,10 +92,51 @@ function neHasCounters(array $session): bool
     return $session['upload_bytes'] !== null && $session['download_bytes'] !== null;
 }
 
+function nePromptRegex(): string
+{
+    // Huawei VRP normalmente usa <HOSTNAME> no user view
+    // e [HOSTNAME] no system view.
+    return '/(?:<[^<>\\r\\n]+>|\\[[^\\[\\]\\r\\n]+\\])\\s*$/';
+}
+
+function neCleanTerminalOutput(string $output): string
+{
+    $clean = preg_replace(
+        '/\\x1B(?:[@-Z\\\\-_]|\\[[0-?]*[ -\\/]*[@-~])/',
+        '',
+        $output
+    );
+
+    return str_replace("\\0", '', is_string($clean) ? $clean : $output);
+}
+
+function nePrepareInteractiveShell(SSH2 $ssh): void
+{
+    // Alguns NE8000 aceitam autenticação SSH mas fecham CHANNEL_EXEC.
+    // Abrir o shell e consumir o prompt reproduz uma sessão de terminal.
+    $ssh->setWindowSize(200, 80);
+    $ssh->setTimeout(4);
+    $ssh->read(nePromptRegex(), SSH2::READ_REGEX);
+}
+
 function neRunReadOnly(SSH2 $ssh, string $command): string
 {
-    $output = (string)$ssh->exec($command);
-    return str_replace(["\0", "\x1B"], ['', ''], $output);
+    if (!preg_match(
+        '/^(?:screen-length 0 temporary|display access-user (?:ip-address [0-9.]+|username [A-Za-z0-9_.@:-]+|user-id \\d+))$/',
+        $command
+    )) {
+        throw new RuntimeException('Comando de leitura não autorizado pelo monitoramento.');
+    }
+
+    $ssh->setTimeout(6);
+    $ssh->write($command . "\\n");
+
+    $output = (string)$ssh->read(
+        nePromptRegex(),
+        SSH2::READ_REGEX
+    );
+
+    return neCleanTerminalOutput($output);
 }
 
 function neReadSession(SSH2 $ssh, string $ip, ?string $username): array
@@ -344,6 +385,10 @@ try {
             'message' => 'A chave SSH do concentrador não corresponde à chave salva.',
         ]);
     }
+
+    // Abre CLI interativa antes dos comandos de leitura.
+    // Isso evita "Connection closed by server" em NE8000 que rejeitam exec().
+    nePrepareInteractiveShell($ssh);
 
     // Tenta evitar paginação. Falha neste comando não impede a leitura seguinte.
     try {
