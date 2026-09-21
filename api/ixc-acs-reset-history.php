@@ -263,7 +263,8 @@ function jrResetIsResetOperation(array $record, ?string $operationField, ?string
 try {
     [$baseUrl, $token] = jrResetConfig();
 
-    $routeInfo = jrResetLoadRouteCache();
+    $forceRefresh = isset($_GET['refresh']) && $_GET['refresh'] === '1';
+    $routeInfo = $forceRefresh ? null : jrResetLoadRouteCache();
     if ($routeInfo === null) {
         $routeInfo = jrResetDiscoverRoute($baseUrl, $token);
         jrResetSaveRouteCache($routeInfo);
