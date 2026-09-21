@@ -159,8 +159,10 @@ function liveRateFromLoginCounters(int $loginId, mixed $downloadRaw, mixed $uplo
 
     if ($download === $prevDown && $upload === $prevUp) {
         return [
-            'available' => false,
-            'reason' => 'counter_not_changed',
+            'available' => true,
+            'reason' => null,
+            'download_mbps' => 0.0,
+            'upload_mbps' => 0.0,
             'download_bytes' => $download,
             'upload_bytes' => $upload,
             'interval_seconds' => round($dt, 3),
@@ -336,6 +338,28 @@ try {
                     'interface' => $loginRecord['conexao'] ?? $loginRecord['interface'] ?? null,
                     'auth_type' => $loginRecord['autenticacao'] ?? null,
                     'technology' => $loginRecord['tipo_conexao'] ?? $loginRecord['tipo_conexao_mapa'] ?? null,
+                ],
+            ]);
+        }
+
+        if (in_array(
+            $counterRate['reason'] ?? null,
+            ['collecting_second_sample', 'counter_window_invalid'],
+            true
+        )) {
+            liveOut([
+                'success' => true,
+                'available' => false,
+                'source' => 'IXC Login / Concentrador',
+                'read_only' => true,
+                'login_id' => (int)$loginId,
+                'reason' => $counterRate['reason'],
+                'message' => $counterRate['reason'] === 'collecting_second_sample'
+                    ? 'Primeira amostra IXC recebida; aguardando a segunda.'
+                    : 'Janela de medição reiniciada; aguardando nova amostra.',
+                'counters' => [
+                    'download_bytes' => $counterRate['download_bytes'] ?? null,
+                    'upload_bytes' => $counterRate['upload_bytes'] ?? null,
                 ],
             ]);
         }
