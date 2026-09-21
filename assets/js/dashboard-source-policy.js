@@ -239,8 +239,72 @@
         }
     }
 
+    async function loadIxcResetHistory() {
+        const todayEl = document.getElementById('ref-reset-today');
+        const averageEl = document.getElementById('ref-reset-average');
+        const bars = Array.from(document.querySelectorAll('.jr-ref-reset-bars i'));
+        const infoEl = document.querySelector('.jr-ref-reset-ok span');
+
+        // O layout atual pode não conter o card de resets.
+        if (!todayEl && !averageEl && bars.length === 0) return;
+
+        try {
+            const data = await fetchJson('/api/ixc-acs-reset-history.php');
+
+            if (!data.available) {
+                if (infoEl) {
+                    infoEl.textContent = data.reason === 'permission'
+                        ? 'Sem permissão API para consultar o histórico ACS do IXC'
+                        : 'Histórico de resets do IXC ainda não identificado';
+                }
+                return;
+            }
+
+            if (todayEl) {
+                todayEl.textContent = Number(data.today || 0).toLocaleString('pt-BR');
+                todayEl.title = 'Fonte: IXC ACS - Histórico de Operações';
+            }
+
+            if (averageEl) {
+                averageEl.textContent = Number(data.average_7_days || 0)
+                    .toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                averageEl.title = 'Média diária dos últimos 7 dias - IXC ACS';
+            }
+
+            const days = Array.isArray(data.last_7_days) ? data.last_7_days : [];
+            const max = Math.max(1, ...days.map(day => Number(day.count || 0)));
+
+            bars.forEach((bar, index) => {
+                const day = days[index] || {};
+                const count = Number(day.count || 0);
+                const height = count <= 0 ? 4 : Math.max(12, Math.round((count / max) * 100));
+                bar.style.height = height + '%';
+                bar.title = (day.date || '') + ': ' + count + ' reinício(s)/reset(s)';
+            });
+
+            if (infoEl) {
+                const total = Number(data.total_7_days || 0);
+                infoEl.textContent = total > 0
+                    ? total.toLocaleString('pt-BR') + ' reinício(s)/reset(s) nos últimos 7 dias'
+                    : 'Nenhum reinício/reset registrado pelo IXC nos últimos 7 dias';
+            }
+
+            const resetCard = todayEl?.closest('.jr-ref-card, .acs-final-card, .card');
+            if (resetCard) {
+                resetCard.title = 'Fonte: IXC ACS - Histórico de Operações';
+                resetCard.dataset.source = 'ixc-acs';
+            }
+        } catch (error) {
+            console.warn('[DASHBOARD] Histórico de resets IXC indisponível:', error);
+            if (infoEl) {
+                infoEl.textContent = 'Histórico de resets temporariamente indisponível';
+            }
+        }
+    }
+
     // Substitui apenas a coleta/renderização do histórico.
     window.loadRecentDevices = loadRecentDevicesIxcPrimary;
+    window.loadIxcResetHistory = loadIxcResetHistory;
 
     // Aplica rótulos de origem sem alterar o layout.
     const decorateSources = () => {
@@ -269,9 +333,15 @@
         });
     };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', decorateSources, { once: true });
-    } else {
+    const startSourcePolicyWidgets = () => {
         decorateSources();
+        loadIxcResetHistory();
+        window.setInterval(loadIxcResetHistory, 60000);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startSourcePolicyWidgets, { once: true });
+    } else {
+        startSourcePolicyWidgets();
     }
 })();
