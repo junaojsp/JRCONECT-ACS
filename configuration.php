@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/lib/AIConfig.php';
+require_once __DIR__ . '/lib/ConcentratorConfig.php';
 requireLogin();
 
 $pageTitle = 'Configurações';
@@ -12,6 +13,9 @@ $conn = getDBConnection();
 $genieacs = $conn->query("SELECT * FROM genieacs_credentials LIMIT 1")->fetch_assoc();
 $mikrotik = $conn->query("SELECT * FROM mikrotik_credentials LIMIT 1")->fetch_assoc();
 $telegram = $conn->query("SELECT * FROM telegram_config LIMIT 1")->fetch_assoc();
+
+ensureConcentratorConfigTable($conn);
+$concentrators = getConcentrators($conn);
 
 ensureAIConfigTable($conn);
 $ai = getAIConfig($conn);
@@ -75,6 +79,20 @@ include __DIR__ . '/views/layouts/header.php';
                 >
                     <i class="bi bi-ethernet"></i>
                     Configuração MikroTik
+                </button>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link"
+                    id="concentrators-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#concentrators-config"
+                    type="button"
+                    role="tab"
+                >
+                    <i class="bi bi-diagram-3"></i>
+                    Concentradores
                 </button>
             </li>
 
@@ -488,6 +506,348 @@ include __DIR__ . '/views/layouts/header.php';
             </div>
 
 
+            <!-- Concentradores / BRAS -->
+            <div
+                class="tab-pane fade"
+                id="concentrators-config"
+                role="tabpanel"
+            >
+                <div class="card mt-3">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span>
+                            <i class="bi bi-diagram-3"></i>
+                            Concentradores / BRAS
+                        </span>
+                        <span>
+                            <?php
+                                $connectedConcentrators = array_values(array_filter(
+                                    $concentrators,
+                                    static fn(array $item): bool => !empty($item['is_connected'])
+                                ));
+                            ?>
+                            <span class="badge bg-info"><?php echo count($concentrators); ?> cadastrado(s)</span>
+                            <?php if (count($connectedConcentrators) > 0): ?>
+                                <span class="badge online ms-1"><?php echo count($connectedConcentrators); ?> conectado(s)</span>
+                            <?php endif; ?>
+                        </span>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Cadastre o BRAS para o ACS autenticar diretamente no equipamento.
+                            Nesta etapa, Huawei NE8000 via SSH é suportado. O teste é somente leitura e usa
+                            <code>display version</code>.
+                        </div>
+
+                        <form id="form-concentrator">
+                            <input type="hidden" name="id" id="concentrator-id" value="">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nome do concentrador</label>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            id="concentrator-name"
+                                            class="form-control"
+                                            placeholder="BRAS_NE8000"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Fabricante</label>
+                                        <select name="vendor" id="concentrator-vendor" class="form-control" required>
+                                            <option value="huawei">Huawei</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Modelo</label>
+                                        <input
+                                            type="text"
+                                            name="model"
+                                            id="concentrator-model"
+                                            class="form-control"
+                                            value="NE8000"
+                                            placeholder="NE8000"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Endereço IPv4 / IPv6 / Host</label>
+                                        <input
+                                            type="text"
+                                            name="host"
+                                            id="concentrator-host"
+                                            class="form-control"
+                                            placeholder="138.204.112.5"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Protocolo</label>
+                                        <select name="protocol" id="concentrator-protocol" class="form-control" required>
+                                            <option value="ssh">SSH</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Porta</label>
+                                        <input
+                                            type="number"
+                                            name="port"
+                                            id="concentrator-port"
+                                            class="form-control"
+                                            value="22"
+                                            min="1"
+                                            max="65535"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Usuário SSH</label>
+                                        <input
+                                            type="text"
+                                            name="username"
+                                            id="concentrator-username"
+                                            class="form-control"
+                                            placeholder="Usuário técnico somente leitura"
+                                            autocomplete="off"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Senha SSH</label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            id="concentrator-password"
+                                            class="form-control"
+                                            value=""
+                                            autocomplete="new-password"
+                                            placeholder="Informe a senha"
+                                        >
+                                        <small class="text-muted" id="concentrator-password-help">
+                                            A senha é criptografada no servidor e não volta para o navegador.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nome correspondente no IXC</label>
+                                        <input
+                                            type="text"
+                                            name="ixc_name"
+                                            id="concentrator-ixc-name"
+                                            class="form-control"
+                                            placeholder="BRAS_NE8000"
+                                        >
+                                        <small class="text-muted">
+                                            Usado para relacionar o concentrador retornado pelo IXC.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>NAS IP do RADIUS</label>
+                                        <input
+                                            type="text"
+                                            name="nas_ip"
+                                            id="concentrator-nas-ip"
+                                            class="form-control"
+                                            placeholder="138.204.112.5"
+                                        >
+                                        <small class="text-muted">
+                                            Permite escolher automaticamente o BRAS pela sessão PPPoE.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-4 mb-3">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        value="1"
+                                        name="is_default"
+                                        id="concentrator-default"
+                                    >
+                                    <label class="form-check-label" for="concentrator-default">
+                                        Concentrador principal
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        value="1"
+                                        name="is_active"
+                                        id="concentrator-active"
+                                        checked
+                                    >
+                                    <label class="form-check-label" for="concentrator-active">
+                                        Ativo
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plug"></i>
+                                    Testar conexão
+                                </button>
+
+                                <button type="button" class="btn btn-primary" onclick="saveConcentrator()">
+                                    <i class="bi bi-save"></i>
+                                    Salvar
+                                </button>
+
+                                <button type="button" class="btn btn-secondary" onclick="newConcentrator()">
+                                    <i class="bi bi-plus-circle"></i>
+                                    Novo
+                                </button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <strong>Concentradores cadastrados</strong>
+                            <small class="text-muted">A senha nunca é exibida nesta lista.</small>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Equipamento</th>
+                                        <th>Endereço</th>
+                                        <th>Usuário</th>
+                                        <th>IXC / NAS</th>
+                                        <th>Status</th>
+                                        <th>Último teste</th>
+                                        <th class="text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <?php if (empty($concentrators)): ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            Nenhum concentrador cadastrado.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($concentrators as $concentrator): ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?php echo htmlspecialchars($concentrator['name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                                <?php if (!empty($concentrator['is_default'])): ?>
+                                                    <span class="badge bg-info ms-1">Principal</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php echo htmlspecialchars(strtoupper($concentrator['vendor']) . ' ' . $concentrator['model'], ENT_QUOTES, 'UTF-8'); ?>
+                                            </td>
+                                            <td>
+                                                <code><?php echo htmlspecialchars($concentrator['host'] . ':' . $concentrator['port'], ENT_QUOTES, 'UTF-8'); ?></code>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($concentrator['username'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td>
+                                                <div><?php echo htmlspecialchars($concentrator['ixc_name'] ?: '—', ENT_QUOTES, 'UTF-8'); ?></div>
+                                                <small class="text-muted"><?php echo htmlspecialchars($concentrator['nas_ip'] ?: 'NAS não definido', ENT_QUOTES, 'UTF-8'); ?></small>
+                                            </td>
+                                            <td>
+                                                <?php if (empty($concentrator['is_active'])): ?>
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                <?php elseif (!empty($concentrator['is_connected'])): ?>
+                                                    <span class="badge online">Conectado</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning text-dark">Não testado</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php echo !empty($concentrator['last_test']) ? htmlspecialchars(timeAgo($concentrator['last_test']), ENT_QUOTES, 'UTF-8') : '—'; ?>
+                                                <?php if (!empty($concentrator['last_error'])): ?>
+                                                    <div><small class="text-danger"><?php echo htmlspecialchars($concentrator['last_error'], ENT_QUOTES, 'UTF-8'); ?></small></div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-end">
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-info"
+                                                    onclick="editConcentrator(<?php echo (int)$concentrator['id']; ?>)"
+                                                    title="Editar"
+                                                >
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-success"
+                                                    onclick="testSavedConcentrator(<?php echo (int)$concentrator['id']; ?>)"
+                                                    title="Testar"
+                                                >
+                                                    <i class="bi bi-plug"></i>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="deleteConcentrator(<?php echo (int)$concentrator['id']; ?>)"
+                                                    title="Excluir"
+                                                >
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-secondary mb-0">
+                            <i class="bi bi-shield-lock"></i>
+                            A integração usa uma conta técnica do concentrador. Para monitoramento,
+                            mantenha esse usuário com permissões de leitura apenas. Depois da autenticação,
+                            a aba Monitoramento poderá consultar a sessão PPPoE e os contadores diretamente
+                            no NE8000.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Configuração do Bot -->
             <div
                 class="tab-pane fade"
@@ -802,6 +1162,7 @@ include __DIR__ . '/views/layouts/header.php';
 <script>
 window.AI_PROVIDER_CONFIG = <?php echo json_encode($aiProviders, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 window.ACTIVE_AI_PROVIDER = <?php echo json_encode($activeAIProvider); ?>;
+window.CONCENTRATORS = <?php echo json_encode($concentrators, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 <script src="/assets/js/configuration.js?v=<?php echo time(); ?>"></script>
 
