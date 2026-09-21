@@ -495,9 +495,18 @@ function testConcentratorConnection(array $config): array
             ];
         }
 
-        $version = trim((string)$ssh->exec('display version'));
+        // Valida o mesmo tipo de canal usado pelo monitoramento:
+        // shell CLI interativo em vez de CHANNEL_EXEC.
+        $ssh->setWindowSize(200, 80);
+        $ssh->setTimeout(4);
+        $promptRegex = '/(?:<[^<>\\r\\n]+>|\\[[^\\[\\]\\r\\n]+\\])\\s*$/';
+        $ssh->read($promptRegex, SSH2::READ_REGEX);
+        $ssh->write("display version\\n");
+        $version = trim((string)$ssh->read($promptRegex, SSH2::READ_REGEX));
+
         $isHuawei = stripos($version, 'Huawei') !== false ||
                     stripos($version, 'VRP') !== false ||
+                    stripos($version, 'NetEngine') !== false ||
                     strtolower((string)($config['vendor'] ?? '')) === 'huawei';
 
         $summary = null;
