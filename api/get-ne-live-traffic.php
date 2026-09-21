@@ -180,7 +180,7 @@ function neRunReadOnly(SSH2 $ssh, string $command): string
     }
 
     $ssh->setTimeout(6);
-    $ssh->write($command . "\\n");
+    $ssh->write($command . "\r\n");
 
     $output = (string)$ssh->read(
         nePromptRegex(),
