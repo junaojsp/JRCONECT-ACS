@@ -82,7 +82,8 @@ try {
                 '';
 
             $haystack = strtoupper((string)$manufacturer . ' ' . (string)$model);
-            if (str_contains($haystack, 'EG8145V5') || (str_contains($haystack, 'HUAWEI') && str_contains($haystack, 'EG8145'))) {
+            if (str_contains($haystack, 'EG8145V5') || str_contains($haystack, 'HG8145V5') ||
+                (str_contains($haystack, 'HUAWEI') && (str_contains($haystack, 'EG8145') || str_contains($haystack, 'HG8145')))) {
                 $devices[] = $device;
             }
         }
