@@ -545,6 +545,50 @@ function jrIxcOpticalRequest(
 
 
 /* =========================================================
+   HELPERS DE REGISTROS IXC
+   ========================================================= */
+
+function jrIxcRecords(array $result): array
+{
+    if (($result['http_code'] ?? 0) < 200 || ($result['http_code'] ?? 0) >= 300) {
+        return [];
+    }
+
+    $json = $result['json'] ?? null;
+    if (!is_array($json)) {
+        return [];
+    }
+
+    $records = $json['registros'] ?? $json['records'] ?? (array_is_list($json) ? $json : []);
+    return is_array($records)
+        ? array_values(array_filter($records, 'is_array'))
+        : [];
+}
+
+function jrIxcPick(array $record, array $keys): mixed
+{
+    foreach ($keys as $key) {
+        if (!array_key_exists($key, $record)) {
+            continue;
+        }
+
+        $value = $record[$key];
+        if ($value === null) {
+            continue;
+        }
+
+        if (is_string($value) && trim($value) === '') {
+            continue;
+        }
+
+        return $value;
+    }
+
+    return null;
+}
+
+
+/* =========================================================
    DEFINIR STATUS OPTICO
    =========================================================
  *
@@ -866,6 +910,11 @@ try {
                     'nome' => null,
                     'id_login' => null,
                     'id_contrato' => null,
+                    'id_transmissor' => null,
+                    'network' => [
+                        'source' => 'TR-069',
+                        'login_lookup_ok' => false,
+                    ],
                     'pon_id' => null,
                     'onu_number' => null,
                     'slot' => null,
@@ -980,6 +1029,80 @@ try {
 
 
     /* =====================================================
+       FALLBACK DE REDE / LOGIN VIA IXC
+       ===================================================== */
+
+    $loginRecord = [];
+    $loginLookupOk = false;
+    $idLogin = trim((string)($record['id_login'] ?? ''));
+
+    if ($idLogin !== '') {
+        try {
+            $loginResult = jrIxcOpticalRequest(
+                $ixcBaseUrl,
+                $ixcToken,
+                'radusuarios',
+                [
+                    'qtype' => 'radusuarios.id',
+                    'query' => $idLogin,
+                    'oper' => '=',
+                    'page' => '1',
+                    'rp' => '1',
+                    'sortname' => 'radusuarios.id',
+                    'sortorder' => 'desc',
+                ]
+            );
+
+            $loginRows = jrIxcRecords($loginResult);
+            if (!empty($loginRows[0])) {
+                $loginRecord = $loginRows[0];
+                $loginLookupOk = true;
+            }
+        } catch (Throwable $ignored) {
+            // A leitura óptica não deve falhar só porque o cadastro de Login
+            // está temporariamente indisponível.
+        }
+    }
+
+    $ixcNetwork = [
+        'source' => $loginLookupOk ? 'IXC Cliente Fibra + Login' : 'IXC Cliente Fibra',
+        'login_lookup_ok' => $loginLookupOk,
+        'login' => jrIxcPick($loginRecord, ['login']),
+        'ip' => jrIxcPick($loginRecord, ['ip', 'ip_aux']),
+        'ipv6' => jrIxcPick($loginRecord, [
+            'ipv6',
+            'ip_v6',
+            'framed_ipv6',
+            'framed_pd_ipv6'
+        ]),
+        'ipv6_pd' => jrIxcPick($loginRecord, [
+            'pd_ipv6',
+            'delegation_ipv6',
+            'ipv6_pd'
+        ]),
+        'online' => jrIxcPick($loginRecord, ['online']),
+        'vlan' => jrIxcPick($record, [
+            'vlan_pppoe',
+            'vlan',
+            'vlan_uplink'
+        ]) ?? jrIxcPick($loginRecord, ['vlan']),
+        'vlan_tr69' => jrIxcPick($record, ['vlan_tr69']),
+        'last_error' => jrIxcPick($record, [
+            'causa_ultima_queda',
+            'motivo_ultima_queda'
+        ]),
+        'last_connection_start' => jrIxcPick($loginRecord, ['ultima_conexao_inicial']),
+        'last_connection_end' => jrIxcPick($loginRecord, ['ultima_conexao_final']),
+        'connected_time' => jrIxcPick($loginRecord, ['tempo_conectado', 'tempo_conexao']),
+        'disconnect_count_today' => jrIxcPick($loginRecord, ['count_desconexao']),
+        'concentrator_id' => jrIxcPick($loginRecord, ['id_concentrador']),
+        'transmitter_id' => jrIxcPick($record, ['id_transmissor']),
+        'fiber_reference' => jrIxcPick($record, ['referencia']),
+        'management_ip' => jrIxcPick($record, ['ip_gerencia']),
+    ];
+
+
+    /* =====================================================
        EXTRAIR DADOS OPTICOS
        ===================================================== */
 
@@ -1089,6 +1212,9 @@ try {
             'id_transmissor' =>
                 $record['id_transmissor']
                 ?? null,
+
+            'network' =>
+                $ixcNetwork,
 
             'pon_id' =>
                 $ponId,
