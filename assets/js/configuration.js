@@ -268,3 +268,177 @@ async function saveAI() {
         showToast(result?.message || 'Falha ao salvar configuração da IA', 'danger');
     }
 }
+
+
+// Concentradores / BRAS
+function concentratorFormPayload() {
+    const form = document.getElementById('form-concentrator');
+    if (!form) return null;
+
+    const data = Object.fromEntries(new FormData(form));
+    data.is_default = form.querySelector('[name="is_default"]')?.checked ? 1 : 0;
+    data.is_active = form.querySelector('[name="is_active"]')?.checked ? 1 : 0;
+    return data;
+}
+
+function getConcentratorConfig(id) {
+    return (window.CONCENTRATORS || []).find(item => Number(item.id) === Number(id)) || null;
+}
+
+function newConcentrator() {
+    const form = document.getElementById('form-concentrator');
+    if (!form) return;
+
+    form.reset();
+    form.querySelector('[name="id"]').value = '';
+    form.querySelector('[name="vendor"]').value = 'huawei';
+    form.querySelector('[name="model"]').value = 'NE8000';
+    form.querySelector('[name="protocol"]').value = 'ssh';
+    form.querySelector('[name="port"]').value = '22';
+    form.querySelector('[name="is_active"]').checked = true;
+    form.querySelector('[name="is_default"]').checked = false;
+
+    const password = form.querySelector('[name="password"]');
+    if (password) {
+        password.value = '';
+        password.placeholder = 'Informe a senha';
+    }
+
+    const help = document.getElementById('concentrator-password-help');
+    if (help) {
+        help.textContent = 'A senha é criptografada no servidor e não volta para o navegador.';
+    }
+
+    form.querySelector('[name="name"]')?.focus();
+}
+
+function editConcentrator(id) {
+    const item = getConcentratorConfig(id);
+    const form = document.getElementById('form-concentrator');
+    if (!item || !form) return;
+
+    form.querySelector('[name="id"]').value = item.id ?? '';
+    form.querySelector('[name="name"]').value = item.name ?? '';
+    form.querySelector('[name="vendor"]').value = item.vendor ?? 'huawei';
+    form.querySelector('[name="model"]').value = item.model ?? 'NE8000';
+    form.querySelector('[name="host"]').value = item.host ?? '';
+    form.querySelector('[name="port"]').value = item.port ?? 22;
+    form.querySelector('[name="protocol"]').value = item.protocol ?? 'ssh';
+    form.querySelector('[name="username"]').value = item.username ?? '';
+    form.querySelector('[name="ixc_name"]').value = item.ixc_name ?? '';
+    form.querySelector('[name="nas_ip"]').value = item.nas_ip ?? '';
+    form.querySelector('[name="is_default"]').checked = !!item.is_default;
+    form.querySelector('[name="is_active"]').checked = !!item.is_active;
+
+    const password = form.querySelector('[name="password"]');
+    if (password) {
+        password.value = '';
+        password.placeholder = 'Senha já configurada — deixe em branco para manter';
+    }
+
+    const help = document.getElementById('concentrator-password-help');
+    if (help) {
+        help.textContent = 'Senha já configurada. Preencha somente se quiser substituí-la.';
+    }
+
+    document.getElementById('concentrators-tab')?.click();
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+const concentratorForm = document.getElementById('form-concentrator');
+if (concentratorForm) {
+    concentratorForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const data = concentratorFormPayload();
+        if (!data) return;
+
+        showLoading();
+        const result = await fetchAPI('/api/test-concentrator.php', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        hideLoading();
+
+        if (result?.success) {
+            let detail = result.message || 'Conexão realizada com sucesso.';
+            if (result.identity) detail += ' ' + result.identity;
+            showToast(detail, 'success');
+
+            if (data.id) {
+                setTimeout(() => location.reload(), 1200);
+            }
+        } else {
+            showToast(result?.message || 'Falha ao conectar ao concentrador.', 'danger');
+        }
+    });
+}
+
+async function saveConcentrator() {
+    const data = concentratorFormPayload();
+    if (!data) return;
+
+    showLoading();
+    const result = await fetchAPI('/api/save-concentrator.php', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+    hideLoading();
+
+    if (result?.success) {
+        showToast(result.message || 'Concentrador salvo.', 'success');
+        setTimeout(() => location.reload(), 900);
+    } else {
+        showToast(result?.message || 'Falha ao salvar o concentrador.', 'danger');
+    }
+}
+
+async function testSavedConcentrator(id) {
+    const item = getConcentratorConfig(id);
+    if (!item) return;
+
+    const data = {
+        ...item,
+        id: Number(id),
+        password: '',
+        is_default: item.is_default ? 1 : 0,
+        is_active: item.is_active ? 1 : 0
+    };
+
+    showLoading();
+    const result = await fetchAPI('/api/test-concentrator.php', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+    hideLoading();
+
+    if (result?.success) {
+        let detail = result.message || 'Conexão realizada com sucesso.';
+        if (result.identity) detail += ' ' + result.identity;
+        showToast(detail, 'success');
+        setTimeout(() => location.reload(), 1200);
+    } else {
+        showToast(result?.message || 'Falha ao conectar ao concentrador.', 'danger');
+    }
+}
+
+async function deleteConcentrator(id) {
+    const item = getConcentratorConfig(id);
+    const label = item?.name || ('#' + id);
+
+    if (!confirm('Excluir o concentrador "' + label + '"?')) return;
+
+    showLoading();
+    const result = await fetchAPI('/api/delete-concentrator.php', {
+        method: 'POST',
+        body: JSON.stringify({ id: Number(id) })
+    });
+    hideLoading();
+
+    if (result?.success) {
+        showToast(result.message || 'Concentrador excluído.', 'success');
+        setTimeout(() => location.reload(), 700);
+    } else {
+        showToast(result?.message || 'Falha ao excluir o concentrador.', 'danger');
+    }
+}
