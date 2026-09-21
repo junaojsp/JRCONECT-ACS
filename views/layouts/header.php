@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title><?php echo $pageTitle ?? 'JR CONECT ACS'; ?></title>\n    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
+    <title><?php echo $pageTitle ?? 'JR CONECT ACS'; ?></title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
 
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
