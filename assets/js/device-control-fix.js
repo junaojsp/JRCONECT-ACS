@@ -895,7 +895,11 @@
 
             const status=document.getElementById('bandwidth-sample-status');
             if(status){
-                status.textContent='AO VIVO IXC • '+new Date(at).toLocaleTimeString('pt-BR')+' • atualização pelo concentrador';
+                const transport=String(data.live?.transport||'').toLowerCase();
+                const sourceLabel=transport==='sse'
+                    ? 'AO VIVO IXC / SSE'
+                    : (transport==='counter-delta' ? 'IXC COUNTER FALLBACK' : 'IXC AO VIVO');
+                status.textContent=sourceLabel+' • '+new Date(at).toLocaleTimeString('pt-BR')+' • '+(data.source||'IXC');
             }
 
             const chart=document.getElementById('bandwidth-bars');
