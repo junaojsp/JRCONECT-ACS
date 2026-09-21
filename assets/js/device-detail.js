@@ -660,7 +660,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
                 <section class="acs-overview-card acs-card-wan acs-approved-wan">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span></div>
+                        <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span><small class="ms-2 text-muted">IXC principal · TR-069 fallback</small></div>
                         <span class="acs-mini-badge ${String(primaryWan.status || '').toLowerCase()==='connected'?'success':''}">${primaryWan.status || 'STATUS'}</span>
                     </div>
                     <div class="acs-reference-list acs-icon-info-list">
@@ -677,7 +677,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
                 <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span></div>
+                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span><small class="ms-2 text-muted">Leitura e gerenciamento via TR-069</small></div>
                     </div>
                     <div class="acs-wifi-reference-grid"></div>
                 </section>
