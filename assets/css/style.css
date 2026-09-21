@@ -76,6 +76,21 @@ body {
     transition: all 0.3s ease;
 }
 
+.sidebar-brand-logo {
+    display: block;
+    width: 150px;
+    max-width: calc(100% - 8px);
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+    transition: width 0.3s ease, opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-brand-logo {
+    width: 48px;
+    max-width: 48px;
+}
+
 .sidebar-toggle {
     position: fixed;
     bottom: 1rem;

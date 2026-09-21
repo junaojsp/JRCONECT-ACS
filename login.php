@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - <?php echo APP_NAME; ?></title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/css/style.css">
@@ -80,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <img src="/assets/img/logo.png" alt="GACS Logo" style="width: 180px; height: auto; margin-bottom: 1.5rem;">
+                <img src="/assets/img/jrconect-logo.svg?v=20260921" alt="JR CONECT Telecom" style="width: 180px; height: auto; margin-bottom: 1.5rem;">
             </div>
 
             <?php if ($error): ?>
