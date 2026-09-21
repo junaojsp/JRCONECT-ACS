@@ -72,6 +72,70 @@ function reportList(
         : [];
 }
 
+function reportIxcConsumptionApi(
+    string $baseUrl,
+    string $token,
+    int $loginId,
+    string $since,
+    string $until
+): array {
+    $rows = reportList(
+        $baseUrl,
+        $token,
+        'radusuarios_consumo',
+        [
+            'qtype' => 'radusuarios_consumo.id_login',
+            'query' => (string)$loginId,
+            'oper' => '=',
+            'page' => '1',
+            'rp' => '1000',
+            'sortname' => 'radusuarios_consumo.data',
+            'sortorder' => 'asc',
+        ]
+    );
+
+    if (!$rows) {
+        return [
+            'available' => false,
+            'source' => 'Webservice radusuarios_consumo',
+            'reason' => 'no_rows',
+            'daily' => [],
+        ];
+    }
+
+    $from = strtotime($since . ' 00:00:00');
+    $to = strtotime($until . ' 23:59:59');
+    $daily = [];
+
+    foreach ($rows as $row) {
+        $date = trim((string)($row['data'] ?? ''));
+        if ($date === '') continue;
+
+        $ts = strtotime($date . ' 00:00:00');
+        if ($ts === false || $ts < $from || $ts > $to) continue;
+
+        $daily[$date] ??= [
+            'date' => $date,
+            'download_bytes' => 0,
+            'upload_bytes' => 0,
+            'sessions' => null,
+        ];
+
+        $daily[$date]['download_bytes'] += reportInt($row['consumo'] ?? 0);
+        $daily[$date]['upload_bytes'] += reportInt($row['consumo_upload'] ?? 0);
+    }
+
+    ksort($daily);
+
+    return [
+        'available' => !empty($daily),
+        'source' => 'Webservice radusuarios_consumo',
+        'reason' => !empty($daily) ? null : 'no_rows_in_period',
+        'daily' => array_values($daily),
+    ];
+}
+
+
 function reportIxcConsumption(
     string $baseUrl,
     string $token,
@@ -424,7 +488,7 @@ try {
         reportPick($login, ['tipo_conexao', 'tipo_conexao_mapa'])
         ?? 'Fibra';
 
-    $ixcConsumption = reportIxcConsumption(
+    $ixcConsumptionApi = reportIxcConsumptionApi(
         $baseUrl,
         $token,
         (int)$loginId,
@@ -432,13 +496,38 @@ try {
         $today->format('Y-m-d')
     );
 
+    $ixcConsumption = [
+        'available' => false,
+        'reason' => 'not_attempted',
+        'daily' => [],
+    ];
+
     $consumptionSource = 'RADIUS fallback';
-    if (!empty($ixcConsumption['available']) && !empty($ixcConsumption['daily'])) {
+
+    if (!empty($ixcConsumptionApi['available']) && !empty($ixcConsumptionApi['daily'])) {
         $consumption = [];
-        foreach ($ixcConsumption['daily'] as $row) {
+        foreach ($ixcConsumptionApi['daily'] as $row) {
             $consumption[$row['date']] = $row;
         }
-        $consumptionSource = 'IXC rel_22021.php?consumo';
+        $consumptionSource = 'IXC Webservice radusuarios_consumo';
+    } else {
+        // Fallback secundário: endpoint interno usado pela tela Diagnóstico IXC.
+        // Pode exigir sessão web do IXC.
+        $ixcConsumption = reportIxcConsumption(
+            $baseUrl,
+            $token,
+            (int)$loginId,
+            $start30->format('Y-m-d'),
+            $today->format('Y-m-d')
+        );
+
+        if (!empty($ixcConsumption['available']) && !empty($ixcConsumption['daily'])) {
+            $consumption = [];
+            foreach ($ixcConsumption['daily'] as $row) {
+                $consumption[$row['date']] = $row;
+            }
+            $consumptionSource = 'IXC rel_22021.php?consumo';
+        }
     }
 
     $totalDownload = array_sum(array_column($consumption, 'download_bytes'));
@@ -482,6 +571,10 @@ try {
             'download_bytes' => $totalDownload,
             'upload_bytes' => $totalUpload,
             'total_bytes' => $totalDownload + $totalUpload,
+            'ixc_webservice' => [
+                'available' => (bool)($ixcConsumptionApi['available'] ?? false),
+                'reason' => $ixcConsumptionApi['reason'] ?? null,
+            ],
             'ixc_endpoint' => [
                 'available' => (bool)($ixcConsumption['available'] ?? false),
                 'http_code' => $ixcConsumption['http_code'] ?? null,
