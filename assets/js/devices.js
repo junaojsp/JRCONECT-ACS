@@ -192,21 +192,29 @@ async function renderDevices(devices) {
     // Update pagination UI
     updatePaginationUI(totalDevices);
 
-    // Fetch map status for all devices on current page using BATCH API
+    // Enriquecimento em lote da página atual:
+    // - mapa: localização/topologia
+    // - IXC: rede/PPPoE/óptico como fonte principal
     const serialNumbers = devicesToRender.map(device => device.serial_number);
 
     let mapStatusMap = {};
+    let ixcDeviceMap = {};
 
     try {
-        const batchResult = await fetchAPI('/api/get-onu-location-batch.php', {
-            method: 'POST',
-            body: JSON.stringify({ serial_numbers: serialNumbers })
-        });
+        const [mapBatchResult, ixcBatchResult] = await Promise.all([
+            fetchAPI('/api/get-onu-location-batch.php', {
+                method: 'POST',
+                body: JSON.stringify({ serial_numbers: serialNumbers })
+            }),
+            fetchAPI('/api/get-devices-ixc-batch.php', {
+                method: 'POST',
+                body: JSON.stringify({ serial_numbers: serialNumbers })
+            })
+        ]);
 
-        if (batchResult && batchResult.success && batchResult.locations) {
-            // Convert batch result to map status format
-            Object.keys(batchResult.locations).forEach(serial => {
-                const location = batchResult.locations[serial];
+        if (mapBatchResult && mapBatchResult.success && mapBatchResult.locations) {
+            Object.keys(mapBatchResult.locations).forEach(serial => {
+                const location = mapBatchResult.locations[serial];
                 mapStatusMap[serial] = {
                     inMap: location.found || false,
                     itemType: location.item_type || 'onu',
@@ -214,21 +222,38 @@ async function renderDevices(devices) {
                 };
             });
         }
+
+        if (ixcBatchResult && ixcBatchResult.success && ixcBatchResult.devices) {
+            ixcDeviceMap = ixcBatchResult.devices;
+        }
     } catch (error) {
-        console.error('Batch map status fetch failed:', error);
-        // Fallback: all devices marked as not in map
-        devicesToRender.forEach(device => {
+        console.error('Batch enrichment failed:', error);
+    }
+
+    devicesToRender.forEach(device => {
+        if (!mapStatusMap[device.serial_number]) {
             mapStatusMap[device.serial_number] = {
                 inMap: false,
                 itemType: 'onu',
                 itemId: null
             };
-        });
-    }
+        }
+    });
 
     devicesToRender.forEach(device => {
         const row = document.createElement('tr');
-        const ipAddress = extractIP(device.ip_tr069);
+        const serialKey = normalizeDeviceSerial(device.serial_number);
+        const ixc = ixcDeviceMap[serialKey] || ixcDeviceMap[device.serial_number] || {};
+        const ipAddress = extractIP(ixc.ip || device.ip_tr069);
+        const pppoeUsername = ixc.pppoe_username || device.pppoe_username || 'N/A';
+        const rxSourceValue = (ixc.rx_power !== null && ixc.rx_power !== undefined && ixc.rx_power !== '')
+            ? ixc.rx_power
+            : device.rx_power;
+        const tempSourceValue = (ixc.temperature !== null && ixc.temperature !== undefined && ixc.temperature !== '')
+            ? ixc.temperature
+            : device.temperature;
+        const networkSource = ixc.found ? (ixc.source || 'IXC') : 'TR-069 fallback';
+
         const mapInfo = mapStatusMap[device.serial_number] || { inMap: false, itemType: 'onu', itemId: null };
         const isInMap = mapInfo.inMap;
 
@@ -250,9 +275,9 @@ async function renderDevices(devices) {
         }
 
         // RX Power badge with color based on signal strength
-        const rxPower = parseFloat(device.rx_power);
+        const rxPower = parseFloat(rxSourceValue);
         let rxBadgeClass = 'bg-secondary'; // Default for N/A
-        let rxDisplay = device.rx_power;
+        let rxDisplay = rxSourceValue;
 
         if (!isNaN(rxPower) && rxPower !== -999) {
             if (rxPower > -20.00) {
@@ -262,7 +287,7 @@ async function renderDevices(devices) {
             } else {
                 rxBadgeClass = 'bg-danger'; // Red: Weak signal (below -23 dBm)
             }
-            rxDisplay = `<span class="badge ${rxBadgeClass}">${device.rx_power} dBm</span>`;
+            rxDisplay = `<span class="badge ${rxBadgeClass}" title="Fonte: ${networkSource}">${rxSourceValue} dBm</span>`;
         } else {
             rxDisplay = `<span class="badge ${rxBadgeClass}">N/A</span>`;
         }
@@ -312,6 +337,11 @@ async function renderDevices(devices) {
         // Check tags column visibility state for consistent display
         const tagsColumnDisplay = tagsColumnVisible ? '' : 'none';
 
+        const tempNumeric = parseFloat(tempSourceValue);
+        const tempDisplay = Number.isFinite(tempNumeric)
+            ? `<span title="Fonte: ${networkSource}">${tempNumeric.toFixed(1)}°C</span>`
+            : '<span class="text-muted">N/A</span>';
+
         row.innerHTML = `
             <td>
                 <input type="checkbox" class="device-checkbox" value="${encodeURIComponent(device.device_id)}" onchange="updateBulkActionButtons()">
@@ -319,11 +349,11 @@ async function renderDevices(devices) {
             <td><a href="/device-detail.php?id=${encodeURIComponent(device.device_id)}">${device.serial_number}</a></td>
             <td>${device.mac_address}</td>
             <td data-sort-value="${device.product_class || ''}">${device.product_class || 'N/A'}</td>
-            <td data-sort-value="${ipAddress}">${ipDisplay}</td>
+            <td data-sort-value="${ipAddress}" title="Fonte: ${networkSource}">${ipDisplay}</td>
             <td data-sort-value="${device.wifi_ssid}">${device.wifi_ssid}</td>
-            <td data-sort-value="${device.pppoe_username || ''}">${device.pppoe_username || 'N/A'}</td>
-            <td data-sort-value="${parseFloat(device.rx_power) || -999}">${rxDisplay}</td>
-            <td data-sort-value="${parseFloat(device.temperature) || -999}">${device.temperature}°C</td>
+            <td data-sort-value="${pppoeUsername}" title="Fonte: ${networkSource}">${pppoeUsername}</td>
+            <td data-sort-value="${parseFloat(rxSourceValue) || -999}">${rxDisplay}</td>
+            <td data-sort-value="${Number.isFinite(tempNumeric) ? tempNumeric : -999}">${tempDisplay}</td>
             <td data-sort-value="${clientsCount}" class="text-center">${clientsBadge}</td>
             <td data-sort-value="${device.status}">${statusDisplay}</td>
             <td class="tags-column" data-sort-value="${tagsSortValue}" style="display: ${tagsColumnDisplay};">${tagsDisplay}</td>
