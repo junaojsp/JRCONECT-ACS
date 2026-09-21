@@ -133,14 +133,37 @@ function dcWifiBand(array $nodes,?string $base,bool $legacy=false): array {
         if(count($parts)===1 && ($band=dcNormalizeBand($parts[0]))!==null)
             return ['band'=>$band,'band_source'=>'SupportedFrequencyBands','band_conflict'=>false];
     }
-    $field=$legacy?'Standard':'OperatingStandards';
-    $raw=dcValue($nodes,$base.'.'.$field);
-    if(is_string($raw)) {
+    // Standard/vendor standard fields are authoritative when they include
+    // band-specific PHYs (b/g => 2.4 GHz, a/ac => 5 GHz).
+    $standardFields=$legacy
+        ? ['Standard','X_HW_SupportedStandards','SupportedStandards','OperatingStandards']
+        : ['OperatingStandards','X_HW_SupportedStandards','SupportedStandards','Standard'];
+    foreach($standardFields as $field) {
+        $raw=dcValue($nodes,$base.'.'.$field);
+        if(!is_string($raw) || trim($raw)==='') continue;
         $tokens=dcOperatingTokens($raw);
         $has24=(bool)array_intersect($tokens,['b','g']);
         $has5=(bool)array_intersect($tokens,['a','ac']);
-        if($has24 xor $has5) return ['band'=>$has24?'2.4':'5','band_source'=>$field,'band_conflict'=>false];
+        if($has24 xor $has5) {
+            return ['band'=>$has24?'2.4':'5','band_source'=>$field,'band_conflict'=>false];
+        }
     }
+
+    // TR-098 devices frequently expose a definitive PossibleChannels list
+    // even when the explicit frequency-band fields are absent.
+    $possible=dcValue($nodes,$base.'.PossibleChannels');
+    if($legacy && is_string($possible) && trim($possible)!=='') {
+        preg_match_all('/\d+/', $possible, $channelMatches);
+        $channels=array_values(array_unique(array_map('intval',$channelMatches[0]??[])));
+        if($channels) {
+            $all24=!array_filter($channels,fn($ch)=>$ch<1 || $ch>14);
+            $all5=!array_filter($channels,fn($ch)=>$ch<32 || $ch>177);
+            if($all24 xor $all5) {
+                return ['band'=>$all24?'2.4':'5','band_source'=>'PossibleChannels','band_conflict'=>false];
+            }
+        }
+    }
+
     return $unknown;
 }
 /** Full discovery is explicit and read-only; selected refreshes remain narrow. */
@@ -189,7 +212,7 @@ function dcWifiDiagnostic(array $nodes,array $wifi): array {
     return ['schema'=>'wifi-edit-diagnostic-v1','interfaces'=>array_map(function($row) use($nodes) {
         $basis=$row['standard']==='TR-098'?$row['id']:($row['radio_id']??null);
         $observed=[];
-        if($basis) foreach(['OperatingFrequencyBand','X_FH_OperatingFrequencyBand','X_HW_FrequencyBand','SupportedFrequencyBands','Standard','OperatingStandards'] as $field) {
+        if($basis) foreach(['OperatingFrequencyBand','X_FH_OperatingFrequencyBand','X_HW_FrequencyBand','SupportedFrequencyBands','Standard','OperatingStandards','X_HW_SupportedStandards','SupportedStandards','PossibleChannels'] as $field) {
             $value=dcValue($nodes,$basis.'.'.$field);
             if(is_string($value) && strlen($value)<=96 && preg_match('/^[A-Za-z0-9., \/+_-]+$/D',$value)) $observed[$field]=$value;
         }
