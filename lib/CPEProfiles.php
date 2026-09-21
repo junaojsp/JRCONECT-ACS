@@ -185,6 +185,287 @@ class CPEProfiles
         ];
     }
 
+
+    private static function deviceIdentity(array $device): array
+    {
+        $manufacturer = (string)(
+            $device['_deviceId']['_Manufacturer']
+            ?? self::get($device, 'InternetGatewayDevice.DeviceInfo.Manufacturer')
+            ?? self::get($device, 'Device.DeviceInfo.Manufacturer')
+            ?? 'Desconhecido'
+        );
+        $model = (string)(
+            $device['_deviceId']['_ProductClass']
+            ?? self::get($device, 'InternetGatewayDevice.DeviceInfo.ProductClass')
+            ?? self::get($device, 'Device.DeviceInfo.ProductClass')
+            ?? 'Desconhecido'
+        );
+        return [$manufacturer, $model];
+    }
+
+    private static function collectLeaves($node, string $path, array &$leaves, int $depth = 0): void
+    {
+        if (!is_array($node) || $depth > 18) return;
+
+        if (array_key_exists('_value', $node)) {
+            $value = $node['_value'];
+            if (is_scalar($value) || $value === null) {
+                $leaves[$path] = $value;
+            }
+        }
+
+        foreach ($node as $key => $value) {
+            $key = (string)$key;
+            if ($key === '' || str_starts_with($key, '_')) continue;
+
+            $next = $path === '' ? $key : $path . '.' . $key;
+            if (preg_match('/password|passphrase|presharedkey|secret|authkey|credential/i', $next)) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                self::collectLeaves($value, $next, $leaves, $depth + 1);
+            } elseif (is_scalar($value) || $value === null) {
+                $leaves[$next] = $value;
+            }
+        }
+    }
+
+    private static function appendCandidate(array &$map, string $key, ?string $path): void
+    {
+        if (!$path) return;
+        if (!isset($map[$key]) || !is_array($map[$key])) $map[$key] = [];
+        if (!in_array($path, $map[$key], true)) $map[$key][] = $path;
+    }
+
+    private static function firstMatchingPath(array $leaves, array $patterns, array $prefer = []): ?string
+    {
+        $matches = [];
+        foreach ($leaves as $path => $value) {
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $path)) {
+                    $score = 0;
+                    foreach ($prefer as $needle) {
+                        if (stripos($path, $needle) !== false) $score += 10;
+                    }
+                    if ($value !== null && trim((string)$value) !== '') $score += 2;
+                    $matches[] = ['path' => $path, 'score' => $score];
+                    break;
+                }
+            }
+        }
+        if (!$matches) return null;
+        usort($matches, fn($a, $b) => $b['score'] <=> $a['score']);
+        return $matches[0]['path'];
+    }
+
+    private static function discoverWlanInstances(array $leaves): array
+    {
+        $instances = [];
+        foreach ($leaves as $path => $value) {
+            if (!preg_match('/^(InternetGatewayDevice\.LANDevice\.\d+\.WLANConfiguration\.(\d+))\.SSID$/i', $path, $m)) {
+                continue;
+            }
+            if ($value === null || trim((string)$value) === '') continue;
+
+            $base = $m[1];
+            $index = (int)$m[2];
+            $possible = (string)($leaves[$base . '.PossibleChannels'] ?? '');
+            $channel = $leaves[$base . '.Channel'] ?? null;
+            $lower = (string)($leaves[$base . '.LowerLayers'] ?? '');
+            $band = 'unknown';
+
+            if (preg_match('/(^|,)(3[6-9]|4\d|5\d|6[0-4]|1(?:49|53|57|61))($|,)/', str_replace(' ', '', $possible))) {
+                $band = '5';
+            } elseif (is_numeric($channel) && (int)$channel >= 36) {
+                $band = '5';
+            } elseif (stripos($lower, 'Radio.2') !== false || $index >= 5) {
+                $band = '5';
+            } elseif ((is_numeric($channel) && (int)$channel <= 14) || preg_match('/(^|,)1(,|$)/', str_replace(' ', '', $possible)) || $index === 1) {
+                $band = '24';
+            }
+
+            $instances[] = [
+                'base' => $base,
+                'index' => $index,
+                'band' => $band,
+                'ssid_path' => $path,
+            ];
+        }
+        usort($instances, fn($a, $b) => $a['index'] <=> $b['index']);
+        return $instances;
+    }
+
+    public static function discover(array $device): array
+    {
+        [$manufacturer, $model] = self::deviceIdentity($device);
+        $leaves = [];
+        self::collectLeaves($device, '', $leaves);
+
+        $wifi = [];
+        $instances = self::discoverWlanInstances($leaves);
+        $band24 = null;
+        $band5 = null;
+        foreach ($instances as $instance) {
+            if ($instance['band'] === '24' && $band24 === null) $band24 = $instance;
+            if ($instance['band'] === '5' && $band5 === null) $band5 = $instance;
+        }
+        if ($band24 === null && isset($instances[0])) $band24 = $instances[0];
+        if ($band5 === null && isset($instances[1])) $band5 = $instances[1];
+
+        $mapBand = function (?array $instance, string $suffix) use (&$wifi, $leaves): void {
+            if (!$instance) return;
+            $base = $instance['base'];
+            self::appendCandidate($wifi, 'ssid_' . $suffix, $instance['ssid_path']);
+            self::appendCandidate($wifi, 'channel_' . $suffix, isset($leaves[$base . '.Channel']) ? $base . '.Channel' : null);
+            self::appendCandidate(
+                $wifi,
+                'enabled_' . $suffix,
+                isset($leaves[$base . '.Enable']) ? $base . '.Enable' :
+                    (isset($leaves[$base . '.RadioEnabled']) ? $base . '.RadioEnabled' : null)
+            );
+            self::appendCandidate(
+                $wifi,
+                'security_' . $suffix,
+                isset($leaves[$base . '.BeaconType']) ? $base . '.BeaconType' :
+                    (isset($leaves[$base . '.IEEE11iEncryptionModes']) ? $base . '.IEEE11iEncryptionModes' : null)
+            );
+            $wifi['associated_' . $suffix] = $base . '.AssociatedDevice';
+        };
+        $mapBand($band24, '24');
+        $mapBand($band5, '5');
+
+        // TR-181 fallback
+        if (empty($wifi['ssid_24'])) {
+            self::appendCandidate($wifi, 'ssid_24', self::firstMatchingPath(
+                $leaves,
+                ['/^Device\.WiFi\.SSID\.\d+\.SSID$/i'],
+                ['SSID.1.']
+            ));
+        }
+        if (empty($wifi['ssid_5'])) {
+            self::appendCandidate($wifi, 'ssid_5', self::firstMatchingPath(
+                $leaves,
+                ['/^Device\.WiFi\.SSID\.\d+\.SSID$/i'],
+                ['SSID.5.', 'SSID.2.']
+            ));
+        }
+
+        $optical = [
+            'rx' => [],
+            'tx' => [],
+            'temperature' => [],
+            'voltage' => [],
+        ];
+        self::appendCandidate($optical, 'rx', self::firstMatchingPath(
+            $leaves,
+            ['/(^|\.)(RXPower|RxPower|ReceivePower|OpticalRxPower|TransceiverRxPower)$/i'],
+            ['gpon', 'optic', 'transceiver', 'virtualparameters', 'pon']
+        ));
+        self::appendCandidate($optical, 'tx', self::firstMatchingPath(
+            $leaves,
+            ['/(^|\.)(TXPower|TxPower|TransmitPower|OpticalTxPower|TransceiverTxPower)$/i'],
+            ['gpon', 'optic', 'transceiver', 'virtualparameters', 'pon']
+        ));
+        self::appendCandidate($optical, 'temperature', self::firstMatchingPath(
+            $leaves,
+            ['/(^|\.)(TransceiverTemperature|OpticTemperature|Temperature|gettemp)$/i'],
+            ['gpon', 'optic', 'transceiver', 'virtualparameters']
+        ));
+        self::appendCandidate($optical, 'voltage', self::firstMatchingPath(
+            $leaves,
+            ['/(^|\.)(Voltage|TransceiverVoltage|OpticVoltage)$/i'],
+            ['gpon', 'optic', 'transceiver']
+        ));
+
+        $pppoe = [];
+        $pppPath = self::firstMatchingPath(
+            $leaves,
+            [
+                '/WANPPPConnection\.\d+\.Username$/i',
+                '/Device\.PPP\.Interface\.\d+\.Username$/i'
+            ],
+            ['WANPPPConnection', 'PPP.Interface']
+        );
+        if ($pppPath) $pppoe[] = $pppPath;
+
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($manufacturer . '_' . $model), -1, $dummy));
+        $slug = trim($slug, '_');
+        $profile = [
+            'id' => 'auto_' . ($slug ?: 'cpe'),
+            'vendor' => $manufacturer,
+            'model' => $model,
+            'match' => [],
+            'source' => 'auto-discovery',
+            'wifi' => $wifi,
+            'optical' => $optical,
+            'pppoe' => $pppoe,
+        ];
+
+        $profile['discovery'] = [
+            'leaf_count' => count($leaves),
+            'wlan_instances' => count($instances),
+            'has_wifi_24' => !empty($wifi['ssid_24']),
+            'has_wifi_5' => !empty($wifi['ssid_5']),
+            'has_optical_rx' => !empty($optical['rx']),
+            'has_optical_tx' => !empty($optical['tx']),
+            'has_pppoe' => !empty($pppoe),
+        ];
+
+        return $profile;
+    }
+
+    private static function mergeProfiles(array $static, array $auto): array
+    {
+        $merged = $static;
+        $merged['source'] = 'static+auto-discovery';
+        $merged['discovery'] = $auto['discovery'] ?? [];
+
+        foreach (['wifi', 'optical'] as $section) {
+            if (!isset($merged[$section])) $merged[$section] = [];
+            foreach (($auto[$section] ?? []) as $key => $value) {
+                if (str_starts_with((string)$key, 'associated_')) {
+                    if (empty($merged[$section][$key])) $merged[$section][$key] = $value;
+                    continue;
+                }
+
+                $staticValues = $merged[$section][$key] ?? [];
+                if (!is_array($staticValues)) $staticValues = [$staticValues];
+                $autoValues = is_array($value) ? $value : [$value];
+                $merged[$section][$key] = array_values(array_unique(array_filter(array_merge($staticValues, $autoValues))));
+            }
+        }
+
+        $merged['pppoe'] = array_values(array_unique(array_filter(array_merge(
+            is_array($merged['pppoe'] ?? null) ? $merged['pppoe'] : [],
+            is_array($auto['pppoe'] ?? null) ? $auto['pppoe'] : []
+        ))));
+
+        return $merged;
+    }
+
+    public static function resolve(array $device): array
+    {
+        $static = self::detect($device);
+        $auto = self::discover($device);
+        return $static ? self::mergeProfiles($static, $auto) : $auto;
+    }
+
+    public static function discoveryReport(array $device): array
+    {
+        $profile = self::resolve($device);
+        return [
+            'id' => $profile['id'] ?? null,
+            'vendor' => $profile['vendor'] ?? null,
+            'model' => $profile['model'] ?? null,
+            'source' => $profile['source'] ?? 'static',
+            'discovery' => $profile['discovery'] ?? [],
+            'wifi' => $profile['wifi'] ?? [],
+            'optical' => $profile['optical'] ?? [],
+            'pppoe' => $profile['pppoe'] ?? [],
+        ];
+    }
+
     public static function detect(array $device): ?array
     {
         $manufacturer = strtoupper((string)(
@@ -290,7 +571,7 @@ class CPEProfiles
 
     public static function optical(array $device): array
     {
-        $profile = self::detect($device);
+        $profile = self::resolve($device);
         if (!$profile) return [];
 
         $map = $profile['optical'] ?? [];
@@ -305,7 +586,7 @@ class CPEProfiles
 
     public static function enrich(array $device, array $data): array
     {
-        $profile = self::detect($device);
+        $profile = self::resolve($device);
         if (!$profile) {
             $data['cpe_profile'] = null;
             return $data;
@@ -314,6 +595,8 @@ class CPEProfiles
         $data['cpe_profile'] = $profile['id'];
         $data['cpe_profile_vendor'] = $profile['vendor'] ?? null;
         $data['cpe_profile_model'] = $profile['model'] ?? null;
+        $data['cpe_profile_source'] = $profile['source'] ?? 'static';
+        $data['cpe_profile_discovery'] = $profile['discovery'] ?? [];
 
         $wifi = $profile['wifi'] ?? [];
         $ssid24 = self::first($device, $wifi['ssid_24'] ?? []);
