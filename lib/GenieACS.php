@@ -689,6 +689,41 @@ class GenieACS {
             return $activeInterfaces;
         };
 
+        // Resolve VLAN from standard/vendor fields, with a safe fallback to
+        // interface names commonly reported by Huawei (e.g. *_VID_100).
+        $resolveWanVlan = function(string $basePath, ?string $name = null) use ($getParam) {
+            $paths = [
+                "{$basePath}.VLANID",
+                "{$basePath}.VlanID",
+                "{$basePath}.X_HW_VLANID",
+                "{$basePath}.X_HW_VLANId",
+                "{$basePath}.X_HW_VLAN",
+                "{$basePath}.X_CT-COM_VLANID",
+                "{$basePath}.X_CT-COM_VLAN",
+                "{$basePath}.X_ZTE-COM_VLANID",
+            ];
+
+            foreach ($paths as $path) {
+                $value = $getParam($path);
+                if ($value === null || $value === '' || $value === 'N/A') continue;
+                if (is_numeric($value)) {
+                    $id = (int)$value;
+                    if ($id >= 1 && $id <= 4094) return $id;
+                }
+                if (preg_match('/\b(?:VID|VLAN)[_\- ]?(\d{1,4})\b/i', (string)$value, $m)) {
+                    $id = (int)$m[1];
+                    if ($id >= 1 && $id <= 4094) return $id;
+                }
+            }
+
+            if ($name && preg_match('/(?:^|[_\-])(?:VID|VLAN)[_\-]?(\d{1,4})(?:$|[_\-])/i', $name, $m)) {
+                $id = (int)$m[1];
+                if ($id >= 1 && $id <= 4094) return $id;
+            }
+
+            return null;
+        };
+
         // Try WANPPPConnection (most common for PPPoE)
         for ($i = 1; $i <= 8; $i++) {
             $basePath = "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.{$i}.WANPPPConnection.1";
@@ -768,6 +803,8 @@ class GenieACS {
                 if (!is_numeric($packetsReceived) || (float)$packetsReceived <= 0) $packetsReceived = $getParam("{$commonBase}.TotalPacketsReceived");
                 if (!is_numeric($packetsSent) || (float)$packetsSent <= 0) $packetsSent = $getParam("{$commonBase}.TotalPacketsSent");
 
+                $vlanId = $resolveWanVlan($basePath, $name);
+
                 $wanDetails[] = [
                     'type' => 'PPPoE',
                     'name' => $name,
@@ -789,6 +826,7 @@ class GenieACS {
                     'errors_received' => $getParam("{$basePath}.Stats.ErrorsReceived") ?? 0,
                     'errors_sent' => $getParam("{$basePath}.Stats.ErrorsSent") ?? 0,
                     'binding' => $bindingInfo,
+                    'vlan_id' => $vlanId ?? 'N/A',
                 ];
             }
         }
@@ -890,6 +928,8 @@ class GenieACS {
                     $name = $serviceList ? "WAN_{$serviceList}_{$i}" : "WAN_IP_Connection_{$i}";
                 }
 
+                $vlanId = $resolveWanVlan($basePath, $name);
+
                 $wanDetails[] = [
                     'type' => 'IP',
                     'name' => $name,
@@ -903,6 +943,7 @@ class GenieACS {
                     'addressing_type' => $getParam("{$basePath}.AddressingType") ?? 'N/A',
                     'uptime' => $getParam("{$basePath}.Uptime") ?? 'N/A',
                     'binding' => $bindingInfo,
+                    'vlan_id' => $vlanId ?? 'N/A',
                     'username' => 'N/A', // IP connections don't have username
                     'last_error' => 'N/A', // IP connections don't have last error
                     'mru_size' => 'N/A', // IP connections don't have MRU size
