@@ -1012,13 +1012,8 @@
             if(!data?.success||!data?.online||!data?.session){
                 traffic.online=false; traffic.latestSession=null;
                 if(badge){badge.textContent='SEM SESSÃO';badge.classList.remove('online');}
-                setMonitorText('live-rx-mbps','--');
-                setMonitorText('live-tx-mbps','--');
-                setMonitorText('live-rx-unit','Mbps');
-                setMonitorText('live-tx-unit','Mbps');
                 setMonitorText('live-rx-total','--');
                 setMonitorText('live-tx-total','--');
-                if(status)status.textContent=data?.message||'Nenhuma sessão PPPoE ativa.';
                 updateMonitoringInsights();
                 return;
             }
@@ -1056,10 +1051,8 @@
                 traffic.last={down,up,sec,accountAt};
             }
 
-            window.updateTr069LiveTraffic(true);
         }catch(e){
-            const status=document.getElementById('bandwidth-sample-status');
-            if(status)status.textContent='Falha ao consultar a sessão: '+e.message;
+            console.warn('[RADIUS MONITOR] sessão indisponível',e);
         }finally{traffic.polling=false;}
     };
 
