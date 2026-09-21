@@ -769,15 +769,24 @@
         return rows.map(([label,value,icon])=>'<div><span><i class="bi '+icon+'"></i>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>').join('');
     }
     async function loadIxcReplicaReport(force=false) {
-        if(!traffic.ixcLoginId || traffic.reportLoading)return;
-        if(!force && traffic.reportLoadedFor===String(traffic.ixcLoginId) && traffic.report)return;
+        const loginId=traffic.ixcLoginId||null;
+        const username=traffic.latestSession?.username||null;
+        if((!loginId && !username) || traffic.reportLoading)return;
+
+        const reportKey=loginId?'id:'+String(loginId):'login:'+String(username);
+        if(!force && traffic.reportLoadedFor===reportKey && traffic.report)return;
+
+        const params=new URLSearchParams();
+        if(loginId) params.set('login_id',loginId);
+        else params.set('login',username);
+
         traffic.reportLoading=true;
         try{
-            const r=await fetch('/api/get-ixc-login-report.php?login_id='+encodeURIComponent(traffic.ixcLoginId),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+            const r=await fetch('/api/get-ixc-login-report.php?'+params.toString(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
             const data=await r.json();
             if(!r.ok||!data?.success)return;
             traffic.report=data;
-            traffic.reportLoadedFor=String(traffic.ixcLoginId);
+            traffic.reportLoadedFor=reportKey;
             const summary=document.getElementById('jr-ixc-access-summary');
             const events=document.getElementById('jr-ixc-events');
             const consumption=document.getElementById('jr-ixc-consumption');
@@ -923,6 +932,10 @@
                     traffic.liveDisabledUntil=Date.now()+3500;
                     setMonitorText('jr-source-live-state','NE8000 sem leitura de tráfego');
                     setMonitorText('jr-monitor-live-source','Huawei NE8000 / SSH');
+                    setMonitorText('live-rx-mbps','--');
+                    setMonitorText('live-tx-mbps','--');
+                    setMonitorText('live-rx-unit','Mbps');
+                    setMonitorText('live-tx-unit','Mbps');
                 }
 
                 const status=document.getElementById('bandwidth-sample-status');
@@ -936,8 +949,9 @@
                             })
                             .join(' → ')
                         : '';
+                    const detail=data?.diagnostic?.detail ? ' • '+String(data.diagnostic.detail) : '';
                     status.textContent=(data?.message||'Sem leitura direta do NE8000.')
-                        +(attempts?' • '+attempts:'');
+                        +(attempts?' • '+attempts:'')+detail;
                 }
 
                 // Nesta versão não há fallback para tráfego via IXC:
@@ -1021,7 +1035,7 @@
             const s=data.session;
             traffic.online=true; traffic.latestSession=s;
             traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
-            if(traffic.ixcLoginId) loadIxcReplicaReport();
+            if(traffic.ixcLoginId || s.username) loadIxcReplicaReport();
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
             // RADIUS: output = download do assinante; input = upload do assinante.
@@ -1045,34 +1059,12 @@
             setMonitorText('jr-radius-plan',monitorPlanLabel());
             setMonitorText('jr-monitor-bras',s.bras || 'N/D');
 
-            let newSample=false;
+            // O RADIUS permanece apenas como fonte de totais e contabilização.
+            // O tráfego instantâneo é exclusivo do concentrador NE8000.
             if(Number.isFinite(down)&&Number.isFinite(up)&&Number.isFinite(sec)){
-                if(traffic.last && sec>traffic.last.sec && down>=traffic.last.down && up>=traffic.last.up){
-                    const dt=sec-traffic.last.sec;
-                    const downMbps=((down-traffic.last.down)*8)/(dt*1000000);
-                    const upMbps=((up-traffic.last.up)*8)/(dt*1000000);
-                    if(Number.isFinite(downMbps)&&Number.isFinite(upMbps)){
-                        if(!traffic.liveAvailable){
-                            traffic.samples.push({at:accountAt,down:downMbps,up:upMbps,source:'radius'});
-                            if(traffic.samples.length>60)traffic.samples.shift();
-                            setLiveRate('live-rx',downMbps);
-                            setLiveRate('live-tx',upMbps);
-                            if(status)status.textContent='Fallback RADIUS • nova contabilização às '+new Date(accountAt).toLocaleTimeString('pt-BR')+' • intervalo '+dt+'s';
-                            newSample=true;
-                        }
-                    }
-                } else if(!traffic.last && status) {
-                    status.textContent='Primeira contabilização recebida; aguardando a próxima.';
-                }
                 traffic.last={down,up,sec,accountAt};
             }
 
-            if(!newSample && traffic.last && status && traffic.samples.length){
-                status.textContent='Última contabilização '+fmtAccountingAge(Date.now()-accountAt)+' • aguardando a próxima.';
-            }
-
-            const chart=document.getElementById('bandwidth-bars');
-            if(chart)chart.innerHTML=chartHtml(traffic.samples);
             window.updateConcentratorLiveTraffic(true);
         }catch(e){
             const status=document.getElementById('bandwidth-sample-status');
