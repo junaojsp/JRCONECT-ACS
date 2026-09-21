@@ -1214,6 +1214,6 @@ class GenieACS {
         // Tags
         $data['tags'] = $device['_tags'] ?? [];
 
-        return $data;
+        return CPEProfiles::enrich($device, $data);
     }
 }
