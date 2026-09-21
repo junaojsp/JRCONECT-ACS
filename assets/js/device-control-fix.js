@@ -660,6 +660,7 @@
         setMonitorText('jr-monitor-peak',stats.peakDown===null?'--':fmtMbps(stats.peakDown)+' ↓ / '+fmtMbps(stats.peakUp)+' ↑');
         setMonitorText('jr-monitor-average',stats.avgDown===null?'--':fmtMbps(stats.avgDown)+' ↓ / '+fmtMbps(stats.avgUp)+' ↑');
         setMonitorText('jr-monitor-last-accounting',traffic.lastAccountingAt?new Date(traffic.lastAccountingAt).toLocaleString('pt-BR'):'N/D');
+        setMonitorText('jr-monitor-last-accounting-text',traffic.lastAccountingAt?new Date(traffic.lastAccountingAt).toLocaleString('pt-BR'):'N/D');
         setMonitorText('jr-monitor-accounting-age',traffic.lastAccountingAt?fmtAccountingAge(Date.now()-traffic.lastAccountingAt):'Aguardando');
         setMonitorText('jr-monitor-source','IXC/RADIUS');
         setMonitorText('jr-monitor-bras',traffic.latestSession?.bras || 'N/D');
@@ -716,7 +717,7 @@
             '<div><span>Plano contratado</span><strong id="jr-monitor-plan">'+esc(monitorPlanLabel())+'</strong><small id="jr-monitor-plan-use">Uso atual: aguardando amostra</small><div class="jr-monitor-plan-track"><i id="jr-monitor-plan-bar"></i></div></div>'+
             '<div><span>Pico desde abertura</span><strong id="jr-monitor-peak">--</strong><small>Download ↓ / Upload ↑ em Mbps</small></div>'+
             '<div><span>Média desde abertura</span><strong id="jr-monitor-average">--</strong><small>Download ↓ / Upload ↑ em Mbps</small></div>'+
-            '<div><span>Última contabilização</span><strong id="jr-monitor-accounting-age">Aguardando</strong><small id="jr-monitor-last-accounting">N/D</small></div>'+
+            '<div><span>Última contabilização</span><strong id="jr-monitor-accounting-age">Aguardando</strong><small id="jr-monitor-last-accounting-text">N/D</small></div>'+
           '</div>'+
           '<div id="jr-monitor-diagnosis" class="jr-monitor-diagnosis collecting">'+
             '<div><span>Diagnóstico automático da sessão</span><strong id="jr-monitor-diagnosis-title">Coletando dados</strong><p id="jr-monitor-diagnosis-text">Aguardando contabilizações consecutivas do IXC/RADIUS.</p></div>'+
@@ -750,6 +751,10 @@
             if(!data?.success||!data?.online||!data?.session){
                 traffic.online=false; traffic.latestSession=null;
                 if(badge){badge.textContent='SEM SESSÃO';badge.classList.remove('online');}
+                setMonitorText('live-rx-mbps','--');
+                setMonitorText('live-tx-mbps','--');
+                setMonitorText('live-rx-total','--');
+                setMonitorText('live-tx-total','--');
                 if(status)status.textContent=data?.message||'Nenhuma sessão PPPoE ativa.';
                 updateMonitoringInsights();
                 return;
