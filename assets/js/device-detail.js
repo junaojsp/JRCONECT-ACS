@@ -3385,7 +3385,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAIStatus();
     // Auto refresh every 30 seconds (preserve scroll position)
     setInterval(() => loadDeviceDetail(true), 30000);
-    setInterval(updateRadiusBandwidthSample, 1000);
+    setInterval(updateRadiusBandwidthSample, 5000);
     setInterval(updateOverviewOperationalMeta, 1000);
 
     // Auto-start/stop hotspot monitoring based on Connected Devices tab visibility
