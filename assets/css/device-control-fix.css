@@ -478,3 +478,59 @@
 .jr-monitor-v3 .jr-monitor-report-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1050px){.jr-ixc-access-summary{grid-template-columns:repeat(2,1fr)}.jr-ixc-access-summary>div:nth-child(3n){border-right:1px solid #28384c}.jr-ixc-access-summary>div:nth-child(2n){border-right:0}.jr-monitor-live-head{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.jr-ixc-access-summary,.jr-monitor-live-head,.jr-monitor-v3 .jr-monitor-report-grid{grid-template-columns:1fr}.jr-ixc-access-summary>div,.jr-monitor-live-head>div{border-right:0}}
+
+
+/* Monitoramento híbrido: NE8000 + IXC/RADIUS + TR-069 */
+.jr-monitor-source-strip{
+    display:grid;
+    grid-template-columns:1.15fr 1fr 1fr;
+    gap:10px;
+}
+.jr-monitor-source-item{
+    position:relative;
+    overflow:hidden;
+    min-height:78px;
+    padding:13px 15px;
+    border:1px solid #293d55;
+    border-radius:11px;
+    background:linear-gradient(180deg,#19273a,#152235);
+}
+.jr-monitor-source-item.primary{
+    border-color:#1e7895;
+    box-shadow:inset 3px 0 0 #29bee8;
+}
+.jr-monitor-source-item span{
+    display:block;
+    margin-bottom:6px;
+    color:#738aa2;
+    font-size:8px;
+    letter-spacing:.08em;
+    font-weight:700;
+}
+.jr-monitor-source-item strong{
+    display:block;
+    color:#f1f7fb;
+    font-size:13px;
+}
+.jr-monitor-source-item.primary strong{
+    color:#54d5f6;
+}
+.jr-monitor-source-item small{
+    display:block;
+    margin-top:5px;
+    color:#8ca1b5;
+    font-size:8px;
+}
+.jr-monitor-source-item.primary:after{
+    content:'';
+    position:absolute;
+    width:90px;
+    height:90px;
+    right:-35px;
+    top:-45px;
+    border-radius:50%;
+    background:rgba(41,190,232,.07);
+}
+@media(max-width:900px){
+    .jr-monitor-source-strip{grid-template-columns:1fr}
+}
