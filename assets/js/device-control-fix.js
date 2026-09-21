@@ -768,6 +768,8 @@
         }finally{traffic.reportLoading=false;}
     }
 
+    window.loadIxcReplicaReport = loadIxcReplicaReport;
+
     function chartHtml(samples) {
         const cutoff=Date.now()-(5*60*1000);
         const recent=samples.filter(s=>Number(s.at)>=cutoff && Number.isFinite(s.down)&&Number.isFinite(s.up));
@@ -799,7 +801,7 @@
               '<div><span><i class="bi bi-router"></i>Concentrador</span><strong>N/D</strong></div>'+
             '</div>'+
             '<div class="jr-ixc-actions">'+
-              '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateIxcLiveTraffic(true); loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
+              '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateIxcLiveTraffic(true); window.loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
               '<button type="button" onclick="document.getElementById(\'wifi-tab\')?.click()"><i class="bi bi-gear"></i> Dados Roteador</button>'+
             '</div>'+
           '</div>'+
