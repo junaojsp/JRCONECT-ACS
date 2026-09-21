@@ -520,7 +520,7 @@ window.GENIEACS_CONFIGURED =
 
 
 <script src="/assets/js/devices/devices-state.js"></script>
-<script src="/assets/js/devices.js"></script>
+<script src="/assets/js/devices.js?v=20260921-2"></script>
 
 
 <?php
