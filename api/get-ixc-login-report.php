@@ -72,6 +72,99 @@ function reportList(
         : [];
 }
 
+function reportIxcConsumption(
+    string $baseUrl,
+    string $token,
+    int $loginId,
+    string $since,
+    string $until
+): array {
+    $url = rtrim($baseUrl, '/')
+        . '/aplicativo/radusuarios/rel_22021.php?consumo='
+        . rawurlencode((string)$loginId)
+        . '&since=' . rawurlencode($since)
+        . '&until=' . rawurlencode($until);
+
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [
+            'available' => false,
+            'http_code' => 0,
+            'reason' => 'curl_init_failed',
+            'daily' => [],
+        ];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_TIMEOUT => 12,
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json,text/plain;q=0.9,*/*;q=0.8',
+            'Cache-Control: no-cache',
+            'ixcsoft: listar',
+            'Authorization: Basic ' . base64_encode($token),
+            'X-Requested-With: XMLHttpRequest',
+        ],
+    ]);
+
+    $body = curl_exec($ch);
+    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    $redirect = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if (!is_string($body)) {
+        return [
+            'available' => false,
+            'http_code' => $http,
+            'reason' => $error !== '' ? 'curl_error' : 'empty_response',
+            'daily' => [],
+        ];
+    }
+
+    $decoded = json_decode(trim($body), true);
+    if (!is_array($decoded) || !array_is_list($decoded)) {
+        return [
+            'available' => false,
+            'http_code' => $http,
+            'content_type' => $contentType !== '' ? $contentType : null,
+            'redirect_detected' => $redirect !== '',
+            'reason' => $redirect !== '' || in_array($http, [401, 403], true)
+                ? 'web_session_required'
+                : 'invalid_json_shape',
+            'daily' => [],
+        ];
+    }
+
+    $daily = [];
+    foreach ($decoded as $row) {
+        if (!is_array($row)) continue;
+
+        $date = trim((string)($row['data'] ?? ''));
+        if ($date === '') continue;
+
+        $daily[] = [
+            'date' => $date,
+            'download_bytes' => reportInt($row['consumo'] ?? 0),
+            'upload_bytes' => reportInt($row['consumo_upload'] ?? 0),
+            'sessions' => null,
+        ];
+    }
+
+    return [
+        'available' => !empty($daily),
+        'http_code' => $http,
+        'content_type' => $contentType !== '' ? $contentType : null,
+        'redirect_detected' => $redirect !== '',
+        'reason' => !empty($daily) ? null : 'no_rows',
+        'daily' => $daily,
+    ];
+}
+
+
 function reportOne(
     string $baseUrl,
     string $token,
@@ -227,7 +320,7 @@ try {
     $tz = new DateTimeZone('America/Sao_Paulo');
     $now = new DateTimeImmutable('now', $tz);
     $today = new DateTimeImmutable('today', $tz);
-    $start30 = $today->modify('-29 days');
+    $start30 = $today->modify('-30 days');
     $start7 = $today->modify('-6 days');
 
     $active = null;
@@ -331,6 +424,23 @@ try {
         reportPick($login, ['tipo_conexao', 'tipo_conexao_mapa'])
         ?? 'Fibra';
 
+    $ixcConsumption = reportIxcConsumption(
+        $baseUrl,
+        $token,
+        (int)$loginId,
+        $start30->format('Y-m-d'),
+        $today->format('Y-m-d')
+    );
+
+    $consumptionSource = 'RADIUS fallback';
+    if (!empty($ixcConsumption['available']) && !empty($ixcConsumption['daily'])) {
+        $consumption = [];
+        foreach ($ixcConsumption['daily'] as $row) {
+            $consumption[$row['date']] = $row;
+        }
+        $consumptionSource = 'IXC rel_22021.php?consumo';
+    }
+
     $totalDownload = array_sum(array_column($consumption, 'download_bytes'));
     $totalUpload = array_sum(array_column($consumption, 'upload_bytes'));
 
@@ -367,10 +477,16 @@ try {
             'events' => $events,
         ],
         'last_30_days' => [
+            'source' => $consumptionSource,
             'daily' => array_values($consumption),
             'download_bytes' => $totalDownload,
             'upload_bytes' => $totalUpload,
             'total_bytes' => $totalDownload + $totalUpload,
+            'ixc_endpoint' => [
+                'available' => (bool)($ixcConsumption['available'] ?? false),
+                'http_code' => $ixcConsumption['http_code'] ?? null,
+                'reason' => $ixcConsumption['reason'] ?? null,
+            ],
         ],
         'legend' => [
             'user' => 'Requisitado pelo usuário',
