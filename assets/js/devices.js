@@ -583,12 +583,63 @@ function normalizeDeviceSerial(value) {
     return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+function normalizeSearchValue(value) {
+    return String(value ?? '').toLowerCase().trim();
+}
+
+function compactSearchValue(value) {
+    return normalizeSearchValue(value).replace(/[^a-z0-9]/g, '');
+}
+
 function deviceMatchesLocalSearch(device, searchTerm) {
-    const serialNumber = (device.serial_number || '').toLowerCase();
-    const macAddress = (device.mac_address || '').toLowerCase();
-    const pppoeUsername = (device.pppoe_username || '').toLowerCase();
-    const tagsMatch = Array.isArray(device.tags) && device.tags.some(tag => String(tag).toLowerCase().includes(searchTerm));
-    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || pppoeUsername.includes(searchTerm) || tagsMatch;
+    const term = normalizeSearchValue(searchTerm);
+    const compactTerm = compactSearchValue(searchTerm);
+
+    const directValues = [
+        device.serial_number,
+        device.mac_address,
+        device.pppoe_username,
+        device.device_id,
+        device.product_class,
+        device.manufacturer,
+        device.wifi_ssid,
+        device.ip_tr069,
+        device.ip_address,
+        device.status
+    ];
+
+    if (Array.isArray(device.tags)) {
+        directValues.push(...device.tags);
+    }
+
+    // Primeiro pesquisa nos campos principais exibidos/úteis.
+    const directMatch = directValues.some(value => {
+        const text = normalizeSearchValue(value);
+        const compact = compactSearchValue(value);
+        return text.includes(term) || (compactTerm && compact.includes(compactTerm));
+    });
+
+    if (directMatch) return true;
+
+    // Fallback: pesquisa em qualquer valor simples retornado pelo GenieACS.
+    // Isso cobre modelos/fabricantes que usam nomes de campos diferentes.
+    return Object.values(device || {}).some(value => {
+        if (value == null) return false;
+
+        if (Array.isArray(value)) {
+            return value.some(item => {
+                const text = normalizeSearchValue(item);
+                const compact = compactSearchValue(item);
+                return text.includes(term) || (compactTerm && compact.includes(compactTerm));
+            });
+        }
+
+        if (typeof value === 'object') return false;
+
+        const text = normalizeSearchValue(value);
+        const compact = compactSearchValue(value);
+        return text.includes(term) || (compactTerm && compact.includes(compactTerm));
+    });
 }
 
 async function searchClientDevices(searchTerm, localDevices) {
