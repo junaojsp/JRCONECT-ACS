@@ -17,6 +17,7 @@ ensureAIConfigTable($conn);
 $ai = getAIConfig($conn);
 $aiProviders = getAIProviderStatus($conn);
 $activeAIProvider = $ai['provider'] ?? 'openai';
+$cpeProfiles = \App\CPEProfiles::profiles();
 
 include __DIR__ . '/views/layouts/header.php';
 ?>
@@ -88,6 +89,20 @@ include __DIR__ . '/views/layouts/header.php';
                 >
                     <i class="fab fa-telegram"></i>
                     Configuração do Bot
+                </button>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link"
+                    id="cpe-profiles-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#cpe-profiles-config"
+                    type="button"
+                    role="tab"
+                >
+                    <i class="bi bi-router"></i>
+                    Perfis de Equipamentos
                 </button>
             </li>
 
@@ -580,6 +595,72 @@ include __DIR__ . '/views/layouts/header.php';
 
             </div>
 
+
+            <!-- Perfis de Equipamentos -->
+            <div
+                class="tab-pane fade"
+                id="cpe-profiles-config"
+                role="tabpanel"
+            >
+                <div class="card mt-3">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-router"></i> Perfis de Equipamentos / CPE</span>
+                        <span class="badge bg-info"><?php echo count($cpeProfiles); ?> perfis</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            O painel identifica fabricante/modelo automaticamente e usa o perfil para localizar Wi-Fi, PPPoE e dados ópticos no TR-069.
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Fabricante</th>
+                                        <th>Modelo</th>
+                                        <th>Wi-Fi</th>
+                                        <th>Óptico</th>
+                                        <th>ID do perfil</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($cpeProfiles as $profileId => $profile): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($profile['vendor'] ?? 'N/D', ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td><strong><?php echo htmlspecialchars($profile['model'] ?? 'N/D', ENT_QUOTES, 'UTF-8'); ?></strong></td>
+                                            <td>
+                                                <?php
+                                                    $wifi = $profile['wifi'] ?? [];
+                                                    $wifiCount = count($wifi['ssid_24'] ?? []) + count($wifi['ssid_5'] ?? []);
+                                                ?>
+                                                <span class="badge bg-<?php echo $wifiCount ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $wifiCount ? 'Mapeado' : 'Padrão'; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                    $optical = $profile['optical'] ?? [];
+                                                    $opticalCount = count($optical['rx'] ?? []) + count($optical['tx'] ?? []);
+                                                ?>
+                                                <span class="badge bg-<?php echo $opticalCount ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $opticalCount ? 'RX/TX mapeado' : 'Padrão'; ?>
+                                                </span>
+                                            </td>
+                                            <td><code><?php echo htmlspecialchars($profileId, ENT_QUOTES, 'UTF-8'); ?></code></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-secondary mb-0">
+                            <i class="bi bi-diagram-3"></i>
+                            Perfis iniciais: Huawei EG8145V5, FiberHome HG6143D3 e Nokia G-240W-A. Novos modelos podem ser adicionados centralmente sem alterar as telas.
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Configuração IA -->
             <div
