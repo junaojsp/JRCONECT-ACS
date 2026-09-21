@@ -77,6 +77,26 @@ function jrSearchIxcList(
     return is_array($records) ? array_values(array_filter($records, 'is_array')) : [];
 }
 
+
+function jrFormatDocument(string $digits): array {
+    $values = [$digits];
+
+    if (strlen($digits) === 11) {
+        $values[] = substr($digits, 0, 3) . '.' .
+            substr($digits, 3, 3) . '.' .
+            substr($digits, 6, 3) . '-' .
+            substr($digits, 9, 2);
+    } elseif (strlen($digits) === 14) {
+        $values[] = substr($digits, 0, 2) . '.' .
+            substr($digits, 2, 3) . '.' .
+            substr($digits, 5, 3) . '/' .
+            substr($digits, 8, 4) . '-' .
+            substr($digits, 12, 2);
+    }
+
+    return array_values(array_unique(array_filter($values)));
+}
+
 function jrSearchPick(array $record, array $keys): ?string {
     foreach ($keys as $key) {
         if (isset($record[$key]) && trim((string)$record[$key]) !== '') {
@@ -116,16 +136,33 @@ try {
         } catch (Throwable $ignored) {}
     }
 
-    // CPF/CNPJ: tenta exatamente como digitado e somente números.
+    // CPF/CNPJ: o IXC pode armazenar o documento com ou sem pontuação.
     $digits = preg_replace('/\\D+/', '', $term) ?? '';
     if (strlen($digits) >= 6) {
-        foreach (array_unique([$term, $digits]) as $cpfQuery) {
-            try {
-                foreach (jrSearchIxcList($baseUrl, $token, 'cliente', 'cliente.cnpj_cpf', $cpfQuery, '=', 20) as $client) {
-                    $id = jrSearchPick($client, ['id']);
-                    if ($id) $clientIds[$id] = $client;
+        $documentQueries = array_values(array_unique(array_merge(
+            [$term],
+            jrFormatDocument($digits)
+        )));
+
+        // Campos encontrados em diferentes versões/instalações do IXC.
+        $documentFields = [
+            'cliente.cnpj_cpf',
+            'cliente.cpf_cnpj',
+            'cliente.cpf',
+            'cliente.cnpj'
+        ];
+
+        foreach ($documentFields as $qtype) {
+            foreach ($documentQueries as $cpfQuery) {
+                foreach (['=', 'L'] as $oper) {
+                    try {
+                        foreach (jrSearchIxcList($baseUrl, $token, 'cliente', $qtype, $cpfQuery, $oper, 50) as $client) {
+                            $id = jrSearchPick($client, ['id']);
+                            if ($id) $clientIds[$id] = $client;
+                        }
+                    } catch (Throwable $ignored) {}
                 }
-            } catch (Throwable $ignored) {}
+            }
         }
     }
 
