@@ -879,7 +879,7 @@ try {
                         'temperature_status' => jrOpticalStatus($profileOptical['temperature'] ?? null),
                         'voltage' => $profileOptical['voltage'] ?? null,
                         'voltage_status' => jrOpticalStatus($profileOptical['voltage'] ?? null),
-                        'last_update' => null,
+                        'last_update' => $profileOptical['last_update'] ?? null,
                     ],
                 ]
             );
@@ -1014,7 +1014,9 @@ try {
     if ($rx === null) $rx = $profileOptical['rx_power'] ?? null;
     if ($tx === null) $tx = $profileOptical['tx_power'] ?? null;
     if ($temperature === null) $temperature = $profileOptical['temperature'] ?? null;
+    if ($voltage !== null && $voltage <= 0) $voltage = null;
     if ($voltage === null) $voltage = $profileOptical['voltage'] ?? null;
+    if ($voltage !== null && $voltage <= 0) $voltage = null;
 
 
     /* =====================================================
@@ -1043,6 +1045,7 @@ try {
 
     $lastUpdate =
         $record['data_sinal']
+        ?? $profileOptical['last_update']
         ?? null;
 
 
