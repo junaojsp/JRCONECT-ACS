@@ -117,6 +117,12 @@ try {
     $clientIds = [];
     $loginRecords = [];
     $matches = [];
+    $debug = [
+        'term' => $term,
+        'client_queries' => [],
+        'login_queries' => [],
+        'fiber_queries' => [],
+    ];
 
     // Login PPPoE (busca parcial).
     try {
@@ -127,24 +133,39 @@ try {
     } catch (Throwable $ignored) {}
 
     // Nome / razão social e nome fantasia.
-    foreach (['cliente.razao', 'cliente.fantasia'] as $qtype) {
-        try {
-            foreach (jrSearchIxcList($baseUrl, $token, 'cliente', $qtype, $term, 'L', 50) as $client) {
-                $id = jrSearchPick($client, ['id']);
-                if ($id) $clientIds[$id] = $client;
+    foreach (['cliente.razao', 'cliente.fantasia', 'cliente.nome'] as $qtype) {
+        foreach (['L', 'C'] as $oper) {
+            try {
+                $rows = jrSearchIxcList($baseUrl, $token, 'cliente', $qtype, $term, $oper, 50);
+                $debug['client_queries'][] = [
+                    'qtype' => $qtype,
+                    'query' => $term,
+                    'oper' => $oper,
+                    'count' => count($rows),
+                ];
+                foreach ($rows as $client) {
+                    $id = jrSearchPick($client, ['id']);
+                    if ($id) $clientIds[$id] = $client;
+                }
+            } catch (Throwable $e) {
+                $debug['client_queries'][] = [
+                    'qtype' => $qtype,
+                    'query' => $term,
+                    'oper' => $oper,
+                    'error' => $e->getMessage(),
+                ];
             }
-        } catch (Throwable $ignored) {}
+        }
     }
 
-    // CPF/CNPJ: o IXC pode armazenar o documento com ou sem pontuação.
+    // CPF/CNPJ: tenta campos e formatos comuns do IXC.
     $digits = preg_replace('/\\D+/', '', $term) ?? '';
-    if (strlen($digits) >= 6) {
+    if (strlen($digits) >= 3) {
         $documentQueries = array_values(array_unique(array_merge(
             [$term],
             jrFormatDocument($digits)
         )));
 
-        // Campos encontrados em diferentes versões/instalações do IXC.
         $documentFields = [
             'cliente.cnpj_cpf',
             'cliente.cpf_cnpj',
@@ -154,13 +175,27 @@ try {
 
         foreach ($documentFields as $qtype) {
             foreach ($documentQueries as $cpfQuery) {
-                foreach (['=', 'L'] as $oper) {
+                foreach (['=', 'L', 'C'] as $oper) {
                     try {
-                        foreach (jrSearchIxcList($baseUrl, $token, 'cliente', $qtype, $cpfQuery, $oper, 50) as $client) {
+                        $rows = jrSearchIxcList($baseUrl, $token, 'cliente', $qtype, $cpfQuery, $oper, 50);
+                        $debug['client_queries'][] = [
+                            'qtype' => $qtype,
+                            'query' => $cpfQuery,
+                            'oper' => $oper,
+                            'count' => count($rows),
+                        ];
+                        foreach ($rows as $client) {
                             $id = jrSearchPick($client, ['id']);
                             if ($id) $clientIds[$id] = $client;
                         }
-                    } catch (Throwable $ignored) {}
+                    } catch (Throwable $e) {
+                        $debug['client_queries'][] = [
+                            'qtype' => $qtype,
+                            'query' => $cpfQuery,
+                            'oper' => $oper,
+                            'error' => $e->getMessage(),
+                        ];
+                    }
                 }
             }
         }
@@ -168,12 +203,26 @@ try {
 
     // Clientes encontrados -> logins PPPoE.
     foreach (array_keys($clientIds) as $clientId) {
-        try {
-            foreach (jrSearchIxcList($baseUrl, $token, 'radusuarios', 'radusuarios.id_cliente', $clientId, '=', 50) as $login) {
-                $id = jrSearchPick($login, ['id']);
-                if ($id) $loginRecords[$id] = $login;
+        foreach (['radusuarios.id_cliente', 'radusuarios.cliente_id'] as $qtype) {
+            try {
+                $rows = jrSearchIxcList($baseUrl, $token, 'radusuarios', $qtype, $clientId, '=', 50);
+                $debug['login_queries'][] = [
+                    'qtype' => $qtype,
+                    'query' => $clientId,
+                    'count' => count($rows),
+                ];
+                foreach ($rows as $login) {
+                    $id = jrSearchPick($login, ['id']);
+                    if ($id) $loginRecords[$id] = $login;
+                }
+            } catch (Throwable $e) {
+                $debug['login_queries'][] = [
+                    'qtype' => $qtype,
+                    'query' => $clientId,
+                    'error' => $e->getMessage(),
+                ];
             }
-        } catch (Throwable $ignored) {}
+        }
     }
 
     $serials = [];
@@ -213,12 +262,20 @@ try {
         } catch (Throwable $ignored) {}
     }
 
-    jrSearchOut([
+    $response = [
         'success' => true,
         'source' => 'IXC',
         'serials' => array_values(array_keys($serials)),
         'matches' => $matches,
-    ]);
+    ];
+
+    if (($_GET['debug'] ?? '') === '1') {
+        $response['debug'] = $debug;
+        $response['client_ids'] = array_values(array_keys($clientIds));
+        $response['login_ids'] = array_values(array_keys($loginRecords));
+    }
+
+    jrSearchOut($response);
 } catch (Throwable $e) {
     jrSearchOut([
         'success' => false,
