@@ -105,7 +105,7 @@ async function loadDevices(isAutoRefresh = false) {
                         tagsMatch = device.tags.some(tag => tag.toLowerCase().includes(searchTerm));
                     }
 
-                    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || tagsMatch;
+                    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || (device.pppoe_username || '').toLowerCase().includes(searchTerm) || tagsMatch;
                 });
 
                 // Debug: Log search results during auto-refresh
@@ -569,13 +569,58 @@ function extractIP(ipString) {
 function updateSearchPlaceholder(type) {
     const searchInput = document.getElementById('search-input');
     if (type === 'onu') {
-        searchInput.placeholder = 'Search by Serial Number, MAC Address, or Tags...';
+        searchInput.placeholder = 'Buscar por serial, MAC, login, CPF ou nome do cliente...';
     } else {
         searchInput.placeholder = 'Search by Name...';
     }
 }
 
 // Search functionality
+let clientSearchTimer = null;
+let clientSearchRequest = 0;
+
+function normalizeDeviceSerial(value) {
+    return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function deviceMatchesLocalSearch(device, searchTerm) {
+    const serialNumber = (device.serial_number || '').toLowerCase();
+    const macAddress = (device.mac_address || '').toLowerCase();
+    const pppoeUsername = (device.pppoe_username || '').toLowerCase();
+    const tagsMatch = Array.isArray(device.tags) && device.tags.some(tag => String(tag).toLowerCase().includes(searchTerm));
+    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || pppoeUsername.includes(searchTerm) || tagsMatch;
+}
+
+async function searchClientDevices(searchTerm, localDevices) {
+    const requestId = ++clientSearchRequest;
+    try {
+        const response = await fetch('/api/search-client-devices.php?q=' + encodeURIComponent(searchTerm), {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/json' }
+        });
+        const data = await response.json();
+        if (requestId !== clientSearchRequest) return;
+        const currentTerm = document.getElementById('search-input')?.value.toLowerCase().trim() || '';
+        if (currentTerm !== searchTerm || currentFilterType !== 'onu') return;
+
+        const serials = new Set((data.serials || []).map(normalizeDeviceSerial));
+        const combined = allDevices.filter(device =>
+            deviceMatchesLocalSearch(device, searchTerm) || serials.has(normalizeDeviceSerial(device.serial_number))
+        );
+        renderDevices(combined);
+        updateDeviceCount(combined.length, allDevices.length);
+        updateDeviceStats(combined, true);
+    } catch (error) {
+        console.warn('[SEARCH IXC] Busca de cliente indisponível:', error);
+        if (requestId === clientSearchRequest) {
+            renderDevices(localDevices);
+            updateDeviceCount(localDevices.length, allDevices.length);
+            updateDeviceStats(localDevices, true);
+        }
+    }
+}
+
 function filterDevices() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
 
@@ -620,19 +665,8 @@ function filterDevices() {
 
     // Different search logic based on tab type
     if (currentFilterType === 'onu') {
-        // ONU: search by Serial Number, MAC Address, or Tags
-        const filteredDevices = baseDevices.filter(device => {
-            const serialNumber = (device.serial_number || '').toLowerCase();
-            const macAddress = (device.mac_address || '').toLowerCase();
-
-            // Search in tags array
-            let tagsMatch = false;
-            if (device.tags && Array.isArray(device.tags) && device.tags.length > 0) {
-                tagsMatch = device.tags.some(tag => tag.toLowerCase().includes(searchTerm));
-            }
-
-            return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || tagsMatch;
-        });
+        // Busca local imediata: serial, MAC, login PPPoE e tags.
+        const filteredDevices = baseDevices.filter(device => deviceMatchesLocalSearch(device, searchTerm));
 
         // Debug: Log search results
         console.log(`[SEARCH] Found ${filteredDevices.length} device(s) matching "${searchTerm}"`);
@@ -640,6 +674,12 @@ function filterDevices() {
         renderDevices(filteredDevices);
         updateDeviceCount(filteredDevices.length, allDevices.length);
         updateDeviceStats(filteredDevices, true);
+
+        // Complementa a busca no IXC por CPF, nome e login, com debounce.
+        clearTimeout(clientSearchTimer);
+        if (searchTerm.length >= 3) {
+            clientSearchTimer = setTimeout(() => searchClientDevices(searchTerm, filteredDevices), 450);
+        }
     } else {
         // Infrastructure: search by Name
         let items = [];
