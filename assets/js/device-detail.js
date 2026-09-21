@@ -629,6 +629,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                                 <div><span><i class="bi bi-router"></i>Modelo</span><strong>${device.product_class || device.model || 'N/D'}</strong></div>
                                 <div><span><i class="bi bi-upc-scan"></i>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
                                 <div><span><i class="bi bi-building"></i>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
+                                <div><span><i class="bi bi-diagram-3"></i>Perfil TR-069</span><strong>${
+                                    device.cpe_profile_source === 'auto-discovery'
+                                        ? 'Auto Discovery'
+                                        : device.cpe_profile_source === 'static+auto-discovery'
+                                            ? 'Perfil + Auto Discovery'
+                                            : 'Perfil fixo'
+                                }</strong></div>
                                 <div><span><i class="bi bi-cpu"></i>Firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
                                 <div><span><i class="bi bi-box-seam"></i>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
                                 <div><span><i class="bi bi-stopwatch"></i>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
