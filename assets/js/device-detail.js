@@ -3889,16 +3889,27 @@ function renderWifiHealthCard(device) {
     const lastInform = valueOf(device.last_inform, device.last_update, device.last_seen);
     const safeForAttribute = value => String(value ?? '').replaceAll("'", "\\'");
 
-    const renderBand = (band, icon, ssid) => `
+    const boolText = value => value === false ? 'Desabilitada' : value === true ? 'Habilitada' : 'Não informado';
+    const securityText = value => {
+        const text = valueOf(value);
+        if (text === 'Não disponível') return 'Não informado';
+        if (/wpaand11i/i.test(text)) return 'WPA/WPA2';
+        if (/11i|wpa2/i.test(text)) return 'WPA2';
+        if (/wpa/i.test(text)) return 'WPA';
+        if (/aes/i.test(text)) return 'AES';
+        return text;
+    };
+
+    const renderBand = (band, icon, ssid, enabled, channel, security, clients) => `
         <article class="acs-wifi-health-row">
             <div class="acs-wifi-health-state">
                 <i class="bi ${icon}"></i>
-                <div><strong>${band}</strong><span><i class="bi bi-circle-fill"></i> Habilitada</span></div>
+                <div><strong>${band}</strong><span><i class="bi bi-circle-fill"></i> ${boolText(enabled)}</span></div>
             </div>
             <div class="acs-wifi-health-detail"><small>SSID</small><strong title="${escapeHtml(ssid)}">${escapeHtml(ssid)}</strong></div>
-            <div class="acs-wifi-health-detail"><small>Canal</small><strong>Automático</strong></div>
-            <div class="acs-wifi-health-detail"><small>Segurança</small><strong>WPA/WPA2</strong></div>
-            <div class="acs-wifi-health-detail"><small>Clientes</small><strong>${clientText}</strong></div>
+            <div class="acs-wifi-health-detail"><small>Canal</small><strong>${escapeHtml(valueOf(channel))}</strong></div>
+            <div class="acs-wifi-health-detail"><small>Segurança</small><strong>${escapeHtml(securityText(security))}</strong></div>
+            <div class="acs-wifi-health-detail"><small>Clientes</small><strong>${clients ?? 'Não informado'}</strong></div>
             <button class="acs-wifi-edit-btn" type="button"
                 onclick="openEditWiFiModal('${safeForAttribute(device.device_id)}', '${safeForAttribute(ssid)}', '${safeForAttribute(device.wifi_password)}')"
                 title="Editar rede ${band}"><i class="bi bi-sliders"></i> Editar</button>
@@ -3906,8 +3917,8 @@ function renderWifiHealthCard(device) {
 
     container.innerHTML = `
         <div class="acs-wifi-health-list">
-            ${renderBand('2,4 GHz', 'bi-wifi', ssid24)}
-            ${renderBand('5 GHz (5,8)', 'bi-wifi', ssid5)}
+            ${renderBand('2,4 GHz', 'bi-wifi', ssid24, device.wifi_enabled_24ghz, device.wifi_channel_24ghz, device.wifi_security_24ghz, device.wifi_clients_24ghz)}
+            ${renderBand('5 GHz (5,8)', 'bi-wifi', ssid5, device.wifi_enabled_5ghz, device.wifi_channel_5ghz, device.wifi_security_5ghz, device.wifi_clients_5ghz)}
             <article class="acs-wifi-health-row acs-wifi-unified-row">
                 <div class="acs-wifi-health-state">
                     <i class="bi bi-diagram-3"></i>
