@@ -389,3 +389,37 @@
 .acs-approved-wifi .jr-wifi-health-strip strong{
     font-size:12px;
 }
+
+/* Monitoramento v3 - IXC/RADIUS */
+.jr-monitor-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jr-monitor-refresh{border:1px solid #31506b;background:#12283a;color:#b9d7e5;border-radius:8px;padding:7px 10px;font-size:8px;font-weight:800}
+.jr-monitor-refresh:hover{border-color:#43c8e6;color:#fff}
+.jr-monitor-insights{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.jr-monitor-insights>div{min-height:92px;padding:13px 14px;border:1px solid var(--b);border-radius:11px;background:linear-gradient(180deg,#1b2638,#172337)}
+.jr-monitor-insights span{display:block;color:#8799ac;font-size:8px;text-transform:uppercase;letter-spacing:.045em}
+.jr-monitor-insights strong{display:block;margin-top:8px;color:#eef5f9;font-size:14px}
+.jr-monitor-insights small{display:block;margin-top:5px;color:#71849a;font-size:8px}
+.jr-monitor-plan-track{height:5px;margin-top:9px;border-radius:999px;background:#0c1b29;overflow:hidden}
+.jr-monitor-plan-track i{display:block;width:0;height:100%;border-radius:999px;background:#55dda6;transition:width .25s ease}
+.jr-monitor-plan-track i.high{background:#ef6876}
+.jr-monitor-diagnosis{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:14px;padding:14px 16px;border:1px solid #31445c;border-radius:11px;background:linear-gradient(180deg,#1b2638,#172337)}
+.jr-monitor-diagnosis>div:first-child>span{display:block;color:#8fa1b4;font-size:8px;text-transform:uppercase;letter-spacing:.05em}
+.jr-monitor-diagnosis>div:first-child>strong{display:block;margin-top:5px;font-size:14px;color:#eef5f9}
+.jr-monitor-diagnosis>div:first-child>p{margin:5px 0 0;color:#8fa2b5;font-size:9px;line-height:1.45}
+.jr-monitor-diagnosis.ok{border-color:#2b6e5b}.jr-monitor-diagnosis.ok>div:first-child>strong{color:#6ce8bb}
+.jr-monitor-diagnosis.warning{border-color:#806b2b}.jr-monitor-diagnosis.warning>div:first-child>strong{color:#e8c968}
+.jr-monitor-diagnosis.danger{border-color:#864654}.jr-monitor-diagnosis.danger>div:first-child>strong{color:#ef8791}
+.jr-monitor-diagnosis.collecting{border-color:#31506b}
+.jr-monitor-quality{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jr-monitor-quality>div{padding:10px;border:1px solid #26384e;border-radius:9px;background:#132033}
+.jr-monitor-quality span{display:block;color:#788ca2;font-size:7px;text-transform:uppercase}
+.jr-monitor-quality strong{display:block;margin-top:6px;color:#c9d7e1;font-size:9px}
+.jr-monitor-chart-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;padding:0 12px 12px;color:#7f91a4;font-size:8px}
+.jr-monitor-chart-legend span{display:flex;align-items:center;gap:5px}
+.jr-monitor-chart-legend i{width:8px;height:8px;border-radius:999px;display:inline-block}
+.jr-monitor-chart-legend i.down{background:#57cfea}.jr-monitor-chart-legend i.up{background:#5cdda8}
+.jr-monitor-chart-legend i.plan{width:14px;height:2px;border-radius:0;background:#e9c75f}
+.jr-monitor-plot .plan{stroke:#e9c75f;stroke-width:1;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;opacity:.85}
+.jr-monitor-report-grid{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1100px){.jr-monitor-insights{grid-template-columns:repeat(2,1fr)}.jr-monitor-diagnosis{grid-template-columns:1fr}}
+@media(max-width:700px){.jr-monitor-insights,.jr-monitor-quality{grid-template-columns:1fr}}
