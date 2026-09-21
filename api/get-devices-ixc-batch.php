@@ -32,6 +32,31 @@ function jrBatchSerial(string $value): string
     return strtoupper((string)preg_replace('/[^A-Z0-9]/i', '', trim($value)));
 }
 
+function jrBatchSerialAliases(string $value): array
+{
+    $serial = jrBatchSerial($value);
+    $aliases = [$serial];
+
+    if (strlen($serial) >= 12 && preg_match('/^[0-9A-F]{8}/', $serial)) {
+        $decoded = @hex2bin(substr($serial, 0, 8));
+        if ($decoded !== false && preg_match('/^[A-Z0-9]{4}$/i', $decoded)) {
+            $aliases[] = jrBatchSerial($decoded . substr($serial, 8));
+        }
+    }
+
+    if (
+        strlen($serial) >= 12 &&
+        !preg_match('/^[0-9A-F]{4}$/i', substr($serial, 0, 4))
+    ) {
+        $aliases[] = strtoupper(
+            bin2hex(substr($serial, 0, 4)) . substr($serial, 4)
+        );
+    }
+
+    return array_values(array_unique(array_filter($aliases)));
+}
+
+
 function jrBatchPayload(string $table, string $qtype, string $query): string
 {
     return (string)json_encode([
@@ -164,15 +189,37 @@ try {
     [$baseUrl, $token] = jrBatchConfig();
 
     $fiberJobs = [];
+    $fiberJobMeta = [];
+
     foreach ($serials as $serial) {
-        $fiberJobs[$serial] = [
-            'table' => 'radpop_radio_cliente_fibra',
-            'qtype' => 'radpop_radio_cliente_fibra.mac',
-            'query' => $serial,
-        ];
+        foreach (jrBatchSerialAliases($serial) as $index => $alias) {
+            $jobKey = $serial . '#' . $index;
+            $fiberJobs[$jobKey] = [
+                'table' => 'radpop_radio_cliente_fibra',
+                'qtype' => 'radpop_radio_cliente_fibra.mac',
+                'query' => $alias,
+            ];
+            $fiberJobMeta[$jobKey] = [
+                'serial' => $serial,
+                'alias' => $alias,
+            ];
+        }
     }
 
-    $fiberRows = jrBatchMulti($baseUrl, $token, $fiberJobs);
+    $rawFiberRows = jrBatchMulti($baseUrl, $token, $fiberJobs);
+    $fiberRows = [];
+    $fiberMatchedAlias = [];
+
+    foreach ($fiberJobMeta as $jobKey => $meta) {
+        $serial = $meta['serial'];
+        if (!empty($fiberRows[$serial])) continue;
+
+        $row = $rawFiberRows[$jobKey] ?? [];
+        if ($row) {
+            $fiberRows[$serial] = $row;
+            $fiberMatchedAlias[$serial] = $meta['alias'];
+        }
+    }
 
     $loginJobs = [];
     foreach ($fiberRows as $serial => $fiber) {
@@ -198,6 +245,7 @@ try {
             $devices[$serial] = [
                 'found' => false,
                 'source' => 'IXC',
+                'serial_match' => null,
             ];
             continue;
         }
@@ -205,6 +253,7 @@ try {
         $devices[$serial] = [
             'found' => true,
             'source' => $login ? 'IXC Cliente Fibra + Login' : 'IXC Cliente Fibra',
+            'serial_match' => $fiberMatchedAlias[$serial] ?? $serial,
             'ip' => jrBatchPick($login, ['ip', 'ip_aux']),
             'ipv6' => jrBatchPick($login, ['ipv6', 'ip_v6', 'framed_ipv6', 'framed_pd_ipv6']),
             'pppoe_username' => jrBatchPick($login, ['login', 'username', 'usuario']),
