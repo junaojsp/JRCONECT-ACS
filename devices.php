@@ -31,6 +31,7 @@ include __DIR__ . '/views/layouts/header.php';
 
                     <i class="bi bi-router"></i>
                     Lista de Equipamentos
+                    <span class="badge bg-info ms-2" title="IP, PPPoE e óptico pelo IXC; equipamento e Wi-Fi pelo TR-069">IXC + TR-069</span>
 
                     <span id="device-stats-badges" style="margin-left: 10px;">
 
@@ -520,7 +521,7 @@ window.GENIEACS_CONFIGURED =
 
 
 <script src="/assets/js/devices/devices-state.js"></script>
-<script src="/assets/js/devices.js?v=20260921-2"></script>
+<script src="/assets/js/devices.js?v=20260921-3"></script>
 
 
 <?php
