@@ -450,76 +450,6 @@ try {
 
     [$baseUrl, $token] = liveConfig();
 
-    // Fonte primária: campos de tráfego do próprio cadastro de Login IXC.
-    // O endpoint é consultado a cada poucos segundos e a taxa é calculada
-    // pela diferença dos contadores consecutivos.
-    $loginRecord = liveIxcListOne(
-        $baseUrl,
-        $token,
-        'radusuarios',
-        'radusuarios.id',
-        $loginId
-    );
-
-    if ($loginRecord) {
-        $counterRate = liveRateFromLoginCounters(
-            (int)$loginId,
-            $loginRecord['download_atual'] ?? null,
-            $loginRecord['upload_atual'] ?? null
-        );
-
-        if (!empty($counterRate['available'])) {
-            liveOut([
-                'success' => true,
-                'available' => true,
-                'source' => 'IXC Login / Concentrador',
-                'read_only' => true,
-                'login_id' => (int)$loginId,
-                'live' => [
-                    'download_mbps' => round((float)$counterRate['download_mbps'], 3),
-                    'upload_mbps' => round((float)$counterRate['upload_mbps'], 3),
-                    'sample_time' => date(DATE_ATOM),
-                    'interval_seconds' => $counterRate['interval_seconds'] ?? null,
-                ],
-                'counters' => [
-                    'download_bytes' => $counterRate['download_bytes'] ?? null,
-                    'upload_bytes' => $counterRate['upload_bytes'] ?? null,
-                ],
-                'network' => [
-                    'online' => $loginRecord['online'] ?? null,
-                    'ipv4' => $loginRecord['ip'] ?? $loginRecord['ip_aux'] ?? null,
-                    'ipv6' => $loginRecord['framed_pd_ipv6'] ?? $loginRecord['pd_ipv6'] ?? null,
-                    'concentrator_id' => $loginRecord['id_concentrador'] ?? null,
-                    'interface' => $loginRecord['conexao'] ?? $loginRecord['interface'] ?? null,
-                    'auth_type' => $loginRecord['autenticacao'] ?? null,
-                    'technology' => $loginRecord['tipo_conexao'] ?? $loginRecord['tipo_conexao_mapa'] ?? null,
-                ],
-            ]);
-        }
-
-        if (in_array(
-            $counterRate['reason'] ?? null,
-            ['collecting_second_sample', 'counter_window_invalid'],
-            true
-        )) {
-            liveOut([
-                'success' => true,
-                'available' => false,
-                'source' => 'IXC Login / Concentrador',
-                'read_only' => true,
-                'login_id' => (int)$loginId,
-                'reason' => $counterRate['reason'],
-                'message' => $counterRate['reason'] === 'collecting_second_sample'
-                    ? 'Primeira amostra IXC recebida; aguardando a segunda.'
-                    : 'Janela de medição reiniciada; aguardando nova amostra.',
-                'counters' => [
-                    'download_bytes' => $counterRate['download_bytes'] ?? null,
-                    'upload_bytes' => $counterRate['upload_bytes'] ?? null,
-                ],
-            ]);
-        }
-    }
-
     // Fonte fiel ao IXC: EventSource/SSE do diagnóstico de Login.
     // Captura alguns segundos do stream e usa o evento mais recente.
     $url = $baseUrl . '/aplicativo/radusuarios/rel_22021.php?trafego=' . rawurlencode($loginId);
@@ -556,6 +486,54 @@ try {
         $download !== null &&
         $upload !== null;
 
+    // Fallback secundário: contadores do cadastro Login IXC.
+    // Só é usado quando o EventSource não pôde ser interpretado.
+    $loginRecord = liveIxcListOne(
+        $baseUrl,
+        $token,
+        'radusuarios',
+        'radusuarios.id',
+        $loginId
+    );
+    $counterRate = [];
+    if ($loginRecord) {
+        $counterRate = liveRateFromLoginCounters(
+            (int)$loginId,
+            $loginRecord['download_atual'] ?? null,
+            $loginRecord['upload_atual'] ?? null
+        );
+    }
+
+    if (!$available && !empty($counterRate['available'])) {
+        $counterDown = (float)($counterRate['download_mbps'] ?? 0.0);
+        $counterUp = (float)($counterRate['upload_mbps'] ?? 0.0);
+
+        // Contador parado não deve se passar por tráfego "ao vivo".
+        // Só usa esse fallback se houver movimento mensurável.
+        if ($counterDown > 0.0001 || $counterUp > 0.0001) {
+            liveOut([
+                'success' => true,
+                'available' => true,
+                'source' => 'IXC Login counters fallback',
+                'read_only' => true,
+                'login_id' => (int)$loginId,
+                'live' => [
+                    'download_mbps' => round($counterDown, 3),
+                    'upload_mbps' => round($counterUp, 3),
+                    'sample_time' => date(DATE_ATOM),
+                    'transport' => 'counter-delta',
+                ],
+                'diagnostic' => [
+                    'transport' => 'counter-delta',
+                    'sse_http_code' => (int)($sse['http_code'] ?? 0),
+                    'sse_event_count' => count($events),
+                    'sse_last_event_shape' => $lastParsed['shape'] ?? null,
+                    'sse_content_type' => ($sse['content_type'] ?? '') !== '' ? $sse['content_type'] : null,
+                ],
+            ]);
+        }
+    }
+
     liveOut([
         'success' => true,
         'available' => $available,
@@ -589,6 +567,9 @@ try {
             'last_event_shape' => $lastParsed['shape'] ?? null,
             'last_event_keys' => $lastParsed['keys'] ?? [],
             'matched_paths' => $lastParsed['paths'] ?? [],
+            'event_data_preview' => $lastRawData !== null
+                ? mb_substr(preg_replace('/[^\x20-\x7E\r\n\t]/', '', $lastRawData) ?? '', 0, 500)
+                : null,
             'curl_error' => ($sse['error'] ?? '') !== '' ? $sse['error'] : null,
         ],
     ]);
