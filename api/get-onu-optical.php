@@ -119,6 +119,47 @@ function jrNormalizeOpticalSerial(
 
 
 /* =========================================================
+   ALIASES DE SERIAL (TR-069 <-> IXC)
+   ========================================================= */
+
+function jrOpticalSerialAliases(string $value): array
+{
+    $serial = jrNormalizeOpticalSerial($value);
+    $aliases = [$serial];
+
+    // Alguns Huawei anunciam no TR-069 o OUI/vendor ASCII em hexadecimal.
+    // Ex.: 48575443 = "HWTC", então:
+    // 485754438FEEDBA7 <-> HWTC8FEEDBA7.
+    if (strlen($serial) >= 12 && preg_match('/^[0-9A-F]{8}/', $serial)) {
+        $hexPrefix = substr($serial, 0, 8);
+        $decoded = @hex2bin($hexPrefix);
+
+        if (
+            $decoded !== false &&
+            preg_match('/^[A-Z0-9]{4}$/i', $decoded)
+        ) {
+            $aliases[] = jrNormalizeOpticalSerial(
+                $decoded . substr($serial, 8)
+            );
+        }
+    }
+
+    // Caminho inverso para equipamentos que cheguem em ASCII no ACS
+    // mas estejam cadastrados com prefixo hexadecimal no IXC.
+    if (
+        strlen($serial) >= 12 &&
+        !preg_match('/^[0-9A-F]{4}$/i', substr($serial, 0, 4))
+    ) {
+        $aliases[] = strtoupper(
+            bin2hex(substr($serial, 0, 4)) . substr($serial, 4)
+        );
+    }
+
+    return array_values(array_unique(array_filter($aliases)));
+}
+
+
+/* =========================================================
    CONVERTER NUMERO IXC
    ========================================================= */
 
@@ -689,6 +730,12 @@ try {
         );
 
 
+    $serialAliases =
+        jrOpticalSerialAliases(
+            $serial
+        );
+
+
     $manufacturer =
         jrGetManufacturerFromDevice(
             $device
@@ -712,38 +759,64 @@ try {
         'radpop_radio_cliente_fibra';
 
 
-    $params =
-        [
-            'qtype' =>
-                'radpop_radio_cliente_fibra.mac',
+    $result = null;
+    $records = [];
+    $matchedSerialQuery = null;
 
-            'query' =>
-                $serial,
-
-            'oper' =>
-                '=',
-
-            'page' =>
-                '1',
-
-            'rp' =>
-                '20',
-
-            'sortname' =>
-                'radpop_radio_cliente_fibra.id',
-
-            'sortorder' =>
-                'desc'
+    foreach ($serialAliases as $serialQuery) {
+        $params = [
+            'qtype' => 'radpop_radio_cliente_fibra.mac',
+            'query' => $serialQuery,
+            'oper' => '=',
+            'page' => '1',
+            'rp' => '20',
+            'sortname' => 'radpop_radio_cliente_fibra.id',
+            'sortorder' => 'desc'
         ];
 
-
-    $result =
-        jrIxcOpticalRequest(
+        $candidateResult = jrIxcOpticalRequest(
             $ixcBaseUrl,
             $ixcToken,
             $endpoint,
             $params
         );
+
+        if (($candidateResult['http_code'] ?? 0) === 401) {
+            $result = $candidateResult;
+            break;
+        }
+
+        if (
+            ($candidateResult['http_code'] ?? 0) < 200 ||
+            ($candidateResult['http_code'] ?? 0) >= 300
+        ) {
+            $result = $candidateResult;
+            continue;
+        }
+
+        $candidateJson = $candidateResult['json'] ?? null;
+        if (
+            is_array($candidateJson) &&
+            isset($candidateJson['type']) &&
+            $candidateJson['type'] === 'error'
+        ) {
+            $result = $candidateResult;
+            continue;
+        }
+
+        $candidateRecords = jrIxcRecords($candidateResult);
+        $result = $candidateResult;
+
+        if ($candidateRecords) {
+            $records = $candidateRecords;
+            $matchedSerialQuery = $serialQuery;
+            break;
+        }
+    }
+
+    if ($result === null) {
+        throw new RuntimeException('Não foi possível executar a consulta IXC.');
+    }
 
 
     /* =====================================================
@@ -862,32 +935,8 @@ try {
        REGISTROS
        ===================================================== */
 
-    $records =
-        [];
-
-
-    if (
-        isset($json['registros']) &&
-        is_array($json['registros'])
-    ) {
-
-        $records =
-            $json['registros'];
-
-    } elseif (
-        isset($json['records']) &&
-        is_array($json['records'])
-    ) {
-
-        $records =
-            $json['records'];
-
-    } elseif (
-        array_is_list($json)
-    ) {
-
-        $records =
-            $json;
+    if (!$records) {
+        $records = jrIxcRecords($result);
     }
 
 
@@ -980,8 +1029,11 @@ try {
 
 
         if (
-            $itemMac ===
-            $serial
+            in_array(
+                $itemMac,
+                $serialAliases,
+                true
+            )
         ) {
 
             $record =
@@ -1205,6 +1257,9 @@ try {
 
             'serial' =>
                 $serial,
+
+            'ixc_serial_match' =>
+                $matchedSerialQuery,
 
             'ixc_id' =>
                 $record['id']
