@@ -158,7 +158,7 @@ if (aiForm) {
 
         if (result && result.success) {
             showToast(result.message, 'success');
-            setTimeout(() => location.reload(), 1200);
+            setTimeout(() => { window.location.href = '/configuration.php#concentrators-config'; }, 1200);
         } else {
             showToast(result?.message || 'Falha ao conectar com a IA', 'danger');
         }
@@ -366,7 +366,7 @@ if (concentratorForm) {
             showToast(detail, 'success');
 
             if (data.id) {
-                setTimeout(() => location.reload(), 1200);
+                setTimeout(() => { window.location.href = '/configuration.php#concentrators-config'; }, 1200);
             }
         } else {
             showToast(result?.message || 'Falha ao conectar ao concentrador.', 'danger');
@@ -387,7 +387,7 @@ async function saveConcentrator() {
 
     if (result?.success) {
         showToast(result.message || 'Concentrador salvo.', 'success');
-        setTimeout(() => location.reload(), 900);
+        setTimeout(() => { window.location.href = '/configuration.php#concentrators-config'; }, 900);
     } else {
         showToast(result?.message || 'Falha ao salvar o concentrador.', 'danger');
     }
@@ -416,7 +416,7 @@ async function testSavedConcentrator(id) {
         let detail = result.message || 'Conexão realizada com sucesso.';
         if (result.identity) detail += ' ' + result.identity;
         showToast(detail, 'success');
-        setTimeout(() => location.reload(), 1200);
+        setTimeout(() => { window.location.href = '/configuration.php#concentrators-config'; }, 1200);
     } else {
         showToast(result?.message || 'Falha ao conectar ao concentrador.', 'danger');
     }
@@ -437,8 +437,21 @@ async function deleteConcentrator(id) {
 
     if (result?.success) {
         showToast(result.message || 'Concentrador excluído.', 'success');
-        setTimeout(() => location.reload(), 700);
+        setTimeout(() => { window.location.href = '/configuration.php#concentrators-config'; }, 700);
     } else {
         showToast(result?.message || 'Falha ao excluir o concentrador.', 'danger');
     }
+}
+
+
+function activateConfigTabFromHash() {
+    if (window.location.hash !== '#concentrators-config') return;
+    const tab = document.getElementById('concentrators-tab');
+    if (tab) tab.click();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', activateConfigTabFromHash);
+} else {
+    activateConfigTabFromHash();
 }
