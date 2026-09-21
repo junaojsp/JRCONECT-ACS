@@ -444,9 +444,18 @@ class CPEProfiles
         return $merged;
     }
 
-    public static function resolve(array $device): array
+    public static function resolve(array $device, bool $deepDiscovery = true): array
     {
         $static = self::detect($device);
+
+        // Fast device lists should not recursively scan the complete TR-069 tree.
+        if (!$deepDiscovery) {
+            if (!$static) return [];
+            $static['source'] = 'static';
+            $static['discovery'] = [];
+            return $static;
+        }
+
         $auto = self::discover($device);
         return $static ? self::mergeProfiles($static, $auto) : $auto;
     }
@@ -584,9 +593,9 @@ class CPEProfiles
         ];
     }
 
-    public static function enrich(array $device, array $data): array
+    public static function enrich(array $device, array $data, bool $deepDiscovery = true): array
     {
-        $profile = self::resolve($device);
+        $profile = self::resolve($device, $deepDiscovery);
         if (!$profile) {
             $data['cpe_profile'] = null;
             return $data;
@@ -624,6 +633,11 @@ class CPEProfiles
 
         $data['wifi_clients_24ghz'] = self::countAssociated($device, $wifi['associated_24'] ?? null);
         $data['wifi_clients_5ghz'] = self::countAssociated($device, $wifi['associated_5'] ?? null);
+
+        if (($data['pppoe_username'] ?? 'N/A') === 'N/A' || trim((string)($data['pppoe_username'] ?? '')) === '') {
+            $pppoe = self::first($device, is_array($profile['pppoe'] ?? null) ? $profile['pppoe'] : []);
+            if ($pppoe !== null) $data['pppoe_username'] = (string)$pppoe;
+        }
 
         $optical = self::optical($device);
         if (($data['rx_power'] ?? 'N/A') === 'N/A' && $optical['rx_power'] !== null) {
