@@ -64,8 +64,8 @@
         }
 
         let cls = 'bg-danger';
-        if (n > -20) cls = 'bg-success';
-        else if (n >= -23) cls = 'bg-warning';
+        if (n > -25) cls = 'bg-success';
+        else if (n > -27) cls = 'bg-warning';
 
         return '<span class="badge ' + cls + '" title="Fonte: ' +
             escapeHtml(source) + '">' + escapeHtml(n.toFixed(2)) + ' dBm</span>';
