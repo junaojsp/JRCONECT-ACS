@@ -25,6 +25,26 @@ class CPEProfiles
                         'Device.WiFi.SSID.5.SSID',
                         'Device.WiFi.SSID.2.SSID',
                     ],
+                    'channel_24' => ['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel'],
+                    'channel_5' => ['InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel'],
+                    'enabled_24' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled',
+                    ],
+                    'enabled_5' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Enable',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.RadioEnabled',
+                    ],
+                    'security_24' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BeaconType',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes',
+                    ],
+                    'security_5' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.BeaconType',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.IEEE11iEncryptionModes',
+                    ],
+                    'associated_24' => 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AssociatedDevice',
+                    'associated_5' => 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.AssociatedDevice',
                 ],
                 'optical' => [
                     'rx' => [
@@ -146,6 +166,46 @@ class CPEProfiles
         return null;
     }
 
+    private static function countAssociated(array $device, ?string $path): int
+    {
+        if (!$path) return 0;
+
+        $node = $device;
+        foreach (explode('.', $path) as $key) {
+            if (!is_array($node) || !array_key_exists($key, $node)) return 0;
+            $node = $node[$key];
+        }
+        if (!is_array($node)) return 0;
+
+        $count = 0;
+        foreach ($node as $index => $item) {
+            if (strpos((string)$index, '_') === 0 || !is_array($item)) continue;
+
+            $auth = $item['AssociatedDeviceAuthenticationState']['_value']
+                ?? $item['AssociatedDeviceAuthenticationState']
+                ?? null;
+            $mac = $item['AssociatedDeviceMACAddress']['_value']
+                ?? $item['AssociatedDeviceMACAddress']
+                ?? null;
+
+            if ($auth === true || $auth === 1 || $auth === '1' || (!empty($mac) && $auth !== false && $auth !== 0 && $auth !== '0')) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    private static function boolValue($value): ?bool
+    {
+        if ($value === null || $value === '') return null;
+        if (is_bool($value)) return $value;
+        if (is_numeric($value)) return ((int)$value) !== 0;
+        $text = strtolower(trim((string)$value));
+        if (in_array($text, ['true','on','enabled','up','yes'], true)) return true;
+        if (in_array($text, ['false','off','disabled','down','no'], true)) return false;
+        return null;
+    }
+
     private static function normalizeOptical($value): ?float
     {
         if ($value === null || $value === '' || !is_numeric($value)) return null;
@@ -193,6 +253,23 @@ class CPEProfiles
             if (empty($data['wifi_ssid']) || $data['wifi_ssid'] === 'N/A') $data['wifi_ssid'] = (string)$ssid24;
         }
         if ($ssid5 !== null) $data['wifi_ssid_5ghz'] = (string)$ssid5;
+
+        $channel24 = self::first($device, $wifi['channel_24'] ?? []);
+        $channel5 = self::first($device, $wifi['channel_5'] ?? []);
+        $enabled24 = self::boolValue(self::first($device, $wifi['enabled_24'] ?? []));
+        $enabled5 = self::boolValue(self::first($device, $wifi['enabled_5'] ?? []));
+        $security24 = self::first($device, $wifi['security_24'] ?? []);
+        $security5 = self::first($device, $wifi['security_5'] ?? []);
+
+        if ($channel24 !== null) $data['wifi_channel_24ghz'] = $channel24;
+        if ($channel5 !== null) $data['wifi_channel_5ghz'] = $channel5;
+        if ($enabled24 !== null) $data['wifi_enabled_24ghz'] = $enabled24;
+        if ($enabled5 !== null) $data['wifi_enabled_5ghz'] = $enabled5;
+        if ($security24 !== null) $data['wifi_security_24ghz'] = (string)$security24;
+        if ($security5 !== null) $data['wifi_security_5ghz'] = (string)$security5;
+
+        $data['wifi_clients_24ghz'] = self::countAssociated($device, $wifi['associated_24'] ?? null);
+        $data['wifi_clients_5ghz'] = self::countAssociated($device, $wifi['associated_5'] ?? null);
 
         $optical = self::optical($device);
         if (($data['rx_power'] ?? 'N/A') === 'N/A' && $optical['rx_power'] !== null) {
