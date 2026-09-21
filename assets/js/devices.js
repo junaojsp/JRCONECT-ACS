@@ -292,12 +292,12 @@ async function renderDevices(devices) {
         let rxDisplay = rxSourceValue;
 
         if (!isNaN(rxPower) && rxPower !== -999) {
-            if (rxPower > -20.00) {
-                rxBadgeClass = 'bg-success'; // Green: Good signal (above -20 dBm)
-            } else if (rxPower >= -23.00) {
-                rxBadgeClass = 'bg-warning'; // Yellow: Moderate signal (-20 to -23 dBm)
+            if (rxPower > -25.00) {
+                rxBadgeClass = 'bg-success'; // Green: above -25 dBm
+            } else if (rxPower > -27.00) {
+                rxBadgeClass = 'bg-warning'; // Yellow: -25 to above -27 dBm
             } else {
-                rxBadgeClass = 'bg-danger'; // Red: Weak signal (below -23 dBm)
+                rxBadgeClass = 'bg-danger'; // Red: -27 dBm or worse
             }
             rxDisplay = `<span class="badge ${rxBadgeClass}" title="Fonte: ${networkSource}">${rxSourceValue} dBm</span>`;
         } else {
