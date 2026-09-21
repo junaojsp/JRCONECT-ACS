@@ -46,6 +46,52 @@ function numberOrNull(mixed $value): ?int {
     return is_numeric($value) ? (int)$value : null;
 }
 
+function radiusIxcListOne(
+    string $baseUrl,
+    string $token,
+    string $table,
+    string $qtype,
+    string $query
+): array {
+    $url = rtrim($baseUrl, '/') . '/webservice/v1/' . rawurlencode($table);
+    $payload = json_encode([
+        'qtype' => $qtype,
+        'query' => $query,
+        'oper' => '=',
+        'page' => '1',
+        'rp' => '1',
+        'sortname' => $table . '.id',
+        'sortorder' => 'desc',
+    ]);
+
+    $ch = curl_init($url);
+    if ($ch === false) return [];
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'ixcsoft: listar',
+            'Authorization: Basic ' . base64_encode($token),
+        ],
+        CURLOPT_POSTFIELDS => $payload,
+    ]);
+    $body = curl_exec($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if (!is_string($body) || $status < 200 || $status >= 300) return [];
+    $json = json_decode($body, true);
+    if (!is_array($json)) return [];
+    $records = $json['registros'] ?? $json['records'] ?? (array_is_list($json) ? $json : []);
+    return is_array($records) && !empty($records[0]) && is_array($records[0])
+        ? $records[0]
+        : [];
+}
+
 try {
     $deviceId = trim((string)($_GET['device_id'] ?? ''));
     if ($deviceId === '') radiusOut(['success' => false, 'message' => 'device_id não informado.'], 400);
@@ -59,7 +105,8 @@ try {
     if (!preg_match('/\\$ixcBaseUrl\\s*=\\s*\'([^\']+)\'/', $opticalSource, $urlMatch)) {
         throw new RuntimeException('URL IXC não localizada na configuração existente.');
     }
-    $ixcUrl = rtrim($urlMatch[1], '/') . '/webservice/v1/radacct';
+    $ixcBaseUrl = rtrim($urlMatch[1], '/');
+    $ixcUrl = $ixcBaseUrl . '/webservice/v1/radacct';
 
     $query = rawurlencode((string)json_encode(['_id' => $deviceId]));
     $raw = file_get_contents('http://127.0.0.1:7557/devices/?query=' . $query);
@@ -113,7 +160,20 @@ try {
     }
     if ($record === null) radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => false, 'lookup' => $lookup, 'message' => 'Nenhuma sessão RADIUS encontrada.']);
     $sampleTime = $record['acctupdatetime'] ?? $record['updated_at'] ?? $record['last_update'] ?? null;
+
+    $radiusUsername = trim((string)($record['username'] ?? ''));
+    $ixcLogin = $radiusUsername !== ''
+        ? radiusIxcListOne(
+            $ixcBaseUrl,
+            $token,
+            'radusuarios',
+            'radusuarios.login',
+            $radiusUsername
+        )
+        : [];
+
     radiusOut(['success' => true, 'source' => 'IXC/RADIUS', 'online' => $active !== null, 'lookup' => $lookup, 'mac' => $mac ?: null,
+        'ixc_login_id' => $ixcLogin['id'] ?? null,
         'session' => [
             'session_id' => $record['radacctid'] ?? null,
             'username' => $record['username'] ?? null,
