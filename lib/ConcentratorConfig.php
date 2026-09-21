@@ -274,6 +274,37 @@ function getDefaultConcentrator(mysqli $conn, bool $withPassword = false): ?arra
     return $row ? getConcentratorById($conn, (int)$row['id'], $withPassword) : null;
 }
 
+function getConcentratorForNas(
+    mysqli $conn,
+    ?string $nasIp,
+    bool $withPassword = false
+): ?array {
+    ensureConcentratorConfigTable($conn);
+
+    $nasIp = trim((string)$nasIp);
+    if ($nasIp !== '') {
+        $stmt = $conn->prepare("
+            SELECT id
+            FROM concentrator_credentials
+            WHERE is_active = 1
+              AND (nas_ip = ? OR host = ?)
+            ORDER BY is_connected DESC, is_default DESC, id ASC
+            LIMIT 1
+        ");
+        if (!$stmt) throw new RuntimeException('Não foi possível localizar o concentrador pelo NAS.');
+        $stmt->bind_param('ss', $nasIp, $nasIp);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result ? $result->fetch_assoc() : null;
+
+        if ($row) {
+            return getConcentratorById($conn, (int)$row['id'], $withPassword);
+        }
+    }
+
+    return getDefaultConcentrator($conn, $withPassword);
+}
+
 function saveConcentratorConfig(mysqli $conn, array $input): int
 {
     ensureConcentratorConfigTable($conn);
