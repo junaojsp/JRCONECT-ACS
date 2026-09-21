@@ -149,7 +149,7 @@ function trDelta(float $current, float $previous): ?float {
     return null;
 }
 
-function trCalculate(string $deviceId, array $pair): array {
+function trCalculate(string $deviceId, array $pair, bool $refreshSucceeded): array {
     $now = microtime(true);
     $file = trCachePath($deviceId, $pair['download'], $pair['upload']);
     $previous = null;
@@ -176,8 +176,26 @@ function trCalculate(string $deviceId, array $pair): array {
         return ['available'=>false,'reason'=>'sample_window_invalid','interval_seconds'=>round($dt,3)];
     }
 
-    $downDelta = trDelta((float)$pair['download_bytes'], (float)($previous['down'] ?? $pair['download_bytes']));
-    $upDelta = trDelta((float)$pair['upload_bytes'], (float)($previous['up'] ?? $pair['upload_bytes']));
+    $previousDown = (float)($previous['down'] ?? $pair['download_bytes']);
+    $previousUp = (float)($previous['up'] ?? $pair['upload_bytes']);
+    $downDelta = trDelta((float)$pair['download_bytes'], $previousDown);
+    $upDelta = trDelta((float)$pair['upload_bytes'], $previousUp);
+
+    $sameValues = (float)$pair['download_bytes'] === $previousDown
+        && (float)$pair['upload_bytes'] === $previousUp;
+    $sameTimestamps =
+        ($pair['download_timestamp'] ?? null) !== null &&
+        ($pair['upload_timestamp'] ?? null) !== null &&
+        ($pair['download_timestamp'] ?? null) === ($previous['down_ts'] ?? null) &&
+        ($pair['upload_timestamp'] ?? null) === ($previous['up_ts'] ?? null);
+
+    if ($sameValues && (!$refreshSucceeded || $sameTimestamps)) {
+        return [
+            'available'=>false,
+            'reason'=>'stale_counters',
+            'interval_seconds'=>round($dt,3),
+        ];
+    }
 
     if ($downDelta === null || $upDelta === null) {
         return ['available'=>false,'reason'=>'counter_reset','interval_seconds'=>round($dt,3)];
@@ -251,7 +269,8 @@ try {
         }
     }
 
-    $rate = trCalculate($deviceId, $pair);
+    $refreshSucceeded = !empty($refresh['success']);
+    $rate = trCalculate($deviceId, $pair, $refreshSucceeded);
 
     $message = null;
     if (empty($rate['available'])) {
@@ -259,6 +278,7 @@ try {
             'collecting_second_sample' => 'Primeira leitura TR-069 recebida; aguardando a próxima amostra.',
             'sample_window_invalid' => 'Aguardando uma nova janela de amostragem TR-069.',
             'counter_reset' => 'Os contadores WAN reiniciaram; aguardando nova amostra.',
+            'stale_counters' => 'O CPE não atualizou os contadores WAN nesta leitura; aguardando a próxima comunicação TR-069.',
             default => 'Aguardando nova leitura TR-069.',
         };
     }
@@ -277,7 +297,7 @@ try {
         ],
         'refresh'=>[
             'requested'=>true,
-            'success'=>!empty($refresh['success']),
+            'success'=>$refreshSucceeded,
             'http_code'=>$refresh['http_code'] ?? null,
         ],
         'counters'=>[
