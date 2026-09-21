@@ -287,7 +287,7 @@ include __DIR__ . '/views/layouts/header.php';
                             type="text"
                             class="form-control"
                             id="search-input"
-                            placeholder="Pesquisar por número de série, MAC ou etiqueta..."
+                            placeholder="Pesquisar por serial, MAC, login, CPF ou nome do cliente..."
                             onkeyup="filterDevices()"
                         >
 
