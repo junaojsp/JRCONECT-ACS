@@ -212,6 +212,12 @@ try {
     jrClientOut([
         'success' => true,
         'source' => 'IXC',
+        'source_policy' => [
+            'customer' => 'IXC',
+            'contract' => 'IXC',
+            'login' => 'IXC',
+            'financial' => 'IXC',
+        ],
         'customer' => [
             'id' => $idCliente !== '' ? $idCliente : null,
             'name' => jrClientPick($client, ['razao', 'fantasia', 'nome']),
