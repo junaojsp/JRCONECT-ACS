@@ -35,6 +35,22 @@ $deviceResult = $genieacs->getDevice($deviceId);
 
 if ($deviceResult['success']) {
     $parsed = $genieacs->parseDeviceData($deviceResult['data']);
+
+    // Política de fontes JR CONECT:
+    // - IXC: dados oficiais de cliente/rede/OLT/PPPoE/VLAN/óptico.
+    // - TR-069: estado e gerenciamento do CPE (Wi-Fi, LAN, firmware, uptime).
+    // Este endpoint entrega apenas a camada CPE; o front complementa rede/cliente via IXC.
+    $parsed['source_policy'] = [
+        'equipment' => 'TR-069 / GenieACS',
+        'wifi_read' => 'TR-069 / GenieACS',
+        'wifi_write' => 'TR-069 / GenieACS',
+        'lan' => 'TR-069 / GenieACS',
+        'firmware' => 'TR-069 / GenieACS',
+        'network' => 'IXC principal / TR-069 fallback',
+        'optical' => 'IXC principal / TR-069 fallback',
+        'customer' => 'IXC',
+    ];
+
     jsonResponse(['success' => true, 'device' => $parsed]);
 } else {
     jsonResponse(['success' => false, 'message' => 'Device tidak ditemukan']);
