@@ -254,6 +254,18 @@ async function renderDevices(devices) {
             : device.temperature;
         const networkSource = ixc.found ? (ixc.source || 'IXC') : 'TR-069 fallback';
 
+        // Guarda o enriquecimento IXC no próprio objeto para busca/ordenação.
+        // Não remove os valores originais do TR-069; apenas registra a fonte principal.
+        if (ixc.found) {
+            device.ixc_ip = ixc.ip ?? null;
+            device.ixc_pppoe_username = ixc.pppoe_username ?? null;
+            device.ixc_rx_power = ixc.rx_power ?? null;
+            device.ixc_temperature = ixc.temperature ?? null;
+            device.ixc_vlan = ixc.vlan ?? null;
+            device.ixc_ipv6 = ixc.ipv6 ?? null;
+            device.ixc_source = networkSource;
+        }
+
         const mapInfo = mapStatusMap[device.serial_number] || { inMap: false, itemType: 'onu', itemId: null };
         const isInMap = mapInfo.inMap;
 
@@ -516,25 +528,25 @@ function generateTableHeader(type) {
                     Tipe <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('ip')" style="cursor: pointer;">
-                    IP <i class="bi bi-chevron-expand sort-icon"></i>
+                    IP <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('ssid')" style="cursor: pointer;">
-                    SSID <i class="bi bi-chevron-expand sort-icon"></i>
+                    SSID <small class="text-muted">TR-069</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('pppoe_username')" style="cursor: pointer;">
-                    PPPoE <i class="bi bi-chevron-expand sort-icon"></i>
+                    PPPoE <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('rx_power')" style="cursor: pointer;">
-                    Rx <i class="bi bi-chevron-expand sort-icon"></i>
+                    Rx <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('temperature')" style="cursor: pointer;">
-                    Temp <i class="bi bi-chevron-expand sort-icon"></i>
+                    Temp <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('connected_clients')" style="cursor: pointer;">
-                    Client <i class="bi bi-chevron-expand sort-icon"></i>
+                    Client <small class="text-muted">TR-069</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('status')" style="cursor: pointer;">
-                    Status <i class="bi bi-chevron-expand sort-icon"></i>
+                    Status <small class="text-muted">TR-069</small> <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="tags-column sortable" onclick="sortTable('tags')" style="cursor: pointer; display: ${tagsDisplay};">
                     Tags <i class="bi bi-chevron-expand sort-icon"></i>
@@ -628,7 +640,9 @@ function deviceMatchesLocalSearch(device, searchTerm) {
     const directValues = [
         device.serial_number,
         device.mac_address,
+        device.ixc_pppoe_username,
         device.pppoe_username,
+        device.ixc_ip,
         device.device_id,
         device.product_class,
         device.manufacturer,
@@ -862,8 +876,8 @@ function applySorting(devices, column, direction) {
                 valueB = (b.product_class || '').toLowerCase();
                 break;
             case 'ip':
-                valueA = extractIP(a.ip_tr069);
-                valueB = extractIP(b.ip_tr069);
+                valueA = extractIP(a.ixc_ip || a.ip_tr069);
+                valueB = extractIP(b.ixc_ip || b.ip_tr069);
                 // Convert IP to comparable format
                 valueA = valueA === 'N/A' ? '' : valueA.split('.').map(n => n.padStart(3, '0')).join('.');
                 valueB = valueB === 'N/A' ? '' : valueB.split('.').map(n => n.padStart(3, '0')).join('.');
@@ -873,16 +887,16 @@ function applySorting(devices, column, direction) {
                 valueB = (b.wifi_ssid || '').toLowerCase();
                 break;
             case 'pppoe_username':
-                valueA = (a.pppoe_username || '').toLowerCase();
-                valueB = (b.pppoe_username || '').toLowerCase();
+                valueA = (a.ixc_pppoe_username || a.pppoe_username || '').toLowerCase();
+                valueB = (b.ixc_pppoe_username || b.pppoe_username || '').toLowerCase();
                 break;
             case 'rx_power':
-                valueA = parseFloat(a.rx_power) || -999;
-                valueB = parseFloat(b.rx_power) || -999;
+                valueA = parseFloat(a.ixc_rx_power ?? a.rx_power) || -999;
+                valueB = parseFloat(b.ixc_rx_power ?? b.rx_power) || -999;
                 break;
             case 'temperature':
-                valueA = parseFloat(a.temperature) || -999;
-                valueB = parseFloat(b.temperature) || -999;
+                valueA = parseFloat(a.ixc_temperature ?? a.temperature) || -999;
+                valueB = parseFloat(b.ixc_temperature ?? b.temperature) || -999;
                 break;
             case 'connected_clients':
                 valueA = parseInt(a.connected_devices_count) || 0;
