@@ -404,6 +404,6 @@ class GenieACS_Fast {
         }
         $data['tags'] = $tags;
 
-        return $data;
+        return CPEProfiles::enrich($device, $data);
     }
 }
