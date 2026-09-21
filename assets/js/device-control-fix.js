@@ -3,7 +3,7 @@
     'use strict';
 
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
-    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null };
+    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -739,6 +739,74 @@
         '</div>';
     };
 
+    window.updateIxcLiveTraffic = async function(force=false) {
+        if(!monitoringActive() || traffic.livePolling || !traffic.ixcLoginId) return;
+
+        const now=Date.now();
+        if(!force && now-traffic.liveLastPoll<1800) return;
+        if(!force && traffic.liveDisabledUntil>now) return;
+
+        traffic.liveLastPoll=now;
+        traffic.livePolling=true;
+
+        try{
+            const r=await fetch(
+                '/api/get-ixc-live-traffic.php?login_id='+encodeURIComponent(traffic.ixcLoginId),
+                {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
+            );
+            const data=await r.json();
+
+            if(!data?.success || !data?.available || !data?.live){
+                traffic.liveAvailable=false;
+                traffic.liveReason=data?.reason || 'unavailable';
+
+                if(data?.reason==='web_session_required'){
+                    traffic.liveDisabledUntil=Date.now()+60000;
+                } else {
+                    traffic.liveDisabledUntil=Date.now()+15000;
+                }
+
+                const source=document.getElementById('jr-monitor-source');
+                if(source && source.textContent!=='IXC/RADIUS') source.textContent='IXC/RADIUS';
+
+                return;
+            }
+
+            traffic.liveAvailable=true;
+            traffic.liveReason=null;
+            traffic.liveDisabledUntil=0;
+
+            const down=Number(data.live.download_mbps);
+            const up=Number(data.live.upload_mbps);
+            if(!Number.isFinite(down)||!Number.isFinite(up)) return;
+
+            const at=parseRadiusTime(data.live.sample_time) || Date.now();
+
+            traffic.samples.push({at,down,up,source:'ixc-live'});
+            if(traffic.samples.length>90) traffic.samples.shift();
+
+            setMonitorText('live-rx-mbps',fmtMbps(down));
+            setMonitorText('live-tx-mbps',fmtMbps(up));
+            setMonitorText('jr-monitor-source','IXC / Concentrador ao vivo');
+
+            const status=document.getElementById('bandwidth-sample-status');
+            if(status){
+                status.textContent='AO VIVO IXC • '+new Date(at).toLocaleTimeString('pt-BR')+' • atualização pelo concentrador';
+            }
+
+            const chart=document.getElementById('bandwidth-bars');
+            if(chart) chart.innerHTML=chartHtml(traffic.samples);
+
+            updateMonitoringInsights();
+        }catch(e){
+            traffic.liveAvailable=false;
+            traffic.liveReason='request_failed';
+            traffic.liveDisabledUntil=Date.now()+15000;
+        }finally{
+            traffic.livePolling=false;
+        }
+    };
+
     window.updateRadiusBandwidthSample = async function(force=false) {
         if (!monitoringActive() || traffic.polling || !window.DEVICE_ID) return;
         const now=Date.now();
@@ -762,6 +830,7 @@
 
             const s=data.session;
             traffic.online=true; traffic.latestSession=s;
+            traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
             // RADIUS: output = download do assinante; input = upload do assinante.
@@ -792,12 +861,14 @@
                     const downMbps=((down-traffic.last.down)*8)/(dt*1000000);
                     const upMbps=((up-traffic.last.up)*8)/(dt*1000000);
                     if(Number.isFinite(downMbps)&&Number.isFinite(upMbps)){
-                        traffic.samples.push({at:accountAt,down:downMbps,up:upMbps});
-                        if(traffic.samples.length>60)traffic.samples.shift();
-                        setMonitorText('live-rx-mbps',fmtMbps(downMbps));
-                        setMonitorText('live-tx-mbps',fmtMbps(upMbps));
-                        if(status)status.textContent='Nova contabilização às '+new Date(accountAt).toLocaleTimeString('pt-BR')+' • intervalo RADIUS '+dt+'s';
-                        newSample=true;
+                        if(!traffic.liveAvailable){
+                            traffic.samples.push({at:accountAt,down:downMbps,up:upMbps,source:'radius'});
+                            if(traffic.samples.length>60)traffic.samples.shift();
+                            setMonitorText('live-rx-mbps',fmtMbps(downMbps));
+                            setMonitorText('live-tx-mbps',fmtMbps(upMbps));
+                            if(status)status.textContent='Fallback RADIUS • nova contabilização às '+new Date(accountAt).toLocaleTimeString('pt-BR')+' • intervalo '+dt+'s';
+                            newSample=true;
+                        }
                     }
                 } else if(!traffic.last && status) {
                     status.textContent='Primeira contabilização recebida; aguardando a próxima.';
@@ -812,6 +883,7 @@
             const chart=document.getElementById('bandwidth-bars');
             if(chart)chart.innerHTML=chartHtml(traffic.samples);
             updateMonitoringInsights();
+            window.updateIxcLiveTraffic(true);
         }catch(e){
             const status=document.getElementById('bandwidth-sample-status');
             if(status)status.textContent='Falha ao consultar a sessão: '+e.message;
@@ -833,7 +905,8 @@
         setTimeout(enhanceControls, 500);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.samples=[]; traffic.sessionKey=null;
-            window.updateRadiusBandwidthSample();
+            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0;
+            window.updateRadiusBandwidthSample(true);
         });
     });
 })();
