@@ -124,38 +124,7 @@ function jrNormalizeOpticalSerial(
 
 function jrOpticalSerialAliases(string $value): array
 {
-    $serial = jrNormalizeOpticalSerial($value);
-    $aliases = [$serial];
-
-    // Alguns Huawei anunciam no TR-069 o OUI/vendor ASCII em hexadecimal.
-    // Ex.: 48575443 = "HWTC", então:
-    // 485754438FEEDBA7 <-> HWTC8FEEDBA7.
-    if (strlen($serial) >= 12 && preg_match('/^[0-9A-F]{8}/', $serial)) {
-        $hexPrefix = substr($serial, 0, 8);
-        $decoded = @hex2bin($hexPrefix);
-
-        if (
-            $decoded !== false &&
-            preg_match('/^[A-Z0-9]{4}$/i', $decoded)
-        ) {
-            $aliases[] = jrNormalizeOpticalSerial(
-                $decoded . substr($serial, 8)
-            );
-        }
-    }
-
-    // Caminho inverso para equipamentos que cheguem em ASCII no ACS
-    // mas estejam cadastrados com prefixo hexadecimal no IXC.
-    if (
-        strlen($serial) >= 12 &&
-        !preg_match('/^[0-9A-F]{4}$/i', substr($serial, 0, 4))
-    ) {
-        $aliases[] = strtoupper(
-            bin2hex(substr($serial, 0, 4)) . substr($serial, 4)
-        );
-    }
-
-    return array_values(array_unique(array_filter($aliases)));
+    return CPEProfiles::serialAliases($value);
 }
 
 
