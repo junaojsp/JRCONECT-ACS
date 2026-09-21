@@ -311,7 +311,7 @@ function liveParseSseEvents(string $body): array
     return $events;
 }
 
-function liveExtractRatesFromSseData(string $data): array
+function liveExtractRatesFromSseData(string $data, ?string $eventType = null): array
 {
     $trimmed = trim($data);
     if ($trimmed === '') {
@@ -320,6 +320,33 @@ function liveExtractRatesFromSseData(string $data): array
 
     $json = json_decode($trimmed, true);
     if (is_array($json)) {
+        // Formato real observado no EventSource do IXC:
+        // event: trafego
+        // data: {"tx":400,"rx":1733}
+        // rx = download em bps | tx = upload em bps.
+        if (
+            strtolower((string)$eventType) === 'trafego' &&
+            isset($json['rx'], $json['tx']) &&
+            is_numeric($json['rx']) &&
+            is_numeric($json['tx'])
+        ) {
+            $rxBps = max(0.0, (float)$json['rx']);
+            $txBps = max(0.0, (float)$json['tx']);
+
+            return [
+                'download_mbps' => $rxBps / 1000000,
+                'upload_mbps' => $txBps / 1000000,
+                'download_bps' => $rxBps,
+                'upload_bps' => $txBps,
+                'shape' => 'ixc-trafego-json-bps',
+                'keys' => array_keys($json),
+                'paths' => [
+                    'download' => 'rx',
+                    'upload' => 'tx',
+                ],
+            ];
+        }
+
         $rates = liveExtractJsonRates($json);
         return [
             'download_mbps' => $rates['download_mbps'],
@@ -458,16 +485,21 @@ try {
     $events = liveParseSseEvents((string)($sse['body'] ?? ''));
     $lastParsed = null;
     $lastRawData = null;
+    $lastEventType = null;
 
     foreach ($events as $event) {
         if (!isset($event['data'])) continue;
-        $parsed = liveExtractRatesFromSseData((string)$event['data']);
+        $parsed = liveExtractRatesFromSseData(
+            (string)$event['data'],
+            isset($event['event']) ? (string)$event['event'] : null
+        );
         if (
             $parsed['download_mbps'] !== null ||
             $parsed['upload_mbps'] !== null
         ) {
             $lastParsed = $parsed;
             $lastRawData = (string)$event['data'];
+            $lastEventType = isset($event['event']) ? (string)$event['event'] : null;
         }
     }
 
@@ -564,6 +596,7 @@ try {
             'redirect_detected' => ($sse['redirect_url'] ?? '') !== '',
             'looks_like_login' => $looksLikeLogin,
             'event_count' => count($events),
+            'last_event_type' => $lastEventType,
             'last_event_shape' => $lastParsed['shape'] ?? null,
             'last_event_keys' => $lastParsed['keys'] ?? [],
             'matched_paths' => $lastParsed['paths'] ?? [],
