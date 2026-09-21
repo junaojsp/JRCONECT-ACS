@@ -389,7 +389,7 @@ class CPEProfiles
         );
         if ($pppPath) $pppoe[] = $pppPath;
 
-        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($manufacturer . '_' . $model), -1, $dummy));
+        $slug = strtolower((string)preg_replace('/[^a-zA-Z0-9]+/', '_', trim($manufacturer . '_' . $model)));
         $slug = trim($slug, '_');
         $profile = [
             'id' => 'auto_' . ($slug ?: 'cpe'),
@@ -578,9 +578,9 @@ class CPEProfiles
         return $n;
     }
 
-    public static function optical(array $device): array
+    public static function optical(array $device, bool $deepDiscovery = true): array
     {
-        $profile = self::resolve($device);
+        $profile = self::resolve($device, $deepDiscovery);
         if (!$profile) return [];
 
         $map = $profile['optical'] ?? [];
@@ -639,7 +639,7 @@ class CPEProfiles
             if ($pppoe !== null) $data['pppoe_username'] = (string)$pppoe;
         }
 
-        $optical = self::optical($device);
+        $optical = self::optical($device, $deepDiscovery);
         if (($data['rx_power'] ?? 'N/A') === 'N/A' && $optical['rx_power'] !== null) {
             $data['rx_power'] = number_format($optical['rx_power'], 2, '.', '');
         }
