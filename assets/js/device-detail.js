@@ -2860,9 +2860,13 @@ function opticalUnavailableHtml(message = 'Não disponível') {
 }
 
 function formatOpticalValue(value, unit, status) {
+    if (value === null || value === undefined || String(value).trim() === '') {
+        return opticalUnavailableHtml();
+    }
+
     const numericValue = Number(value);
 
-    if (!Number.isFinite(numericValue)) {
+    if (!Number.isFinite(numericValue) || (unit === 'V' && numericValue <= 0)) {
         return opticalUnavailableHtml();
     }
 
@@ -2919,6 +2923,25 @@ function renderOpticalCachedPon() {
             return '<strong>' + escapeOpticalHtml(cachedOpticalData.pon_id) + '</strong>';
         }
 
+        const parts = [];
+        if (cachedOpticalData.slot !== null && cachedOpticalData.slot !== undefined && cachedOpticalData.slot !== '') {
+            parts.push('Slot ' + cachedOpticalData.slot);
+        }
+        if (cachedOpticalData.pon !== null && cachedOpticalData.pon !== undefined && cachedOpticalData.pon !== '') {
+            parts.push('PON ' + cachedOpticalData.pon);
+        }
+        if (cachedOpticalData.onu_number !== null && cachedOpticalData.onu_number !== undefined && cachedOpticalData.onu_number !== '') {
+            parts.push('ONU ' + cachedOpticalData.onu_number);
+        }
+
+        if (parts.length) {
+            return '<strong>' + escapeOpticalHtml(parts.join(' / ')) + '</strong>';
+        }
+
+        if (cachedOpticalData.id_transmissor) {
+            return '<strong>Transmissor #' + escapeOpticalHtml(cachedOpticalData.id_transmissor) + '</strong>';
+        }
+
         return opticalUnavailableHtml('Não identificado');
     }
 
@@ -2933,11 +2956,23 @@ function formatOpticalDate(value) {
     const text = String(value).trim();
     const match = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
 
-    if (!match) {
-        return text;
+    if (match) {
+        return `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}:${match[6]}`;
     }
 
-    return `${match[3]}/${match[2]}/${match[1]} ${match[4]}:${match[5]}:${match[6]}`;
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    return text;
 }
 
 function renderOpticalLastUpdate() {
