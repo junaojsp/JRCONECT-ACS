@@ -907,11 +907,16 @@
             const model=data?.device?.model||'CPE';
             const profile=data?.profile||'Contadores WAN';
             const refreshOk=data?.refresh?.success===true;
+            const refreshQueued=data?.refresh?.queued===true;
 
             setMonitorText('jr-source-live-badge','TR-069');
             setMonitorText(
                 'jr-source-live-state',
-                model+' • '+(refreshOk?'contadores atualizados':'leitura do GenieACS')
+                model+' • '+(
+                    refreshOk
+                        ? 'contadores atualizados'
+                        : (refreshQueued ? 'aguardando resposta do CPE' : 'leitura do GenieACS')
+                )
             );
             setMonitorText('jr-monitor-live-source','TR-069 / GenieACS');
 
@@ -919,7 +924,15 @@
                 traffic.liveAvailable=false;
                 traffic.liveReason=data?.reason||'tr069_unavailable';
 
-                if(
+                const keepLastRate=[
+                    'waiting_next_refresh',
+                    'refresh_queued',
+                    'stale_counters'
+                ].includes(data?.reason);
+
+                if(keepLastRate){
+                    traffic.liveDisabledUntil=Date.now()+2500;
+                } else if(
                     data?.reason==='collecting_second_sample' ||
                     data?.reason==='sample_window_invalid'
                 ){
@@ -947,7 +960,10 @@
                     const detail=data?.diagnostic?.detail
                         ? ' • '+String(data.diagnostic.detail)
                         : '';
-                    status.textContent=(data?.message||'Sem leitura de tráfego via TR-069.')+paths+detail;
+                    const next=data?.refresh?.next_in_seconds
+                        ? ' • próxima leitura em ~'+data.refresh.next_in_seconds+'s'
+                        : '';
+                    status.textContent=(data?.message||'Sem leitura de tráfego via TR-069.')+next+paths+detail;
                 }
 
                 const chart=document.getElementById('bandwidth-bars');
