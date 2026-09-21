@@ -950,11 +950,13 @@
                             return (a?.command||'consulta')+' ['+id+' / '+cnt+']';
                         })
                         .join(' → ');
-                    const firstPreview=attemptsList
+                    const preferredPreview=attemptsList
+                        .slice()
+                        .reverse()
                         .map(a=>String(a?.preview||'').trim())
                         .find(Boolean);
-                    const preview=firstPreview
-                        ? ' • retorno NE: '+firstPreview.slice(0,220)
+                    const preview=preferredPreview
+                        ? ' • retorno NE: '+preferredPreview.slice(0,320)
                         : '';
                     const detail=data?.diagnostic?.detail ? ' • '+String(data.diagnostic.detail) : '';
                     status.textContent=(data?.message||'Sem leitura direta do NE8000.')
