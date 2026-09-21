@@ -527,6 +527,31 @@ class CPEProfiles
         return null;
     }
 
+    private static function firstWithPath(array $device, array $paths): array
+    {
+        foreach ($paths as $path) {
+            $value = self::get($device, $path);
+            if ($value !== null && trim((string)$value) !== '') {
+                return ['value' => $value, 'path' => $path];
+            }
+        }
+        return ['value' => null, 'path' => null];
+    }
+
+    private static function pathTimestamp(array $device, ?string $path): ?string
+    {
+        if (!$path) return null;
+        $node = $device;
+        foreach (explode('.', $path) as $key) {
+            if (!is_array($node) || !array_key_exists($key, $node)) return null;
+            $node = $node[$key];
+        }
+        if (is_array($node) && isset($node['_timestamp']) && is_scalar($node['_timestamp'])) {
+            return (string)$node['_timestamp'];
+        }
+        return null;
+    }
+
     private static function countAssociated(array $device, ?string $path): int
     {
         if (!$path) return 0;
@@ -584,12 +609,27 @@ class CPEProfiles
         if (!$profile) return [];
 
         $map = $profile['optical'] ?? [];
+        $rx = self::firstWithPath($device, $map['rx'] ?? []);
+        $tx = self::firstWithPath($device, $map['tx'] ?? []);
+        $temperature = self::firstWithPath($device, $map['temperature'] ?? []);
+        $voltage = self::firstWithPath($device, $map['voltage'] ?? []);
+
+        $timestamp = self::pathTimestamp($device, $rx['path'])
+            ?? self::pathTimestamp($device, $tx['path'])
+            ?? self::pathTimestamp($device, $temperature['path'])
+            ?? self::pathTimestamp($device, $voltage['path']);
+
         return [
             'profile' => $profile['id'] ?? null,
-            'rx_power' => self::normalizeOptical(self::first($device, $map['rx'] ?? [])),
-            'tx_power' => self::normalizeOptical(self::first($device, $map['tx'] ?? [])),
-            'temperature' => self::normalizeOptical(self::first($device, $map['temperature'] ?? [])),
-            'voltage' => self::normalizeOptical(self::first($device, $map['voltage'] ?? [])),
+            'rx_power' => self::normalizeOptical($rx['value']),
+            'tx_power' => self::normalizeOptical($tx['value']),
+            'temperature' => self::normalizeOptical($temperature['value']),
+            'voltage' => self::normalizeOptical($voltage['value']),
+            'last_update' => $timestamp,
+            'rx_path' => $rx['path'],
+            'tx_path' => $tx['path'],
+            'temperature_path' => $temperature['path'],
+            'voltage_path' => $voltage['path'],
         ];
     }
 
