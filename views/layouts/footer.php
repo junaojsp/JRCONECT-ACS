@@ -2,7 +2,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            Made by <a href="https://github.com/safrinnetwork/" target="_blank">JRCONECT TELECOM</a>
+            <img src="/assets/img/jrconect-logo.svg?v=20260921" alt="JR CONECT Telecom" style="width: 92px; height: auto; object-fit: contain;">
         </div>
     </div>
 
