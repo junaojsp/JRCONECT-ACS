@@ -845,7 +845,7 @@
               '<div><span><i class="bi bi-router"></i>Concentrador</span><strong>N/D</strong></div>'+
             '</div>'+
             '<div class="jr-ixc-actions">'+
-              '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateIxcLiveTraffic(true); window.loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
+              '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateConcentratorLiveTraffic(true); window.loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
               '<button type="button" onclick="document.getElementById(\'wifi-tab\')?.click()"><i class="bi bi-gear"></i> Dados Roteador</button>'+
             '</div>'+
           '</div>'+
@@ -878,7 +878,7 @@
         '</div>';
     };
 
-    window.updateIxcLiveTraffic = async function(force=false) {
+    window.updateConcentratorLiveTraffic = async function(force=false) {
         if(!monitoringActive() || traffic.livePolling || !traffic.latestSession) return;
 
         const now=Date.now();
@@ -888,62 +888,6 @@
         traffic.liveLastPoll=now;
         traffic.livePolling=true;
 
-        const applySample=(data,sourceKey)=>{
-            const down=Number(data?.live?.download_mbps);
-            const up=Number(data?.live?.upload_mbps);
-            if(!Number.isFinite(down)||!Number.isFinite(up)) return false;
-
-            const at=parseRadiusTime(data.live.sample_time) || Date.now();
-            traffic.liveAvailable=true;
-            traffic.liveReason=null;
-            traffic.liveDisabledUntil=0;
-            traffic.liveSource=sourceKey;
-            traffic.concentrator=data.concentrator||traffic.concentrator||null;
-
-            traffic.samples.push({at,down,up,source:sourceKey});
-            if(traffic.samples.length>150) traffic.samples.shift();
-
-            setLiveRate('live-rx',down);
-            setLiveRate('live-tx',up);
-
-            const sourceText=sourceKey==='ne'
-                ? ((data?.concentrator?.name||'NE8000')+' / SSH direto')
-                : (data?.source||'IXC / fallback');
-
-            setMonitorText('jr-monitor-source',sourceKey==='ne'?'NE8000 + IXC/RADIUS':'IXC/RADIUS');
-            setMonitorText('jr-monitor-live-source',sourceText);
-            setMonitorText('jr-source-live-badge',sourceKey==='ne'?(data?.concentrator?.model||'NE8000'):'IXC FALLBACK');
-            setMonitorText('jr-source-live-state',sourceKey==='ne'?'SSH conectado • leitura direta da sessão':'Leitura alternativa pelo IXC');
-
-            if(sourceKey==='ne' && data?.concentrator){
-                const label=[data.concentrator.name,data.concentrator.nas_ip].filter(Boolean).join(' • ');
-                setMonitorText('jr-monitor-bras',label||traffic.latestSession?.bras||'N/D');
-            }
-
-            const status=document.getElementById('bandwidth-sample-status');
-            if(status){
-                const prefix=sourceKey==='ne'?'NE8000 DIRETO':'IXC FALLBACK';
-                status.textContent=prefix+' • '+new Date(at).toLocaleTimeString('pt-BR')+' • '+sourceText;
-            }
-
-            const chart=document.getElementById('bandwidth-bars');
-            if(chart) chart.innerHTML=chartHtml(traffic.samples);
-            return true;
-        };
-
-        const requestIxcFallback=async()=>{
-            if(!traffic.ixcLoginId) return null;
-            try{
-                const r=await fetch(
-                    '/api/get-ixc-live-traffic.php?login_id='+encodeURIComponent(traffic.ixcLoginId),
-                    {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
-                );
-                return await r.json();
-            }catch(_){
-                return null;
-            }
-        };
-
         try{
             const s=traffic.latestSession||{};
             const qs=new URLSearchParams();
@@ -952,64 +896,104 @@
             if(s.bras) qs.set('nas_ip',s.bras);
             if(s.session_id) qs.set('session_id',s.session_id);
 
-            const neResponse=await fetch(
+            const r=await fetch(
                 '/api/get-ne-live-traffic.php?'+qs.toString(),
                 {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
             );
-            const neData=await neResponse.json();
+            const data=await r.json();
 
-            if(neData?.success && neData?.available && neData?.live){
-                applySample(neData,'ne');
+            traffic.concentrator=data?.concentrator||traffic.concentrator||null;
+
+            if(data?.concentrator){
+                const brasLabel=[data.concentrator.name,data.concentrator.nas_ip]
+                    .filter(Boolean).join(' • ');
+                setMonitorText('jr-monitor-bras',brasLabel||s.bras||'N/D');
+                setMonitorText('jr-source-live-badge',data.concentrator.model||'NE8000');
+            }
+
+            if(!data?.success || !data?.available || !data?.live){
+                traffic.liveAvailable=false;
+                traffic.liveReason=data?.reason||'ne_unavailable';
+
+                if(data?.reason==='collecting_second_sample' || data?.reason==='counter_window_reset'){
+                    traffic.liveDisabledUntil=Date.now()+1200;
+                    setMonitorText('jr-source-live-state','SSH conectado • coletando segunda amostra');
+                    setMonitorText('jr-monitor-live-source','Huawei NE8000 / SSH');
+                } else {
+                    traffic.liveDisabledUntil=Date.now()+3500;
+                    setMonitorText('jr-source-live-state','NE8000 sem leitura de tráfego');
+                    setMonitorText('jr-monitor-live-source','Huawei NE8000 / SSH');
+                }
+
+                const status=document.getElementById('bandwidth-sample-status');
+                if(status){
+                    const attempts=Array.isArray(data?.diagnostic?.attempts)
+                        ? data.diagnostic.attempts
+                            .map(a=>{
+                                const id=a?.user_id_found===true?'UserID OK':'UserID --';
+                                const cnt=a?.counters_found===true?'contadores OK':'contadores --';
+                                return (a?.command||'consulta')+' ['+id+' / '+cnt+']';
+                            })
+                            .join(' → ')
+                        : '';
+                    status.textContent=(data?.message||'Sem leitura direta do NE8000.')
+                        +(attempts?' • '+attempts:'');
+                }
+
+                // Nesta versão não há fallback para tráfego via IXC:
+                // a aba deve revelar o estado real da integração com o NE8000.
                 return;
             }
 
-            traffic.liveAvailable=false;
-            traffic.liveReason=neData?.reason||'ne_unavailable';
+            traffic.liveAvailable=true;
+            traffic.liveReason=null;
+            traffic.liveDisabledUntil=0;
+            traffic.liveSource='ne';
 
-            if(neData?.concentrator){
-                traffic.concentrator=neData.concentrator;
-                setMonitorText('jr-source-live-badge',neData.concentrator.model||'NE8000');
-                setMonitorText('jr-monitor-bras',[neData.concentrator.name,neData.concentrator.nas_ip].filter(Boolean).join(' • '));
+            const down=Number(data.live.download_mbps);
+            const up=Number(data.live.upload_mbps);
+            if(!Number.isFinite(down)||!Number.isFinite(up)) return;
+
+            const at=parseRadiusTime(data.live.sample_time)||Date.now();
+
+            traffic.samples.push({at,down,up,source:'ne'});
+            if(traffic.samples.length>150) traffic.samples.shift();
+
+            setLiveRate('live-rx',down);
+            setLiveRate('live-tx',up);
+            setMonitorText('jr-monitor-source','NE8000 + IXC/RADIUS');
+            setMonitorText('jr-monitor-live-source',(data?.concentrator?.name||'NE8000')+' / SSH direto');
+            setMonitorText('jr-source-live-badge',data?.concentrator?.model||'NE8000');
+            setMonitorText('jr-source-live-state','SSH conectado • leitura direta da sessão');
+
+            if(data?.session?.interface){
+                setMonitorText('jr-radius-interface',data.session.interface);
             }
 
             const status=document.getElementById('bandwidth-sample-status');
-
-            if(neData?.reason==='collecting_second_sample' || neData?.reason==='counter_window_reset'){
-                traffic.liveDisabledUntil=Date.now()+1200;
-                setMonitorText('jr-source-live-state','SSH conectado • coletando segunda amostra');
-                setMonitorText('jr-monitor-live-source','Huawei NE8000 / SSH');
-                if(status) status.textContent=neData?.message||'Aguardando próxima amostra do NE8000.';
-                return;
-            }
-
-            setMonitorText('jr-source-live-state','NE indisponível • tentando fallback');
-            if(status && neData?.message) status.textContent=neData.message;
-
-            const ixcData=await requestIxcFallback();
-            if(ixcData?.success && ixcData?.available && ixcData?.live){
-                applySample(ixcData,'ixc');
-                return;
-            }
-
-            traffic.liveDisabledUntil=Date.now()+5000;
-            setMonitorText('jr-monitor-live-source','RADIUS fallback');
-            setMonitorText('jr-source-live-badge','SEM LEITURA DIRETA');
-            setMonitorText('jr-source-live-state','NE8000 sem contador disponível');
-
             if(status){
-                status.textContent=neData?.message || ixcData?.message || 'Sem leitura direta do concentrador; aguardando nova tentativa.';
+                status.textContent='NE8000 DIRETO • '+new Date(at).toLocaleTimeString('pt-BR')
+                    +' • '+(data?.concentrator?.name||'BRAS');
             }
+
+            const chart=document.getElementById('bandwidth-bars');
+            if(chart) chart.innerHTML=chartHtml(traffic.samples);
+
         }catch(e){
             traffic.liveAvailable=false;
             traffic.liveReason='request_failed';
-            traffic.liveDisabledUntil=Date.now()+5000;
+            traffic.liveDisabledUntil=Date.now()+3500;
             setMonitorText('jr-source-live-state','Falha na consulta direta ao NE8000');
+            setMonitorText('jr-monitor-live-source','Huawei NE8000 / erro');
             const status=document.getElementById('bandwidth-sample-status');
-            if(status) status.textContent='Falha ao consultar o concentrador: '+e.message;
+            if(status) status.textContent='Falha ao consultar o NE8000: '+e.message;
         }finally{
             traffic.livePolling=false;
         }
     };
+
+    // Compatibilidade temporária com chamadas antigas do layout.
+    window.updateIxcLiveTraffic = window.updateConcentratorLiveTraffic;
 
     window.updateRadiusBandwidthSample = async function(force=false) {
         if (!monitoringActive() || traffic.polling || !window.DEVICE_ID) return;
@@ -1089,7 +1073,7 @@
 
             const chart=document.getElementById('bandwidth-bars');
             if(chart)chart.innerHTML=chartHtml(traffic.samples);
-            window.updateIxcLiveTraffic(true);
+            window.updateConcentratorLiveTraffic(true);
         }catch(e){
             const status=document.getElementById('bandwidth-sample-status');
             if(status)status.textContent='Falha ao consultar a sessão: '+e.message;
@@ -1110,8 +1094,8 @@
         ensureModal();
         setTimeout(enhanceControls, 500);
         window.setInterval(() => {
-            if (typeof window.updateIxcLiveTraffic === 'function') {
-                window.updateIxcLiveTraffic();
+            if (typeof window.updateConcentratorLiveTraffic === 'function') {
+                window.updateConcentratorLiveTraffic();
             }
         }, 2000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
