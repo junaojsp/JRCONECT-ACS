@@ -3,7 +3,7 @@
     'use strict';
 
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
-    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, report: null, reportLoading: false, reportLoadedFor: null };
+    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, liveSource: null, concentrator: null, report: null, reportLoading: false, reportLoadedFor: null };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -831,6 +831,11 @@
     window.renderMonitoringTab = function(device) {
         const wan=typeof getPrimaryWAN==='function'?getPrimaryWAN(device):null;
         return '<div class="jr-monitor-v3">'+
+          '<div class="jr-monitor-source-strip">'+
+            '<div class="jr-monitor-source-item primary"><span>TRÁFEGO EM TEMPO REAL</span><strong id="jr-source-live-badge">NE8000</strong><small id="jr-source-live-state">Aguardando leitura direta</small></div>'+
+            '<div class="jr-monitor-source-item"><span>SESSÃO / CONTABILIZAÇÃO</span><strong>IXC / RADIUS</strong><small>PPPoE, totais e histórico</small></div>'+
+            '<div class="jr-monitor-source-item"><span>CPE / WI-FI</span><strong>TR-069</strong><small>Estado e gerenciamento do equipamento</small></div>'+
+          '</div>'+
           '<div class="jr-ixc-report-card">'+
             '<div class="jr-ixc-report-title"><strong>Relatório</strong><span id="jr-radius-status" class="jr-monitor-badge">AGUARDANDO</span></div>'+
             '<div id="jr-ixc-access-summary" class="jr-ixc-access-summary">'+
@@ -849,7 +854,7 @@
             '<div id="jr-ixc-events" class="jr-ixc-events"><div class="jr-ixc-empty">Carregando histórico...</div></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
-            '<div class="jr-ixc-section-title"><strong>Tráfego em tempo real dos últimos 5 minutos</strong><span id="bandwidth-sample-status">Aguardando dados do concentrador...</span></div>'+
+            '<div class="jr-ixc-section-title"><strong>Tráfego em tempo real dos últimos 5 minutos</strong><span id="bandwidth-sample-status">Aguardando leitura direta do NE8000...</span></div>'+
             '<div class="jr-monitor-live-head"><div><span>Download</span><strong id="live-rx-mbps">--</strong><small id="live-rx-unit">Mbps</small></div><div><span>Upload</span><strong id="live-tx-mbps">--</strong><small id="live-tx-unit">Mbps</small></div><div><span>Baixado na sessão</span><strong id="live-rx-total">--</strong><small>RADIUS</small></div><div><span>Enviado na sessão</span><strong id="live-tx-total">--</strong><small>RADIUS</small></div></div>'+
             '<div id="bandwidth-bars" class="jr-monitor-chart"></div>'+
           '</div>'+
@@ -867,14 +872,14 @@
               '<div><span>Plano</span><strong id="jr-radius-plan">'+esc(monitorPlanLabel())+'</strong></div>'+
               '<div><span>BRAS / Concentrador</span><strong id="jr-monitor-bras">N/D</strong></div>'+
               '<div><span>Última contabilização</span><strong id="jr-monitor-last-accounting">N/D</strong></div>'+
-              '<div><span>Origem ao vivo</span><strong id="jr-monitor-live-source">Aguardando</strong></div>'+
+              '<div><span>Origem ao vivo</span><strong id="jr-monitor-live-source">NE8000 / aguardando</strong></div>'+
             '</div>'+
           '</div>'+
         '</div>';
     };
 
     window.updateIxcLiveTraffic = async function(force=false) {
-        if(!monitoringActive() || traffic.livePolling || !traffic.ixcLoginId) return;
+        if(!monitoringActive() || traffic.livePolling || !traffic.latestSession) return;
 
         const now=Date.now();
         if(!force && now-traffic.liveLastPoll<1800) return;
@@ -883,71 +888,124 @@
         traffic.liveLastPoll=now;
         traffic.livePolling=true;
 
-        try{
-            const r=await fetch(
-                '/api/get-ixc-live-traffic.php?login_id='+encodeURIComponent(traffic.ixcLoginId),
-                {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
-            );
-            const data=await r.json();
+        const applySample=(data,sourceKey)=>{
+            const down=Number(data?.live?.download_mbps);
+            const up=Number(data?.live?.upload_mbps);
+            if(!Number.isFinite(down)||!Number.isFinite(up)) return false;
 
-            if(!data?.success || !data?.available || !data?.live){
-                traffic.liveAvailable=false;
-                traffic.liveReason=data?.reason || 'unavailable';
-
-                if(data?.reason==='web_session_required'){
-                    traffic.liveDisabledUntil=Date.now()+60000;
-                } else if(data?.reason==='collecting_second_sample' || data?.reason==='counter_window_invalid'){
-                    traffic.liveDisabledUntil=Date.now()+1200;
-                } else {
-                    traffic.liveDisabledUntil=Date.now()+5000;
-                }
-
-                const source=document.getElementById('jr-monitor-source');
-                if(source && source.textContent!=='IXC/RADIUS') source.textContent='IXC/RADIUS';
-                setMonitorText('jr-monitor-live-source','RADIUS fallback');
-
-                const status=document.getElementById('bandwidth-sample-status');
-                if(status && data?.message){
-                    status.textContent=data.message;
-                }
-
-                return;
-            }
-
+            const at=parseRadiusTime(data.live.sample_time) || Date.now();
             traffic.liveAvailable=true;
             traffic.liveReason=null;
             traffic.liveDisabledUntil=0;
+            traffic.liveSource=sourceKey;
+            traffic.concentrator=data.concentrator||traffic.concentrator||null;
 
-            const down=Number(data.live.download_mbps);
-            const up=Number(data.live.upload_mbps);
-            if(!Number.isFinite(down)||!Number.isFinite(up)) return;
-
-            const at=parseRadiusTime(data.live.sample_time) || Date.now();
-
-            traffic.samples.push({at,down,up,source:'ixc-live'});
+            traffic.samples.push({at,down,up,source:sourceKey});
             if(traffic.samples.length>150) traffic.samples.shift();
 
             setLiveRate('live-rx',down);
             setLiveRate('live-tx',up);
-            setMonitorText('jr-monitor-source','IXC / Concentrador ao vivo');
-            setMonitorText('jr-monitor-live-source',data.source||'IXC / Concentrador ao vivo');
+
+            const sourceText=sourceKey==='ne'
+                ? ((data?.concentrator?.name||'NE8000')+' / SSH direto')
+                : (data?.source||'IXC / fallback');
+
+            setMonitorText('jr-monitor-source',sourceKey==='ne'?'NE8000 + IXC/RADIUS':'IXC/RADIUS');
+            setMonitorText('jr-monitor-live-source',sourceText);
+            setMonitorText('jr-source-live-badge',sourceKey==='ne'?(data?.concentrator?.model||'NE8000'):'IXC FALLBACK');
+            setMonitorText('jr-source-live-state',sourceKey==='ne'?'SSH conectado • leitura direta da sessão':'Leitura alternativa pelo IXC');
+
+            if(sourceKey==='ne' && data?.concentrator){
+                const label=[data.concentrator.name,data.concentrator.nas_ip].filter(Boolean).join(' • ');
+                setMonitorText('jr-monitor-bras',label||traffic.latestSession?.bras||'N/D');
+            }
 
             const status=document.getElementById('bandwidth-sample-status');
             if(status){
-                const transport=String(data.live?.transport||'').toLowerCase();
-                const sourceLabel=transport==='sse'
-                    ? 'AO VIVO IXC / SSE'
-                    : (transport==='counter-delta' ? 'IXC COUNTER FALLBACK' : 'IXC AO VIVO');
-                status.textContent=sourceLabel+' • '+new Date(at).toLocaleTimeString('pt-BR')+' • '+(data.source||'IXC');
+                const prefix=sourceKey==='ne'?'NE8000 DIRETO':'IXC FALLBACK';
+                status.textContent=prefix+' • '+new Date(at).toLocaleTimeString('pt-BR')+' • '+sourceText;
             }
 
             const chart=document.getElementById('bandwidth-bars');
             if(chart) chart.innerHTML=chartHtml(traffic.samples);
+            return true;
+        };
 
+        const requestIxcFallback=async()=>{
+            if(!traffic.ixcLoginId) return null;
+            try{
+                const r=await fetch(
+                    '/api/get-ixc-live-traffic.php?login_id='+encodeURIComponent(traffic.ixcLoginId),
+                    {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
+                );
+                return await r.json();
+            }catch(_){
+                return null;
+            }
+        };
+
+        try{
+            const s=traffic.latestSession||{};
+            const qs=new URLSearchParams();
+            if(s.ip) qs.set('ip',s.ip);
+            if(s.username) qs.set('username',s.username);
+            if(s.bras) qs.set('nas_ip',s.bras);
+            if(s.session_id) qs.set('session_id',s.session_id);
+
+            const neResponse=await fetch(
+                '/api/get-ne-live-traffic.php?'+qs.toString(),
+                {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
+            );
+            const neData=await neResponse.json();
+
+            if(neData?.success && neData?.available && neData?.live){
+                applySample(neData,'ne');
+                return;
+            }
+
+            traffic.liveAvailable=false;
+            traffic.liveReason=neData?.reason||'ne_unavailable';
+
+            if(neData?.concentrator){
+                traffic.concentrator=neData.concentrator;
+                setMonitorText('jr-source-live-badge',neData.concentrator.model||'NE8000');
+                setMonitorText('jr-monitor-bras',[neData.concentrator.name,neData.concentrator.nas_ip].filter(Boolean).join(' • '));
+            }
+
+            const status=document.getElementById('bandwidth-sample-status');
+
+            if(neData?.reason==='collecting_second_sample' || neData?.reason==='counter_window_reset'){
+                traffic.liveDisabledUntil=Date.now()+1200;
+                setMonitorText('jr-source-live-state','SSH conectado • coletando segunda amostra');
+                setMonitorText('jr-monitor-live-source','Huawei NE8000 / SSH');
+                if(status) status.textContent=neData?.message||'Aguardando próxima amostra do NE8000.';
+                return;
+            }
+
+            setMonitorText('jr-source-live-state','NE indisponível • tentando fallback');
+            if(status && neData?.message) status.textContent=neData.message;
+
+            const ixcData=await requestIxcFallback();
+            if(ixcData?.success && ixcData?.available && ixcData?.live){
+                applySample(ixcData,'ixc');
+                return;
+            }
+
+            traffic.liveDisabledUntil=Date.now()+5000;
+            setMonitorText('jr-monitor-live-source','RADIUS fallback');
+            setMonitorText('jr-source-live-badge','SEM LEITURA DIRETA');
+            setMonitorText('jr-source-live-state','NE8000 sem contador disponível');
+
+            if(status){
+                status.textContent=neData?.message || ixcData?.message || 'Sem leitura direta do concentrador; aguardando nova tentativa.';
+            }
         }catch(e){
             traffic.liveAvailable=false;
             traffic.liveReason='request_failed';
-            traffic.liveDisabledUntil=Date.now()+15000;
+            traffic.liveDisabledUntil=Date.now()+5000;
+            setMonitorText('jr-source-live-state','Falha na consulta direta ao NE8000');
+            const status=document.getElementById('bandwidth-sample-status');
+            if(status) status.textContent='Falha ao consultar o concentrador: '+e.message;
         }finally{
             traffic.livePolling=false;
         }
@@ -1058,7 +1116,7 @@
         }, 2000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.samples=[]; traffic.sessionKey=null;
-            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.report=null; traffic.reportLoadedFor=null;
+            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null;
             window.updateRadiusBandwidthSample(true);
         });
     });
