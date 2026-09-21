@@ -5,6 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/config.php';
 if (function_exists('requireLogin')) requireLogin();
 
+use App\CPEProfiles;
+
 header('Content-Type: application/json; charset=utf-8');
 
 function jrSearchOut(array $data, int $status = 200): never {
@@ -244,16 +246,19 @@ try {
                 $serial = jrSearchPick($fiber, ['mac']);
                 if (!$serial) continue;
 
-                $normalized = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $serial) ?? '');
-                if ($normalized === '') continue;
+                $aliases = CPEProfiles::serialAliases($serial);
+                if (!$aliases) continue;
 
-                $serials[$normalized] = true;
+                foreach ($aliases as $alias) {
+                    $serials[$alias] = true;
+                }
 
                 $clientId = jrSearchPick($login, ['id_cliente', 'cliente_id']);
                 $client = ($clientId && isset($clientIds[$clientId])) ? $clientIds[$clientId] : [];
 
                 $matches[] = [
-                    'serial' => $normalized,
+                    'serial' => $aliases[0],
+                    'serial_aliases' => $aliases,
                     'login' => jrSearchPick($login, ['login', 'username', 'usuario']),
                     'name' => jrSearchPick($client, ['razao', 'fantasia', 'nome'])
                         ?? jrSearchPick($fiber, ['nome']),
