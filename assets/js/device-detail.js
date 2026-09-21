@@ -618,7 +618,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
                 <section class="acs-overview-card acs-card-device acs-approved-device acs-fiber-card acs-device-wide">
                     <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-router"></i> Equipamento / Fibra</span></div>
+                        <div><span class="acs-kicker"><i class="bi bi-router"></i> Equipamento / Fibra</span><small class="ms-2 text-muted">CPE: TR-069 · Rede: IXC</small></div>
                         <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
                             <span class="acs-status-dot"></span>${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
                         </span>
@@ -3011,62 +3011,59 @@ function isOperationallyMissing(value) {
     return !text || /^(n\/?a|n\/d|não disponível|não informado|-|none|null|undefined|error_none|sem erro|no error)$/i.test(text);
 }
 
-function applyIxcNetworkFallback() {
+function applyIxcNetworkPrimary() {
     if (!cachedOpticalData || cachedOpticalData.error) return;
 
     const network = cachedOpticalData.network || {};
     const sourceTitle = network.source || 'API IXC';
 
-    const setFallback = (id, value, formatter = null) => {
+    const setPrimary = (id, value, formatter = null) => {
         if (value === null || value === undefined || String(value).trim() === '') return;
         const el = document.getElementById(id);
-        if (!el || !isOperationallyMissing(el.textContent)) return;
+        if (!el) return;
 
         if (formatter) {
             el.innerHTML = formatter(value);
         } else {
             el.textContent = String(value);
         }
-        el.title = 'Complementado por ' + sourceTitle;
+        el.title = 'Fonte oficial: ' + sourceTitle;
         el.dataset.source = 'ixc';
     };
 
-    setFallback('wan-ip', network.ip, value => makeIPClickable(String(value)));
-    setFallback('wan-pppoe-user', network.login);
-    setFallback('wan-ipv6', network.ipv6 || network.ipv6_pd);
-    setFallback('wan-vlan', network.vlan);
+    // Dados de rede/cliente: IXC é a fonte principal quando possui valor.
+    setPrimary('wan-ip', network.ip, value => makeIPClickable(String(value)));
+    setPrimary('wan-pppoe-user', network.login);
+    setPrimary('wan-ipv6', network.ipv6 || network.ipv6_pd);
+    setPrimary('wan-vlan', network.vlan);
 
     if (network.last_error) {
         const el = document.getElementById('wan-last-error');
-        if (el && isOperationallyMissing(el.textContent)) {
+        if (el) {
             el.textContent = 'Última queda: ' + String(network.last_error);
-            el.title = 'Causa da última queda informada pelo IXC';
+            el.title = 'Fonte oficial: IXC Cliente Fibra';
             el.dataset.source = 'ixc';
         }
     }
 
-    // Mantém também o objeto atual enriquecido para IA/resumo técnico,
-    // sem substituir dados válidos coletados pelo TR-069.
+    // Enriquecemos o objeto atual para IA/resumo técnico.
+    // Se o IXC não informou um campo, o valor TR-069 já presente é preservado.
     if (currentDeviceData && Array.isArray(currentDeviceData.wan_details)) {
         const wan = currentDeviceData.wan_details.find(w =>
             String(w?.status || '').toLowerCase() === 'connected'
         ) || currentDeviceData.wan_details[0];
 
         if (wan) {
-            if (isOperationallyMissing(wan.external_ip) && network.ip) wan.external_ip = network.ip;
-            if (isOperationallyMissing(wan.username) && network.login) wan.username = network.login;
-            if (isOperationallyMissing(wan.ipv6) && (network.ipv6 || network.ipv6_pd)) {
-                wan.ipv6 = network.ipv6 || network.ipv6_pd;
-            }
-            if (isOperationallyMissing(wan.vlan_id) && isOperationallyMissing(wan.vlan) && network.vlan) {
-                wan.vlan_id = network.vlan;
-            }
-            if (isOperationallyMissing(wan.last_error) && network.last_error) {
-                wan.last_error = 'Última queda: ' + network.last_error;
-            }
+            if (network.ip) wan.external_ip = network.ip;
+            if (network.login) wan.username = network.login;
+            if (network.ipv6 || network.ipv6_pd) wan.ipv6 = network.ipv6 || network.ipv6_pd;
+            if (network.vlan) wan.vlan_id = network.vlan;
+            if (network.last_error) wan.last_error = 'Última queda: ' + network.last_error;
+            wan.data_source = sourceTitle;
         }
     }
 }
+
 
 function updateOpticalDomFromCache() {
     // IMPORTANTE: busca os elementos novamente depois da resposta.
@@ -3087,7 +3084,7 @@ function updateOpticalDomFromCache() {
     if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
     updateIxcOnuSummary();
-    applyIxcNetworkFallback();
+    applyIxcNetworkPrimary();
     updateOverviewOperationalMeta();
 }
 
@@ -3190,6 +3187,7 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
             id_contrato: data.id_contrato ?? null,
             id_transmissor: data.id_transmissor ?? null,
             network: data.network || {},
+            source_policy: data.source_policy || {},
             pon_id: data.pon_id || null,
             onu_number: data.onu_number ?? null,
             olt_id: data.olt_id || null,
