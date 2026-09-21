@@ -13,7 +13,7 @@
     <!-- Scoped to the current overview; other pages keep their existing assets. -->
     <link rel="stylesheet" href="/assets/css/dashboard-chart-fix.css?v=chartfix-1">
     <script src="/assets/js/dashboard-chart-fix.js?v=chartfix-1"></script>
-    <script src="/assets/js/dashboard-source-policy.js?v=20260921-1"></script>
+    <script src="/assets/js/dashboard-source-policy.js?v=20260921-2"></script>
     <?php endif; ?>
     <?php if (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'device-detail.php'): ?>
     <!-- Read-only unified-network identification; no device tasks on page load. -->
