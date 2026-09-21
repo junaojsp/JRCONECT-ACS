@@ -902,6 +902,12 @@ try {
                 [
                     'success' => true,
                     'source' => 'TR-069 / Perfil CPE',
+                    'source_policy' => [
+                        'network' => 'IXC principal / TR-069 fallback',
+                        'optical' => 'IXC principal / TR-069 fallback',
+                        'equipment' => 'TR-069 / GenieACS',
+                        'wifi_write' => 'TR-069 / GenieACS',
+                    ],
                     'device_id' => $deviceId,
                     'serial' => $serial,
                     'manufacturer' => $manufacturer,
@@ -1183,6 +1189,13 @@ try {
 
             'source' =>
                 ($hasProfileOptical ? 'IXC + TR-069 / Perfil CPE' : 'IXC'),
+
+            'source_policy' => [
+                'network' => 'IXC principal / TR-069 fallback',
+                'optical' => 'IXC principal / TR-069 fallback',
+                'equipment' => 'TR-069 / GenieACS',
+                'wifi_write' => 'TR-069 / GenieACS',
+            ],
 
             'device_id' =>
                 $deviceId,
