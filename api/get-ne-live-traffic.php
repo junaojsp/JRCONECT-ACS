@@ -448,5 +448,9 @@ try {
         'available' => false,
         'reason' => 'ne_request_failed',
         'message' => 'Falha ao consultar o tráfego diretamente no concentrador.',
+        'diagnostic' => [
+            'detail' => mb_substr($e->getMessage(), 0, 220),
+            'type' => (new ReflectionClass($e))->getShortName(),
+        ],
     ]);
 }
