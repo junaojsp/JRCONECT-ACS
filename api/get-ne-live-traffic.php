@@ -45,9 +45,9 @@ function neFindField(string $output, array $labels): ?string
 function neExtractUserId(string $output): ?int
 {
     $patterns = [
-        '/^\s*User\s+ID\s*:\s*(\d+)\s*$/mi',
+        '/User\s+ID\s*:\s*(\d+)/i',
         '/^\s*UserID\s*:\s*(\d+)\s*$/mi',
-        '/^\s*User\s+access\s+index\s*:\s*(\d+)\s*$/mi',
+        '/User\s+access\s+index\s*:\s*(\d+)/i',
         '/^\s*User\s+index\s*:\s*(\d+)\s*$/mi',
         // Tabela resumida: UserID Username Interface IP MAC ...
         '/^\s*(\d+)\s+\S+\s+.*?(?:\d{1,3}\.){3}\d{1,3}(?:\s|$)/m',
@@ -163,10 +163,14 @@ function neDiagnosticPreview(string $output): string
 
 function nePrepareInteractiveShell(SSH2 $ssh): void
 {
-    // Alguns NE8000 aceitam autenticação SSH mas fecham CHANNEL_EXEC.
-    // Abrir o shell e consumir o prompt reproduz uma sessão de terminal.
-    $ssh->setWindowSize(200, 80);
-    $ssh->setTimeout(4);
+    // Abre o CHANNEL_SHELL e força um prompt novo para eliminar qualquer
+    // banner/prompt residual antes da primeira consulta.
+    $ssh->setWindowSize(220, 100);
+    $ssh->setTimeout(8);
+    $ssh->read(nePromptRegex(), SSH2::READ_REGEX);
+
+    $ssh->write("\r\n");
+    $ssh->setTimeout(8);
     $ssh->read(nePromptRegex(), SSH2::READ_REGEX);
 }
 
@@ -179,15 +183,39 @@ function neRunReadOnly(SSH2 $ssh, string $command): string
         throw new RuntimeException('Comando de leitura não autorizado pelo monitoramento.');
     }
 
-    $ssh->setTimeout(6);
+    // A consulta access-user pode levar vários segundos em BRAS com milhares
+    // de sessões. O timeout anterior (6 s) fazia a resposta cair na leitura
+    // do comando seguinte.
+    $timeout = str_starts_with($command, 'display access-user') ? 20 : 8;
+    $ssh->setTimeout($timeout);
     $ssh->write($command . "\r\n");
 
-    $output = (string)$ssh->read(
+    $output = $ssh->read(
         nePromptRegex(),
         SSH2::READ_REGEX
     );
 
-    return neCleanTerminalOutput($output);
+    if ($output === false || trim((string)$output) === '') {
+        // Uma segunda janela sem reenviar o comando captura respostas lentas
+        // sem duplicar a consulta no NE.
+        $ssh->setTimeout(12);
+        $late = $ssh->read(
+            nePromptRegex(),
+            SSH2::READ_REGEX
+        );
+        if (is_string($late) && trim($late) !== '') {
+            $output = $late;
+        }
+    }
+
+    $clean = neCleanTerminalOutput((string)$output);
+    if (trim($clean) === '') {
+        throw new RuntimeException(
+            'Tempo limite aguardando a resposta do comando no NE8000.'
+        );
+    }
+
+    return $clean;
 }
 
 function neReadSession(SSH2 $ssh, string $ip, ?string $username): array
