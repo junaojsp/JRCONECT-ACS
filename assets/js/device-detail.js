@@ -665,13 +665,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                     <div class="acs-reference-list acs-icon-info-list">
                         <div><span><i class="bi bi-ethernet"></i>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
-                        <div><span><i class="bi bi-globe2"></i>IP</span><strong>${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
+                        <div><span><i class="bi bi-globe2"></i>IP</span><strong id="wan-ip">${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
                         <div><span><i class="bi bi-diagram-3"></i>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
-                        <div><span><i class="bi bi-person-circle"></i>Usuário PPPoE</span><strong>${primaryWan.username || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-globe-americas"></i>IPv6</span><strong>${primaryWan.ipv6 || 'Não disponível'}</strong></div>
+                        <div><span><i class="bi bi-person-circle"></i>Usuário PPPoE</span><strong id="wan-pppoe-user">${primaryWan.username || 'Não disponível'}</strong></div>
+                        <div><span><i class="bi bi-globe-americas"></i>IPv6</span><strong id="wan-ipv6">${primaryWan.ipv6 || 'Não disponível'}</strong></div>
                         <div><span><i class="bi bi-diagram-2"></i>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-tag"></i>VLAN</span><strong>${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
-                        <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong>${primaryWan.last_error || '-'}</strong></div>
+                        <div><span><i class="bi bi-tag"></i>VLAN</span><strong id="wan-vlan">${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
+                        <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong id="wan-last-error">${primaryWan.last_error || '-'}</strong></div>
                     </div>
                 </section>
 
@@ -3006,6 +3006,68 @@ function renderOpticalSource() {
     return opticalLoadingHtml();
 }
 
+function isOperationallyMissing(value) {
+    const text = String(value ?? '').trim();
+    return !text || /^(n\/?a|n\/d|não disponível|não informado|-|none|null|undefined|error_none|sem erro|no error)$/i.test(text);
+}
+
+function applyIxcNetworkFallback() {
+    if (!cachedOpticalData || cachedOpticalData.error) return;
+
+    const network = cachedOpticalData.network || {};
+    const sourceTitle = network.source || 'API IXC';
+
+    const setFallback = (id, value, formatter = null) => {
+        if (value === null || value === undefined || String(value).trim() === '') return;
+        const el = document.getElementById(id);
+        if (!el || !isOperationallyMissing(el.textContent)) return;
+
+        if (formatter) {
+            el.innerHTML = formatter(value);
+        } else {
+            el.textContent = String(value);
+        }
+        el.title = 'Complementado por ' + sourceTitle;
+        el.dataset.source = 'ixc';
+    };
+
+    setFallback('wan-ip', network.ip, value => makeIPClickable(String(value)));
+    setFallback('wan-pppoe-user', network.login);
+    setFallback('wan-ipv6', network.ipv6 || network.ipv6_pd);
+    setFallback('wan-vlan', network.vlan);
+
+    if (network.last_error) {
+        const el = document.getElementById('wan-last-error');
+        if (el && isOperationallyMissing(el.textContent)) {
+            el.textContent = 'Última queda: ' + String(network.last_error);
+            el.title = 'Causa da última queda informada pelo IXC';
+            el.dataset.source = 'ixc';
+        }
+    }
+
+    // Mantém também o objeto atual enriquecido para IA/resumo técnico,
+    // sem substituir dados válidos coletados pelo TR-069.
+    if (currentDeviceData && Array.isArray(currentDeviceData.wan_details)) {
+        const wan = currentDeviceData.wan_details.find(w =>
+            String(w?.status || '').toLowerCase() === 'connected'
+        ) || currentDeviceData.wan_details[0];
+
+        if (wan) {
+            if (isOperationallyMissing(wan.external_ip) && network.ip) wan.external_ip = network.ip;
+            if (isOperationallyMissing(wan.username) && network.login) wan.username = network.login;
+            if (isOperationallyMissing(wan.ipv6) && (network.ipv6 || network.ipv6_pd)) {
+                wan.ipv6 = network.ipv6 || network.ipv6_pd;
+            }
+            if (isOperationallyMissing(wan.vlan_id) && isOperationallyMissing(wan.vlan) && network.vlan) {
+                wan.vlan_id = network.vlan;
+            }
+            if (isOperationallyMissing(wan.last_error) && network.last_error) {
+                wan.last_error = 'Última queda: ' + network.last_error;
+            }
+        }
+    }
+}
+
 function updateOpticalDomFromCache() {
     // IMPORTANTE: busca os elementos novamente depois da resposta.
     // O auto-refresh pode ter recriado todo o HTML enquanto a API estava consultando a OLT.
@@ -3025,6 +3087,7 @@ function updateOpticalDomFromCache() {
     if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
     updateIxcOnuSummary();
+    applyIxcNetworkFallback();
     updateOverviewOperationalMeta();
 }
 
@@ -3125,6 +3188,8 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
             nome: data.nome || null,
             id_login: data.id_login ?? null,
             id_contrato: data.id_contrato ?? null,
+            id_transmissor: data.id_transmissor ?? null,
+            network: data.network || {},
             pon_id: data.pon_id || null,
             onu_number: data.onu_number ?? null,
             olt_id: data.olt_id || null,
@@ -3157,6 +3222,8 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
             pon_id: null,
             onu_number: null,
             olt_id: null,
+            id_transmissor: null,
+            network: {},
             optical: {},
             error: error && error.message ? error.message : 'Erro TL1',
             loaded_at: Date.now()
