@@ -101,62 +101,9 @@ function neRunReadOnly(SSH2 $ssh, string $command): string
 function neReadSession(SSH2 $ssh, string $ip, ?string $username): array
 {
     $attempts = [];
-
-    if ($ip !== '') {
-        $command = 'display access-user ip-address ' . $ip . ' detail';
-        $output = neRunReadOnly($ssh, $command);
-        $parsed = neParseSession($output);
-        $attempts[] = ['command' => 'ip-detail', 'matched' => neHasCounters($parsed)];
-
-        if (neHasCounters($parsed)) {
-            return [$parsed, $attempts];
-        }
-
-        $userId = $parsed['user_id'] ?? neExtractUserId($output);
-        if ($userId !== null) {
-            $detail = neRunReadOnly($ssh, 'display access-user user-id ' . (int)$userId);
-            $parsedDetail = neParseSession($detail);
-            $attempts[] = ['command' => 'user-id', 'matched' => neHasCounters($parsedDetail)];
-            if (neHasCounters($parsedDetail)) {
-                return [$parsedDetail, $attempts];
-            }
-            $parsed = array_replace($parsed, array_filter(
-                $parsedDetail,
-                static fn($value): bool => $value !== null && $value !== ''
-            ));
-        }
-    }
-
-    if ($username !== null) {
-        $command = 'display access-user username ' . $username . ' detail';
-        $output = neRunReadOnly($ssh, $command);
-        $parsed = neParseSession($output);
-        $attempts[] = ['command' => 'username-detail', 'matched' => neHasCounters($parsed)];
-
-        if (neHasCounters($parsed)) {
-            return [$parsed, $attempts];
-        }
-
-        $userId = $parsed['user_id'] ?? neExtractUserId($output);
-        if ($userId !== null) {
-            $detail = neRunReadOnly($ssh, 'display access-user user-id ' . (int)$userId);
-            $parsedDetail = neParseSession($detail);
-            $attempts[] = ['command' => 'username-user-id', 'matched' => neHasCounters($parsedDetail)];
-            if (neHasCounters($parsedDetail)) {
-                return [$parsedDetail, $attempts];
-            }
-            $parsed = array_replace($parsed, array_filter(
-                $parsedDetail,
-                static fn($value): bool => $value !== null && $value !== ''
-            ));
-        }
-
-        return [$parsed, $attempts];
-    }
-
-    return [[
+    $best = [
         'user_id' => null,
-        'username' => null,
+        'username' => $username,
         'ip' => $ip !== '' ? $ip : null,
         'mac' => null,
         'interface' => null,
@@ -164,7 +111,100 @@ function neReadSession(SSH2 $ssh, string $ip, ?string $username): array
         'access_time' => null,
         'upload_bytes' => null,
         'download_bytes' => null,
-    ], $attempts];
+    ];
+
+    $merge = static function(array $base, array $extra): array {
+        foreach ($extra as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $base[$key] = $value;
+            }
+        }
+        return $base;
+    };
+
+    // Fluxo mais compatível com Huawei NE/VRP:
+    // 1) consulta resumida pelo IP para obter o UserID
+    // 2) consulta detalhada pelo UserID (retorna os contadores de bytes)
+    if ($ip !== '') {
+        $summaryOutput = neRunReadOnly($ssh, 'display access-user ip-address ' . $ip);
+        $summary = neParseSession($summaryOutput);
+        $summary['user_id'] = $summary['user_id'] ?? neExtractUserId($summaryOutput);
+        $best = $merge($best, $summary);
+
+        $attempts[] = [
+            'command' => 'ip-summary',
+            'user_id_found' => $summary['user_id'] !== null,
+            'counters_found' => neHasCounters($summary),
+        ];
+
+        if (neHasCounters($summary)) {
+            return [$summary, $attempts];
+        }
+
+        if ($summary['user_id'] !== null) {
+            $detailOutput = neRunReadOnly(
+                $ssh,
+                'display access-user user-id ' . (int)$summary['user_id']
+            );
+            $detail = neParseSession($detailOutput);
+            $detail['user_id'] = $detail['user_id'] ?? (int)$summary['user_id'];
+            $best = $merge($best, $detail);
+
+            $attempts[] = [
+                'command' => 'user-id-detail',
+                'user_id_found' => true,
+                'counters_found' => neHasCounters($detail),
+            ];
+
+            if (neHasCounters($detail)) {
+                return [$best, $attempts];
+            }
+        }
+    }
+
+    // Fallback de localização pelo login PPPoE. Ainda assim, a leitura final
+    // dos contadores continua sendo feita por UserID no próprio NE.
+    if ($username !== null) {
+        $summaryOutput = neRunReadOnly(
+            $ssh,
+            'display access-user username ' . $username
+        );
+        $summary = neParseSession($summaryOutput);
+        $summary['user_id'] = $summary['user_id'] ?? neExtractUserId($summaryOutput);
+        $best = $merge($best, $summary);
+
+        $attempts[] = [
+            'command' => 'username-summary',
+            'user_id_found' => $summary['user_id'] !== null,
+            'counters_found' => neHasCounters($summary),
+        ];
+
+        if (neHasCounters($summary)) {
+            return [$best, $attempts];
+        }
+
+        if ($summary['user_id'] !== null) {
+            $detailOutput = neRunReadOnly(
+                $ssh,
+                'display access-user user-id ' . (int)$summary['user_id']
+            );
+            $detail = neParseSession($detailOutput);
+            $detail['user_id'] = $detail['user_id'] ?? (int)$summary['user_id'];
+            $best = $merge($best, $detail);
+
+            $attempts[] = [
+                'command' => 'username-user-id-detail',
+                'user_id_found' => true,
+                'counters_found' => neHasCounters($detail),
+            ];
+
+            if (neHasCounters($detail)) {
+                return [$best, $attempts];
+            }
+        }
+    }
+
+    return [$best, $attempts];
 }
 
 function neCacheFile(int $concentratorId, string $key): string
@@ -318,7 +358,9 @@ try {
             'success' => true,
             'available' => false,
             'reason' => 'traffic_counters_not_found',
-            'message' => 'Sessão localizada, mas os contadores de tráfego do usuário não foram encontrados no retorno do NE8000.',
+            'message' => ($session['user_id'] ?? null) !== null
+                ? 'Usuário localizado no NE8000, mas os contadores de tráfego não apareceram no display access-user user-id.'
+                : 'O NE8000 respondeu, mas o UserID da sessão PPPoE não foi localizado pelo IP/login informado.',
             'source' => 'Huawei NE8000 / SSH',
             'concentrator' => [
                 'id' => $concentrator['id'],
@@ -335,6 +377,8 @@ try {
             ],
             'diagnostic' => [
                 'attempts' => $attempts,
+                'lookup_ip' => $ip !== '' ? $ip : null,
+                'lookup_username' => $username,
             ],
         ]);
     }
