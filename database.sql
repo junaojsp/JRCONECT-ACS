@@ -115,6 +115,37 @@ CREATE TABLE IF NOT EXISTS `mikrotik_credentials` (
 COMMENT='MikroTik RouterOS API connection settings (single active config only)';
 
 -- ----------------------------------------------------------------------------
+-- TABLE: concentrator_credentials (BRAS / Concentrator SSH Configuration)
+-- ----------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `concentrator_credentials` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(120) NOT NULL,
+  `vendor` varchar(50) NOT NULL DEFAULT 'huawei',
+  `model` varchar(100) NOT NULL DEFAULT 'NE8000',
+  `host` varchar(255) NOT NULL,
+  `port` int unsigned NOT NULL DEFAULT 22,
+  `protocol` varchar(20) NOT NULL DEFAULT 'ssh',
+  `username` varchar(120) NOT NULL,
+  `password_ciphertext` text NOT NULL,
+  `ixc_name` varchar(120) DEFAULT NULL,
+  `nas_ip` varchar(45) DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_connected` tinyint(1) NOT NULL DEFAULT 0,
+  `server_fingerprint` varchar(160) DEFAULT NULL,
+  `last_test` datetime DEFAULT NULL,
+  `last_error` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_concentrator_host_port_user` (`host`,`port`,`username`),
+  KEY `idx_concentrator_default` (`is_default`),
+  KEY `idx_concentrator_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='BRAS/concentrator credentials for direct read-only network monitoring';
+
+-- ----------------------------------------------------------------------------
 -- TABLE: telegram_config (Telegram Bot Configuration)
 -- ----------------------------------------------------------------------------
 
