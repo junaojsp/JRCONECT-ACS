@@ -903,6 +903,11 @@
     document.addEventListener('DOMContentLoaded', () => {
         ensureModal();
         setTimeout(enhanceControls, 500);
+        window.setInterval(() => {
+            if (typeof window.updateIxcLiveTraffic === 'function') {
+                window.updateIxcLiveTraffic();
+            }
+        }, 2000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.samples=[]; traffic.sessionKey=null;
             traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0;
