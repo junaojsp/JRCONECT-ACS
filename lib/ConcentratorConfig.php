@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+// Carrega dependências do Composer quando esta biblioteca é usada diretamente
+// por páginas/endpoints que não fizeram bootstrap do vendor/autoload.php.
+if (!class_exists('phpseclib3\\Net\\SSH2')) {
+    $composerAutoload = dirname(__DIR__) . '/vendor/autoload.php';
+    if (is_file($composerAutoload)) {
+        require_once $composerAutoload;
+    }
+}
+
 use phpseclib3\Net\SSH2;
 
 function ensureConcentratorConfigTable(mysqli $conn): void
@@ -411,7 +420,7 @@ function testConcentratorConnection(array $config): array
         return [
             'success' => false,
             'code' => 'dependency_missing',
-            'message' => 'Biblioteca SSH não instalada. Execute composer install após atualizar o projeto.',
+            'message' => 'Biblioteca SSH não disponível no servidor. Execute composer install em /var/www/gacs e tente novamente.',
         ];
     }
 
