@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/config.php';
 if (function_exists('requireLogin')) requireLogin();
 
+use App\CPEProfiles;
+
 header('Content-Type: application/json; charset=utf-8');
 
 function jrBatchOut(array $data, int $status = 200): never
@@ -34,26 +36,7 @@ function jrBatchSerial(string $value): string
 
 function jrBatchSerialAliases(string $value): array
 {
-    $serial = jrBatchSerial($value);
-    $aliases = [$serial];
-
-    if (strlen($serial) >= 12 && preg_match('/^[0-9A-F]{8}/', $serial)) {
-        $decoded = @hex2bin(substr($serial, 0, 8));
-        if ($decoded !== false && preg_match('/^[A-Z0-9]{4}$/i', $decoded)) {
-            $aliases[] = jrBatchSerial($decoded . substr($serial, 8));
-        }
-    }
-
-    if (
-        strlen($serial) >= 12 &&
-        !preg_match('/^[0-9A-F]{4}$/i', substr($serial, 0, 4))
-    ) {
-        $aliases[] = strtoupper(
-            bin2hex(substr($serial, 0, 4)) . substr($serial, 4)
-        );
-    }
-
-    return array_values(array_unique(array_filter($aliases)));
+    return CPEProfiles::serialAliases($value);
 }
 
 
