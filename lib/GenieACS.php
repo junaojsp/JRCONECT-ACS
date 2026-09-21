@@ -546,23 +546,40 @@ class GenieACS {
         $data['uptime'] = $getParam('InternetGatewayDevice.DeviceInfo.UpTime') ??
                          $getParam('Device.DeviceInfo.UpTime') ?? 'N/A';
 
-        // WiFi info - try multiple paths and WLAN configurations
-        $wifiSsid = $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') ??
-                   $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ??
-                   $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.3.SSID') ??
-                   $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.4.SSID') ??
-                   $getParam('Device.WiFi.SSID.1.SSID') ??
-                   $getParam('Device.WiFi.SSID.2.SSID');
+        // WiFi info - Huawei EG8145V5 commonly exposes 2.4 GHz and 5 GHz
+        // on different WLANConfiguration indexes (often 1 and 5).
+        $wifiSsids = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $ssid = $getParam("InternetGatewayDevice.LANDevice.1.WLANConfiguration.{$i}.SSID");
+            if ($ssid !== null && trim((string)$ssid) !== '') {
+                $wifiSsids[$i] = (string)$ssid;
+            }
+        }
 
+        for ($i = 1; $i <= 8; $i++) {
+            $ssid = $getParam("Device.WiFi.SSID.{$i}.SSID");
+            if ($ssid !== null && trim((string)$ssid) !== '' && !isset($wifiSsids[$i])) {
+                $wifiSsids[$i] = (string)$ssid;
+            }
+        }
+
+        $wifiSsid = $wifiSsids[1] ?? (reset($wifiSsids) ?: null);
         $data['wifi_ssid'] = $wifiSsid ?? 'N/A';
+        $data['wifi_ssid_24ghz'] = $wifiSsids[1] ?? $wifiSsid ?? 'N/A';
+        $data['wifi_ssid_5ghz'] = $wifiSsids[5] ?? $wifiSsids[2] ?? $wifiSsid ?? 'N/A';
 
-        $wifiPassword = $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase') ??
-                       $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase') ??
-                       $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.KeyPassphrase') ??
-                       $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.3.KeyPassphrase') ??
-                       $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.4.KeyPassphrase') ??
-                       $getParam('Device.WiFi.AccessPoint.1.Security.KeyPassphrase') ??
-                       $getParam('Device.WiFi.AccessPoint.2.Security.KeyPassphrase');
+        $wifiPassword = null;
+        for ($i = 1; $i <= 8 && !$wifiPassword; $i++) {
+            $wifiPassword =
+                $getParam("InternetGatewayDevice.LANDevice.1.WLANConfiguration.{$i}.KeyPassphrase") ??
+                $getParam("InternetGatewayDevice.LANDevice.1.WLANConfiguration.{$i}.PreSharedKey.1.KeyPassphrase") ??
+                $getParam("InternetGatewayDevice.LANDevice.1.WLANConfiguration.{$i}.PreSharedKey.1.PreSharedKey");
+        }
+        if (!$wifiPassword) {
+            for ($i = 1; $i <= 8 && !$wifiPassword; $i++) {
+                $wifiPassword = $getParam("Device.WiFi.AccessPoint.{$i}.Security.KeyPassphrase");
+            }
+        }
 
         $data['wifi_password'] = $wifiPassword ?? 'N/A';
 
