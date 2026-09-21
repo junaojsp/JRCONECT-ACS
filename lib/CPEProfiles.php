@@ -81,6 +81,77 @@ class CPEProfiles
                     'Device.PPP.Interface.*.Username',
                 ],
             ],
+            'huawei_hg8145v5' => [
+                'vendor' => 'Huawei',
+                'model' => 'HG8145V5',
+                'match' => ['HUAWEI', 'HG8145V5'],
+                'wifi' => [
+                    'ssid_24' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID',
+                        'Device.WiFi.SSID.1.SSID',
+                    ],
+                    'ssid_5' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.SSID',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID',
+                        'Device.WiFi.SSID.5.SSID',
+                        'Device.WiFi.SSID.2.SSID',
+                    ],
+                    'channel_24' => ['InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel'],
+                    'channel_5' => ['InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Channel'],
+                    'enabled_24' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled',
+                    ],
+                    'enabled_5' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.Enable',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.RadioEnabled',
+                    ],
+                    'security_24' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BeaconType',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes',
+                    ],
+                    'security_5' => [
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.BeaconType',
+                        'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.IEEE11iEncryptionModes',
+                    ],
+                    'associated_24' => 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AssociatedDevice',
+                    'associated_5' => 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.AssociatedDevice',
+                ],
+                'optical' => [
+                    'rx' => [
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterafceConfig.RXPower',
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterfaceConfig.RXPower',
+                        'InternetGatewayDevice.WANDevice.1.X_HW_GponInterfaceConfig.RXPower',
+                        'InternetGatewayDevice.WANDevice.1.X_HW_GponInterfaceConfig.RxPower',
+                        'Device.Optical.Interface.1.RxPower',
+                        'VirtualParameters.RXPower',
+                    ],
+                    'tx' => [
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterafceConfig.TXPower',
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterfaceConfig.TXPower',
+                        'InternetGatewayDevice.WANDevice.1.X_HW_GponInterfaceConfig.TXPower',
+                        'InternetGatewayDevice.WANDevice.1.X_HW_GponInterfaceConfig.TxPower',
+                        'Device.Optical.Interface.1.TxPower',
+                        'VirtualParameters.TXPower',
+                    ],
+                    'temperature' => [
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterafceConfig.TransceiverTemperature',
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterfaceConfig.TransceiverTemperature',
+                        'InternetGatewayDevice.DeviceInfo.Temperature',
+                        'VirtualParameters.Temperature',
+                        'VirtualParameters.gettemp',
+                    ],
+                    'voltage' => [
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterafceConfig.Voltage',
+                        'InternetGatewayDevice.WANDevice.1.X_GponInterfaceConfig.Voltage',
+                        'InternetGatewayDevice.WANDevice.1.X_HW_GponInterfaceConfig.Voltage',
+                    ],
+                ],
+                'pppoe' => [
+                    'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.*.WANPPPConnection.*.Username',
+                    'Device.PPP.Interface.*.Username',
+                ],
+            ],
             'fiberhome_hg6143d3' => [
                 'vendor' => 'FiberHome',
                 'model' => 'HG6143D3',
