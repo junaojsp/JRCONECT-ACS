@@ -276,6 +276,161 @@ function liveExtractHtmlRate(string $body, string $label): ?float
     return null;
 }
 
+function liveParseSseEvents(string $body): array
+{
+    $events = [];
+    $current = [];
+
+    foreach (preg_split('/\r\n|\r|\n/', $body) ?: [] as $line) {
+        if ($line === '') {
+            if ($current) {
+                $events[] = $current;
+                $current = [];
+            }
+            continue;
+        }
+
+        if (str_starts_with($line, ':')) {
+            continue;
+        }
+
+        $parts = explode(':', $line, 2);
+        $field = trim($parts[0] ?? '');
+        $value = isset($parts[1]) ? ltrim($parts[1]) : '';
+
+        if ($field === 'data') {
+            $current['data'] = isset($current['data'])
+                ? $current['data'] . "\n" . $value
+                : $value;
+        } elseif ($field !== '') {
+            $current[$field] = $value;
+        }
+    }
+
+    if ($current) $events[] = $current;
+    return $events;
+}
+
+function liveExtractRatesFromSseData(string $data): array
+{
+    $trimmed = trim($data);
+    if ($trimmed === '') {
+        return ['download_mbps' => null, 'upload_mbps' => null, 'shape' => 'empty'];
+    }
+
+    $json = json_decode($trimmed, true);
+    if (is_array($json)) {
+        $rates = liveExtractJsonRates($json);
+        return [
+            'download_mbps' => $rates['download_mbps'],
+            'upload_mbps' => $rates['upload_mbps'],
+            'shape' => 'json',
+            'keys' => $rates['keys'] ?? [],
+            'paths' => [
+                'download' => $rates['download_path'] ?? null,
+                'upload' => $rates['upload_path'] ?? null,
+            ],
+        ];
+    }
+
+    $download = liveExtractHtmlRate($trimmed, 'download')
+        ?? liveExtractHtmlRate($trimmed, 'rx');
+    $upload = liveExtractHtmlRate($trimmed, 'upload')
+        ?? liveExtractHtmlRate($trimmed, 'tx');
+
+    if ($download !== null || $upload !== null) {
+        return [
+            'download_mbps' => $download,
+            'upload_mbps' => $upload,
+            'shape' => 'labeled-text',
+        ];
+    }
+
+    // Fallback para payloads simples como "12345;678" ou "12345,678".
+    // Se não houver unidade explícita, interpreta os números como bits/s.
+    if (preg_match_all('/-?\d+(?:[.,]\d+)?/', $trimmed, $m) && count($m[0]) >= 2) {
+        $a = (float)str_replace(',', '.', $m[0][0]);
+        $b = (float)str_replace(',', '.', $m[0][1]);
+
+        if ($a >= 0 && $b >= 0) {
+            return [
+                'download_mbps' => $a / 1000000,
+                'upload_mbps' => $b / 1000000,
+                'shape' => 'numeric-pair-bps',
+            ];
+        }
+    }
+
+    return [
+        'download_mbps' => null,
+        'upload_mbps' => null,
+        'shape' => 'unknown',
+    ];
+}
+
+function liveReadSseSample(
+    string $url,
+    string $token,
+    int $seconds = 4
+): array {
+    $buffer = '';
+    $headers = [];
+    $started = microtime(true);
+    $ch = curl_init($url);
+
+    if ($ch === false) {
+        return ['http_code' => 0, 'body' => '', 'headers' => [], 'error' => 'curl_init_failed'];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => false,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_TIMEOUT => max(2, $seconds + 2),
+        CURLOPT_HTTPHEADER => [
+            'Accept: text/event-stream',
+            'Cache-Control: no-cache',
+            'ixcsoft: listar',
+            'Authorization: Basic ' . base64_encode($token),
+            'X-Requested-With: XMLHttpRequest',
+        ],
+        CURLOPT_HEADERFUNCTION => static function($ch, string $line) use (&$headers): int {
+            $headers[] = trim($line);
+            return strlen($line);
+        },
+        CURLOPT_WRITEFUNCTION => static function($ch, string $chunk) use (&$buffer, $started, $seconds): int {
+            $buffer .= $chunk;
+
+            // Evita respostas enormes: bastam alguns eventos recentes.
+            if (strlen($buffer) > 32768) {
+                $buffer = substr($buffer, -32768);
+            }
+
+            if ((microtime(true) - $started) >= $seconds) {
+                return 0; // encerra após a janela de amostragem
+            }
+
+            return strlen($chunk);
+        },
+    ]);
+
+    curl_exec($ch);
+    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    $redirect = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'http_code' => $http,
+        'content_type' => $contentType,
+        'redirect_url' => $redirect,
+        'body' => $buffer,
+        'headers' => $headers,
+        'error' => $error,
+    ];
+}
+
 function liveSafeTitle(string $body): ?string
 {
     if (!preg_match('/<title[^>]*>(.*?)<\/title>/is', $body, $m)) return null;
@@ -365,110 +520,76 @@ try {
         }
     }
 
-    // Fallback: rota observada no diagnóstico do próprio IXC.
-    // Somente leitura; nenhum comando é enviado ao concentrador.
+    // Fonte fiel ao IXC: EventSource/SSE do diagnóstico de Login.
+    // Captura alguns segundos do stream e usa o evento mais recente.
     $url = $baseUrl . '/aplicativo/radusuarios/rel_22021.php?trafego=' . rawurlencode($loginId);
+    $sse = liveReadSseSample($url, $token, 4);
 
-    $ch = curl_init($url);
-    if ($ch === false) {
-        throw new RuntimeException('Não foi possível iniciar a consulta ao diagnóstico IXC.');
+    $events = liveParseSseEvents((string)($sse['body'] ?? ''));
+    $lastParsed = null;
+    $lastRawData = null;
+
+    foreach ($events as $event) {
+        if (!isset($event['data'])) continue;
+        $parsed = liveExtractRatesFromSseData((string)$event['data']);
+        if (
+            $parsed['download_mbps'] !== null ||
+            $parsed['upload_mbps'] !== null
+        ) {
+            $lastParsed = $parsed;
+            $lastRawData = (string)$event['data'];
+        }
     }
 
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_CONNECTTIMEOUT => 4,
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_HTTPHEADER => [
-            'Accept: application/json,text/html;q=0.9,*/*;q=0.8',
-            'ixcsoft: listar',
-            'Authorization: Basic ' . base64_encode($token),
-            'X-Requested-With: XMLHttpRequest',
-        ],
-    ]);
+    $download = $lastParsed['download_mbps'] ?? null;
+    $upload = $lastParsed['upload_mbps'] ?? null;
 
-    $body = curl_exec($ch);
-    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $contentType = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    $redirectUrl = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL);
-    $error = curl_error($ch);
-    curl_close($ch);
-
-    if (!is_string($body)) {
-        throw new RuntimeException($error !== '' ? $error : 'Resposta vazia do IXC.');
-    }
-
-    $trimmed = ltrim($body);
-    $json = null;
-    if (
-        str_contains(strtolower($contentType), 'application/json') ||
-        str_starts_with($trimmed, '{') ||
-        str_starts_with($trimmed, '[')
-    ) {
-        $decoded = json_decode($body, true);
-        if (is_array($decoded)) $json = $decoded;
-    }
-
-    $download = null;
-    $upload = null;
-    $paths = ['download' => null, 'upload' => null];
-    $jsonKeys = [];
-
-    if (is_array($json)) {
-        $rates = liveExtractJsonRates($json);
-        $download = $rates['download_mbps'];
-        $upload = $rates['upload_mbps'];
-        $paths = [
-            'download' => $rates['download_path'],
-            'upload' => $rates['upload_path'],
-        ];
-        $jsonKeys = $rates['keys'];
-    } else {
-        $download = liveExtractHtmlRate($body, 'download')
-            ?? liveExtractHtmlRate($body, 'rx');
-        $upload = liveExtractHtmlRate($body, 'upload')
-            ?? liveExtractHtmlRate($body, 'tx');
-    }
-
+    $body = (string)($sse['body'] ?? '');
     $looksLikeLogin = (bool)preg_match(
         '/(?:login\.php|name=["\'](?:login|usuario|user)["\']|senha|password)/i',
         $body
     );
 
     $available =
-        $http >= 200 &&
-        $http < 300 &&
+        ($sse['http_code'] ?? 0) >= 200 &&
+        ($sse['http_code'] ?? 0) < 300 &&
         $download !== null &&
         $upload !== null;
 
     liveOut([
         'success' => true,
         'available' => $available,
-        'source' => 'IXC Diagnóstico / Concentrador',
+        'source' => $available
+            ? 'IXC EventSource / Concentrador'
+            : 'IXC Diagnóstico / Concentrador',
         'read_only' => true,
         'login_id' => (int)$loginId,
         'live' => $available ? [
             'download_mbps' => round((float)$download, 3),
             'upload_mbps' => round((float)$upload, 3),
             'sample_time' => date(DATE_ATOM),
+            'transport' => 'sse',
         ] : null,
         'reason' => $available
             ? null
-            : ($looksLikeLogin || $http === 401 || $http === 403 || $redirectUrl !== ''
+            : ($looksLikeLogin || in_array((int)($sse['http_code'] ?? 0), [401, 403], true) || ($sse['redirect_url'] ?? '') !== ''
                 ? 'web_session_required'
-                : 'live_format_not_identified'),
+                : 'sse_payload_not_identified'),
         'diagnostic' => [
+            'transport' => 'eventsource',
             'login_counter_reason' => $counterRate['reason'] ?? null,
             'login_counter_download' => $counterRate['download_bytes'] ?? null,
             'login_counter_upload' => $counterRate['upload_bytes'] ?? null,
-            'http_code' => $http,
-            'content_type' => $contentType !== '' ? $contentType : null,
+            'http_code' => (int)($sse['http_code'] ?? 0),
+            'content_type' => ($sse['content_type'] ?? '') !== '' ? $sse['content_type'] : null,
             'content_length' => strlen($body),
-            'page_title' => liveSafeTitle($body),
-            'redirect_detected' => $redirectUrl !== '',
+            'redirect_detected' => ($sse['redirect_url'] ?? '') !== '',
             'looks_like_login' => $looksLikeLogin,
-            'json_keys' => $jsonKeys,
-            'matched_paths' => $paths,
+            'event_count' => count($events),
+            'last_event_shape' => $lastParsed['shape'] ?? null,
+            'last_event_keys' => $lastParsed['keys'] ?? [],
+            'matched_paths' => $lastParsed['paths'] ?? [],
+            'curl_error' => ($sse['error'] ?? '') !== '' ? $sse['error'] : null,
         ],
     ]);
 
