@@ -72,3 +72,6 @@ secrets*
 # Scripts de teste/integracao que podem conter token IXC
 /api/test-ixc-onu.php
 /api/discovery-ixc-tr069.php
+
+# Chave local para criptografia das credenciais dos concentradores
+/config/concentrator.key
