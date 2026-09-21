@@ -940,18 +940,25 @@
 
                 const status=document.getElementById('bandwidth-sample-status');
                 if(status){
-                    const attempts=Array.isArray(data?.diagnostic?.attempts)
+                    const attemptsList=Array.isArray(data?.diagnostic?.attempts)
                         ? data.diagnostic.attempts
-                            .map(a=>{
-                                const id=a?.user_id_found===true?'UserID OK':'UserID --';
-                                const cnt=a?.counters_found===true?'contadores OK':'contadores --';
-                                return (a?.command||'consulta')+' ['+id+' / '+cnt+']';
-                            })
-                            .join(' → ')
+                        : [];
+                    const attempts=attemptsList
+                        .map(a=>{
+                            const id=a?.user_id_found===true?'UserID OK':'UserID --';
+                            const cnt=a?.counters_found===true?'contadores OK':'contadores --';
+                            return (a?.command||'consulta')+' ['+id+' / '+cnt+']';
+                        })
+                        .join(' → ');
+                    const firstPreview=attemptsList
+                        .map(a=>String(a?.preview||'').trim())
+                        .find(Boolean);
+                    const preview=firstPreview
+                        ? ' • retorno NE: '+firstPreview.slice(0,220)
                         : '';
                     const detail=data?.diagnostic?.detail ? ' • '+String(data.diagnostic.detail) : '';
                     status.textContent=(data?.message||'Sem leitura direta do NE8000.')
-                        +(attempts?' • '+attempts:'')+detail;
+                        +(attempts?' • '+attempts:'')+preview+detail;
                 }
 
                 // Nesta versão não há fallback para tráfego via IXC:
