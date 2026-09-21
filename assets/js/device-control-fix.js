@@ -3,7 +3,7 @@
     'use strict';
 
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
-    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0 };
+    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -562,9 +562,125 @@
         const pane=document.getElementById('monitoring');
         return !!pane && pane.classList.contains('active') && pane.classList.contains('show');
     }
+    function monitorCustomerPlanName() {
+        try {
+            return typeof cachedCustomerSummary!=='undefined'
+                ? String(cachedCustomerSummary?.contract?.plan || '')
+                : '';
+        } catch(_) { return ''; }
+    }
+    function monitorPlanMbps() {
+        const plan=monitorCustomerPlanName().trim();
+        if(!plan)return null;
+        const m=plan.match(/(\d+(?:[.,]\d+)?)\s*(GIGA|GB|G|MEGA|MB|M)?/i);
+        if(!m)return null;
+        let value=Number(String(m[1]).replace(',','.'));
+        if(!Number.isFinite(value)||value<=0)return null;
+        const unit=String(m[2]||'M').toUpperCase();
+        if(unit==='GIGA'||unit==='GB'||unit==='G')value*=1000;
+        return value;
+    }
+    function monitorPlanLabel() {
+        const mbps=monitorPlanMbps();
+        const name=monitorCustomerPlanName();
+        if(mbps!==null)return mbps.toLocaleString('pt-BR',{maximumFractionDigits:1})+' Mbps';
+        return name || 'Não identificado';
+    }
+    function parseRadiusTime(value) {
+        if(!value)return null;
+        const t=new Date(String(value).trim().replace(' ','T')).getTime();
+        return Number.isFinite(t)?t:null;
+    }
+    function monitorStats() {
+        const samples=traffic.samples.filter(s=>Number.isFinite(s.down)&&Number.isFinite(s.up));
+        if(!samples.length)return {latest:null,peakDown:null,peakUp:null,avgDown:null,avgUp:null};
+        const latest=samples[samples.length-1];
+        const peakDown=Math.max(...samples.map(s=>s.down));
+        const peakUp=Math.max(...samples.map(s=>s.up));
+        const avgDown=samples.reduce((a,s)=>a+s.down,0)/samples.length;
+        const avgUp=samples.reduce((a,s)=>a+s.up,0)/samples.length;
+        return {latest,peakDown,peakUp,avgDown,avgUp};
+    }
+    function fmtMbps(value) {
+        const n=Number(value);
+        return Number.isFinite(n)?n.toFixed(n>=100?1:2):'--';
+    }
+    function fmtAccountingAge(ms) {
+        if(!Number.isFinite(ms)||ms<0)return 'N/D';
+        const seconds=Math.floor(ms/1000);
+        if(seconds<60)return seconds+'s atrás';
+        const minutes=Math.floor(seconds/60);
+        if(minutes<60)return minutes+'min atrás';
+        return Math.floor(minutes/60)+'h atrás';
+    }
+    function setMonitorText(id,value) {
+        const el=document.getElementById(id);
+        if(el)el.textContent=value??'N/D';
+    }
+    function monitorDiagnosis() {
+        const stats=monitorStats();
+        const plan=monitorPlanMbps();
+        const usage=plan&&stats.latest?Math.max(0,(stats.latest.down/plan)*100):null;
+        const age=traffic.lastAccountingAt?Date.now()-traffic.lastAccountingAt:null;
+        let level='collecting',title='Coletando dados',text='Aguardando contabilizações consecutivas do IXC/RADIUS.';
+
+        if(!traffic.online){
+            level='danger'; title='Sem sessão PPPoE'; text='Nenhuma sessão RADIUS ativa foi confirmada para este cliente.';
+        } else if(stats.latest){
+            if(age!==null && age>180000){
+                level='warning'; title='Contabilização atrasada';
+                text='A sessão está ativa, mas a última contabilização do RADIUS está há '+fmtAccountingAge(age)+'.';
+            } else if(usage!==null && usage>=90){
+                level='warning'; title='Uso elevado do plano';
+                text='O download atual está usando aproximadamente '+Math.round(usage)+'% da velocidade nominal do plano.';
+            } else {
+                level='ok'; title='Sessão normal';
+                text=usage===null
+                    ? 'Sessão ativa e contabilização sendo recebida. O plano não foi identificado para calcular o percentual de uso.'
+                    : 'Sessão ativa, contabilização atualizada e uso atual em aproximadamente '+Math.round(usage)+'% do plano.';
+            }
+        }
+
+        const box=document.getElementById('jr-monitor-diagnosis');
+        if(box){
+            box.classList.remove('ok','warning','danger','collecting');
+            box.classList.add(level);
+        }
+        setMonitorText('jr-monitor-diagnosis-title',title);
+        setMonitorText('jr-monitor-diagnosis-text',text);
+        return {usage,age};
+    }
+    function updateMonitoringInsights() {
+        const stats=monitorStats();
+        const plan=monitorPlanMbps();
+        const diagnosis=monitorDiagnosis();
+
+        setMonitorText('jr-monitor-plan',monitorPlanLabel());
+        setMonitorText('jr-monitor-plan-use',diagnosis.usage===null?'Uso atual: aguardando amostra':'Uso atual: '+Math.min(999,diagnosis.usage).toFixed(0)+'%');
+        setMonitorText('jr-monitor-peak',stats.peakDown===null?'--':fmtMbps(stats.peakDown)+' ↓ / '+fmtMbps(stats.peakUp)+' ↑');
+        setMonitorText('jr-monitor-average',stats.avgDown===null?'--':fmtMbps(stats.avgDown)+' ↓ / '+fmtMbps(stats.avgUp)+' ↑');
+        setMonitorText('jr-monitor-last-accounting',traffic.lastAccountingAt?new Date(traffic.lastAccountingAt).toLocaleString('pt-BR'):'N/D');
+        setMonitorText('jr-monitor-accounting-age',traffic.lastAccountingAt?fmtAccountingAge(Date.now()-traffic.lastAccountingAt):'Aguardando');
+        setMonitorText('jr-monitor-source','IXC/RADIUS');
+        setMonitorText('jr-monitor-bras',traffic.latestSession?.bras || 'N/D');
+
+        const usageBar=document.getElementById('jr-monitor-plan-bar');
+        if(usageBar){
+            const pct=diagnosis.usage===null?0:Math.max(0,Math.min(100,diagnosis.usage));
+            usageBar.style.width=pct+'%';
+            usageBar.classList.toggle('high',pct>=90);
+        }
+
+        // Latência/perda/jitter só serão preenchidos quando houver diagnóstico CPE real.
+        setMonitorText('jr-monitor-latency','Não coletada');
+        setMonitorText('jr-monitor-loss','Não coletada');
+        setMonitorText('jr-monitor-jitter','Não coletado');
+    }
     function chartHtml(samples) {
         if(samples.length<1)return '<div class="jr-monitor-wait"><i class="bi bi-activity"></i><span>Aguardando uma nova contabilização da sessão...</span></div>';
-        const max=Math.max(1,...samples.flatMap(s=>[s.down,s.up]));
+        const plan=monitorPlanMbps();
+        const sampleMax=Math.max(1,...samples.flatMap(s=>[s.down,s.up]));
+        const max=Math.max(sampleMax,plan||0,1);
         const pts=field=>samples.map((s,i)=>{
             const x=samples.length===1?0:i/(samples.length-1)*100;
             const y=94-(s[field]/max)*86;
@@ -572,78 +688,128 @@
         }).join(' ');
         const first=new Date(samples[0].at).toLocaleTimeString('pt-BR');
         const last=new Date(samples[samples.length-1].at).toLocaleTimeString('pt-BR');
-        return `<div class="jr-monitor-chart-inner">
-          <div class="jr-monitor-scale"><span>${max.toFixed(2)} Mbps</span><span>${(max/2).toFixed(2)} Mbps</span><span>0 Mbps</span></div>
-          <div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 50H100M0 94H100" class="grid"/><polyline points="${pts('down')}" class="down"/><polyline points="${pts('up')}" class="up"/></svg><div class="jr-monitor-times"><span>${first}</span><span>${last}</span></div></div>
-        </div>`;
+        let planLine='';
+        if(plan){
+            const y=94-(plan/max)*86;
+            planLine='<line x1="0" x2="100" y1="'+Math.max(4,Math.min(94,y)).toFixed(2)+'" y2="'+Math.max(4,Math.min(94,y)).toFixed(2)+'" class="plan"/>';
+        }
+        return '<div class="jr-monitor-chart-inner">'+
+          '<div class="jr-monitor-scale"><span>'+max.toFixed(1)+' Mbps</span><span>'+(max/2).toFixed(1)+' Mbps</span><span>0 Mbps</span></div>'+
+          '<div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 50H100M0 94H100" class="grid"/>'+planLine+'<polyline points="'+pts('down')+'" class="down"/><polyline points="'+pts('up')+'" class="up"/></svg><div class="jr-monitor-times"><span>'+first+'</span><span>'+last+'</span></div></div>'+
+          '</div><div class="jr-monitor-chart-legend"><span><i class="down"></i>Download</span><span><i class="up"></i>Upload</span>'+(plan?'<span><i class="plan"></i>Plano '+plan.toLocaleString('pt-BR')+' Mbps</span>':'')+'</div>';
     }
 
     window.renderMonitoringTab = function(device) {
         const wan = typeof getPrimaryWAN === 'function' ? getPrimaryWAN(device) : null;
-        return `
-        <div class="jr-monitor-v2">
-          <div class="jr-monitor-head">
-            <div><span class="acs-kicker"><i class="bi bi-graph-up-arrow"></i> MONITORAMENTO</span><h4>Uso da conexão em tempo real</h4><p>Velocidade calculada entre contabilizações consecutivas da sessão PPPoE.</p></div>
-            <span id="jr-radius-status" class="jr-monitor-badge">AGUARDANDO</span>
-          </div>
-          <div class="jr-monitor-kpis">
-            <div class="download"><span><i class="bi bi-arrow-down-circle"></i> Download</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
-            <div class="upload"><span><i class="bi bi-arrow-up-circle"></i> Upload</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
-            <div><span><i class="bi bi-database-down"></i> Baixado na sessão</span><strong id="live-rx-total">--</strong><small>RADIUS</small></div>
-            <div><span><i class="bi bi-database-up"></i> Enviado na sessão</span><strong id="live-tx-total">--</strong><small>RADIUS</small></div>
-          </div>
-          <div class="jr-monitor-chart-card"><div class="jr-monitor-section-title"><strong>Tráfego da sessão</strong><span id="bandwidth-sample-status">Abra esta aba para iniciar as amostras.</span></div><div id="bandwidth-bars" class="jr-monitor-chart"></div></div>
-          <div class="jr-monitor-report"><div class="jr-monitor-section-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>
-            <div class="jr-monitor-report-grid">
-              <div><span>Usuário PPPoE</span><strong id="jr-radius-user">${esc(wan?.username || 'N/D')}</strong></div>
-              <div><span>IP WAN</span><strong id="jr-radius-ip">${esc(wan?.external_ip || 'N/D')}</strong></div>
-              <div><span>Interface</span><strong id="jr-radius-interface">${esc(wan?.name || 'N/D')}</strong></div>
-              <div><span>Tempo de sessão</span><strong id="jr-radius-uptime">${esc(wan?.uptime ? fmtDuration(wan.uptime) : 'N/D')}</strong></div>
-            </div>
-          </div>
-        </div>`;
+        return '<div class="jr-monitor-v2">'+
+          '<div class="jr-monitor-head">'+
+            '<div><span class="acs-kicker"><i class="bi bi-graph-up-arrow"></i> MONITORAMENTO · IXC/RADIUS</span><h4>Uso da conexão em tempo real</h4><p>Velocidade calculada somente quando uma nova contabilização da sessão PPPoE é recebida.</p></div>'+
+            '<div class="jr-monitor-head-actions"><span id="jr-radius-status" class="jr-monitor-badge">AGUARDANDO</span><button type="button" class="jr-monitor-refresh" onclick="window.updateRadiusBandwidthSample(true)"><i class="bi bi-arrow-clockwise"></i> Atualizar agora</button></div>'+
+          '</div>'+
+          '<div class="jr-monitor-kpis">'+
+            '<div class="download"><span><i class="bi bi-arrow-down-circle"></i> Download</span><strong id="live-rx-mbps">--</strong><small>Mbps agora</small></div>'+
+            '<div class="upload"><span><i class="bi bi-arrow-up-circle"></i> Upload</span><strong id="live-tx-mbps">--</strong><small>Mbps agora</small></div>'+
+            '<div><span><i class="bi bi-database-down"></i> Baixado na sessão</span><strong id="live-rx-total">--</strong><small>IXC/RADIUS</small></div>'+
+            '<div><span><i class="bi bi-database-up"></i> Enviado na sessão</span><strong id="live-tx-total">--</strong><small>IXC/RADIUS</small></div>'+
+          '</div>'+
+          '<div class="jr-monitor-insights">'+
+            '<div><span>Plano contratado</span><strong id="jr-monitor-plan">'+esc(monitorPlanLabel())+'</strong><small id="jr-monitor-plan-use">Uso atual: aguardando amostra</small><div class="jr-monitor-plan-track"><i id="jr-monitor-plan-bar"></i></div></div>'+
+            '<div><span>Pico desde abertura</span><strong id="jr-monitor-peak">--</strong><small>Download ↓ / Upload ↑ em Mbps</small></div>'+
+            '<div><span>Média desde abertura</span><strong id="jr-monitor-average">--</strong><small>Download ↓ / Upload ↑ em Mbps</small></div>'+
+            '<div><span>Última contabilização</span><strong id="jr-monitor-accounting-age">Aguardando</strong><small id="jr-monitor-last-accounting">N/D</small></div>'+
+          '</div>'+
+          '<div id="jr-monitor-diagnosis" class="jr-monitor-diagnosis collecting">'+
+            '<div><span>Diagnóstico automático da sessão</span><strong id="jr-monitor-diagnosis-title">Coletando dados</strong><p id="jr-monitor-diagnosis-text">Aguardando contabilizações consecutivas do IXC/RADIUS.</p></div>'+
+            '<div class="jr-monitor-quality"><div><span>Latência</span><strong id="jr-monitor-latency">Não coletada</strong></div><div><span>Perda</span><strong id="jr-monitor-loss">Não coletada</strong></div><div><span>Jitter</span><strong id="jr-monitor-jitter">Não coletado</strong></div></div>'+
+          '</div>'+
+          '<div class="jr-monitor-chart-card"><div class="jr-monitor-section-title"><strong>Tráfego da sessão</strong><span id="bandwidth-sample-status">Abra esta aba para iniciar as amostras.</span></div><div id="bandwidth-bars" class="jr-monitor-chart"></div></div>'+
+          '<div class="jr-monitor-report"><div class="jr-monitor-section-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>'+
+            '<div class="jr-monitor-report-grid">'+
+              '<div><span>Usuário PPPoE</span><strong id="jr-radius-user">'+esc(wan?.username || 'N/D')+'</strong></div>'+
+              '<div><span>IP WAN</span><strong id="jr-radius-ip">'+esc(wan?.external_ip || 'N/D')+'</strong></div>'+
+              '<div><span>Interface</span><strong id="jr-radius-interface">'+esc(wan?.name || 'N/D')+'</strong></div>'+
+              '<div><span>Tempo de sessão</span><strong id="jr-radius-uptime">'+esc(wan?.uptime ? fmtDuration(wan.uptime) : 'N/D')+'</strong></div>'+
+              '<div><span>Plano</span><strong id="jr-radius-plan">'+esc(monitorPlanLabel())+'</strong></div>'+
+              '<div><span>BRAS / Concentrador</span><strong id="jr-monitor-bras">N/D</strong></div>'+
+              '<div><span>Fonte</span><strong id="jr-monitor-source">IXC/RADIUS</strong></div>'+
+              '<div><span>Contabilização</span><strong id="jr-monitor-last-accounting">N/D</strong></div>'+
+            '</div>'+
+          '</div>'+
+        '</div>';
     };
 
-    window.updateRadiusBandwidthSample = async function() {
+    window.updateRadiusBandwidthSample = async function(force=false) {
         if (!monitoringActive() || traffic.polling || !window.DEVICE_ID) return;
-        const now=Date.now(); if(now-traffic.lastPoll<1800)return;
+        const now=Date.now();
+        if(!force && now-traffic.lastPoll<4500)return;
         traffic.lastPoll=now; traffic.polling=true;
         try{
             const r=await fetch('/api/get-radius-session.php?device_id='+encodeURIComponent(window.DEVICE_ID),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
             const data=await r.json();
             const badge=document.getElementById('jr-radius-status'), status=document.getElementById('bandwidth-sample-status');
             if(!data?.success||!data?.online||!data?.session){
+                traffic.online=false; traffic.latestSession=null;
                 if(badge){badge.textContent='SEM SESSÃO';badge.classList.remove('online');}
                 if(status)status.textContent=data?.message||'Nenhuma sessão PPPoE ativa.';
+                updateMonitoringInsights();
                 return;
             }
+
             const s=data.session;
+            traffic.online=true; traffic.latestSession=s;
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
+
+            // RADIUS: output = download do assinante; input = upload do assinante.
             const down=Number(s.download_bytes), up=Number(s.upload_bytes), sec=Number(s.seconds);
             const key=String(s.session_id ?? '')+'|'+String(s.started_at ?? '')+'|'+String(s.username ?? '');
-            if(traffic.sessionKey!==key){traffic.sessionKey=key;traffic.last=null;traffic.samples=[];}
-            document.getElementById('live-rx-total').textContent=fmtBytes(down);
-            document.getElementById('live-tx-total').textContent=fmtBytes(up);
-            const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v??'N/D';};
-            set('jr-radius-user',s.username); set('jr-radius-ip',s.ip); set('jr-radius-interface',s.interface); set('jr-radius-uptime',fmtDuration(sec));
+            if(traffic.sessionKey!==key){
+                traffic.sessionKey=key; traffic.last=null; traffic.samples=[]; traffic.lastAccountingAt=null;
+            }
 
+            const accountAt=parseRadiusTime(s.sample_time) || now;
+            traffic.lastAccountingAt=accountAt;
+
+            const rxTotal=document.getElementById('live-rx-total'), txTotal=document.getElementById('live-tx-total');
+            if(rxTotal)rxTotal.textContent=fmtBytes(down);
+            if(txTotal)txTotal.textContent=fmtBytes(up);
+
+            setMonitorText('jr-radius-user',s.username);
+            setMonitorText('jr-radius-ip',s.ip);
+            setMonitorText('jr-radius-interface',s.interface);
+            setMonitorText('jr-radius-uptime',fmtDuration(sec));
+            setMonitorText('jr-radius-plan',monitorPlanLabel());
+            setMonitorText('jr-monitor-bras',s.bras || 'N/D');
+
+            let newSample=false;
             if(Number.isFinite(down)&&Number.isFinite(up)&&Number.isFinite(sec)){
                 if(traffic.last && sec>traffic.last.sec && down>=traffic.last.down && up>=traffic.last.up){
                     const dt=sec-traffic.last.sec;
                     const downMbps=((down-traffic.last.down)*8)/(dt*1000000);
                     const upMbps=((up-traffic.last.up)*8)/(dt*1000000);
                     if(Number.isFinite(downMbps)&&Number.isFinite(upMbps)){
-                        traffic.samples.push({at:Date.now(),down:downMbps,up:upMbps});
+                        traffic.samples.push({at:accountAt,down:downMbps,up:upMbps});
                         if(traffic.samples.length>60)traffic.samples.shift();
-                        set('live-rx-mbps',downMbps.toFixed(2)); set('live-tx-mbps',upMbps.toFixed(2));
-                        if(status)status.textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR')+' • intervalo RADIUS '+dt+'s';
+                        setMonitorText('live-rx-mbps',fmtMbps(downMbps));
+                        setMonitorText('live-tx-mbps',fmtMbps(upMbps));
+                        if(status)status.textContent='Nova contabilização às '+new Date(accountAt).toLocaleTimeString('pt-BR')+' • intervalo RADIUS '+dt+'s';
+                        newSample=true;
                     }
-                } else if(!traffic.last && status) status.textContent='Primeira contabilização recebida; aguardando a próxima.';
-                traffic.last={down,up,sec};
+                } else if(!traffic.last && status) {
+                    status.textContent='Primeira contabilização recebida; aguardando a próxima.';
+                }
+                traffic.last={down,up,sec,accountAt};
             }
-            const chart=document.getElementById('bandwidth-bars'); if(chart)chart.innerHTML=chartHtml(traffic.samples);
+
+            if(!newSample && traffic.last && status && traffic.samples.length){
+                status.textContent='Última contabilização '+fmtAccountingAge(Date.now()-accountAt)+' • aguardando a próxima.';
+            }
+
+            const chart=document.getElementById('bandwidth-bars');
+            if(chart)chart.innerHTML=chartHtml(traffic.samples);
+            updateMonitoringInsights();
         }catch(e){
-            const status=document.getElementById('bandwidth-sample-status'); if(status)status.textContent='Falha ao consultar a sessão: '+e.message;
+            const status=document.getElementById('bandwidth-sample-status');
+            if(status)status.textContent='Falha ao consultar a sessão: '+e.message;
         }finally{traffic.polling=false;}
     };
 
