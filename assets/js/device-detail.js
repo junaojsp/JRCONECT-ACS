@@ -750,6 +750,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
         renderWifiHealthCard(device);
 
+        // Reaplica imediatamente o cache IXC após qualquer re-render,
+        // inclusive no auto-refresh de 30s. Assim o card WAN não volta
+        // temporariamente a exibir a camada TR-069 como principal.
+        if (cachedOpticalData && cachedOpticalData.device_id === device.device_id && !cachedOpticalData.error) {
+            updateOpticalDomFromCache();
+        }
+
         renderStoredDeviceAIState();
         updateOverviewOperationalMeta();
 
