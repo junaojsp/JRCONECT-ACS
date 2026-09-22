@@ -3,7 +3,7 @@
     'use strict';
 
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
-    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, liveSource: null, concentrator: null, report: null, reportLoading: false, reportLoadedFor: null };
+    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, liveSource: null, concentrator: null, report: null, reportLoading: false, reportLoadedFor: null, pingSamples: [], pingPolling: false, pingLastPoll: 0 };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -894,24 +894,51 @@
         const avg = Number(result.avg_ms), min = Number(result.min_ms), max = Number(result.max_ms);
         return '<div class="jr-ping-card"><span>' + esc(label) + '</span><strong>' + (Number.isFinite(avg) ? avg.toFixed(2) + ' ms' : 'Respondendo') + '</strong><small>mín. ' + (Number.isFinite(min) ? min.toFixed(2) : '--') + ' • máx. ' + (Number.isFinite(max) ? max.toFixed(2) : '--') + ' • perda ' + Number(result.loss_percent ?? 0).toFixed(0) + '%</small></div>';
     }
-    window.jrLoadSessionPing = async function() {
+    function renderPingTimeline(samples) {
+        const recent=samples.filter(sample=>Date.now()-sample.at<=5*60*1000);
+        const valid=recent.filter(sample=>Number.isFinite(sample.latency));
+        if (valid.length < 2) return '<div class="jr-ping-live-note">Amostragem contínua a cada 5 segundos pelo NE8000.</div>';
+        const max=Math.max(1,...valid.map(sample=>sample.latency));
+        const points=valid.map((sample,index)=>{
+            const x=valid.length===1?0:index/(valid.length-1)*100;
+            const y=92-(sample.latency/max)*82;
+            return x.toFixed(2)+','+Math.max(6,y).toFixed(2);
+        }).join(' ');
+        const first=new Date(valid[0].at).toLocaleTimeString('pt-BR');
+        const last=new Date(valid[valid.length-1].at).toLocaleTimeString('pt-BR');
+        return '<div class="jr-ping-live-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 10H100M0 50H100M0 92H100" class="grid"/><polyline points="'+points+'" class="ping-line"/></svg><div><span>'+first+'</span><span>'+last+'</span></div></div>';
+    }
+    window.jrLoadSessionPing = async function(silent=false) {
+        if (!monitoringActive() || traffic.pingPolling) return;
+        const now=Date.now();
+        if (silent && now-traffic.pingLastPoll<5000) return;
         const session = traffic.latestSession || {};
         const clientIp = String(session.ip || '').trim();
         const nasIp = String(traffic.concentrator?.nas_ip || session.bras || '').trim();
         if (!clientIp) {
-            actionFeedback('Ainda não há IP da sessão para executar o ping.', 'warning');
+            if (!silent) actionFeedback('Ainda não há IP da sessão para executar o ping.', 'warning');
             return;
         }
         const target = document.getElementById('jr-ping-results');
-        if (target) target.innerHTML = '<div class="jr-ixc-empty">Executando ping pelo NE8000...</div>';
+        if (!target) return;
+        traffic.pingPolling=true;
+        traffic.pingLastPoll=now;
+        if (!silent) target.innerHTML = '<div class="jr-ixc-empty">Executando ping pelo NE8000...</div>';
         try {
-            const query = new URLSearchParams({ip: clientIp, nas_ip: nasIp});
+            const query = new URLSearchParams({ip: clientIp, nas_ip: nasIp, count: '1'});
             const response = await fetch('/api/get-ne-session-ping.php?' + query, {credentials:'same-origin', cache:'no-store'});
             const data = await response.json();
             if (!response.ok || !data?.success) throw new Error(data?.message || 'Ping indisponível.');
-            if (target) target.innerHTML = renderPingInfo('NE8000 → Cliente PPPoE', data.result) + '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Huawei NE8000 / SSH') + '</small>';
+            const result=data.result || {};
+            traffic.pingSamples.push({at:Date.now(),latency:Number(result.avg_ms),loss:Number(result.loss_percent ?? 100)});
+            if (traffic.pingSamples.length>70) traffic.pingSamples.shift();
+            target.innerHTML = renderPingInfo('NE8000 → Cliente PPPoE', result) +
+                renderPingTimeline(traffic.pingSamples) +
+                '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Huawei NE8000 / SSH') + ' • última amostra ' + new Date().toLocaleTimeString('pt-BR') + '</small>';
         } catch (error) {
-            if (target) target.innerHTML = '<div class="jr-ixc-empty">' + esc(error?.message || 'Ping indisponível.') + '</div>';
+            if (!silent) target.innerHTML = '<div class="jr-ixc-empty">' + esc(error?.message || 'Ping indisponível.') + '</div>';
+        } finally {
+            traffic.pingPolling=false;
         }
     };
 
@@ -1189,10 +1216,13 @@
             if (typeof window.updateTr069LiveTraffic === 'function') {
                 window.updateTr069LiveTraffic();
             }
+            if (typeof window.jrLoadSessionPing === 'function') {
+                window.jrLoadSessionPing(true);
+            }
         }, 1000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.sessionKey=null;
-            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null;
+            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null; traffic.pingSamples=[]; traffic.pingLastPoll=0;
             window.updateRadiusBandwidthSample(true);
             window.updateTr069LiveTraffic(true);
         });
