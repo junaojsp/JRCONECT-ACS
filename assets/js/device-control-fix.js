@@ -1055,13 +1055,13 @@
             '</div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
-            '<div class="jr-ixc-section-title"><strong>Eventos e conexões dos últimos 7 dias</strong><span id="jr-ixc-events-source">Carregando IXC/RADIUS...</span></div>'+
-            '<div id="jr-ixc-events" class="jr-ixc-events"><div class="jr-ixc-empty">Carregando histórico...</div></div>'+
-          '</div>'+
-          '<div class="jr-ixc-section">'+
             '<div class="jr-ixc-section-title"><strong>Tráfego em tempo real dos últimos 5 minutos</strong><span id="bandwidth-sample-status">Aguardando contadores WAN via TR-069...</span></div>'+
             '<div class="jr-monitor-live-head"><div><span>Download</span><strong id="live-rx-mbps">--</strong><small id="live-rx-unit">Mbps</small></div><div><span>Upload</span><strong id="live-tx-mbps">--</strong><small id="live-tx-unit">Mbps</small></div><div><span>Baixado na sessão</span><strong id="live-rx-total">--</strong><small>RADIUS</small></div><div><span>Enviado na sessão</span><strong id="live-tx-total">--</strong><small>RADIUS</small></div></div>'+
             '<div id="bandwidth-bars" class="jr-monitor-chart"></div>'+
+          '</div>'+
+          '<div class="jr-ixc-section">'+
+            '<div class="jr-ixc-section-title"><strong>Eventos e conexões dos últimos 7 dias</strong><span id="jr-ixc-events-source">Carregando IXC/RADIUS...</span></div>'+
+            '<div id="jr-ixc-events" class="jr-ixc-events"><div class="jr-ixc-empty">Carregando histórico...</div></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
             '<div class="jr-ixc-section-title"><strong>Consumo dos últimos 30 dias</strong><span id="jr-ixc-consumption-source">Carregando fonte...</span></div>'+
