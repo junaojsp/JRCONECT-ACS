@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/Security.php';
 
 header('Content-Type: application/json');
 
@@ -7,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
 }
 
-requireLogin();
+securityRequireRole(['admin']);
 
 $data = json_decode(file_get_contents('php://input'), true);
 
