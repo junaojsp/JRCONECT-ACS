@@ -88,6 +88,85 @@ function jrIxcAuthorizationHeader(): string
     return '';
 }
 
+function jrIxcJoseEcdsaToDer(string $signature): string|false
+{
+    $length = strlen($signature);
+
+    if ($length !== 64) {
+        return false;
+    }
+
+    $r = substr($signature, 0, 32);
+    $s = substr($signature, 32, 32);
+
+    $encodeInteger = static function (string $value): string {
+        $value = ltrim($value, "\x00");
+
+        if ($value === '') {
+            $value = "\x00";
+        }
+
+        if ((ord($value[0]) & 0x80) !== 0) {
+            $value = "\x00" . $value;
+        }
+
+        return "\x02" . chr(strlen($value)) . $value;
+    };
+
+    $sequence = $encodeInteger($r) . $encodeInteger($s);
+
+    return "\x30" . chr(strlen($sequence)) . $sequence;
+}
+
+function jrIxcPublicKeyFile(): string
+{
+    $configured = trim((string)(getenv('IXC_ACS_PUBLIC_KEY_FILE') ?: ''));
+
+    return $configured !== ''
+        ? $configured
+        : '/etc/jrconect-acs/ixc_acs_public.pem';
+}
+
+function jrIxcVerifyEs256(
+    string $signingInput,
+    string $signatureRaw
+): bool {
+    if (!function_exists('openssl_verify')) {
+        throw new RuntimeException('Extensão OpenSSL do PHP indisponível.');
+    }
+
+    $keyFile = jrIxcPublicKeyFile();
+
+    if (!is_file($keyFile) || !is_readable($keyFile)) {
+        throw new RuntimeException('Chave pública IXC não configurada ou não legível.');
+    }
+
+    $pem = file_get_contents($keyFile);
+
+    if (!is_string($pem) || trim($pem) === '') {
+        throw new RuntimeException('Chave pública IXC vazia ou inválida.');
+    }
+
+    $publicKey = openssl_pkey_get_public($pem);
+
+    if ($publicKey === false) {
+        throw new RuntimeException('Não foi possível carregar a chave pública IXC.');
+    }
+
+    $derSignature = jrIxcJoseEcdsaToDer($signatureRaw);
+
+    if ($derSignature === false) {
+        return false;
+    }
+
+    return openssl_verify(
+        $signingInput,
+        $derSignature,
+        $publicKey,
+        OPENSSL_ALGO_SHA256
+    ) === 1;
+}
+
 function jrIxcSafeLog(array $data): void
 {
     $logFile = dirname(__DIR__, 2) . '/logs/ixc-acs-compat.log';
@@ -157,8 +236,9 @@ if (count($parts) !== 3) {
 
 $headerRaw = jrIxcBase64UrlDecode($parts[0]);
 $payloadRaw = jrIxcBase64UrlDecode($parts[1]);
+$signatureRaw = jrIxcBase64UrlDecode($parts[2]);
 
-if ($headerRaw === false || $payloadRaw === false) {
+if ($headerRaw === false || $payloadRaw === false || $signatureRaw === false) {
     jrIxcJson([
         'success' => false,
         'error' => 'invalid_jwt_encoding',
@@ -188,6 +268,55 @@ if ($algorithm === '' || $algorithm === 'NONE') {
     jrIxcJson([
         'success' => false,
         'error' => 'unsafe_jwt_algorithm',
+    ], 401);
+}
+
+if ($algorithm !== 'ES256') {
+    jrIxcSafeLog([
+        'at' => gmdate('c'),
+        'event' => 'request_rejected',
+        'reason' => 'unsupported_jwt_algorithm',
+        'remote_ip' => $remoteIp,
+        'algorithm' => $algorithm,
+    ]);
+
+    jrIxcJson([
+        'success' => false,
+        'error' => 'unsupported_jwt_algorithm',
+    ], 401);
+}
+
+try {
+    $signatureVerified = jrIxcVerifyEs256(
+        $parts[0] . '.' . $parts[1],
+        $signatureRaw
+    );
+} catch (Throwable $e) {
+    jrIxcSafeLog([
+        'at' => gmdate('c'),
+        'event' => 'verification_error',
+        'remote_ip' => $remoteIp,
+        'message' => $e->getMessage(),
+    ]);
+
+    jrIxcJson([
+        'success' => false,
+        'error' => 'jwt_verification_unavailable',
+    ], 503);
+}
+
+if (!$signatureVerified) {
+    jrIxcSafeLog([
+        'at' => gmdate('c'),
+        'event' => 'request_rejected',
+        'reason' => 'invalid_jwt_signature',
+        'remote_ip' => $remoteIp,
+        'algorithm' => $algorithm,
+    ]);
+
+    jrIxcJson([
+        'success' => false,
+        'error' => 'invalid_jwt_signature',
     ], 401);
 }
 
@@ -227,7 +356,7 @@ jrIxcSafeLog([
     'has_nbf' => isset($jwtPayload['nbf']),
     'expired' => $expired,
     'not_yet_valid' => $notYetValid,
-    'signature_verified' => false,
+    'signature_verified' => true,
 ]);
 
 if ($expired || $notYetValid) {
@@ -237,11 +366,6 @@ if ($expired || $notYetValid) {
     ], 401);
 }
 
-/*
- * We intentionally do not claim that the caller is authenticated yet.
- * Signature verification will be enabled after the IXC signing key and
- * expected claims are identified.
- */
 jrIxcJson([
     'success' => true,
     'mode' => 'compatibility_probe',
@@ -250,7 +374,7 @@ jrIxcJson([
         'algorithm' => $algorithm,
         'header_keys' => $headerNames,
         'claim_keys' => $claimNames,
-        'signature_verified' => false,
+        'signature_verified' => true,
     ],
-    'next_step' => 'configure_jwt_signature_verification',
+    'next_step' => 'discover_ixc_response_contract',
 ], 200);
