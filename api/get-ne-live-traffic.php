@@ -30,6 +30,16 @@ function neParseNumber(string $value): ?float
     return is_numeric($value) ? max(0.0, (float)$value) : null;
 }
 
+function neParseHighLowCounter(string $value): ?float
+{
+    if (!preg_match('/^\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/', trim($value), $match)) {
+        return null;
+    }
+
+    // O VRP expõe contadores de 64 bits em duas palavras de 32 bits.
+    return ((float)$match[1] * 4294967296.0) + (float)$match[2];
+}
+
 function neFindField(string $output, array $labels): ?string
 {
     foreach ($labels as $label) {
@@ -90,17 +100,26 @@ function neExtractUserIdForUsername(string $output, string $username): ?int
 function neParseSession(string $output): array
 {
     $uploadRaw = neFindField($output, [
+        'Up bytes number(high,low)',
         'User inbound data flow(Byte)',
         'User inbound data flow (Byte)',
         'User upstream data flow(Byte)',
         'User up data flow(Byte)',
     ]);
     $downloadRaw = neFindField($output, [
+        'Down bytes number(high,low)',
         'User outbound data flow(Byte)',
         'User outbound data flow (Byte)',
         'User downstream data flow(Byte)',
         'User down data flow(Byte)',
     ]);
+
+    $uploadBytes = $uploadRaw !== null
+        ? (neParseHighLowCounter($uploadRaw) ?? neParseNumber($uploadRaw))
+        : null;
+    $downloadBytes = $downloadRaw !== null
+        ? (neParseHighLowCounter($downloadRaw) ?? neParseNumber($downloadRaw))
+        : null;
 
     return [
         'user_id' => neExtractUserId($output),
@@ -110,8 +129,8 @@ function neParseSession(string $output): array
         'interface' => neFindField($output, ['User access Interface', 'Access interface', 'Interface']),
         'online_time' => neFindField($output, ['Online time']),
         'access_time' => neFindField($output, ['User access time', 'Access start time']),
-        'upload_bytes' => $uploadRaw !== null ? neParseNumber($uploadRaw) : null,
-        'download_bytes' => $downloadRaw !== null ? neParseNumber($downloadRaw) : null,
+        'upload_bytes' => $uploadBytes,
+        'download_bytes' => $downloadBytes,
     ];
 }
 
@@ -163,13 +182,10 @@ function neDiagnosticPreview(string $output): string
 
 function nePrepareInteractiveShell(SSH2 $ssh): void
 {
-    // Abre o CHANNEL_SHELL e força um prompt novo para eliminar qualquer
-    // banner/prompt residual antes da primeira consulta.
+    // Consome apenas o banner e o primeiro prompt. Enviar uma linha vazia
+    // aqui pode deixar uma resposta pendente e deslocar a saída do primeiro
+    // comando de consulta para a leitura seguinte.
     $ssh->setWindowSize(220, 100);
-    $ssh->setTimeout(8);
-    $ssh->read(nePromptRegex(), SSH2::READ_REGEX);
-
-    $ssh->write("\r\n");
     $ssh->setTimeout(8);
     $ssh->read(nePromptRegex(), SSH2::READ_REGEX);
 }
