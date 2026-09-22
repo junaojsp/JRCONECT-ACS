@@ -898,118 +898,123 @@
         traffic.livePolling=true;
 
         try{
-            const r=await fetch(
-                '/api/get-tr069-live-traffic.php?device_id='+encodeURIComponent(window.DEVICE_ID),
-                {credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}
-            );
-            const data=await r.json();
+            const fetchLive=async url=>{
+                const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+                if(!response.ok)return null;
+                const payload=await response.json();
+                return payload?.success?payload:null;
+            };
 
-            const model=data?.device?.model||'CPE';
-            const profile=data?.profile||'Contadores WAN';
-            const refreshOk=data?.refresh?.success===true;
-            const refreshQueued=data?.refresh?.queued===true;
+            let data=null;
+            let sourceKey='';
+            let sourceLabel='';
 
-            setMonitorText('jr-source-live-badge','TR-069');
-            setMonitorText(
-                'jr-source-live-state',
-                model+' • '+(
-                    refreshOk
-                        ? 'contadores atualizados'
-                        : (refreshQueued ? 'aguardando resposta do CPE' : 'leitura do GenieACS')
-                )
-            );
-            setMonitorText('jr-monitor-live-source','TR-069 / GenieACS');
+            // Fonte preferida: o mesmo stream de tráfego exibido pelo IXC.
+            if(traffic.ixcLoginId){
+                const ixc=await fetchLive(
+                    '/api/get-ixc-live-traffic.php?login_id='+encodeURIComponent(traffic.ixcLoginId)
+                );
+                if(ixc?.available&&ixc?.live){
+                    data=ixc;
+                    sourceKey='ixc';
+                    sourceLabel=ixc.source||'IXC em tempo real';
+                }
+            }
 
-            if(!data?.success || !data?.available || !data?.live){
+            // Segunda fonte: leitura direta e somente leitura no BRAS/NE8000.
+            const session=traffic.latestSession;
+            if(!data&&session&&(session.ip||session.username)){
+                const query=new URLSearchParams({
+                    ip:session.ip||'',
+                    username:session.username||'',
+                    nas_ip:session.bras||'',
+                    session_id:session.session_id||''
+                });
+                const ne=await fetchLive('/api/get-ne-live-traffic.php?'+query.toString());
+                if(ne?.available&&ne?.live){
+                    data=ne;
+                    sourceKey='ne';
+                    sourceLabel=ne.source||'Huawei NE8000';
+                    traffic.concentrator=ne.concentrator||traffic.concentrator;
+                }
+            }
+
+            // Último fallback: TR-069 apenas para contadores PPP/IP.
+            // WANCommon da FiberHome mede a interface física/gerência e não
+            // representa o consumo PPPoE mostrado pelo IXC.
+            let tr069=null;
+            if(!data){
+                tr069=await fetchLive(
+                    '/api/get-tr069-live-traffic.php?device_id='+encodeURIComponent(window.DEVICE_ID)
+                );
+                const profile=String(tr069?.profile||'');
+                const managementOnly=/WAN common/i.test(profile);
+                if(tr069?.available&&tr069?.live&&!managementOnly){
+                    data=tr069;
+                    sourceKey='tr069';
+                    sourceLabel='TR-069 • '+profile;
+                }else if(managementOnly){
+                    traffic.liveReason='wancommon_management_only';
+                }
+            }
+
+            if(!data?.live){
                 traffic.liveAvailable=false;
-                traffic.liveReason=data?.reason||'tr069_unavailable';
-
-                const keepLastRate=[
-                    'waiting_next_refresh',
-                    'refresh_queued',
-                    'stale_counters',
-                    'waiting_counter_change'
-                ].includes(data?.reason);
-
-                if(keepLastRate){
-                    traffic.liveDisabledUntil=Date.now()+2500;
-                } else if(
-                    data?.reason==='collecting_second_sample' ||
-                    data?.reason==='sample_window_invalid'
-                ){
-                    traffic.liveDisabledUntil=Date.now()+2500;
-                } else if(data?.reason==='counter_reset'){
-                    traffic.liveDisabledUntil=Date.now()+3500;
-                    traffic.samples=[];
-                    setMonitorText('live-rx-mbps','--');
-                    setMonitorText('live-tx-mbps','--');
-                    setMonitorText('live-rx-unit','Mbps');
-                    setMonitorText('live-tx-unit','Mbps');
-                } else {
-                    traffic.liveDisabledUntil=Date.now()+7000;
-                    setMonitorText('live-rx-mbps','--');
-                    setMonitorText('live-tx-mbps','--');
-                    setMonitorText('live-rx-unit','Mbps');
-                    setMonitorText('live-tx-unit','Mbps');
-                }
-
+                traffic.liveDisabledUntil=Date.now()+4000;
+                setMonitorText('live-rx-mbps','--');
+                setMonitorText('live-tx-mbps','--');
+                setMonitorText('live-rx-unit','Mbps');
+                setMonitorText('live-tx-unit','Mbps');
+                setMonitorText('jr-source-live-badge','AGUARDANDO');
+                setMonitorText('jr-source-live-state',
+                    traffic.liveReason==='wancommon_management_only'
+                        ? 'WANCommon ignorado: contador de gerência'
+                        : 'localizando stream IXC/BRAS'
+                );
+                setMonitorText('jr-monitor-live-source','IXC/BRAS • aguardando');
                 const status=document.getElementById('bandwidth-sample-status');
-                if(status){
-                    const paths=data?.paths
-                        ? ' • '+profile+' • '+String(data.paths.download||'')+' / '+String(data.paths.upload||'')
-                        : '';
-                    const detail=data?.diagnostic?.detail
-                        ? ' • '+String(data.diagnostic.detail)
-                        : '';
-                    const next=data?.refresh?.next_in_seconds
-                        ? ' • próxima leitura em ~'+data.refresh.next_in_seconds+'s'
-                        : '';
-                    status.textContent=(data?.message||'Sem leitura de tráfego via TR-069.')+next+paths+detail;
-                }
-
+                if(status)status.textContent=
+                    traffic.liveReason==='wancommon_management_only'
+                        ? 'Contador TR-069 WANCommon ignorado; aguardando tráfego real do IXC/BRAS.'
+                        : 'Aguardando amostra confiável do IXC/BRAS.';
                 const chart=document.getElementById('bandwidth-bars');
-                if(chart && !traffic.samples.length) chart.innerHTML=chartHtml([]);
+                if(chart&&!traffic.samples.length)chart.innerHTML=chartHtml([]);
                 return;
             }
 
+            const down=Number(data.live.download_mbps);
+            const up=Number(data.live.upload_mbps);
+            if(!Number.isFinite(down)||!Number.isFinite(up))return;
+
+            const at=parseRadiusTime(data.live.sample_time)||Date.now();
             traffic.liveAvailable=true;
             traffic.liveReason=null;
             traffic.liveDisabledUntil=0;
-            traffic.liveSource='tr069';
-
-            const down=Number(data.live.download_mbps);
-            const up=Number(data.live.upload_mbps);
-            if(!Number.isFinite(down)||!Number.isFinite(up)) return;
-
-            const at=parseRadiusTime(data.live.sample_time)||Date.now();
-            traffic.samples.push({at,down,up,source:'tr069'});
-            if(traffic.samples.length>90) traffic.samples.shift();
+            traffic.liveSource=sourceKey;
+            traffic.samples.push({at,down:Math.max(0,down),up:Math.max(0,up),source:sourceKey});
+            if(traffic.samples.length>90)traffic.samples.shift();
 
             setLiveRate('live-rx',down);
             setLiveRate('live-tx',up);
-            setMonitorText('jr-monitor-source','TR-069 + IXC/RADIUS');
-            setMonitorText('jr-monitor-live-source','TR-069 / GenieACS');
-            setMonitorText('jr-source-live-badge','TR-069');
-            setMonitorText('jr-source-live-state',model+' • '+profile);
+            setMonitorText('jr-monitor-source',sourceLabel+' + IXC/RADIUS');
+            setMonitorText('jr-monitor-live-source',sourceLabel);
+            setMonitorText('jr-source-live-badge',sourceKey==='ixc'?'IXC AO VIVO':sourceKey==='ne'?'NE8000':'TR-069');
+            setMonitorText('jr-source-live-state',sourceLabel+' • leitura confirmada');
 
             const status=document.getElementById('bandwidth-sample-status');
-            if(status){
-                status.textContent='TR-069 AO VIVO • '+new Date(at).toLocaleTimeString('pt-BR')
-                    +' • '+profile
-                    +(refreshOk?' • CPE atualizado':' • cache GenieACS');
-            }
+            if(status)status.textContent=sourceLabel.toUpperCase()+' • '+new Date(at).toLocaleTimeString('pt-BR');
 
             const chart=document.getElementById('bandwidth-bars');
-            if(chart) chart.innerHTML=chartHtml(traffic.samples);
+            if(chart)chart.innerHTML=chartHtml(traffic.samples);
 
         }catch(e){
             traffic.liveAvailable=false;
             traffic.liveReason='request_failed';
             traffic.liveDisabledUntil=Date.now()+5000;
-            setMonitorText('jr-source-live-state','TR-069 temporariamente sem atualização');
-            setMonitorText('jr-monitor-live-source','TR-069 / última amostra mantida');
+            setMonitorText('jr-source-live-state','IXC/BRAS temporariamente sem atualização');
+            setMonitorText('jr-monitor-live-source','Última amostra válida mantida');
             const status=document.getElementById('bandwidth-sample-status');
-            if(status) status.textContent='Sem nova amostra TR-069 • mantendo a última leitura válida';
+            if(status) status.textContent='Sem nova amostra do IXC/BRAS • mantendo a última leitura válida';
             const chart=document.getElementById('bandwidth-bars');
             if(chart && traffic.samples.length) chart.innerHTML=chartHtml(traffic.samples);
         }finally{
