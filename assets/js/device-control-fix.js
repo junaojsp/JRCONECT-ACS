@@ -846,6 +846,75 @@
           '</div><div class="jr-monitor-chart-legend"><span><i class="down"></i>Download</span><span><i class="up"></i>Upload</span><span>Últimos 5 minutos</span></div>';
     }
 
+    function actionFeedback(message, type='info') {
+        if (typeof window.showToast === 'function') window.showToast(message, type);
+        else console.log('[IXC ACTION]', message);
+    }
+    function setIxcActionBusy(busy) {
+        document.querySelectorAll('[data-ixc-session-action]').forEach(button => {
+            button.disabled = busy;
+            button.classList.toggle('is-loading', busy);
+        });
+    }
+    window.jrIxcSessionAction = async function(action) {
+        const loginId = Number(traffic.ixcLoginId);
+        if (!Number.isInteger(loginId) || loginId < 1) {
+            actionFeedback('Login IXC ainda não foi identificado para esta sessão.', 'warning');
+            return;
+        }
+        const label = action === 'disconnect' ? 'desconectar a sessão PPPoE' : 'limpar o MAC vinculado ao login';
+        if (!window.confirm('Confirma ' + label + '?')) return;
+        setIxcActionBusy(true);
+        try {
+            const response = await fetch('/api/ixc-session-action.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': state.csrf || ''},
+                body: JSON.stringify({action, login_id: loginId})
+            });
+            const data = await response.json();
+            if (!response.ok || !data?.success) throw new Error(data?.message || 'IXC não confirmou a ação.');
+            actionFeedback(data.message || 'Ação enviada ao IXC.', 'success');
+            if (action === 'disconnect') {
+                traffic.latestSession = null;
+                traffic.liveDisabledUntil = Date.now() + 3000;
+            }
+            window.updateRadiusBandwidthSample(true);
+            window.loadIxcReplicaReport(true);
+        } catch (error) {
+            actionFeedback(error?.message || 'Falha ao executar a ação no IXC.', 'danger');
+        } finally {
+            setIxcActionBusy(false);
+        }
+    };
+    function renderPingInfo(label, result) {
+        if (!result) return '<div class="jr-ping-card"><span>' + esc(label) + '</span><strong>Não informado</strong><small>Aguardando consulta</small></div>';
+        if (!result.available) return '<div class="jr-ping-card danger"><span>' + esc(label) + '</span><strong>Sem resposta</strong><small>Perda: ' + Number(result.loss_percent ?? 100).toFixed(0) + '%</small></div>';
+        const avg = Number(result.avg_ms), min = Number(result.min_ms), max = Number(result.max_ms);
+        return '<div class="jr-ping-card"><span>' + esc(label) + '</span><strong>' + (Number.isFinite(avg) ? avg.toFixed(2) + ' ms' : 'Respondendo') + '</strong><small>mín. ' + (Number.isFinite(min) ? min.toFixed(2) : '--') + ' • máx. ' + (Number.isFinite(max) ? max.toFixed(2) : '--') + ' • perda ' + Number(result.loss_percent ?? 0).toFixed(0) + '%</small></div>';
+    }
+    window.jrLoadSessionPing = async function() {
+        const session = traffic.latestSession || {};
+        const clientIp = String(session.ip || '').trim();
+        const candidate = traffic.concentrator?.nas_ip || session.bras || '';
+        const concentratorIp = /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(String(candidate)) ? String(candidate) : '';
+        if (!clientIp && !concentratorIp) {
+            actionFeedback('Ainda não há IP da sessão para executar o ping.', 'warning');
+            return;
+        }
+        const target = document.getElementById('jr-ping-results');
+        if (target) target.innerHTML = '<div class="jr-ixc-empty">Executando ping a partir do servidor ACS...</div>';
+        try {
+            const query = new URLSearchParams({client_ip: clientIp, concentrator_ip: concentratorIp});
+            const response = await fetch('/api/ixc-session-ping.php?' + query, {credentials:'same-origin', cache:'no-store'});
+            const data = await response.json();
+            if (!response.ok || !data?.success) throw new Error(data?.message || 'Ping indisponível.');
+            if (target) target.innerHTML = renderPingInfo('ACS → Cliente PPPoE', data.results?.client) + renderPingInfo('ACS → Concentrador', data.results?.concentrator) + '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Servidor ACS') + '</small>';
+        } catch (error) {
+            if (target) target.innerHTML = '<div class="jr-ixc-empty">' + esc(error?.message || 'Ping indisponível.') + '</div>';
+        }
+    };
+
     window.renderMonitoringTab = function(device) {
         const wan=typeof getPrimaryWAN==='function'?getPrimaryWAN(device):null;
         return '<div class="jr-monitor-v3">'+
@@ -864,6 +933,9 @@
             '</div>'+
             '<div class="jr-ixc-actions">'+
               '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateTr069LiveTraffic(true); window.loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
+              '<button type="button" data-ixc-session-action onclick="window.jrIxcSessionAction(\'clear_mac\')"><i class="bi bi-eraser"></i> Limpar MAC</button>'+
+              '<button type="button" data-ixc-session-action onclick="window.jrIxcSessionAction(\'disconnect\')"><i class="bi bi-person-x"></i> Desconectar sessão</button>'+
+              '<button type="button" onclick="window.jrLoadSessionPing()"><i class="bi bi-activity"></i> Atualizar ping</button>'+
               '<button type="button" onclick="document.getElementById(\'wifi-tab\')?.click()"><i class="bi bi-gear"></i> Dados Roteador</button>'+
             '</div>'+
           '</div>'+
@@ -879,6 +951,10 @@
           '<div class="jr-ixc-section">'+
             '<div class="jr-ixc-section-title"><strong>Consumo dos últimos 30 dias</strong><span id="jr-ixc-consumption-source">Carregando fonte...</span></div>'+
             '<div id="jr-ixc-consumption"><div class="jr-ixc-empty">Carregando consumo...</div></div>'+
+          '</div>'+
+          '<div class="jr-ixc-section jr-ixc-ping-section>'+
+            '<div class="jr-ixc-section-title"><strong>Informações de ping</strong><span>Servidor ACS</span></div>'+
+            '<div id="jr-ping-results" class="jr-ping-results"><div class="jr-ixc-empty">Clique em Atualizar ping para medir cliente e concentrador.</div></div>'+
           '</div>'+
           '<div class="jr-monitor-report">'+
             '<div class="jr-monitor-section-title"><strong>Detalhes da sessão atual</strong><span id="jr-monitor-source">IXC/RADIUS</span></div>'+
