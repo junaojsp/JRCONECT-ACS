@@ -718,7 +718,7 @@
             {key:'nas',label:'Requisitado pelo Concentrador',cls:'nas'},
             {key:'nas_reboot',label:'Reboot de concentrador',cls:'reboot'},
             {key:'lost',label:'Perda de Conexão',cls:'lost'},
-            {key:'other',label:'Outros',cls:'other'}
+            {key:'other',label:'Outros eventos',cls:'other'}
         ];
         const max=Math.max(1,...daily.flatMap(d=>series.map(s=>Number(d[s.key]||0))));
         const x=i=>daily.length===1?50:(i/(daily.length-1))*100;
@@ -726,12 +726,21 @@
         const grid='<path d="M0 18H100M0 54H100M0 90H100" class="grid"/>';
         const lines=series.map(s=>{
             const pts=daily.map((d,i)=>x(i).toFixed(2)+','+y(d[s.key]).toFixed(2)).join(' ');
-            const dots=daily.map((d,i)=>'<circle cx="'+x(i).toFixed(2)+'" cy="'+y(d[s.key]).toFixed(2)+'" r="1.2" class="'+s.cls+'"/>').join('');
+            const dots=daily.map((d,i)=>{
+                const value=Number(d[s.key]||0);
+                const tooltip=reportDateLabel(d.date)+' • '+s.label+' • '+value+' evento(s)';
+                return '<circle cx="'+x(i).toFixed(2)+'" cy="'+y(value).toFixed(2)+'" r="1.8" class="'+s.cls+'"><title>'+esc(tooltip)+'</title></circle>';
+            }).join('');
             return '<polyline points="'+pts+'" class="'+s.cls+'"/>'+dots;
         }).join('');
         const labels=daily.map(d=>'<span>'+reportDateLabel(d.date)+'</span>').join('');
-        const legend=series.map(s=>'<span><i class="'+s.cls+'"></i>'+s.label+'</span>').join('');
-        return '<div class="jr-ixc-event-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none">'+grid+lines+'</svg><div class="jr-ixc-event-dates">'+labels+'</div></div><div class="jr-ixc-event-legend">'+legend+'</div>';
+        const legend=series.map(s=>{
+            const total=daily.reduce((sum,d)=>sum+Number(d[s.key]||0),0);
+            return '<span class="jr-event-legend-item"><i class="'+s.cls+'"></i><strong>'+s.label+'</strong><small>'+total+' evento(s)</small></span>';
+        }).join('');
+        return '<div class="jr-ixc-event-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none">'+grid+lines+'</svg><div class="jr-ixc-event-dates">'+labels+'</div></div>'+
+            '<div class="jr-event-legend-title">Legenda dos eventos <small>Passe o mouse sobre os pontos do gráfico para ver os detalhes.</small></div>'+
+            '<div class="jr-ixc-event-legend">'+legend+'</div>';
     }
     function reportDateTimeCell(value) {
         if(!value)return '<span class="jr-ixc-dash">—</span>';
