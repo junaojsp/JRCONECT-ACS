@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/Security.php';
 
 header('Content-Type: application/json');
 
@@ -10,6 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 requireLogin();
 
 $data = json_decode(file_get_contents('php://input'), true);
+if (!is_array($data)) {
+    jsonResponse(['success' => false, 'message' => 'Dados inválidos.'], 400);
+}
+if (!securityVerifyCsrf((string)($data['csrf_token'] ?? ''))) {
+    jsonResponse(['success' => false, 'message' => 'Token de segurança inválido. Atualize a página.'], 403);
+}
 
 $currentPassword = $data['current_password'] ?? '';
 $newUsername = $data['new_username'] ?? '';
@@ -34,6 +41,9 @@ if ($user = $result->fetch_assoc()) {
 
     // Update credentials
     if (!empty($newPassword)) {
+        if (strlen($newPassword) < 12) {
+            jsonResponse(['success' => false, 'message' => 'A nova senha deve possuir pelo menos 12 caracteres.'], 422);
+        }
         if ($newPassword !== $confirmPassword) {
             jsonResponse(['success' => false, 'message' => 'Konfirmasi password tidak cocok']);
         }
@@ -48,7 +58,8 @@ if ($user = $result->fetch_assoc()) {
 
     if ($stmt->execute()) {
         $_SESSION['username'] = $newUsername;
-        jsonResponse(['success' => true, 'message' => 'Kredensial berhasil diupdate']);
+        session_regenerate_id(true);
+        jsonResponse(['success' => true, 'message' => 'Credenciais atualizadas com segurança.']);
     } else {
         jsonResponse(['success' => false, 'message' => 'Gagal mengupdate kredensial']);
     }
