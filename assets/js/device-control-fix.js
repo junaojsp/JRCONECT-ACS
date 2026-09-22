@@ -3,7 +3,7 @@
     'use strict';
 
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
-    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, liveSource: null, concentrator: null, report: null, reportLoading: false, reportLoadedFor: null, pingSamples: [], pingPolling: false, pingLastPoll: 0 };
+    const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0, online: false, lastAccountingAt: null, latestSession: null, ixcLoginId: null, livePolling: false, liveLastPoll: 0, liveAvailable: false, liveDisabledUntil: 0, liveReason: null, liveSource: null, concentrator: null, report: null, reportLoading: false, reportLoadedFor: null, reportPollKey: null, reportLastPoll: 0, pingSamples: [], pingPolling: false, pingLastPoll: 0 };
     let dialog = null;
     const secretTimers = new Map();
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -732,6 +732,41 @@
         const legend=series.map(s=>'<span><i class="'+s.cls+'"></i>'+s.label+'</span>').join('');
         return '<div class="jr-ixc-event-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none">'+grid+lines+'</svg><div class="jr-ixc-event-dates">'+labels+'</div></div><div class="jr-ixc-event-legend">'+legend+'</div>';
     }
+    function reportDateTimeCell(value) {
+        if(!value)return '<span class="jr-ixc-dash">—</span>';
+        const d=new Date(value);
+        if(Number.isNaN(d.getTime()))return esc(String(value));
+        return '<span class="jr-ixc-date">'+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</span>'+
+            '<small>'+d.toLocaleTimeString('pt-BR')+'</small>';
+    }
+    function renderIxcConnectionReport(report) {
+        const rows=Array.isArray(report?.last_7_days?.connections)?report.last_7_days.connections:[];
+        if(!rows.length)return '<div class="jr-ixc-connection-report"><div class="jr-ixc-connection-report-head"><strong>Relatório de conexões</strong><span>Sem registros</span></div><div class="jr-ixc-empty jr-ixc-connection-empty">Nenhuma conexão encontrada nos últimos 7 dias.</div></div>';
+
+        const body=rows.map(row=>{
+            const seconds=Number(row.seconds);
+            return '<tr class="'+(row.online?'is-online':'')+'">'+
+                '<td>'+esc(row.id??'—')+'</td>'+
+                '<td>'+esc(row.ip||'—')+'</td>'+
+                '<td>'+esc(row.mac||'—')+'</td>'+
+                '<td class="jr-ixc-time-cell">'+reportDateTimeCell(row.started_at)+'</td>'+
+                '<td class="jr-ixc-time-cell">'+reportDateTimeCell(row.stopped_at)+'</td>'+
+                '<td>'+esc(Number.isFinite(seconds)?fmtDuration(seconds):'—')+'</td>'+
+                '<td>'+esc(reportBytes(row.upload_bytes||0))+'</td>'+
+                '<td>'+esc(reportBytes(row.download_bytes||0))+'</td>'+
+                '<td class="jr-ixc-cause">'+esc(row.cause||'—')+'</td>'+
+            '</tr>';
+        }).join('');
+
+        return '<div class="jr-ixc-connection-report">'+
+            '<div class="jr-ixc-connection-report-head"><strong>Relatório de conexões</strong><span>'+rows.length+' registro(s) • IXC/RADIUS</span></div>'+
+            '<div class="jr-ixc-connection-table-wrap"><table class="jr-ixc-connection-table">'+
+                '<thead><tr><th>ID</th><th>IP</th><th>MAC</th><th>Hora do Login</th><th>Hora do Logout</th><th>Tempo Conectado</th><th>Upload</th><th>Download</th><th>Motivo de desconexão</th></tr></thead>'+
+                '<tbody>'+body+'</tbody>'+
+            '</table></div>'+
+        '</div>';
+    }
+
     function renderIxcConsumption(report) {
         const daily=Array.isArray(report?.last_30_days?.daily)?report.last_30_days.daily:[];
         if(!daily.length)return '<div class="jr-ixc-empty">Sem consumo disponível nos últimos 30 dias.</div>';
@@ -784,29 +819,41 @@
         if((!loginId && !username) || traffic.reportLoading)return;
 
         const reportKey=loginId?'id:'+String(loginId):'login:'+String(username);
-        if(!force && traffic.reportLoadedFor===reportKey && traffic.report)return;
+        const now=Date.now();
+        // Histórico não precisa consultar o IXC a cada segundo. Atualiza a cada 60 s.
+        if(!force && traffic.reportPollKey===reportKey && now-traffic.reportLastPoll<60000)return;
 
         const params=new URLSearchParams();
         if(loginId) params.set('login_id',loginId);
         else params.set('login',username);
 
         traffic.reportLoading=true;
+        traffic.reportPollKey=reportKey;
+        traffic.reportLastPoll=now;
         try{
             const r=await fetch('/api/get-ixc-login-report.php?'+params.toString(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
             const data=await r.json();
-            if(!r.ok||!data?.success)return;
+            if(!r.ok||!data?.success)throw new Error(data?.message||'Relatório IXC indisponível.');
             traffic.report=data;
             traffic.reportLoadedFor=reportKey;
-            const summary=document.getElementById('jr-ixc-access-summary');
             const events=document.getElementById('jr-ixc-events');
+            const eventsSource=document.getElementById('jr-ixc-events-source');
             const consumption=document.getElementById('jr-ixc-consumption');
             const consumptionSource=document.getElementById('jr-ixc-consumption-source');
+            const generatedAt=new Date(data.generated_at||Date.now());
+            const updatedLabel=Number.isNaN(generatedAt.getTime())?new Date().toLocaleTimeString('pt-BR'):generatedAt.toLocaleTimeString('pt-BR');
+
             refreshIxcAccessSummary();
-            if(events)events.innerHTML=renderIxcEventHistory(data);
+            if(events)events.innerHTML=renderIxcEventHistory(data)+renderIxcConnectionReport(data);
+            if(eventsSource)eventsSource.textContent=(data?.last_7_days?.source||'IXC/RADIUS')+' • '+updatedLabel;
             if(consumption)consumption.innerHTML=renderIxcConsumption(data);
-            if(consumptionSource)consumptionSource.textContent=data?.last_30_days?.source||'IXC/RADIUS';
+            if(consumptionSource)consumptionSource.textContent=(data?.last_30_days?.source||'IXC/RADIUS')+' • '+updatedLabel;
         }catch(e){
             console.warn('[IXC MONITOR] relatório indisponível',e);
+            const eventsSource=document.getElementById('jr-ixc-events-source');
+            const consumptionSource=document.getElementById('jr-ixc-consumption-source');
+            if(eventsSource)eventsSource.textContent='IXC/RADIUS • falha na atualização';
+            if(consumptionSource)consumptionSource.textContent='IXC/RADIUS • falha na atualização';
         }finally{traffic.reportLoading=false;}
     }
 
@@ -1008,7 +1055,7 @@
             '</div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
-            '<div class="jr-ixc-section-title"><strong>Eventos e conexões dos últimos 7 dias</strong><span>IXC/RADIUS</span></div>'+
+            '<div class="jr-ixc-section-title"><strong>Eventos e conexões dos últimos 7 dias</strong><span id="jr-ixc-events-source">Carregando IXC/RADIUS...</span></div>'+
             '<div id="jr-ixc-events" class="jr-ixc-events"><div class="jr-ixc-empty">Carregando histórico...</div></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
@@ -1262,10 +1309,13 @@
             if (typeof window.jrLoadSessionPing === 'function') {
                 window.jrLoadSessionPing(true);
             }
+            if (typeof window.loadIxcReplicaReport === 'function') {
+                window.loadIxcReplicaReport();
+            }
         }, 1000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.sessionKey=null;
-            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null; traffic.pingSamples=[]; traffic.pingLastPoll=0;
+            traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null; traffic.reportPollKey=null; traffic.reportLastPoll=0; traffic.pingSamples=[]; traffic.pingLastPoll=0;
             window.updateRadiusBandwidthSample(true);
             window.updateTr069LiveTraffic(true);
             if (typeof window.jrLoadSessionPing === 'function') {
