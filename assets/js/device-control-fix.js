@@ -717,7 +717,8 @@
             {key:'admin',label:'Requisitado pelo Administrador',cls:'admin'},
             {key:'nas',label:'Requisitado pelo Concentrador',cls:'nas'},
             {key:'nas_reboot',label:'Reboot de concentrador',cls:'reboot'},
-            {key:'lost',label:'Perda de Conexão',cls:'lost'}
+            {key:'lost',label:'Perda de Conexão',cls:'lost'},
+            {key:'other',label:'Outros',cls:'other'}
         ];
         const max=Math.max(1,...daily.flatMap(d=>series.map(s=>Number(d[s.key]||0))));
         const x=i=>daily.length===1?50:(i/(daily.length-1))*100;
@@ -845,7 +846,11 @@
 
             refreshIxcAccessSummary();
             if(events)events.innerHTML=renderIxcEventHistory(data)+renderIxcConnectionReport(data);
-            if(eventsSource)eventsSource.textContent=(data?.last_7_days?.source||'IXC/RADIUS')+' • '+updatedLabel;
+            if(eventsSource){
+                const eventCount=Number(data?.last_7_days?.event_count||0);
+                const connectionCount=Number(data?.last_7_days?.connection_count||0);
+                eventsSource.textContent=(data?.last_7_days?.source||'IXC/RADIUS')+' • '+eventCount+' evento(s) • '+connectionCount+' conexão(ões) • '+updatedLabel;
+            }
             if(consumption)consumption.innerHTML=renderIxcConsumption(data);
             if(consumptionSource)consumptionSource.textContent=(data?.last_30_days?.source||'IXC/RADIUS')+' • '+updatedLabel;
         }catch(e){
