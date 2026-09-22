@@ -121,3 +121,79 @@ Resposta:
 - O token da integração SIMS é independente.
 - Allowlist de IP pode ser aplicada no servidor.
 - Senhas nunca são retornadas pela API.
+
+
+## Consultar status TR-069
+
+```http
+GET /api/sims/v1/status.php?id_contrato=4740
+Authorization: Bearer <TOKEN>
+```
+
+Resposta:
+
+```json
+{
+  "success": true,
+  "device": {
+    "serial": "FHTT99F5A9D0",
+    "device_id": "...",
+    "model": "HG6143D3",
+    "manufacturer": "FiberHome",
+    "online": true,
+    "last_inform": "2026-09-22T17:52:18.000Z",
+    "last_inform_age_seconds": 42
+  }
+}
+```
+
+O equipamento é considerado online quando o último Inform ocorreu há menos de 300 segundos.
+
+## Reiniciar equipamento
+
+```http
+POST /api/sims/v1/reboot.php
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+```
+
+Payload:
+
+```json
+{
+  "id_contrato": "4740"
+}
+```
+
+Também é aceito `id_login`.
+
+## Seleção simplificada de banda Wi-Fi
+
+O endpoint de Wi-Fi continua aceitando `wlan_index` para compatibilidade, mas a integração pode usar `band`:
+
+```json
+{
+  "id_contrato": "4740",
+  "ssid": "MinhaRede",
+  "password": "NovaSenha123",
+  "band": "2.4"
+}
+```
+
+Valores aceitos:
+
+- `2.4` - rede 2.4 GHz
+- `5` - rede 5 GHz
+- `both` - aplica SSID/senha nas duas bandas
+
+A API detecta automaticamente se o CPE utiliza índice 5 ou 2 para a rede de 5 GHz.
+
+## Auditoria
+
+As operações da integração são registradas no servidor em:
+
+```
+/var/www/gacs/logs/sims-api.log
+```
+
+São registrados evento, horário UTC, IP de origem, contrato/login, serial e resultado da tarefa. Senhas e tokens não são registrados no log.
