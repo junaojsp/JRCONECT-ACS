@@ -585,7 +585,4 @@ jrIxcSafeLog([
 
 jrIxcJson([
     'access_token' => $acsToken,
-    'token' => $acsToken,
-    'token_type' => 'Bearer',
-    'expires_in' => $expiresIn,
 ], 200);
