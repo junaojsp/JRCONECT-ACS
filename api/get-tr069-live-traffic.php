@@ -285,7 +285,7 @@ try {
                 'requested'=>$refreshQueued,
                 'success'=>false,
                 'queued'=>$refreshQueued,
-                'minimum_interval_seconds'=>10,
+                'minimum_interval_seconds'=>5,
             ],
             'device'=>[
                 'manufacturer'=>$device['_deviceId']['_Manufacturer'] ?? null,
@@ -295,13 +295,13 @@ try {
     }
 
     // Evita Connection Request agressivo: no máximo uma atualização dos
-    // contadores a cada 10 segundos por CPE.
+    // contadores a cada 5 segundos por CPE enquanto Monitoramento estiver aberto.
     $refreshStateFile = trRefreshStatePath($deviceId);
     $refreshState = trLoadState($refreshStateFile);
     $now = microtime(true);
     $lastRefresh = (float)($refreshState['at'] ?? 0);
 
-    if ($now - $lastRefresh < 10) {
+    if ($now - $lastRefresh < 5) {
         trOut([
             'success'=>true,
             'available'=>false,
@@ -318,8 +318,8 @@ try {
                 'requested'=>false,
                 'success'=>false,
                 'queued'=>false,
-                'minimum_interval_seconds'=>10,
-                'next_in_seconds'=>max(1, (int)ceil(10 - ($now - $lastRefresh))),
+                'minimum_interval_seconds'=>5,
+                'next_in_seconds'=>max(1, (int)ceil(5 - ($now - $lastRefresh))),
             ],
             'device'=>[
                 'manufacturer'=>$device['_deviceId']['_Manufacturer'] ?? null,
@@ -382,7 +382,7 @@ try {
             'success'=>$refreshSucceeded,
             'queued'=>$refreshQueued,
             'http_code'=>$refresh['http_code'] ?? null,
-            'minimum_interval_seconds'=>10,
+            'minimum_interval_seconds'=>5,
         ],
         'counters'=>[
             'download_bytes'=>$pair['download_bytes'],
