@@ -534,3 +534,15 @@
 @media(max-width:900px){
     .jr-monitor-source-strip{grid-template-columns:1fr}
 }
+
+
+/* Ações IXC e diagnóstico de ping da sessão PPPoE. */
+.jr-ping-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:4px 0}
+.jr-ping-card{border:1px solid rgba(103,186,255,.24);background:rgba(24,63,94,.2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.jr-ping-card span,.jr-ping-card small{color:#8eafc7;font-size:12px}
+.jr-ping-card strong{font-size:20px;color:#eef8ff}
+.jr-ping-card.danger{border-color:rgba(255,117,117,.45)}
+.jr-ping-card.danger strong{color:#ff9696}
+.jr-ping-source{grid-column:1/-1;color:#769bb7;font-size:11px}
+.jr-ixc-actions button.is-loading{opacity:.65;cursor:wait}
+@media (max-width:700px){.jr-ping-results{grid-template-columns:1fr}}
