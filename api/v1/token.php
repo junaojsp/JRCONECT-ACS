@@ -583,6 +583,7 @@ jrIxcSafeLog([
     'expires_in' => $expiresIn,
 ]);
 
-jrIxcJson([
-    'access_token' => $acsToken,
-], 200);
+http_response_code(200);
+header('Content-Type: text/plain; charset=utf-8');
+echo $acsToken;
+exit;
