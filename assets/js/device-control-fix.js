@@ -963,7 +963,10 @@
             if (!response.ok || !data?.success) throw new Error(data?.message || 'Ping indisponível.');
             const result=data.result || {};
             const at=Date.now();
-            traffic.pingSamples.push({at,latency:Number(result.avg_ms),loss:Number(result.loss_percent ?? 100)});
+            const latency=result.available && result.avg_ms !== null && result.avg_ms !== undefined
+                ? Number(result.avg_ms)
+                : Number.NaN;
+            traffic.pingSamples.push({at,latency,loss:Number(result.loss_percent ?? 100)});
             if (traffic.pingSamples.length>300) traffic.pingSamples.shift();
 
             target.innerHTML = renderPingInfo('NE8000 → Cliente PPPoE', result) +
@@ -1197,7 +1200,6 @@
             traffic.online=true; traffic.latestSession=s;
             traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
             refreshIxcAccessSummary();
-            if(typeof window.jrLoadSessionPing==='function') window.jrLoadSessionPing(true);
             if(traffic.ixcLoginId || s.username) loadIxcReplicaReport();
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
@@ -1208,7 +1210,9 @@
                 // A sessão RADIUS não é mais a fonte do gráfico ao vivo.
                 // Trocar/descobrir a sessão não deve apagar amostras TR-069.
                 traffic.sessionKey=key; traffic.last=null; traffic.lastAccountingAt=null;
+                traffic.pingSamples=[]; traffic.pingLastPoll=0;
             }
+            if(typeof window.jrLoadSessionPing==='function') window.jrLoadSessionPing(true);
 
             const accountAt=parseRadiusTime(s.sample_time) || now;
             traffic.lastAccountingAt=accountAt;
