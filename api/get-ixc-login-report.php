@@ -443,6 +443,16 @@ try {
 
     $events = [];
     $connections = [];
+    $stability = [
+        'connections' => 0,
+        'disconnects' => 0,
+        'lost' => 0,
+        'duration_total' => 0,
+        'duration_count' => 0,
+        'last_24h_disconnects' => 0,
+        'last_24h_lost' => 0,
+    ];
+    $last24Start = $now->modify('-24 hours');
     $dailyEvents = [];
     for ($i = 0; $i < 7; $i++) {
         $date = $start7->modify('+' . $i . ' days')->format('Y-m-d');
@@ -475,10 +485,33 @@ try {
         }
 
         $isActiveSession = $stop === null;
+        $startedInSevenDays = $start && $start >= $start7;
+        $stoppedInSevenDays = $stop && $stop >= $start7;
         $inSevenDayWindow =
             $isActiveSession ||
-            ($start && $start >= $start7) ||
-            ($stop && $stop >= $start7);
+            $startedInSevenDays ||
+            $stoppedInSevenDays;
+
+        if ($startedInSevenDays) {
+            $stability['connections']++;
+        }
+        if ($stoppedInSevenDays) {
+            $stability['disconnects']++;
+            $duration = reportDuration($start, $stop);
+            $stability['duration_total'] += $duration;
+            $stability['duration_count']++;
+
+            $causeKind = reportCauseKind((string)($session['acctterminatecause'] ?? ''));
+            if ($causeKind === 'lost') {
+                $stability['lost']++;
+            }
+            if ($stop >= $last24Start) {
+                $stability['last_24h_disconnects']++;
+                if ($causeKind === 'lost') {
+                    $stability['last_24h_lost']++;
+                }
+            }
+        }
 
         if ($inSevenDayWindow && count($connections) < 100) {
             $connections[] = [
@@ -627,7 +660,17 @@ try {
             'events' => $events,
             'connections' => $connections,
             'event_count' => array_sum(array_column($dailyEvents, 'total')),
-            'connection_count' => count($connections),
+            'connection_count' => $stability['connections'],
+            'stability' => [
+                'connections' => $stability['connections'],
+                'disconnects' => $stability['disconnects'],
+                'lost' => $stability['lost'],
+                'average_connected_seconds' => $stability['duration_count'] > 0
+                    ? (int)round($stability['duration_total'] / $stability['duration_count'])
+                    : null,
+                'last_24h_disconnects' => $stability['last_24h_disconnects'],
+                'last_24h_lost' => $stability['last_24h_lost'],
+            ],
         ],
         'last_30_days' => [
             'source' => $consumptionSource,

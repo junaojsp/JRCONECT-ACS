@@ -654,3 +654,144 @@
     .jr-ixc-connection-report{margin:8px 8px 12px}
     .jr-ixc-connection-report-head{align-items:flex-start;flex-direction:column;gap:4px}
 }
+
+
+/* Painel de estabilidade da conexão - 7 dias */
+.jr-stability-panel{
+    padding:12px 14px 4px;
+}
+.jr-stability-kpis{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    border:1px solid #293d55;
+    border-radius:10px;
+    overflow:hidden;
+    background:#152235;
+}
+.jr-stability-kpis>div{
+    padding:12px 14px;
+    border-right:1px solid #293d55;
+}
+.jr-stability-kpis>div:last-child{border-right:0}
+.jr-stability-kpis span{
+    display:block;
+    color:#8296aa;
+    font-size:8px;
+    margin-bottom:6px;
+}
+.jr-stability-kpis strong{
+    display:block;
+    color:#eef6fa;
+    font-size:19px;
+    line-height:1.15;
+}
+.jr-stability-kpis small{
+    display:block;
+    margin-top:4px;
+    color:#6f8499;
+    font-size:7px;
+}
+.jr-stability-kpis>div:nth-child(1) strong{color:#59c9ef}
+.jr-stability-kpis>div:nth-child(2) strong{color:#f0b16d}
+.jr-stability-kpis>div:nth-child(3) strong{color:#ef7f86}
+.jr-stability-kpis>div:nth-child(4) strong{color:#7ddcaf}
+.jr-stability-alert{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:10px;
+    padding:10px 12px;
+    border:1px solid #2c4658;
+    border-radius:9px;
+    background:#142738;
+}
+.jr-stability-alert i{font-size:17px}
+.jr-stability-alert div{display:flex;flex-direction:column;gap:2px}
+.jr-stability-alert strong{font-size:10px}
+.jr-stability-alert span{font-size:8px;color:#91a5b7}
+.jr-stability-alert.stable{border-color:rgba(88,217,156,.32);background:rgba(31,109,76,.12)}
+.jr-stability-alert.stable i,.jr-stability-alert.stable strong{color:#58d99c}
+.jr-stability-alert.warning{border-color:rgba(240,177,109,.4);background:rgba(130,84,32,.12)}
+.jr-stability-alert.warning i,.jr-stability-alert.warning strong{color:#f0b16d}
+.jr-stability-alert.danger{border-color:rgba(239,100,111,.45);background:rgba(137,49,57,.13)}
+.jr-stability-alert.danger i,.jr-stability-alert.danger strong{color:#ef7f86}
+.jr-stability-current{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:9px;
+    margin-top:9px;
+    padding:9px 11px;
+    border:1px solid rgba(88,217,156,.25);
+    border-radius:8px;
+    background:rgba(88,217,156,.055);
+    color:#8fa6b8;
+    font-size:8px;
+}
+.jr-stability-current strong{color:#58d99c;font-size:9px}
+.jr-stability-current.offline{
+    border-color:#34475b;
+    background:#162437;
+}
+.jr-stability-current.offline strong{color:#91a3b5}
+.jr-stability-online-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#58d99c;
+    box-shadow:0 0 0 3px rgba(88,217,156,.12);
+}
+.jr-connection-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:8px 10px;
+    border-bottom:1px solid #2b3d53;
+    background:#142235;
+}
+.jr-connection-filter{
+    border:1px solid #344d65;
+    border-radius:999px;
+    background:#122438;
+    color:#8fa5b8;
+    padding:5px 9px;
+    font-size:7px;
+    font-weight:700;
+}
+.jr-connection-filter:hover,
+.jr-connection-filter.active{
+    border-color:#4da9e9;
+    color:#eaf7ff;
+    background:rgba(77,169,233,.13);
+}
+.jr-cause-badge{
+    display:inline-block;
+    max-width:150px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    vertical-align:middle;
+    padding:3px 7px;
+    border:1px solid #3a5067;
+    border-radius:999px;
+    background:#16283b;
+    color:#9eb0c1;
+    font-size:7px;
+    font-weight:700;
+}
+.jr-cause-badge.user{border-color:rgba(85,170,255,.4);color:#78bcff;background:rgba(85,170,255,.08)}
+.jr-cause-badge.admin{border-color:rgba(240,161,90,.42);color:#f0b176;background:rgba(240,161,90,.08)}
+.jr-cause-badge.nas{border-color:rgba(239,100,111,.38);color:#ef8d94;background:rgba(239,100,111,.07)}
+.jr-cause-badge.reboot{border-color:rgba(88,182,255,.4);color:#79c5ff;background:rgba(88,182,255,.08)}
+.jr-cause-badge.lost{border-color:rgba(239,100,111,.48);color:#ff9199;background:rgba(239,100,111,.1)}
+.jr-cause-badge.other{border-color:rgba(155,131,215,.4);color:#b9a6ea;background:rgba(155,131,215,.08)}
+.jr-ixc-connection-table tr[hidden]{display:none}
+@media(max-width:1050px){
+    .jr-stability-kpis{grid-template-columns:repeat(2,1fr)}
+    .jr-stability-kpis>div:nth-child(2){border-right:0}
+    .jr-stability-kpis>div:nth-child(-n+2){border-bottom:1px solid #293d55}
+}
+@media(max-width:700px){
+    .jr-stability-kpis{grid-template-columns:1fr}
+    .jr-stability-kpis>div{border-right:0;border-bottom:1px solid #293d55}
+    .jr-stability-kpis>div:last-child{border-bottom:0}
+}

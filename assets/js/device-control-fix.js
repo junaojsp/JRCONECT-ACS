@@ -740,13 +740,130 @@
         return '<span class="jr-ixc-date">'+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</span>'+
             '<small>'+d.toLocaleTimeString('pt-BR')+'</small>';
     }
+
+    function classifyIxcConnectionCause(cause) {
+        const text=String(cause||'').trim();
+        const normalized=text.toLowerCase();
+        if(!normalized)return {key:'other',label:'—'};
+        if(normalized.includes('admin'))return {key:'admin',label:text};
+        if(normalized.includes('nas-reboot')||normalized.includes('reboot'))return {key:'reboot',label:text};
+        if(normalized.includes('lost')||normalized.includes('carrier')||normalized.includes('service')||normalized.includes('timeout'))return {key:'lost',label:text};
+        if(normalized.includes('nas')||normalized.includes('coa'))return {key:'nas',label:text};
+        if(normalized.includes('user')||normalized.includes('request'))return {key:'user',label:text};
+        return {key:'other',label:text};
+    }
+
+    function connectionStabilityMetrics(report) {
+        const rows=Array.isArray(report?.last_7_days?.connections)?report.last_7_days.connections:[];
+        const server=report?.last_7_days?.stability||{};
+        const completed=rows.filter(row=>!row.online&&row.stopped_at);
+        const lostRows=completed.filter(row=>classifyIxcConnectionCause(row.cause).key==='lost');
+        const fallbackDurations=completed.map(row=>Number(row.seconds)).filter(value=>Number.isFinite(value)&&value>=0);
+        const fallbackAvg=fallbackDurations.length?Math.round(fallbackDurations.reduce((sum,value)=>sum+value,0)/fallbackDurations.length):null;
+        const cutoff=Date.now()-(24*60*60*1000);
+        const fallbackLast24=completed.filter(row=>{
+            const time=new Date(row.stopped_at).getTime();
+            return Number.isFinite(time)&&time>=cutoff;
+        });
+        const fallbackLast24Lost=fallbackLast24.filter(row=>classifyIxcConnectionCause(row.cause).key==='lost');
+        const current=rows.find(row=>row.online)||null;
+
+        const connections=Number.isFinite(Number(server.connections))?Number(server.connections):rows.length;
+        const disconnects=Number.isFinite(Number(server.disconnects))?Number(server.disconnects):completed.length;
+        const lost=Number.isFinite(Number(server.lost))?Number(server.lost):lostRows.length;
+        const avgSeconds=server.average_connected_seconds===null||server.average_connected_seconds===undefined
+            ? fallbackAvg
+            : Number(server.average_connected_seconds);
+        const last24=Number.isFinite(Number(server.last_24h_disconnects))
+            ? Number(server.last_24h_disconnects)
+            : fallbackLast24.length;
+        const last24Lost=Number.isFinite(Number(server.last_24h_lost))
+            ? Number(server.last_24h_lost)
+            : fallbackLast24Lost.length;
+
+        let level='stable';
+        let title='Estável';
+        let message='Nenhuma desconexão registrada nas últimas 24 horas.';
+        if(last24>0){
+            level=(last24>=4||last24Lost>=2)?'danger':'warning';
+            title=level==='danger'?'Instabilidade detectada':'Atenção';
+            message=last24+' desconexão(ões) nas últimas 24h'+
+                (last24Lost?' • '+last24Lost+' perda(s) de conexão':'')+'.';
+        }
+
+        return {
+            connections,
+            disconnects,
+            lost,
+            avgSeconds,
+            last24,
+            last24Lost,
+            current,
+            level,
+            title,
+            message
+        };
+    }
+
+    function renderIxcStabilitySummary(report) {
+        const metrics=connectionStabilityMetrics(report);
+        const avg=metrics.avgSeconds===null?'N/D':fmtDuration(metrics.avgSeconds);
+        const current=metrics.current;
+        const currentHtml=current
+            ? '<div class="jr-stability-current">'+
+                '<span class="jr-stability-online-dot"></span>'+
+                '<strong>ONLINE</strong>'+
+                '<span>Conectado há '+esc(fmtDuration(Number(current.seconds)||0))+'</span>'+
+                '<span>IP '+esc(current.ip||'N/D')+'</span>'+
+                '<span>MAC '+esc(current.mac||'N/D')+'</span>'+
+              '</div>'
+            : '<div class="jr-stability-current offline"><strong>SEM SESSÃO ATIVA</strong><span>Nenhuma conexão PPPoE online no relatório atual.</span></div>';
+
+        return '<div class="jr-stability-panel">'+
+            '<div class="jr-stability-kpis">'+
+                '<div><span>Conexões</span><strong>'+metrics.connections+'</strong><small>últimos 7 dias</small></div>'+
+                '<div><span>Desconexões</span><strong>'+metrics.disconnects+'</strong><small>últimos 7 dias</small></div>'+
+                '<div><span>Perda de conexão</span><strong>'+metrics.lost+'</strong><small>Lost-Carrier / similares</small></div>'+
+                '<div><span>Tempo médio conectado</span><strong>'+esc(avg)+'</strong><small>sessões encerradas</small></div>'+
+            '</div>'+
+            '<div class="jr-stability-alert '+metrics.level+'">'+
+                '<i class="bi '+(metrics.level==='stable'?'bi-check-circle-fill':metrics.level==='warning'?'bi-exclamation-triangle-fill':'bi-exclamation-octagon-fill')+'"></i>'+
+                '<div><strong>'+metrics.title+'</strong><span>'+esc(metrics.message)+'</span></div>'+
+            '</div>'+
+            currentHtml+
+        '</div>';
+    }
+
+    window.jrFilterConnectionReport=function(filter,button){
+        const table=document.querySelector('.jr-ixc-connection-table');
+        if(!table)return;
+        let visible=0;
+        table.querySelectorAll('tbody tr').forEach(row=>{
+            let show=true;
+            if(filter==='24h')show=row.dataset.last24==='1';
+            else if(filter==='disconnects')show=row.dataset.online==='0';
+            else if(filter!=='all')show=row.dataset.cause===filter;
+            row.hidden=!show;
+            if(show)visible++;
+        });
+        document.querySelectorAll('.jr-connection-filter').forEach(item=>item.classList.remove('active'));
+        if(button)button.classList.add('active');
+        const count=document.getElementById('jr-connection-visible-count');
+        if(count)count.textContent=visible+' registro(s)';
+    };
+
     function renderIxcConnectionReport(report) {
         const rows=Array.isArray(report?.last_7_days?.connections)?report.last_7_days.connections:[];
         if(!rows.length)return '<div class="jr-ixc-connection-report"><div class="jr-ixc-connection-report-head"><strong>Relatório de conexões</strong><span>Sem registros</span></div><div class="jr-ixc-empty jr-ixc-connection-empty">Nenhuma conexão encontrada nos últimos 7 dias.</div></div>';
 
+        const cutoff=Date.now()-(24*60*60*1000);
         const body=rows.map(row=>{
             const seconds=Number(row.seconds);
-            return '<tr class="'+(row.online?'is-online':'')+'">'+
+            const cause=classifyIxcConnectionCause(row.cause);
+            const stopTime=row.stopped_at?new Date(row.stopped_at).getTime():Number.NaN;
+            const startTime=row.started_at?new Date(row.started_at).getTime():Number.NaN;
+            const last24=(Number.isFinite(stopTime)&&stopTime>=cutoff)||(row.online&&Number.isFinite(startTime)&&startTime>=cutoff);
+            return '<tr class="'+(row.online?'is-online':'')+'" data-cause="'+esc(cause.key)+'" data-online="'+(row.online?'1':'0')+'" data-last24="'+(last24?'1':'0')+'">'+
                 '<td>'+esc(row.id??'—')+'</td>'+
                 '<td>'+esc(row.ip||'—')+'</td>'+
                 '<td>'+esc(row.mac||'—')+'</td>'+
@@ -755,12 +872,23 @@
                 '<td>'+esc(Number.isFinite(seconds)?fmtDuration(seconds):'—')+'</td>'+
                 '<td>'+esc(reportBytes(row.upload_bytes||0))+'</td>'+
                 '<td>'+esc(reportBytes(row.download_bytes||0))+'</td>'+
-                '<td class="jr-ixc-cause">'+esc(row.cause||'—')+'</td>'+
+                '<td class="jr-ixc-cause"><span class="jr-cause-badge '+cause.key+'" title="'+esc(cause.label)+'">'+esc(cause.label)+'</span></td>'+
             '</tr>';
         }).join('');
 
+        const filters=[
+            ['all','Todas'],
+            ['24h','Últimas 24h'],
+            ['disconnects','Quedas'],
+            ['lost','Lost-Carrier'],
+            ['user','User-Request'],
+            ['nas','NAS'],
+            ['admin','Admin']
+        ].map(([key,label],index)=>'<button type="button" class="jr-connection-filter '+(index===0?'active':'')+'" onclick="window.jrFilterConnectionReport(\''+key+'\',this)">'+label+'</button>').join('');
+
         return '<div class="jr-ixc-connection-report">'+
-            '<div class="jr-ixc-connection-report-head"><strong>Relatório de conexões</strong><span>'+rows.length+' registro(s) • IXC/RADIUS</span></div>'+
+            '<div class="jr-ixc-connection-report-head"><strong>Relatório de conexões</strong><span id="jr-connection-visible-count">'+rows.length+' registro(s)</span></div>'+
+            '<div class="jr-connection-filters">'+filters+'</div>'+
             '<div class="jr-ixc-connection-table-wrap"><table class="jr-ixc-connection-table">'+
                 '<thead><tr><th>ID</th><th>IP</th><th>MAC</th><th>Hora do Login</th><th>Hora do Logout</th><th>Tempo Conectado</th><th>Upload</th><th>Download</th><th>Motivo de desconexão</th></tr></thead>'+
                 '<tbody>'+body+'</tbody>'+
@@ -845,7 +973,7 @@
             const updatedLabel=Number.isNaN(generatedAt.getTime())?new Date().toLocaleTimeString('pt-BR'):generatedAt.toLocaleTimeString('pt-BR');
 
             refreshIxcAccessSummary();
-            if(events)events.innerHTML=renderIxcEventHistory(data)+renderIxcConnectionReport(data);
+            if(events)events.innerHTML=renderIxcStabilitySummary(data)+renderIxcEventHistory(data)+renderIxcConnectionReport(data);
             if(eventsSource){
                 const eventCount=Number(data?.last_7_days?.event_count||0);
                 const connectionCount=Number(data?.last_7_days?.connection_count||0);
@@ -1065,7 +1193,7 @@
             '<div id="bandwidth-bars" class="jr-monitor-chart"></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
-            '<div class="jr-ixc-section-title"><strong>Eventos e conexões dos últimos 7 dias</strong><span id="jr-ixc-events-source">Carregando IXC/RADIUS...</span></div>'+
+            '<div class="jr-ixc-section-title"><strong>Histórico e estabilidade da conexão — 7 dias</strong><span id="jr-ixc-events-source">Carregando IXC/RADIUS...</span></div>'+
             '<div id="jr-ixc-events" class="jr-ixc-events"><div class="jr-ixc-empty">Carregando histórico...</div></div>'+
           '</div>'+
           '<div class="jr-ixc-section">'+
