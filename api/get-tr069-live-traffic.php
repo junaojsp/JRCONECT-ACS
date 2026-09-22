@@ -183,55 +183,90 @@ function trCalculate(string $deviceId, array $pair, bool $refreshSucceeded): arr
         if (is_array($decoded)) $previous = $decoded;
     }
 
-    @file_put_contents($file, json_encode([
-        'at'=>$now,
-        'down'=>$pair['download_bytes'],
-        'up'=>$pair['upload_bytes'],
-        'down_ts'=>$pair['download_timestamp'],
-        'up_ts'=>$pair['upload_timestamp'],
-    ]), LOCK_EX);
+    $currentDown = (float)$pair['download_bytes'];
+    $currentUp = (float)$pair['upload_bytes'];
+    $currentDownTs = $pair['download_timestamp'] ?? null;
+    $currentUpTs = $pair['upload_timestamp'] ?? null;
 
     if (!$previous) {
+        @file_put_contents($file, json_encode([
+            'at'=>$now,
+            'down'=>$currentDown,
+            'up'=>$currentUp,
+            'down_ts'=>$currentDownTs,
+            'up_ts'=>$currentUpTs,
+        ]), LOCK_EX);
+
         return ['available'=>false,'reason'=>'collecting_second_sample','interval_seconds'=>null];
     }
 
-    $dt = $now - (float)($previous['at'] ?? 0);
-    if ($dt < 2.0 || $dt > 45.0) {
-        return ['available'=>false,'reason'=>'sample_window_invalid','interval_seconds'=>round($dt,3)];
-    }
+    $previousDown = (float)($previous['down'] ?? $currentDown);
+    $previousUp = (float)($previous['up'] ?? $currentUp);
 
-    $previousDown = (float)($previous['down'] ?? $pair['download_bytes']);
-    $previousUp = (float)($previous['up'] ?? $pair['upload_bytes']);
-    $downDelta = trDelta((float)$pair['download_bytes'], $previousDown);
-    $upDelta = trDelta((float)$pair['upload_bytes'], $previousUp);
+    $valuesChanged = $currentDown !== $previousDown || $currentUp !== $previousUp;
+    $timestampsChanged =
+        ($currentDownTs !== null && $currentDownTs !== ($previous['down_ts'] ?? null)) ||
+        ($currentUpTs !== null && $currentUpTs !== ($previous['up_ts'] ?? null));
 
-    $sameValues = (float)$pair['download_bytes'] === $previousDown
-        && (float)$pair['upload_bytes'] === $previousUp;
-    $sameTimestamps =
-        ($pair['download_timestamp'] ?? null) !== null &&
-        ($pair['upload_timestamp'] ?? null) !== null &&
-        ($pair['download_timestamp'] ?? null) === ($previous['down_ts'] ?? null) &&
-        ($pair['upload_timestamp'] ?? null) === ($previous['up_ts'] ?? null);
-
-    if ($sameValues && (!$refreshSucceeded || $sameTimestamps)) {
+    // Muito importante: não substitui a amostra-base enquanto o GenieACS
+    // ainda estiver devolvendo o mesmo contador. Assim preservamos o ponto
+    // anterior até chegar uma leitura realmente nova do CPE.
+    if (!$valuesChanged && !$timestampsChanged) {
         return [
             'available'=>false,
-            'reason'=>'stale_counters',
-            'interval_seconds'=>round($dt,3),
+            'reason'=>$refreshSucceeded?'stale_counters':'waiting_counter_change',
+            'interval_seconds'=>round($now - (float)($previous['at'] ?? $now),3),
         ];
     }
 
+    $dt = $now - (float)($previous['at'] ?? 0);
+    if ($dt < 1.0 || $dt > 120.0) {
+        @file_put_contents($file, json_encode([
+            'at'=>$now,
+            'down'=>$currentDown,
+            'up'=>$currentUp,
+            'down_ts'=>$currentDownTs,
+            'up_ts'=>$currentUpTs,
+        ]), LOCK_EX);
+
+        return ['available'=>false,'reason'=>'sample_window_invalid','interval_seconds'=>round($dt,3)];
+    }
+
+    $downDelta = trDelta($currentDown, $previousDown);
+    $upDelta = trDelta($currentUp, $previousUp);
+
     if ($downDelta === null || $upDelta === null) {
+        @file_put_contents($file, json_encode([
+            'at'=>$now,
+            'down'=>$currentDown,
+            'up'=>$currentUp,
+            'down_ts'=>$currentDownTs,
+            'up_ts'=>$currentUpTs,
+        ]), LOCK_EX);
+
         return ['available'=>false,'reason'=>'counter_reset','interval_seconds'=>round($dt,3)];
     }
 
-    return [
+    $result = [
         'available'=>true,
         'reason'=>null,
         'interval_seconds'=>round($dt,3),
         'download_mbps'=>($downDelta * 8) / $dt / 1000000,
         'upload_mbps'=>($upDelta * 8) / $dt / 1000000,
+        'delta_download_bytes'=>$downDelta,
+        'delta_upload_bytes'=>$upDelta,
     ];
+
+    // Só avança a amostra-base depois de calcular uma leitura nova.
+    @file_put_contents($file, json_encode([
+        'at'=>$now,
+        'down'=>$currentDown,
+        'up'=>$currentUp,
+        'down_ts'=>$currentDownTs,
+        'up_ts'=>$currentUpTs,
+    ]), LOCK_EX);
+
+    return $result;
 }
 
 try {
@@ -362,7 +397,8 @@ try {
             'collecting_second_sample' => 'Primeira leitura TR-069 recebida; aguardando a próxima amostra.',
             'sample_window_invalid' => 'Aguardando uma nova janela de amostragem TR-069.',
             'counter_reset' => 'Os contadores WAN reiniciaram; aguardando nova amostra.',
-            'stale_counters' => 'O CPE não atualizou os contadores WAN nesta leitura; aguardando a próxima comunicação TR-069.',
+            'stale_counters' => 'O CPE respondeu, mas os contadores WAN ainda não mudaram; mantendo a amostra anterior.',
+            'waiting_counter_change' => 'Aguardando o CPE publicar uma nova contagem de Bytes para calcular a velocidade.',
             default => 'Aguardando nova leitura TR-069.',
         };
     }
