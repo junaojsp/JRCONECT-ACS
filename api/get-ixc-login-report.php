@@ -293,7 +293,6 @@ function reportCauseKind(string $cause): string
     $text = strtolower(trim($cause));
 
     if ($text === '') return 'unknown';
-    if (str_contains($text, 'user') || str_contains($text, 'request')) return 'user';
     if (str_contains($text, 'admin')) return 'admin';
     if (str_contains($text, 'nas-reboot') || str_contains($text, 'reboot')) return 'nas_reboot';
     if (
@@ -303,7 +302,9 @@ function reportCauseKind(string $cause): string
         str_contains($text, 'timeout') ||
         str_contains($text, 'session-timeout')
     ) return 'lost';
+    // NAS-Request deve ser classificado como concentrador antes do fallback "request".
     if (str_contains($text, 'nas') || str_contains($text, 'coa')) return 'nas';
+    if (str_contains($text, 'user') || str_contains($text, 'request')) return 'user';
 
     return 'other';
 }
@@ -384,7 +385,8 @@ try {
     $tz = new DateTimeZone('America/Sao_Paulo');
     $now = new DateTimeImmutable('now', $tz);
     $today = new DateTimeImmutable('today', $tz);
-    $start30 = $today->modify('-30 days');
+    // Janela inclusiva: hoje + 29 dias anteriores = 30 dias.
+    $start30 = $today->modify('-29 days');
     $start7 = $today->modify('-6 days');
 
     $active = null;
@@ -408,6 +410,7 @@ try {
     }
 
     $events = [];
+    $connections = [];
     $dailyEvents = [];
     for ($i = 0; $i < 7; $i++) {
         $date = $start7->modify('+' . $i . ' days')->format('Y-m-d');
@@ -437,6 +440,28 @@ try {
                 $consumption[$day]['upload_bytes'] += reportInt($session['acctinputoctets'] ?? 0);
                 $consumption[$day]['sessions']++;
             }
+        }
+
+        $isActiveSession = $stop === null;
+        $inSevenDayWindow =
+            $isActiveSession ||
+            ($start && $start >= $start7) ||
+            ($stop && $stop >= $start7);
+
+        if ($inSevenDayWindow && count($connections) < 100) {
+            $connections[] = [
+                'id' => reportPick($session, ['radacctid', 'id']),
+                'ip' => reportPick($session, ['framedipaddress', 'ip']),
+                'mac' => reportPick($session, ['callingstationid', 'mac']),
+                'started_at' => $start?->setTimezone($tz)->format(DateTimeInterface::ATOM),
+                'stopped_at' => $stop?->setTimezone($tz)->format(DateTimeInterface::ATOM),
+                'seconds' => reportDuration($start, $stop),
+                // No RADIUS: input = upload do assinante; output = download.
+                'upload_bytes' => reportInt($session['acctinputoctets'] ?? 0),
+                'download_bytes' => reportInt($session['acctoutputoctets'] ?? 0),
+                'cause' => $stop ? (reportPick($session, ['acctterminatecause']) ?? null) : null,
+                'online' => $isActiveSession,
+            ];
         }
 
         if ($eventTime) {
@@ -538,6 +563,7 @@ try {
     reportOut([
         'success' => true,
         'source' => 'IXC Login + RADIUS',
+        'generated_at' => $now->format(DateTimeInterface::ATOM),
         'login' => [
             'id' => $loginId !== '' ? (int)$loginId : null,
             'username' => $loginName,
@@ -564,8 +590,10 @@ try {
             'upload_bytes' => reportInt($latest['acctinputoctets'] ?? 0),
         ] : null,
         'last_7_days' => [
+            'source' => 'IXC/RADIUS radacct',
             'daily' => array_values($dailyEvents),
             'events' => $events,
+            'connections' => $connections,
         ],
         'last_30_days' => [
             'source' => $consumptionSource,
