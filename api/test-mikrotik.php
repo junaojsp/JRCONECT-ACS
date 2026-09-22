@@ -1,14 +1,11 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/Security.php';
 
 // Set JSON header first
 header('Content-Type: application/json');
 
-// Check authentication
-if (!isset($_SESSION['user_id'])) {
-    jsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
-    exit;
-}
+securityRequireRole(['admin']);
 
 $data = json_decode(file_get_contents('php://input'), true);
 

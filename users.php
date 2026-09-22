@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/lib/Security.php';
 
-requireLogin();
+securityRequireRole(['admin']);
+$securityCsrf = securityCsrfToken();
 
 $pageTitle = 'Usuários';
 $currentPage = 'users';
@@ -19,7 +21,13 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $action = $_POST['action'] ?? '';
+    if (!securityVerifyCsrf((string)($_POST['csrf_token'] ?? ''))) {
+        http_response_code(403);
+        $error = 'Token de segurança inválido. Atualize a página e tente novamente.';
+        $action = '';
+    } else {
+        $action = $_POST['action'] ?? '';
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -466,6 +474,7 @@ include __DIR__ . '/views/layouts/header.php';
         </h3>
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($securityCsrf, ENT_QUOTES, 'UTF-8'); ?>">
 
             <input
                 type="hidden"
@@ -658,6 +667,7 @@ include __DIR__ . '/views/layouts/header.php';
                         <td class="user-actions">
 
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($securityCsrf, ENT_QUOTES, 'UTF-8'); ?>">
 
                                 <input
                                     type="hidden"
@@ -731,6 +741,7 @@ include __DIR__ . '/views/layouts/header.php';
     id="passwordForm"
     style="display:none;"
 >
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($securityCsrf, ENT_QUOTES, 'UTF-8'); ?>">
 
     <input
         type="hidden"

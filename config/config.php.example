@@ -7,6 +7,7 @@
 // 2. No need to edit APP_URL - it auto-detects based on your server configuration!
 
 define('APP_NAME', 'GACS Dashboard');
+define('GACS_SECURITY_KEY', getenv('GACS_SECURITY_KEY') ?: '');
 
 // Auto-detect APP_URL based on server configuration
 // This makes the application work on any domain without configuration!
@@ -17,12 +18,16 @@ define('APP_URL', $protocol . '://' . $host . $scriptPath);
 define('ASSETS_URL', APP_URL . '/assets');
 
 // Session Configuration
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_strict_mode', 1);
+$httpsEnabled = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_secure', $httpsEnabled ? '1' : '0');
+ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.use_strict_mode', '1');
+ini_set('session.use_only_cookies', '1');
 session_start();
 
-// Timezone (adjust to your timezone)
-date_default_timezone_set('Asia/Jakarta');
+// Timezone
+date_default_timezone_set('America/Sao_Paulo');
 
 // Error Reporting (set to 0 in production)
 error_reporting(E_ALL);

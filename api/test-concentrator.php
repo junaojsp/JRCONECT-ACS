@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/Security.php';
 require_once __DIR__ . '/../lib/ConcentratorConfig.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -9,7 +10,7 @@ header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['success' => false, 'message' => 'Método não permitido.'], 405);
 }
-requireLogin();
+securityRequireRole(['admin']);
 
 try {
     $input = json_decode((string)file_get_contents('php://input'), true);
