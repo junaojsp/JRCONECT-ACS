@@ -447,14 +447,14 @@
 .jr-ixc-event-chart circle{vector-effect:non-scaling-stroke;stroke-width:.7}
 .jr-ixc-event-chart .user{stroke:#55aaff;fill:#55aaff}.jr-ixc-event-chart .admin{stroke:#f0a15a;fill:#f0a15a}
 .jr-ixc-event-chart .nas{stroke:#ef646f;fill:#ef646f}.jr-ixc-event-chart .reboot{stroke:#58b6ff;fill:#58b6ff}
-.jr-ixc-event-chart .lost{stroke:#57d992;fill:#57d992}
+.jr-ixc-event-chart .lost{stroke:#57d992;fill:#57d992}.jr-ixc-event-chart .other{stroke:#9b83d7;fill:#9b83d7}
 .jr-ixc-event-dates{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;color:#71849a;font-size:7px}
 .jr-ixc-event-legend{display:flex;justify-content:center;gap:13px;flex-wrap:wrap;padding:8px 8px 11px;color:#8fa2b4;font-size:8px}
 .jr-ixc-event-legend span{display:flex;align-items:center;gap:5px}
 .jr-ixc-event-legend i{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid transparent}
 .jr-ixc-event-legend i.user{background:#55aaff}.jr-ixc-event-legend i.admin{background:#f0a15a}
 .jr-ixc-event-legend i.nas{background:#ef646f}.jr-ixc-event-legend i.reboot{background:#58b6ff}
-.jr-ixc-event-legend i.lost{background:#57d992}.jr-ixc-event-legend i.download{background:#4da9e9}.jr-ixc-event-legend i.upload{background:#5cd99b}
+.jr-ixc-event-legend i.lost{background:#57d992}.jr-ixc-event-legend i.other{background:#9b83d7}.jr-ixc-event-legend i.download{background:#4da9e9}.jr-ixc-event-legend i.upload{background:#5cd99b}
 .jr-monitor-live-head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid #2a3a51}
 .jr-monitor-live-head>div{padding:11px 14px;border-right:1px solid #26374b}
 .jr-monitor-live-head>div:last-child{border-right:0}
