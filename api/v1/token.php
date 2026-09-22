@@ -292,11 +292,12 @@ function jrIxcCreateAccessToken(string $clientId, int $expiresIn): string
         'typ' => 'JWT',
     ], JSON_UNESCAPED_SLASHES);
 
+    // Match IXC ACS JWT contract: issuer is the Client API ID and the
+    // payload contains only iss/exp/iat.
     $payloadJson = json_encode([
-        'iss' => 'JRCONECT-ACS',
-        'sub' => $clientId,
-        'iat' => $now,
+        'iss' => $clientId,
         'exp' => $now + $expiresIn,
+        'iat' => $now,
     ], JSON_UNESCAPED_SLASHES);
 
     if (!is_string($headerJson) || !is_string($payloadJson)) {
