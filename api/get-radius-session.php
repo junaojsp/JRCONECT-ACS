@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 /* Sessão PPPoE/Radius do IXC. Somente leitura. */
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/IXCConfig.php';
 if (function_exists('requireLogin')) requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -96,16 +97,9 @@ try {
     $deviceId = trim((string)($_GET['device_id'] ?? ''));
     if ($deviceId === '') radiusOut(['success' => false, 'message' => 'device_id não informado.'], 400);
 
-    /* Credencial já configurada no endpoint IXC existente; evita duplicação. */
-    $opticalSource = (string)file_get_contents(__DIR__ . '/get-onu-optical.php');
-    if (!preg_match('/\\$ixcToken\\s*=\\s*\'([^\']+)\'/', $opticalSource, $tokenMatch)) {
-        throw new RuntimeException('Token IXC não localizado na configuração existente.');
-    }
-    $token = $tokenMatch[1];
-    if (!preg_match('/\\$ixcBaseUrl\\s*=\\s*\'([^\']+)\'/', $opticalSource, $urlMatch)) {
-        throw new RuntimeException('URL IXC não localizada na configuração existente.');
-    }
-    $ixcBaseUrl = rtrim($urlMatch[1], '/');
+    $ixcConfig = getIxcConfig();
+    $token = $ixcConfig['token'];
+    $ixcBaseUrl = $ixcConfig['base_url'];
     $ixcUrl = $ixcBaseUrl . '/webservice/v1/radacct';
 
     $query = rawurlencode((string)json_encode(['_id' => $deviceId]));
