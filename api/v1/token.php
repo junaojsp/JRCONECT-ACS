@@ -118,6 +118,28 @@ function jrIxcJoseEcdsaToDer(string $signature): string|false
     return "\x30" . chr(strlen($sequence)) . $sequence;
 }
 
+function jrIxcClientIdFile(): string
+{
+    $configured = trim((string)(getenv('IXC_ACS_CLIENT_ID_FILE') ?: ''));
+
+    return $configured !== ''
+        ? $configured
+        : '/etc/jrconect-acs/ixc_client_id';
+}
+
+function jrIxcExpectedClientId(): ?string
+{
+    $file = jrIxcClientIdFile();
+
+    if (!is_file($file) || !is_readable($file)) {
+        return null;
+    }
+
+    $value = trim((string)file_get_contents($file));
+
+    return $value !== '' ? $value : null;
+}
+
 function jrIxcPublicKeyFile(): string
 {
     $configured = trim((string)(getenv('IXC_ACS_PUBLIC_KEY_FILE') ?: ''));
@@ -329,6 +351,15 @@ $notYetValid = isset($jwtPayload['nbf'])
     && is_numeric($jwtPayload['nbf'])
     && (int)$jwtPayload['nbf'] > ($now + 60);
 
+$expectedClientId = jrIxcExpectedClientId();
+$issuer = isset($jwtPayload['iss']) && is_scalar($jwtPayload['iss'])
+    ? trim((string)$jwtPayload['iss'])
+    : '';
+
+$issuerMatchesClientId = $expectedClientId !== null
+    && $issuer !== ''
+    && hash_equals($expectedClientId, $issuer);
+
 $claimNames = array_values(array_map(
     static fn(mixed $key): string => (string)$key,
     array_keys($jwtPayload)
@@ -350,6 +381,8 @@ jrIxcSafeLog([
     'claim_keys' => $claimNames,
     'has_kid' => isset($jwtHeader['kid']),
     'has_iss' => isset($jwtPayload['iss']),
+    'client_id_configured' => $expectedClientId !== null,
+    'iss_matches_client_id' => $issuerMatchesClientId,
     'has_aud' => isset($jwtPayload['aud']),
     'has_sub' => isset($jwtPayload['sub']),
     'has_exp' => isset($jwtPayload['exp']),
@@ -375,6 +408,8 @@ jrIxcJson([
         'header_keys' => $headerNames,
         'claim_keys' => $claimNames,
         'signature_verified' => true,
+        'client_id_configured' => $expectedClientId !== null,
+        'iss_matches_client_id' => $issuerMatchesClientId,
     ],
     'next_step' => 'discover_ixc_response_contract',
 ], 200);
