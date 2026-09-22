@@ -154,8 +154,8 @@ function getMACVendor($macAddress, $fallbackName = 'Unknown Device') {
     curl_setopt($ch, CURLOPT_TIMEOUT, 3); // 3 second timeout
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2); // 2 second connection timeout
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
