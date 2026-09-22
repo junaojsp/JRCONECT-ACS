@@ -189,6 +189,137 @@ function jrIxcVerifyEs256(
     ) === 1;
 }
 
+function jrIxcDerEcdsaToJose(string $der, int $partLength = 32): string|false
+{
+    $offset = 0;
+    $length = strlen($der);
+
+    if ($length < 8 || ord($der[$offset++]) !== 0x30) {
+        return false;
+    }
+
+    $seqLength = ord($der[$offset++]);
+    if (($seqLength & 0x80) !== 0) {
+        $bytes = $seqLength & 0x7f;
+        if ($bytes < 1 || $bytes > 2 || $offset + $bytes > $length) {
+            return false;
+        }
+        $seqLength = 0;
+        for ($i = 0; $i < $bytes; $i++) {
+            $seqLength = ($seqLength << 8) | ord($der[$offset++]);
+        }
+    }
+
+    if ($offset >= $length || ord($der[$offset++]) !== 0x02) {
+        return false;
+    }
+
+    $rLength = ord($der[$offset++]);
+    if ($offset + $rLength > $length) {
+        return false;
+    }
+    $r = substr($der, $offset, $rLength);
+    $offset += $rLength;
+
+    if ($offset >= $length || ord($der[$offset++]) !== 0x02) {
+        return false;
+    }
+
+    $sLength = ord($der[$offset++]);
+    if ($offset + $sLength > $length) {
+        return false;
+    }
+    $s = substr($der, $offset, $sLength);
+
+    $normalize = static function (string $value) use ($partLength): string|false {
+        $value = ltrim($value, "\x00");
+        if (strlen($value) > $partLength) {
+            return false;
+        }
+        return str_pad($value, $partLength, "\x00", STR_PAD_LEFT);
+    };
+
+    $r = $normalize($r);
+    $s = $normalize($s);
+
+    if ($r === false || $s === false) {
+        return false;
+    }
+
+    return $r . $s;
+}
+
+function jrIxcBase64UrlEncode(string $value): string
+{
+    return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+}
+
+function jrIxcAccessPrivateKeyFile(): string
+{
+    $configured = trim((string)(getenv('IXC_ACS_ACCESS_PRIVATE_KEY_FILE') ?: ''));
+
+    return $configured !== ''
+        ? $configured
+        : '/etc/jrconect-acs/access_token_private.pem';
+}
+
+function jrIxcCreateAccessToken(string $clientId, int $expiresIn): string
+{
+    if (!function_exists('openssl_sign')) {
+        throw new RuntimeException('Extensão OpenSSL do PHP indisponível.');
+    }
+
+    $keyFile = jrIxcAccessPrivateKeyFile();
+
+    if (!is_file($keyFile) || !is_readable($keyFile)) {
+        throw new RuntimeException('Chave privada de Access Token não configurada.');
+    }
+
+    $pem = file_get_contents($keyFile);
+    if (!is_string($pem) || trim($pem) === '') {
+        throw new RuntimeException('Chave privada de Access Token vazia.');
+    }
+
+    $privateKey = openssl_pkey_get_private($pem);
+    if ($privateKey === false) {
+        throw new RuntimeException('Não foi possível carregar a chave privada de Access Token.');
+    }
+
+    $now = time();
+
+    $headerJson = json_encode([
+        'alg' => 'ES256',
+        'typ' => 'JWT',
+    ], JSON_UNESCAPED_SLASHES);
+
+    $payloadJson = json_encode([
+        'iss' => 'JRCONECT-ACS',
+        'sub' => $clientId,
+        'iat' => $now,
+        'exp' => $now + $expiresIn,
+    ], JSON_UNESCAPED_SLASHES);
+
+    if (!is_string($headerJson) || !is_string($payloadJson)) {
+        throw new RuntimeException('Falha ao montar JWT de acesso.');
+    }
+
+    $header = jrIxcBase64UrlEncode($headerJson);
+    $payload = jrIxcBase64UrlEncode($payloadJson);
+    $signingInput = $header . '.' . $payload;
+
+    $derSignature = '';
+    if (!openssl_sign($signingInput, $derSignature, $privateKey, OPENSSL_ALGO_SHA256)) {
+        throw new RuntimeException('Falha ao assinar JWT de acesso.');
+    }
+
+    $joseSignature = jrIxcDerEcdsaToJose($derSignature, 32);
+    if ($joseSignature === false) {
+        throw new RuntimeException('Falha ao converter assinatura ECDSA para JOSE.');
+    }
+
+    return $signingInput . '.' . jrIxcBase64UrlEncode($joseSignature);
+}
+
 function jrIxcSafeLog(array $data): void
 {
     $logFile = dirname(__DIR__, 2) . '/logs/ixc-acs-compat.log';
@@ -415,51 +546,45 @@ if (!$issuerMatchesClientId) {
 }
 
 /*
- * Compatibility token exchange.
- *
- * IXC's public documentation does not expose the response schema for this
- * private ACS endpoint. To discover the next API route safely, return one
- * short-lived opaque token under both common field names. The raw token is
- * never logged; only its SHA-256 fingerprint is recorded.
+ * IXC ACS legacy authentication flow:
+ * after validating the client-signed ES256 authentication JWT, issue a
+ * short-lived ES256 JWT Access Token. IXC Provedor is expected to store and
+ * resend this token on subsequent API calls.
  */
-$acsToken = bin2hex(random_bytes(32));
 $expiresIn = 300;
-$expiresAt = time() + $expiresIn;
+
+try {
+    $acsToken = jrIxcCreateAccessToken($expectedClientId ?? '', $expiresIn);
+} catch (Throwable $e) {
+    jrIxcSafeLog([
+        'at' => gmdate('c'),
+        'event' => 'access_token_error',
+        'remote_ip' => $remoteIp,
+        'message' => $e->getMessage(),
+    ]);
+
+    jrIxcJson([
+        'success' => false,
+        'error' => 'access_token_generation_failed',
+    ], 503);
+}
+
 $tokenFingerprint = hash('sha256', $acsToken);
-
-$tokenStateDir = dirname(__DIR__, 2) . '/runtime/ixc-acs';
-$tokenStateFile = $tokenStateDir . '/active-token.json';
-
-if (!is_dir($tokenStateDir)) {
-    @mkdir($tokenStateDir, 0750, true);
-}
-
-$state = json_encode([
-    'token_sha256' => $tokenFingerprint,
-    'client_id_sha256' => hash('sha256', $expectedClientId ?? ''),
-    'created_at' => time(),
-    'expires_at' => $expiresAt,
-], JSON_UNESCAPED_SLASHES);
-
-if (is_string($state)) {
-    @file_put_contents($tokenStateFile, $state . PHP_EOL, LOCK_EX);
-    @chmod($tokenStateFile, 0640);
-}
 
 jrIxcSafeLog([
     'at' => gmdate('c'),
-    'event' => 'acs_token_issued',
+    'event' => 'acs_access_jwt_issued',
     'remote_ip' => $remoteIp,
     'signature_verified' => true,
     'issuer_client_match' => true,
+    'token_format' => 'jwt_es256',
     'token_sha256_prefix' => substr($tokenFingerprint, 0, 12),
     'expires_in' => $expiresIn,
 ]);
 
 jrIxcJson([
-    'success' => true,
-    'token' => $acsToken,
     'access_token' => $acsToken,
+    'token' => $acsToken,
     'token_type' => 'Bearer',
     'expires_in' => $expiresIn,
 ], 200);
