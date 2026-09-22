@@ -755,35 +755,49 @@
 
     function connectionStabilityMetrics(report) {
         const rows=Array.isArray(report?.last_7_days?.connections)?report.last_7_days.connections:[];
+        const server=report?.last_7_days?.stability||{};
         const completed=rows.filter(row=>!row.online&&row.stopped_at);
-        const lost=completed.filter(row=>classifyIxcConnectionCause(row.cause).key==='lost');
-        const durations=completed.map(row=>Number(row.seconds)).filter(value=>Number.isFinite(value)&&value>=0);
-        const avgSeconds=durations.length?Math.round(durations.reduce((sum,value)=>sum+value,0)/durations.length):null;
+        const lostRows=completed.filter(row=>classifyIxcConnectionCause(row.cause).key==='lost');
+        const fallbackDurations=completed.map(row=>Number(row.seconds)).filter(value=>Number.isFinite(value)&&value>=0);
+        const fallbackAvg=fallbackDurations.length?Math.round(fallbackDurations.reduce((sum,value)=>sum+value,0)/fallbackDurations.length):null;
         const cutoff=Date.now()-(24*60*60*1000);
-        const last24=completed.filter(row=>{
+        const fallbackLast24=completed.filter(row=>{
             const time=new Date(row.stopped_at).getTime();
             return Number.isFinite(time)&&time>=cutoff;
         });
-        const last24Lost=last24.filter(row=>classifyIxcConnectionCause(row.cause).key==='lost');
+        const fallbackLast24Lost=fallbackLast24.filter(row=>classifyIxcConnectionCause(row.cause).key==='lost');
         const current=rows.find(row=>row.online)||null;
+
+        const connections=Number.isFinite(Number(server.connections))?Number(server.connections):rows.length;
+        const disconnects=Number.isFinite(Number(server.disconnects))?Number(server.disconnects):completed.length;
+        const lost=Number.isFinite(Number(server.lost))?Number(server.lost):lostRows.length;
+        const avgSeconds=server.average_connected_seconds===null||server.average_connected_seconds===undefined
+            ? fallbackAvg
+            : Number(server.average_connected_seconds);
+        const last24=Number.isFinite(Number(server.last_24h_disconnects))
+            ? Number(server.last_24h_disconnects)
+            : fallbackLast24.length;
+        const last24Lost=Number.isFinite(Number(server.last_24h_lost))
+            ? Number(server.last_24h_lost)
+            : fallbackLast24Lost.length;
 
         let level='stable';
         let title='Estável';
         let message='Nenhuma desconexão registrada nas últimas 24 horas.';
-        if(last24.length>0){
-            level=(last24.length>=4||last24Lost.length>=2)?'danger':'warning';
+        if(last24>0){
+            level=(last24>=4||last24Lost>=2)?'danger':'warning';
             title=level==='danger'?'Instabilidade detectada':'Atenção';
-            message=last24.length+' desconexão(ões) nas últimas 24h'+
-                (last24Lost.length?' • '+last24Lost.length+' perda(s) de conexão':'')+'.';
+            message=last24+' desconexão(ões) nas últimas 24h'+
+                (last24Lost?' • '+last24Lost+' perda(s) de conexão':'')+'.';
         }
 
         return {
-            connections:rows.length,
-            disconnects:completed.length,
-            lost:lost.length,
+            connections,
+            disconnects,
+            lost,
             avgSeconds,
-            last24:last24.length,
-            last24Lost:last24Lost.length,
+            last24,
+            last24Lost,
             current,
             level,
             title,
