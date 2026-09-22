@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/IXCConfig.php';
 if (function_exists('requireLogin')) requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, private, max-age=0');
@@ -15,12 +16,8 @@ function ixcActionFail(string $message, int $status = 422): never {
     throw new RuntimeException($message, $status);
 }
 function ixcActionConfig(): array {
-    $source = (string)file_get_contents(__DIR__ . '/get-onu-optical.php');
-    if (!preg_match('/\$ixcBaseUrl\s*=\s*\'([^\']+)\'/', $source, $urlMatch)
-        || !preg_match('/\$ixcToken\s*=\s*\'([^\']+)\'/', $source, $tokenMatch)) {
-        throw new RuntimeException('Configuração IXC não localizada.', 503);
-    }
-    return [rtrim($urlMatch[1], '/'), $tokenMatch[1]];
+    $cfg = getIxcConfig();
+    return [$cfg['base_url'], $cfg['token']];
 }
 function ixcActionAuthorized(): array {
     $id = $_SESSION['user_id'] ?? null;
