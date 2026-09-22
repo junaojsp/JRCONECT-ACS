@@ -755,19 +755,20 @@
         const conc=report?.concentrator||{};
         const reportSession=report?.current_session||{};
         const session=traffic.latestSession||{};
-        const connectedSeconds=login.connected_seconds??reportSession.seconds??session.seconds??null;
+        // A sessão RADIUS ativa é a fonte mais atual para estes campos.
+        const connectedSeconds=session.seconds??reportSession.seconds??login.connected_seconds??null;
         const connected=connectedSeconds===null?'N/D':fmtDuration(connectedSeconds);
-        const concentrator=conc.name||conc.ip||traffic.concentrator?.name||session.bras||'N/D';
+        const concentrator=traffic.concentrator?.name||session.bras||conc.name||conc.ip||'N/D';
         const rows=[
-            ['Login',login.username||reportSession.username||session.username||'N/D','bi-person-check'],
+            ['Login',session.username||reportSession.username||login.username||'N/D','bi-person-check'],
             ['Conectado a',connected,'bi-clock-history'],
-            ['IPv4',login.ipv4||reportSession.ip||session.ip||'N/D','bi-hdd-network'],
+            ['IPv4',session.ip||reportSession.ip||login.ipv4||'N/D','bi-hdd-network'],
             ['IPv6',login.ipv6||'Sem resultado','bi-diagram-3'],
             ['Concentrador',concentrator,'bi-router'],
-            ['Tecnologia',login.technology||reportSession.technology||session.technology||'PPPoE','bi-broadcast'],
-            ['Tipo de autenticação',login.auth_type||reportSession.auth_type||session.auth_type||'PPPoE / RADIUS','bi-key'],
-            ['Interface de conexão',login.interface||reportSession.interface||session.interface||'N/D','bi-ethernet'],
-            ['MAC',login.mac||reportSession.mac||session.mac||'N/D','bi-upc-scan']
+            ['Tecnologia',session.technology||reportSession.technology||'Fibra','bi-broadcast'],
+            ['Tipo de autenticação',session.auth_type||reportSession.auth_type||'PPPoE','bi-key'],
+            ['Interface de conexão',session.interface||reportSession.interface||login.interface||'N/D','bi-ethernet'],
+            ['MAC',session.mac||reportSession.mac||login.mac||'N/D','bi-upc-scan']
         ];
         return rows.map(([label,value,icon])=>'<div><span><i class="bi '+icon+'"></i>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>').join('');
     }
@@ -896,20 +897,19 @@
     window.jrLoadSessionPing = async function() {
         const session = traffic.latestSession || {};
         const clientIp = String(session.ip || '').trim();
-        const candidate = traffic.concentrator?.nas_ip || session.bras || '';
-        const concentratorIp = /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(String(candidate)) ? String(candidate) : '';
-        if (!clientIp && !concentratorIp) {
+        const nasIp = String(traffic.concentrator?.nas_ip || session.bras || '').trim();
+        if (!clientIp) {
             actionFeedback('Ainda não há IP da sessão para executar o ping.', 'warning');
             return;
         }
         const target = document.getElementById('jr-ping-results');
-        if (target) target.innerHTML = '<div class="jr-ixc-empty">Executando ping a partir do servidor ACS...</div>';
+        if (target) target.innerHTML = '<div class="jr-ixc-empty">Executando ping pelo NE8000...</div>';
         try {
-            const query = new URLSearchParams({client_ip: clientIp, concentrator_ip: concentratorIp});
-            const response = await fetch('/api/ixc-session-ping.php?' + query, {credentials:'same-origin', cache:'no-store'});
+            const query = new URLSearchParams({ip: clientIp, nas_ip: nasIp});
+            const response = await fetch('/api/get-ne-session-ping.php?' + query, {credentials:'same-origin', cache:'no-store'});
             const data = await response.json();
             if (!response.ok || !data?.success) throw new Error(data?.message || 'Ping indisponível.');
-            if (target) target.innerHTML = renderPingInfo('ACS → Cliente PPPoE', data.results?.client) + renderPingInfo('ACS → Concentrador', data.results?.concentrator) + '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Servidor ACS') + '</small>';
+            if (target) target.innerHTML = renderPingInfo('NE8000 → Cliente PPPoE', data.result) + '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Huawei NE8000 / SSH') + '</small>';
         } catch (error) {
             if (target) target.innerHTML = '<div class="jr-ixc-empty">' + esc(error?.message || 'Ping indisponível.') + '</div>';
         }
@@ -952,9 +952,9 @@
             '<div class="jr-ixc-section-title"><strong>Consumo dos últimos 30 dias</strong><span id="jr-ixc-consumption-source">Carregando fonte...</span></div>'+
             '<div id="jr-ixc-consumption"><div class="jr-ixc-empty">Carregando consumo...</div></div>'+
           '</div>'+
-          '<div class="jr-ixc-section jr-ixc-ping-section>'+
-            '<div class="jr-ixc-section-title"><strong>Informações de ping</strong><span>Servidor ACS</span></div>'+
-            '<div id="jr-ping-results" class="jr-ping-results"><div class="jr-ixc-empty">Clique em Atualizar ping para medir cliente e concentrador.</div></div>'+
+          '<div class="jr-ixc-section jr-ixc-ping-section">'+
+            '<div class="jr-ixc-section-title"><strong>Ping da sessão PPPoE</strong><span>Huawei NE8000</span></div>'+
+            '<div id="jr-ping-results" class="jr-ping-results"><div class="jr-ixc-empty">Clique em Atualizar ping para medir pelo NE8000.</div></div>'+
           '</div>'+
           '<div class="jr-monitor-report">'+
             '<div class="jr-monitor-section-title"><strong>Detalhes da sessão atual</strong><span id="jr-monitor-source">IXC/RADIUS</span></div>'+
