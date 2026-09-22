@@ -900,7 +900,9 @@
         if(!monitoringActive() || traffic.livePolling || !window.DEVICE_ID) return;
 
         const now=Date.now();
-        if(!force && now-traffic.liveLastPoll<4500) return;
+        // Mantém uma amostra por segundo, como o gráfico original do IXC.
+        // A coleta só ocorre com a aba Monitoramento ativa.
+        if(!force && now-traffic.liveLastPoll<1000) return;
         if(!force && traffic.liveDisabledUntil>now) return;
 
         traffic.liveLastPoll=now;
