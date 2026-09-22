@@ -79,62 +79,94 @@ function reportIxcConsumptionApi(
     string $since,
     string $until
 ): array {
-    $rows = reportList(
-        $baseUrl,
-        $token,
-        'radusuarios_consumo',
-        [
-            'qtype' => 'radusuarios_consumo.id_login',
-            'query' => (string)$loginId,
-            'oper' => '=',
-            'page' => '1',
-            'rp' => '1000',
-            'sortname' => 'radusuarios_consumo.data',
-            'sortorder' => 'asc',
-        ]
-    );
+    $from = new DateTimeImmutable($since . ' 00:00:00', new DateTimeZone('America/Sao_Paulo'));
+    $to = new DateTimeImmutable($until . ' 23:59:59', new DateTimeZone('America/Sao_Paulo'));
 
-    if (!$rows) {
-        return [
-            'available' => false,
-            'source' => 'Webservice radusuarios_consumo',
-            'reason' => 'no_rows',
-            'daily' => [],
-        ];
+    // O IXC registra o consumo detalhado por Interim Update (normalmente a cada
+    // 20 minutos). Uma consulta limitada a 1000 linhas não cobre 30 dias.
+    // Buscamos do mais recente para o mais antigo e paginamos até ultrapassar
+    // o início da janela solicitada.
+    $rp = 500;
+    $maxPages = 12;
+    $page = 1;
+    $rowsFetched = 0;
+    $rowsInPeriod = 0;
+    $daily = [];
+    $pastWindow = false;
+
+    while ($page <= $maxPages && !$pastWindow) {
+        $rows = reportList(
+            $baseUrl,
+            $token,
+            'radusuarios_consumo',
+            [
+                'qtype' => 'radusuarios_consumo.id_login',
+                'query' => (string)$loginId,
+                'oper' => '=',
+                'page' => (string)$page,
+                'rp' => (string)$rp,
+                'sortname' => 'radusuarios_consumo.data',
+                'sortorder' => 'desc',
+            ]
+        );
+
+        if (!$rows) break;
+        $rowsFetched += count($rows);
+
+        foreach ($rows as $row) {
+            $rawDate = trim((string)($row['data'] ?? ''));
+            if ($rawDate === '') continue;
+
+            $dateTime = reportTime($rawDate);
+            if (!$dateTime) continue;
+
+            if ($dateTime > $to) continue;
+            if ($dateTime < $from) {
+                $pastWindow = true;
+                continue;
+            }
+
+            $date = $dateTime->format('Y-m-d');
+            $daily[$date] ??= [
+                'date' => $date,
+                'download_bytes' => 0,
+                'upload_bytes' => 0,
+                'sessions' => null,
+            ];
+
+            $daily[$date]['download_bytes'] += reportInt($row['consumo'] ?? 0);
+            $daily[$date]['upload_bytes'] += reportInt($row['consumo_upload'] ?? 0);
+            $rowsInPeriod++;
+        }
+
+        if (count($rows) < $rp) break;
+        $page++;
     }
 
-    $from = strtotime($since . ' 00:00:00');
-    $to = strtotime($until . ' 23:59:59');
-    $daily = [];
-
-    foreach ($rows as $row) {
-        $date = trim((string)($row['data'] ?? ''));
-        if ($date === '') continue;
-
-        $ts = strtotime($date . ' 00:00:00');
-        if ($ts === false || $ts < $from || $ts > $to) continue;
-
-        $daily[$date] ??= [
+    // Mantém todos os 30 dias no gráfico, inclusive dias sem consumo.
+    $filled = [];
+    for ($cursor = $from->setTime(0, 0); $cursor <= $to; $cursor = $cursor->modify('+1 day')) {
+        $date = $cursor->format('Y-m-d');
+        $filled[$date] = $daily[$date] ?? [
             'date' => $date,
             'download_bytes' => 0,
             'upload_bytes' => 0,
             'sessions' => null,
         ];
-
-        $daily[$date]['download_bytes'] += reportInt($row['consumo'] ?? 0);
-        $daily[$date]['upload_bytes'] += reportInt($row['consumo_upload'] ?? 0);
     }
 
-    ksort($daily);
-
     return [
-        'available' => !empty($daily),
-        'source' => 'Webservice radusuarios_consumo',
-        'reason' => !empty($daily) ? null : 'no_rows_in_period',
-        'daily' => array_values($daily),
+        'available' => $rowsInPeriod > 0,
+        'source' => 'IXC Webservice radusuarios_consumo',
+        'reason' => $rowsInPeriod > 0 ? null : 'no_rows_in_period',
+        'daily' => array_values($filled),
+        'diagnostic' => [
+            'rows_fetched' => $rowsFetched,
+            'rows_in_period' => $rowsInPeriod,
+            'pages_read' => $page,
+        ],
     ];
 }
-
 
 function reportIxcConsumption(
     string $baseUrl,
@@ -292,7 +324,7 @@ function reportCauseKind(string $cause): string
 {
     $text = strtolower(trim($cause));
 
-    if ($text === '') return 'unknown';
+    if ($text === '') return 'other';
     if (str_contains($text, 'admin')) return 'admin';
     if (str_contains($text, 'nas-reboot') || str_contains($text, 'reboot')) return 'nas_reboot';
     if (
@@ -594,6 +626,8 @@ try {
             'daily' => array_values($dailyEvents),
             'events' => $events,
             'connections' => $connections,
+            'event_count' => array_sum(array_column($dailyEvents, 'total')),
+            'connection_count' => count($connections),
         ],
         'last_30_days' => [
             'source' => $consumptionSource,
@@ -604,6 +638,7 @@ try {
             'ixc_webservice' => [
                 'available' => (bool)($ixcConsumptionApi['available'] ?? false),
                 'reason' => $ixcConsumptionApi['reason'] ?? null,
+                'diagnostic' => $ixcConsumptionApi['diagnostic'] ?? null,
             ],
             'ixc_endpoint' => [
                 'available' => (bool)($ixcConsumption['available'] ?? false),
