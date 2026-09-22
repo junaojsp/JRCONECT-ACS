@@ -50,7 +50,9 @@ function trCandidatePairs(array $device): array {
             'kind'=>'TR-098 WAN common',
             'download'=>$common.'.TotalBytesReceived',
             'upload'=>$common.'.TotalBytesSent',
-            'priority'=>150,
+            // WANCommon no HG6143D3 pode refletir apenas a interface WAN física/
+            // gerenciamento. Mantém como fallback; PPPoE deve vencer quando existir.
+            'priority'=>90,
         ];
     }
 
@@ -68,7 +70,7 @@ function trCandidatePairs(array $device): array {
                             'kind'=>'TR-098 '.$type,
                             'download'=>$base.'.'.$rx,
                             'upload'=>$base.'.'.$tx,
-                            'priority'=>$type==='WANPPPConnection'?130:120,
+                            'priority'=>$type==='WANPPPConnection'?300:220,
                         ];
                     }
                 }
@@ -87,7 +89,7 @@ function trCandidatePairs(array $device): array {
     }
 
     // TR-181 PPP and IP interfaces.
-    foreach (['PPP'=>125,'IP'=>105,'Ethernet'=>95] as $family=>$priority) {
+    foreach (['PPP'=>290,'IP'=>210,'Ethernet'=>80] as $family=>$priority) {
         for ($i=1; $i<=16; $i++) {
             $base="Device.$family.Interface.$i.Stats";
             $pairs[]=[
