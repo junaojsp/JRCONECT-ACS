@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/IXCConfig.php';
 if (function_exists('requireLogin')) requireLogin();
 
 use App\CPEProfiles;
@@ -17,16 +18,8 @@ function jrBatchOut(array $data, int $status = 200): never
 
 function jrBatchConfig(): array
 {
-    $source = (string)file_get_contents(__DIR__ . '/get-onu-optical.php');
-
-    if (!preg_match('/\\$ixcBaseUrl\\s*=\\s*\'([^\']+)\'/', $source, $urlMatch)) {
-        throw new RuntimeException('URL IXC não localizada.');
-    }
-    if (!preg_match('/\\$ixcToken\\s*=\\s*\'([^\']+)\'/', $source, $tokenMatch)) {
-        throw new RuntimeException('Token IXC não localizado.');
-    }
-
-    return [rtrim($urlMatch[1], '/'), $tokenMatch[1]];
+    $cfg = getIxcConfig();
+    return [$cfg['base_url'], $cfg['token']];
 }
 
 function jrBatchSerial(string $value): string
