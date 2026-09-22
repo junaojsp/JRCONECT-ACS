@@ -787,7 +787,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate Monitoring tab
         document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
         renderStoredDeviceAIState();
-        updateRadiusBandwidthSample();
+        startBandwidthMonitoring();
 
         // Restore hotspot data after re-render (if available)
         if (isAutoRefresh && Object.keys(savedHotspotData).length > 0) {
@@ -3508,6 +3508,8 @@ function openWebManagement() {
 
 
 let bandwidthSamples = [];
+let bandwidthMonitorInterval = null;
+let bandwidthSampleRequestInFlight = false;
 
 function getPrimaryWAN(device) {
     const list = Array.isArray(device?.wan_details) ? device.wan_details : [];
@@ -3646,38 +3648,141 @@ function updateBandwidthSample(device) {
     }
 }
 
-async function updateRadiusBandwidthSample() {
-    const chart = document.getElementById('bandwidth-bars');
-    if (!chart || !deviceId) return;
-    try {
-        const response = await fetch('/api/get-radius-session.php?device_id=' + encodeURIComponent(deviceId), { credentials: 'same-origin' });
-        const data = await response.json();
-        const session = data?.session;
-        const rx = toCounter(session?.bytes_received), tx = toCounter(session?.bytes_sent);
-        if (!data?.success || !data?.online || rx === null || tx === null) return;
-        const now = Date.now(), previous = bandwidthSamples[bandwidthSamples.length - 1];
-        let rxMbps = null, txMbps = null;
-        if (previous && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
-            const seconds = (now - previous.time) / 1000;
-            rxMbps = ((rx - previous.rx) * 8) / seconds / 1000000;
-            txMbps = ((tx - previous.tx) * 8) / seconds / 1000000;
-        }
-        bandwidthSamples.push({ time: now, rx, tx, rxMbps, txMbps });
-        if (bandwidthSamples.length > 60) bandwidthSamples.shift();
-        const rxRate = document.getElementById('live-rx-mbps'), txRate = document.getElementById('live-tx-mbps');
-        if (rxRate) rxRate.textContent = rxMbps === null ? '--' : rxMbps.toFixed(2);
-        if (txRate) txRate.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
-        const rxTotal = document.getElementById('live-rx-total'), txTotal = document.getElementById('live-tx-total'), source = document.getElementById('live-traffic-source');
-        if (rxTotal) rxTotal.textContent = formatTrafficBytes(rx);
-        if (txTotal) txTotal.textContent = formatTrafficBytes(tx);
-        if (source) source.textContent = 'IXC/RADIUS • ' + (session.interface || 'sessão PPPoE');
-        const status = document.getElementById('bandwidth-sample-status');
-        if (status) status.textContent = rxMbps === null ? 'IXC/RADIUS: aguardando segunda leitura...' : 'IXC/RADIUS • ' + new Date(now).toLocaleTimeString('pt-BR');
-        const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
-        chart.innerHTML = renderModernBandwidthChart(valid);
-    } catch (_) { /* mantém a última amostra válida */ }
+function startBandwidthMonitoring() {
+    if (bandwidthMonitorInterval) {
+        clearInterval(bandwidthMonitorInterval);
+    }
+    updateRadiusBandwidthSample();
+    bandwidthMonitorInterval = setInterval(updateRadiusBandwidthSample, 6000);
 }
 
+function renderBandwidthLiveSample(live, sourceLabel) {
+    const rxMbps = Number(live?.download_mbps);
+    const txMbps = Number(live?.upload_mbps);
+    if (!Number.isFinite(rxMbps) || !Number.isFinite(txMbps)) return false;
+
+    const now = Date.now();
+    bandwidthSamples.push({
+        time: now,
+        rx: null,
+        tx: null,
+        rxMbps: Math.max(0, rxMbps),
+        txMbps: Math.max(0, txMbps),
+        source: sourceLabel
+    });
+    if (bandwidthSamples.length > 60) bandwidthSamples.shift();
+
+    const precision = (value) => value > 0 && value < 0.01 ? 4 : 2;
+    const rxRate = document.getElementById('live-rx-mbps');
+    const txRate = document.getElementById('live-tx-mbps');
+    if (rxRate) rxRate.textContent = rxMbps.toFixed(precision(rxMbps));
+    if (txRate) txRate.textContent = txMbps.toFixed(precision(txMbps));
+
+    const status = document.getElementById('bandwidth-sample-status');
+    if (status) {
+        status.textContent = sourceLabel + ' • ' + new Date(now).toLocaleTimeString('pt-BR');
+    }
+
+    const chart = document.getElementById('bandwidth-bars');
+    if (chart) {
+        chart.innerHTML = renderModernBandwidthChart(
+            bandwidthSamples.filter(sample =>
+                Number.isFinite(sample.rxMbps) && Number.isFinite(sample.txMbps)
+            )
+        );
+    }
+    return true;
+}
+
+async function fetchBandwidthJson(url) {
+    const response = await fetch(url, {
+        credentials: 'same-origin',
+        cache: 'no-store'
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data && data.success ? data : null;
+}
+
+async function updateRadiusBandwidthSample() {
+    if (bandwidthSampleRequestInFlight || !deviceId) return;
+    if (!document.getElementById('bandwidth-bars')) return;
+
+    bandwidthSampleRequestInFlight = true;
+    const status = document.getElementById('bandwidth-sample-status');
+
+    try {
+        const radius = await fetchBandwidthJson(
+            '/api/get-radius-session.php?device_id=' + encodeURIComponent(deviceId)
+        );
+        const session = radius?.session;
+
+        if (!radius?.online || !session) {
+            if (status) status.textContent = 'Sessão PPPoE online não localizada no IXC/RADIUS.';
+            return;
+        }
+
+        // No RADIUS, output é download e input é upload do assinante.
+        const downloadTotal = toCounter(session.download_bytes);
+        const uploadTotal = toCounter(session.upload_bytes);
+        const rxTotal = document.getElementById('live-rx-total');
+        const txTotal = document.getElementById('live-tx-total');
+        const source = document.getElementById('live-traffic-source');
+        if (rxTotal) rxTotal.textContent = formatTrafficBytes(downloadTotal);
+        if (txTotal) txTotal.textContent = formatTrafficBytes(uploadTotal);
+        if (source) source.textContent = 'IXC/RADIUS • ' + (session.interface || 'sessão PPPoE');
+
+        // 1) Fonte preferida: stream de tráfego do próprio IXC.
+        const loginId = Number(radius.ixc_login_id);
+        if (Number.isInteger(loginId) && loginId > 0) {
+            const ixcLive = await fetchBandwidthJson(
+                '/api/get-ixc-live-traffic.php?login_id=' + encodeURIComponent(loginId)
+            );
+            if (ixcLive?.available && renderBandwidthLiveSample(
+                ixcLive.live,
+                ixcLive.source || 'IXC em tempo real'
+            )) return;
+        }
+
+        // 2) Fallback: leitura direta e somente leitura no concentrador.
+        const neQuery = new URLSearchParams({
+            ip: session.ip || '',
+            username: session.username || '',
+            nas_ip: session.bras || '',
+            session_id: session.session_id || ''
+        });
+        const neLive = await fetchBandwidthJson('/api/get-ne-live-traffic.php?' + neQuery);
+        if (neLive?.available && renderBandwidthLiveSample(
+            neLive.live,
+            neLive.source || 'Concentrador'
+        )) return;
+
+        // 3) TR-069 somente quando o contador é da sessão PPP/IP.
+        // WANCommon mede frequentemente apenas a interface física/gerência e
+        // não deve ser exibido como consumo real do assinante.
+        const tr069Live = await fetchBandwidthJson(
+            '/api/get-tr069-live-traffic.php?device_id=' + encodeURIComponent(deviceId)
+        );
+        const trProfile = String(tr069Live?.profile || '');
+        const isManagementCounter = /WAN common/i.test(trProfile);
+        if (
+            tr069Live?.available &&
+            !isManagementCounter &&
+            renderBandwidthLiveSample(tr069Live.live, tr069Live.source || 'TR-069')
+        ) return;
+
+        if (status) {
+            status.textContent = isManagementCounter
+                ? 'Contador WANCommon ignorado: ele mede gerência, não o tráfego PPPoE.'
+                : (neLive?.message || tr069Live?.message || 'Aguardando uma fonte confiável de tráfego em tempo real.');
+        }
+    } catch (error) {
+        if (status) status.textContent = 'Falha temporária na consulta de tráfego; mantendo a última amostra.';
+        console.warn('[BANDWIDTH] Falha na amostragem:', error);
+    } finally {
+        bandwidthSampleRequestInFlight = false;
+    }
+}
 function buildDeviceAIContext() {
     const device = currentDeviceData || {};
     const wan = typeof getPrimaryWAN === 'function' ? (getPrimaryWAN(device) || {}) : {};
