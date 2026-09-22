@@ -38,6 +38,7 @@ use App\CPEProfiles;
    ========================================================= */
 
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/IXCConfig.php';
 
 
 if (function_exists('requireLogin')) {
@@ -56,26 +57,9 @@ header('Content-Type: application/json; charset=utf-8');
    CONFIGURAÇÃO IXC
    ========================================================= */
 
-$ixcBaseUrl =
-    'https://cda.jrconect.com';
-
-
-/*
- * COLE AQUI O TOKEN BRUTO DO IXC.
- *
- * Exemplo:
- *
- * 37:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- *
- * NÃO coloque "Basic ".
- *
- * O próprio código faz:
- *
- * base64_encode($ixcToken)
- */
-
-$ixcToken =
-    '37:052335621c659145292a29b3d08c39318380211e2a9b5cd1ad621f1cefc6bd6e';
+$ixcConfig = getIxcConfig();
+$ixcBaseUrl = $ixcConfig['base_url'];
+$ixcToken = $ixcConfig['token'];
 
 
 /* =========================================================
