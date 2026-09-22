@@ -421,6 +421,14 @@ function restoreSavedHotspotData() {
 }
 
 async function loadDeviceDetail(isAutoRefresh = false) {
+    // A aba de monitoramento tem seu próprio ciclo de coleta (IXC/NE8000).
+    // Recriar toda a aba a cada 30 segundos apaga o gráfico e causa o efeito
+    // visual de a tela sumir e voltar enquanto o suporte acompanha o cliente.
+    if (isAutoRefresh && document.getElementById('monitoring-tab')?.classList.contains('active')) {
+        console.debug('[AUTO-REFRESH] Monitoramento ativo; preservando a tela e o gráfico.');
+        return;
+    }
+
     // SKIP auto-refresh if hotspot monitoring is active to prevent conflicts
     if (isAutoRefresh && hotspotMonitoringActive) {
         console.debug('[AUTO-REFRESH] Skipping device detail refresh while hotspot monitoring is active');
