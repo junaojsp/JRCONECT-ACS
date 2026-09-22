@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/lib/Security.php';
 require_once __DIR__ . '/lib/AIConfig.php';
 require_once __DIR__ . '/lib/ConcentratorConfig.php';
-requireLogin();
+securityRequireRole(['admin']);
 
 $pageTitle = 'Configurações';
 $currentPage = 'configuration';
