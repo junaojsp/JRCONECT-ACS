@@ -399,17 +399,67 @@ if ($expired || $notYetValid) {
     ], 401);
 }
 
+if (!$issuerMatchesClientId) {
+    jrIxcSafeLog([
+        'at' => gmdate('c'),
+        'event' => 'request_rejected',
+        'reason' => 'issuer_client_id_mismatch',
+        'remote_ip' => $remoteIp,
+        'signature_verified' => true,
+    ]);
+
+    jrIxcJson([
+        'success' => false,
+        'error' => 'client_not_authorized',
+    ], 401);
+}
+
+/*
+ * Compatibility token exchange.
+ *
+ * IXC's public documentation does not expose the response schema for this
+ * private ACS endpoint. To discover the next API route safely, return one
+ * short-lived opaque token under both common field names. The raw token is
+ * never logged; only its SHA-256 fingerprint is recorded.
+ */
+$acsToken = bin2hex(random_bytes(32));
+$expiresIn = 300;
+$expiresAt = time() + $expiresIn;
+$tokenFingerprint = hash('sha256', $acsToken);
+
+$tokenStateDir = dirname(__DIR__, 2) . '/runtime/ixc-acs';
+$tokenStateFile = $tokenStateDir . '/active-token.json';
+
+if (!is_dir($tokenStateDir)) {
+    @mkdir($tokenStateDir, 0750, true);
+}
+
+$state = json_encode([
+    'token_sha256' => $tokenFingerprint,
+    'client_id_sha256' => hash('sha256', $expectedClientId ?? ''),
+    'created_at' => time(),
+    'expires_at' => $expiresAt,
+], JSON_UNESCAPED_SLASHES);
+
+if (is_string($state)) {
+    @file_put_contents($tokenStateFile, $state . PHP_EOL, LOCK_EX);
+    @chmod($tokenStateFile, 0640);
+}
+
+jrIxcSafeLog([
+    'at' => gmdate('c'),
+    'event' => 'acs_token_issued',
+    'remote_ip' => $remoteIp,
+    'signature_verified' => true,
+    'issuer_client_match' => true,
+    'token_sha256_prefix' => substr($tokenFingerprint, 0, 12),
+    'expires_in' => $expiresIn,
+]);
+
 jrIxcJson([
     'success' => true,
-    'mode' => 'compatibility_probe',
+    'token' => $acsToken,
+    'access_token' => $acsToken,
     'token_type' => 'Bearer',
-    'jwt' => [
-        'algorithm' => $algorithm,
-        'header_keys' => $headerNames,
-        'claim_keys' => $claimNames,
-        'signature_verified' => true,
-        'client_id_configured' => $expectedClientId !== null,
-        'iss_matches_client_id' => $issuerMatchesClientId,
-    ],
-    'next_step' => 'discover_ixc_response_contract',
+    'expires_in' => $expiresIn,
 ], 200);
