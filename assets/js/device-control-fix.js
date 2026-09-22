@@ -1004,13 +1004,13 @@
         }catch(e){
             traffic.liveAvailable=false;
             traffic.liveReason='request_failed';
-            traffic.liveDisabledUntil=Date.now()+7000;
-            setMonitorText('jr-source-live-state','Falha na leitura TR-069');
-            setMonitorText('jr-monitor-live-source','TR-069 / erro');
-            setMonitorText('live-rx-mbps','--');
-            setMonitorText('live-tx-mbps','--');
+            traffic.liveDisabledUntil=Date.now()+5000;
+            setMonitorText('jr-source-live-state','TR-069 temporariamente sem atualização');
+            setMonitorText('jr-monitor-live-source','TR-069 / última amostra mantida');
             const status=document.getElementById('bandwidth-sample-status');
-            if(status) status.textContent='Falha ao consultar tráfego via TR-069: '+e.message;
+            if(status) status.textContent='Sem nova amostra TR-069 • mantendo a última leitura válida';
+            const chart=document.getElementById('bandwidth-bars');
+            if(chart && traffic.samples.length) chart.innerHTML=chartHtml(traffic.samples);
         }finally{
             traffic.livePolling=false;
         }
@@ -1044,7 +1044,9 @@
             const down=Number(s.download_bytes), up=Number(s.upload_bytes), sec=Number(s.seconds);
             const key=String(s.session_id ?? '')+'|'+String(s.started_at ?? '')+'|'+String(s.username ?? '');
             if(traffic.sessionKey!==key){
-                traffic.sessionKey=key; traffic.last=null; traffic.samples=[]; traffic.lastAccountingAt=null;
+                // A sessão RADIUS não é mais a fonte do gráfico ao vivo.
+                // Trocar/descobrir a sessão não deve apagar amostras TR-069.
+                traffic.sessionKey=key; traffic.last=null; traffic.lastAccountingAt=null;
             }
 
             const accountAt=parseRadiusTime(s.sample_time) || now;
@@ -1085,13 +1087,17 @@
     document.addEventListener('DOMContentLoaded', () => {
         ensureModal();
         setTimeout(enhanceControls, 500);
+        // Atualização visual a cada 1 s. A própria função limita a consulta
+        // de rede; o endpoint limita Connection Request ao CPE.
         window.setInterval(() => {
             if (typeof window.updateTr069LiveTraffic === 'function') {
                 window.updateTr069LiveTraffic();
             }
-        }, 5000);
+            const chart=document.getElementById('bandwidth-bars');
+            if(chart && traffic.samples.length) chart.innerHTML=chartHtml(traffic.samples);
+        }, 1000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
-            traffic.last=null; traffic.samples=[]; traffic.sessionKey=null;
+            traffic.last=null; traffic.sessionKey=null;
             traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null;
             window.updateRadiusBandwidthSample(true);
             window.updateTr069LiveTraffic(true);
