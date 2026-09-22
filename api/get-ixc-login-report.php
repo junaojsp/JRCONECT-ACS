@@ -426,7 +426,9 @@ try {
     foreach ($sessions as $session) {
         $start = reportTime($session['acctstarttime'] ?? null);
         $stop = reportTime($session['acctstoptime'] ?? null);
-        $eventTime = $stop ?: $start;
+        // Uma sessão ainda aberta não é evento de queda. O gráfico deve
+        // registrar apenas encerramentos informados pelo IXC/RADIUS.
+        $eventTime = $stop;
 
         if ($start) {
             $day = $start->setTimezone($tz)->format('Y-m-d');
