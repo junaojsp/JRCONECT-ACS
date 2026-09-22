@@ -30,9 +30,13 @@ function nePingNormalizeOutput(string $output): string {
     return trim($output);
 }
 
+function nePingCompletionPattern(): string {
+    return '/(?:\\d+(?:\\.\\d+)?\\s*%\\s*packet(?:\\(s\\))?\\s+loss|round-trip\\s+min\\/avg\\/max\\s*=)/i';
+}
+
 function nePingHasStatistics(string $output): bool {
     return preg_match(
-        '/(?:\d+\s+packet\(s\)\s+transmitted|\d+(?:\.\d+)?\s*%\s*packet(?:\(s\))?\s+loss|round-trip\s+min\/avg\/max\s*=)/i',
+        '/(?:Reply\\s+from\\s+\\d{1,3}(?:\\.\\d{1,3}){3}.*?time\\s*[=<]\\s*[0-9.]+\\s*ms|\\d+\\s+packet\\(s\\)\\s+transmitted|\\d+\\s+packet\\(s\\)\\s+received|\\d+(?:\\.\\d+)?\\s*%\\s*packet(?:\\(s\\))?\\s+loss|round-trip\\s+min\\/avg\\/max\\s*=)/i',
         $output
     ) === 1;
 }
@@ -43,23 +47,21 @@ function nePingRun(SSH2 $ssh, string $ip, int $count): string {
     $ssh->setTimeout(15);
     $ssh->write($command . "\r\n");
 
-    $output = '';
-    for ($attempt = 0; $attempt < 2; $attempt++) {
-        $chunk = $ssh->read(nePingPrompt(), SSH2::READ_REGEX);
-        if (is_string($chunk) && $chunk !== '') {
-            $output .= $chunk;
-        }
+    // Espera diretamente a linha de resultado do ping. No NE8000 isso evita
+    // encerrar a leitura em um prompt residual antes das estatisticas.
+    $output = $ssh->read(nePingCompletionPattern(), SSH2::READ_REGEX);
+    if (!is_string($output)) {
+        $output = '';
+    }
 
-        $normalized = nePingNormalizeOutput($output);
-        if (nePingHasStatistics($normalized)) {
-            break;
+    // Tenta capturar tambem o resumo round-trip e o prompt final.
+    try {
+        $ssh->setTimeout(2);
+        $tail = $ssh->read(nePingPrompt(), SSH2::READ_REGEX);
+        if (is_string($tail) && $tail !== '') {
+            $output .= $tail;
         }
-
-        if (!$ssh->isTimeout()) {
-            break;
-        }
-
-        $ssh->setTimeout(5);
+    } catch (Throwable) {
     }
 
     $output = nePingNormalizeOutput($output);
@@ -80,7 +82,7 @@ function nePingRun(SSH2 $ssh, string $ip, int $count): string {
     }
 
     if (!nePingHasStatistics($output)) {
-        $preview = preg_replace('/\s+/', ' ', $output);
+        $preview = preg_replace('/\\s+/', ' ', $output);
         error_log(
             '[NE8000 ping] Resposta sem estatisticas para ' . $ip . ': ' .
             substr((string)$preview, 0, 500)
