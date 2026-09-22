@@ -53,11 +53,15 @@ function jrIxcAllowedIps(): array
         return [];
     }
 
-    return array_values(array_filter(array_map(
+    $ips = array_map(
         static fn(string $value): string => trim($value),
-        explode(',', $raw),
-        static fn(string $value): bool => trim($value) !== ''
-    )));
+        explode(',', $raw)
+    );
+
+    return array_values(array_filter(
+        $ips,
+        static fn(string $value): bool => $value !== ''
+    ));
 }
 
 function jrIxcAuthorizationHeader(): string
