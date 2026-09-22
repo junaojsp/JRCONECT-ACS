@@ -184,6 +184,10 @@ function securityVerifyTotp(string $base32Secret, string $code, int $window = 1)
 
 function securityKeyMaterial(): string
 {
+    if (defined('GACS_SECURITY_KEY') && is_string(GACS_SECURITY_KEY) && trim(GACS_SECURITY_KEY) !== '') {
+        return hash('sha256', GACS_SECURITY_KEY, true);
+    }
+
     $env = getenv('GACS_SECURITY_KEY');
     if (is_string($env) && trim($env) !== '') {
         return hash('sha256', $env, true);
