@@ -18,8 +18,8 @@ function nePingOut(array $body, int $status = 200): never {
 function nePingPrompt(): string {
     return '/(?:<[^<>\\r\\n]+>|\\[[^\\[\\]\\r\\n]+\\])\\s*$/';
 }
-function nePingRun(SSH2 $ssh, string $ip): string {
-    $command = 'ping -c 3 ' . $ip;
+function nePingRun(SSH2 $ssh, string $ip, int $count): string {
+    $command = 'ping -c ' . $count . ' ' . $ip;
     $ssh->setTimeout(15);
     $ssh->write($command . "\r\n");
     $output = $ssh->read(nePingPrompt(), SSH2::READ_REGEX);
@@ -57,6 +57,7 @@ function nePingParse(string $output, string $ip): array {
 try {
     $ip = trim((string)($_GET['ip'] ?? ''));
     $nasIp = trim((string)($_GET['nas_ip'] ?? ''));
+    $count = max(1, min(3, (int)($_GET['count'] ?? 1)));
     if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
         throw new RuntimeException('IP PPPoE inválido.', 400);
     }
@@ -86,7 +87,7 @@ try {
     } catch (Throwable) {
     }
 
-    $result = nePingParse(nePingRun($ssh, $ip), $ip);
+    $result = nePingParse(nePingRun($ssh, $ip, $count), $ip);
     nePingOut([
         'success' => true,
         'source' => 'Huawei NE8000 / SSH',
