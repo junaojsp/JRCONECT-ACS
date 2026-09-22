@@ -795,3 +795,38 @@
     .jr-stability-kpis>div{border-right:0;border-bottom:1px solid #293d55}
     .jr-stability-kpis>div:last-child{border-bottom:0}
 }
+
+.jr-event-legend-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:7px 8px 2px;
+    color:#cbd8e3;
+    font-size:8px;
+    font-weight:700;
+}
+.jr-event-legend-title small{
+    color:#6f8499;
+    font-size:7px;
+    font-weight:400;
+}
+.jr-event-legend-item{
+    padding:5px 8px;
+    border:1px solid #2d4157;
+    border-radius:999px;
+    background:#142235;
+}
+.jr-event-legend-item strong{
+    color:#c6d4df;
+    font-size:8px;
+    font-weight:700;
+}
+.jr-event-legend-item small{
+    color:#75899d;
+    font-size:7px;
+}
+.jr-ixc-event-chart circle{cursor:help}
+@media(max-width:700px){
+    .jr-event-legend-title{align-items:flex-start;flex-direction:column}
+}
