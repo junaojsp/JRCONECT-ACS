@@ -889,54 +889,92 @@
         }
     };
     function renderPingInfo(label, result) {
-        if (!result) return '<div class="jr-ping-card"><span>' + esc(label) + '</span><strong>Não informado</strong><small>Aguardando consulta</small></div>';
-        if (!result.available) return '<div class="jr-ping-card danger"><span>' + esc(label) + '</span><strong>Sem resposta</strong><small>Perda: ' + Number(result.loss_percent ?? 100).toFixed(0) + '%</small></div>';
-        const avg = Number(result.avg_ms), min = Number(result.min_ms), max = Number(result.max_ms);
-        return '<div class="jr-ping-card"><span>' + esc(label) + '</span><strong>' + (Number.isFinite(avg) ? avg.toFixed(2) + ' ms' : 'Respondendo') + '</strong><small>mín. ' + (Number.isFinite(min) ? min.toFixed(2) : '--') + ' • máx. ' + (Number.isFinite(max) ? max.toFixed(2) : '--') + ' • perda ' + Number(result.loss_percent ?? 0).toFixed(0) + '%</small></div>';
+        const available=!!result?.available;
+        const avg=Number(result?.avg_ms);
+        const min=Number(result?.min_ms);
+        const max=Number(result?.max_ms);
+        const loss=Number(result?.loss_percent ?? (available?0:100));
+        const latency=available&&Number.isFinite(avg)?avg.toFixed(2):'--';
+        const minLabel=available&&Number.isFinite(min)?min.toFixed(2):'--';
+        const maxLabel=available&&Number.isFinite(max)?max.toFixed(2):'--';
+        const lossLabel=Number.isFinite(loss)?loss.toFixed(0):'--';
+
+        return '<div class="jr-monitor-live-head jr-ping-live-head">'+
+            '<div><span>Latência atual</span><strong id="jr-ping-current">'+latency+'</strong><small>ms</small></div>'+
+            '<div><span>Mínima</span><strong id="jr-ping-min">'+minLabel+'</strong><small>ms</small></div>'+
+            '<div><span>Máxima</span><strong id="jr-ping-max">'+maxLabel+'</strong><small>ms</small></div>'+
+            '<div><span>Perda</span><strong id="jr-ping-loss">'+lossLabel+'</strong><small>%</small></div>'+
+        '</div>';
     }
     function renderPingTimeline(samples) {
         const recent=samples.filter(sample=>Date.now()-sample.at<=5*60*1000);
         const valid=recent.filter(sample=>Number.isFinite(sample.latency));
-        if (valid.length < 2) return '<div class="jr-ping-live-note">Amostragem contínua a cada 5 segundos pelo NE8000.</div>';
-        const max=Math.max(1,...valid.map(sample=>sample.latency));
+        if (valid.length < 2) {
+            return '<div class="jr-monitor-chart jr-ping-chart"><div class="jr-ixc-empty">Coleta automática pelo NE8000 • aguardando amostras...</div></div>';
+        }
+
+        const rawMax=Math.max(1,...valid.map(sample=>sample.latency));
+        const displayMax=Math.max(5,Math.ceil(rawMax*1.2));
         const points=valid.map((sample,index)=>{
             const x=valid.length===1?0:index/(valid.length-1)*100;
-            const y=92-(sample.latency/max)*82;
-            return x.toFixed(2)+','+Math.max(6,y).toFixed(2);
+            const y=94-(sample.latency/displayMax)*86;
+            return x.toFixed(2)+','+Math.max(4,Math.min(94,y)).toFixed(2);
         }).join(' ');
         const first=new Date(valid[0].at).toLocaleTimeString('pt-BR');
         const last=new Date(valid[valid.length-1].at).toLocaleTimeString('pt-BR');
-        return '<div class="jr-ping-live-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 10H100M0 50H100M0 92H100" class="grid"/><polyline points="'+points+'" class="ping-line"/></svg><div><span>'+first+'</span><span>'+last+'</span></div></div>';
+        const mid=displayMax/2;
+
+        return '<div class="jr-monitor-chart jr-ping-chart">'+
+            '<div class="jr-monitor-chart-inner">'+
+                '<div class="jr-monitor-scale"><span>'+displayMax.toFixed(0)+' ms</span><span>'+mid.toFixed(1)+' ms</span><span>0 ms</span></div>'+
+                '<div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 36H100M0 64H100M0 94H100" class="grid"/><polyline points="'+points+'" class="ping-line"/></svg><div class="jr-monitor-times"><span>'+first+'</span><span>'+last+'</span></div></div>'+
+            '</div>'+
+            '<div class="jr-monitor-chart-legend"><span><i class="ping"></i>Latência</span><span>Últimos 5 minutos</span><span>Atualização automática • 1 s</span></div>'+
+        '</div>';
     }
     window.jrLoadSessionPing = async function(silent=false) {
         if (!monitoringActive() || traffic.pingPolling) return;
         const now=Date.now();
-        if (silent && now-traffic.pingLastPoll<5000) return;
+        if (silent && now-traffic.pingLastPoll<1000) return;
         const session = traffic.latestSession || {};
         const clientIp = String(session.ip || '').trim();
         const nasIp = String(traffic.concentrator?.nas_ip || session.bras || '').trim();
+        const target = document.getElementById('jr-ping-results');
+        const status = document.getElementById('jr-ping-sample-status');
+
         if (!clientIp) {
-            if (!silent) actionFeedback('Ainda não há IP da sessão para executar o ping.', 'warning');
+            if(status) status.textContent='Aguardando sessão PPPoE';
+            if (!silent && target) target.innerHTML='<div class="jr-ixc-empty">Aguardando IP da sessão PPPoE...</div>';
             return;
         }
-        const target = document.getElementById('jr-ping-results');
         if (!target) return;
+
         traffic.pingPolling=true;
         traffic.pingLastPoll=now;
-        if (!silent) target.innerHTML = '<div class="jr-ixc-empty">Executando ping pelo NE8000...</div>';
+        if (!silent && !traffic.pingSamples.length) {
+            target.innerHTML = '<div class="jr-ixc-empty">Iniciando ping automático pelo NE8000...</div>';
+        }
+        if(status) status.textContent='NE8000 • coletando automaticamente';
+
         try {
             const query = new URLSearchParams({ip: clientIp, nas_ip: nasIp, count: '1'});
             const response = await fetch('/api/get-ne-session-ping.php?' + query, {credentials:'same-origin', cache:'no-store'});
             const data = await response.json();
             if (!response.ok || !data?.success) throw new Error(data?.message || 'Ping indisponível.');
             const result=data.result || {};
-            traffic.pingSamples.push({at:Date.now(),latency:Number(result.avg_ms),loss:Number(result.loss_percent ?? 100)});
-            if (traffic.pingSamples.length>70) traffic.pingSamples.shift();
+            const at=Date.now();
+            traffic.pingSamples.push({at,latency:Number(result.avg_ms),loss:Number(result.loss_percent ?? 100)});
+            if (traffic.pingSamples.length>300) traffic.pingSamples.shift();
+
             target.innerHTML = renderPingInfo('NE8000 → Cliente PPPoE', result) +
                 renderPingTimeline(traffic.pingSamples) +
-                '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Huawei NE8000 / SSH') + ' • última amostra ' + new Date().toLocaleTimeString('pt-BR') + '</small>';
+                '<small class="jr-ping-source">Origem: ' + esc(data.source || 'Huawei NE8000 / SSH') + ' • IP ' + esc(clientIp) + ' • última amostra ' + new Date(at).toLocaleTimeString('pt-BR') + '</small>';
+            if(status) status.textContent='Huawei NE8000 • '+new Date(at).toLocaleTimeString('pt-BR');
         } catch (error) {
-            if (!silent) target.innerHTML = '<div class="jr-ixc-empty">' + esc(error?.message || 'Ping indisponível.') + '</div>';
+            if(status) status.textContent='NE8000 • mantendo última amostra válida';
+            if (!silent || !traffic.pingSamples.length) {
+                target.innerHTML = '<div class="jr-ixc-empty">' + esc(error?.message || 'Ping indisponível.') + '</div>';
+            }
         } finally {
             traffic.pingPolling=false;
         }
@@ -962,7 +1000,7 @@
               '<button type="button" onclick="window.updateRadiusBandwidthSample(true); window.updateTr069LiveTraffic(true); window.loadIxcReplicaReport(true)"><i class="bi bi-arrow-clockwise"></i> Recarregar dados</button>'+
               '<button type="button" data-ixc-session-action onclick="window.jrIxcSessionAction(\'clear_mac\')"><i class="bi bi-eraser"></i> Limpar MAC</button>'+
               '<button type="button" data-ixc-session-action onclick="window.jrIxcSessionAction(\'disconnect\')"><i class="bi bi-person-x"></i> Desconectar sessão</button>'+
-              '<button type="button" onclick="window.jrLoadSessionPing()"><i class="bi bi-activity"></i> Atualizar ping</button>'+
+
               '<button type="button" onclick="document.getElementById(\'wifi-tab\')?.click()"><i class="bi bi-gear"></i> Dados Roteador</button>'+
             '</div>'+
           '</div>'+
@@ -980,8 +1018,8 @@
             '<div id="jr-ixc-consumption"><div class="jr-ixc-empty">Carregando consumo...</div></div>'+
           '</div>'+
           '<div class="jr-ixc-section jr-ixc-ping-section">'+
-            '<div class="jr-ixc-section-title"><strong>Ping da sessão PPPoE</strong><span>Huawei NE8000</span></div>'+
-            '<div id="jr-ping-results" class="jr-ping-results"><div class="jr-ixc-empty">Clique em Atualizar ping para medir pelo NE8000.</div></div>'+
+            '<div class="jr-ixc-section-title"><strong>Ping da sessão PPPoE</strong><span id="jr-ping-sample-status">Aguardando sessão PPPoE</span></div>'+
+            '<div id="jr-ping-results" class="jr-ping-results"><div class="jr-ixc-empty">A coleta inicia automaticamente quando a sessão PPPoE for identificada.</div></div>'+
           '</div>'+
           '<div class="jr-monitor-report">'+
             '<div class="jr-monitor-section-title"><strong>Detalhes da sessão atual</strong><span id="jr-monitor-source">IXC/RADIUS</span></div>'+
@@ -1159,6 +1197,7 @@
             traffic.online=true; traffic.latestSession=s;
             traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
             refreshIxcAccessSummary();
+            if(typeof window.jrLoadSessionPing==='function') window.jrLoadSessionPing(true);
             if(traffic.ixcLoginId || s.username) loadIxcReplicaReport();
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
@@ -1225,6 +1264,9 @@
             traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null; traffic.pingSamples=[]; traffic.pingLastPoll=0;
             window.updateRadiusBandwidthSample(true);
             window.updateTr069LiveTraffic(true);
+            if (typeof window.jrLoadSessionPing === 'function') {
+                window.jrLoadSessionPing(true);
+            }
         });
     });
 })();
