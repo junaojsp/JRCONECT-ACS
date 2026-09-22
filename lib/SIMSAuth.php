@@ -70,3 +70,25 @@ function jrSimsAuthorize(): void
         exit;
     }
 }
+
+
+function jrSimsAudit(string $event, array $data = []): void
+{
+    unset($data['password'], $data['wifi_password'], $data['token'], $data['authorization']);
+
+    $record = [
+        'at' => gmdate('c'),
+        'event' => $event,
+        'remote_ip' => jrSimsClientIp(),
+        'data' => $data,
+    ];
+
+    $line = json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!is_string($line)) return;
+
+    $logFile = dirname(__DIR__) . '/logs/sims-api.log';
+    $ok = @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+    if ($ok === false) {
+        error_log('[SIMS_API] ' . $line);
+    }
+}
