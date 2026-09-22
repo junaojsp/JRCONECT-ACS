@@ -561,7 +561,7 @@ try {
         'daily' => [],
     ];
 
-    $consumptionSource = 'RADIUS fallback';
+    $consumptionSource = 'RADIUS por sessão (aproximado)';
 
     if (!empty($ixcConsumptionApi['available']) && !empty($ixcConsumptionApi['daily'])) {
         $consumption = [];
@@ -631,6 +631,7 @@ try {
         ],
         'last_30_days' => [
             'source' => $consumptionSource,
+            'accuracy' => str_contains($consumptionSource, 'aproximado') ? 'approximate' : 'ixc',
             'daily' => array_values($consumption),
             'download_bytes' => $totalDownload,
             'upload_bytes' => $totalUpload,
