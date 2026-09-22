@@ -568,3 +568,89 @@
 .jr-ixc-actions button.is-loading{opacity:.65;cursor:wait}
 @media(max-width:1050px){.jr-ping-live-head{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.jr-ping-live-head{grid-template-columns:1fr}.jr-ping-live-head>div{border-right:0}}
+
+
+/* Relatorio detalhado de conexoes PPPoE / RADIUS */
+.jr-ixc-connection-report{
+    margin:8px 14px 14px;
+    border:1px solid #2b3d53;
+    border-radius:10px;
+    background:#152235;
+    overflow:hidden;
+}
+.jr-ixc-connection-report-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border-bottom:1px solid #2b3d53;
+    background:#18273a;
+}
+.jr-ixc-connection-report-head strong{
+    color:#eef5f9;
+    font-size:11px;
+}
+.jr-ixc-connection-report-head span{
+    color:#7890a6;
+    font-size:8px;
+}
+.jr-ixc-connection-table-wrap{
+    max-height:310px;
+    overflow:auto;
+}
+.jr-ixc-connection-table{
+    width:100%;
+    min-width:980px;
+    border-collapse:collapse;
+    font-size:9px;
+}
+.jr-ixc-connection-table th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    padding:9px 10px;
+    background:#17263a;
+    color:#9eb1c4;
+    border-bottom:1px solid #32465e;
+    text-align:left;
+    font-weight:700;
+    white-space:nowrap;
+}
+.jr-ixc-connection-table td{
+    padding:9px 10px;
+    color:#dce7ef;
+    border-bottom:1px solid #26384d;
+    white-space:nowrap;
+}
+.jr-ixc-connection-table tbody tr:nth-child(even){
+    background:rgba(255,255,255,.018);
+}
+.jr-ixc-connection-table tbody tr:hover{
+    background:rgba(77,169,233,.07);
+}
+.jr-ixc-connection-table tbody tr.is-online{
+    box-shadow:inset 3px 0 0 #58d99c;
+}
+.jr-ixc-time-cell span,
+.jr-ixc-time-cell small{
+    display:block;
+}
+.jr-ixc-time-cell small{
+    margin-top:2px;
+    color:#8398ad;
+    font-size:8px;
+}
+.jr-ixc-cause{
+    color:#a9bac9!important;
+}
+.jr-ixc-dash{
+    color:#6f8398;
+}
+.jr-ixc-connection-empty{
+    min-height:72px;
+}
+@media(max-width:700px){
+    .jr-ixc-connection-report{margin:8px 8px 12px}
+    .jr-ixc-connection-report-head{align-items:flex-start;flex-direction:column;gap:4px}
+}
