@@ -79,10 +79,22 @@ if (!is_array($recoveryCodes)) {
             }
 
             if (!$valid) {
+                $_SESSION['pending_2fa_attempts'] = (int)($_SESSION['pending_2fa_attempts'] ?? 0) + 1;
+                if ($_SESSION['pending_2fa_attempts'] >= 10) {
+                    unset(
+                        $_SESSION['pending_2fa_user_id'],
+                        $_SESSION['pending_2fa_started_at'],
+                        $_SESSION['pending_2fa_setup'],
+                        $_SESSION['pending_2fa_secret'],
+                        $_SESSION['pending_2fa_attempts']
+                    );
+                    redirect('/login.php');
+                }
                 $error = $setup
                     ? 'Código inválido. Confira o horário do celular e tente novamente.'
                     : 'Código de autenticação ou recuperação inválido.';
             } elseif ($setup) {
+                unset($_SESSION['pending_2fa_attempts']);
                 $codes = securityGenerateRecoveryCodes(8);
                 $encrypted = securityEncryptSecret($secret);
                 $hashedCodes = securityHashRecoveryCodes($codes);
@@ -104,6 +116,7 @@ if (!is_array($recoveryCodes)) {
                 securityLoginComplete($conn, $user);
                 $recoveryCodes = $codes;
             } else {
+                unset($_SESSION['pending_2fa_attempts']);
                 securityLoginComplete($conn, $user);
                 redirect('/dashboard.php');
             }
