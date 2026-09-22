@@ -537,21 +537,34 @@
 
 
 /* Ações IXC e diagnóstico de ping da sessão PPPoE. */
-.jr-ping-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:4px 0}
-.jr-ping-card{border:1px solid rgba(103,186,255,.24);background:rgba(24,63,94,.2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
-.jr-ping-card span,.jr-ping-card small{color:#8eafc7;font-size:12px}
-.jr-ping-card strong{font-size:20px;color:#eef8ff}
-.jr-ping-card.danger{border-color:rgba(255,117,117,.45)}
-.jr-ping-card.danger strong{color:#ff9696}
-.jr-ping-source{grid-column:1/-1;color:#769bb7;font-size:11px}
+.jr-ping-results{display:block;padding:0}
+.jr-ping-live-head{border-bottom:1px solid #2a3a51}
+.jr-ping-live-head>div:nth-child(1) strong{color:#56c9ef}
+.jr-ping-live-head>div:nth-child(2) strong{color:#74d8ff}
+.jr-ping-live-head>div:nth-child(3) strong{color:#a8dfff}
+.jr-ping-live-head>div:nth-child(4) strong{color:#58d99c}
+.jr-ping-chart{min-height:250px!important;padding:14px!important}
+.jr-ping-chart .jr-monitor-chart-inner{height:220px}
+.jr-ping-chart .jr-monitor-plot svg{height:calc(100% - 18px)}
+.jr-ping-chart .jr-monitor-plot .ping-line{
+    stroke:#4da9e9;
+    stroke-width:1.5;
+    fill:none;
+    vector-effect:non-scaling-stroke;
+}
+.jr-ping-chart .jr-monitor-plot .grid{
+    fill:none;
+    stroke:#2a3b50;
+    stroke-width:.45;
+    stroke-dasharray:2 2;
+}
+.jr-monitor-chart-legend i.ping{background:#4da9e9}
+.jr-ping-source{
+    display:block;
+    padding:0 14px 12px;
+    color:#769bb7;
+    font-size:8px;
+}
 .jr-ixc-actions button.is-loading{opacity:.65;cursor:wait}
-@media (max-width:700px){.jr-ping-results{grid-template-columns:1fr}}
-
-
-/* Histórico das medições ICMP da sessão PPPoE pelo NE8000. */
-.jr-ping-live-chart{grid-column:1/-1;min-height:96px;padding:8px 0}
-.jr-ping-live-chart svg{display:block;width:100%;height:78px;overflow:visible}
-.jr-ping-live-chart .grid{stroke:rgba(130,173,204,.18);stroke-width:.7;fill:none}
-.jr-ping-live-chart .ping-line{stroke:#4db7ff;stroke-width:1.5;fill:none;vector-effect:non-scaling-stroke}
-.jr-ping-live-chart>div{display:flex;justify-content:space-between;color:#769bb7;font-size:10px}
-.jr-ping-live-note{grid-column:1/-1;color:#8eafc7;font-size:12px;padding:4px 0}
+@media(max-width:1050px){.jr-ping-live-head{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.jr-ping-live-head{grid-template-columns:1fr}.jr-ping-live-head>div{border-right:0}}
