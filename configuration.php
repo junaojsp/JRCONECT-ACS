@@ -4,6 +4,7 @@ require_once __DIR__ . '/lib/Security.php';
 require_once __DIR__ . '/lib/AIConfig.php';
 require_once __DIR__ . '/lib/ConcentratorConfig.php';
 securityRequireRole(['admin']);
+$securityCsrf = securityCsrfToken();
 
 $pageTitle = 'Configurações';
 $currentPage = 'configuration';
@@ -161,6 +162,7 @@ include __DIR__ . '/views/layouts/header.php';
                     <div class="card-body">
 
                         <form id="form-change-password">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($securityCsrf, ENT_QUOTES, 'UTF-8'); ?>">
 
                             <div class="form-group">
                                 <label>Senha atual</label>
@@ -196,6 +198,7 @@ include __DIR__ . '/views/layouts/header.php';
                                     type="password"
                                     name="new_password"
                                     class="form-control"
+                                    minlength="12"
                                 >
 
                             </div>
