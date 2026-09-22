@@ -927,7 +927,8 @@
                 const keepLastRate=[
                     'waiting_next_refresh',
                     'refresh_queued',
-                    'stale_counters'
+                    'stale_counters',
+                    'waiting_counter_change'
                 ].includes(data?.reason);
 
                 if(keepLastRate){
