@@ -753,20 +753,29 @@
     function renderIxcAccessSummary(report) {
         const login=report?.login||{};
         const conc=report?.concentrator||{};
-        const session=report?.current_session||{};
-        const connected=fmtDuration(login.connected_seconds??session.seconds??0);
+        const reportSession=report?.current_session||{};
+        const session=traffic.latestSession||{};
+        const connectedSeconds=login.connected_seconds??reportSession.seconds??session.seconds??null;
+        const connected=connectedSeconds===null?'N/D':fmtDuration(connectedSeconds);
+        const concentrator=conc.name||conc.ip||traffic.concentrator?.name||session.bras||'N/D';
         const rows=[
-            ['Login',login.username||'N/D','bi-person-check'],
+            ['Login',login.username||reportSession.username||session.username||'N/D','bi-person-check'],
             ['Conectado a',connected,'bi-clock-history'],
-            ['IPv4',login.ipv4||'N/D','bi-hdd-network'],
+            ['IPv4',login.ipv4||reportSession.ip||session.ip||'N/D','bi-hdd-network'],
             ['IPv6',login.ipv6||'Sem resultado','bi-diagram-3'],
-            ['Concentrador',conc.name||conc.ip||'N/D','bi-router'],
-            ['Tecnologia',login.technology||'N/D','bi-broadcast'],
-            ['Tipo de autenticação',login.auth_type||'N/D','bi-key'],
-            ['Interface de conexão',login.interface||'N/D','bi-ethernet'],
-            ['MAC',login.mac||'N/D','bi-upc-scan']
+            ['Concentrador',concentrator,'bi-router'],
+            ['Tecnologia',login.technology||reportSession.technology||session.technology||'PPPoE','bi-broadcast'],
+            ['Tipo de autenticação',login.auth_type||reportSession.auth_type||session.auth_type||'PPPoE / RADIUS','bi-key'],
+            ['Interface de conexão',login.interface||reportSession.interface||session.interface||'N/D','bi-ethernet'],
+            ['MAC',login.mac||reportSession.mac||session.mac||'N/D','bi-upc-scan']
         ];
         return rows.map(([label,value,icon])=>'<div><span><i class="bi '+icon+'"></i>'+esc(label)+'</span><strong>'+esc(value)+'</strong></div>').join('');
+    }
+    function refreshIxcAccessSummary() {
+        const summary=document.getElementById('jr-ixc-access-summary');
+        if (!summary) return;
+        const html=renderIxcAccessSummary(traffic.report||{});
+        if (summary.innerHTML!==html) summary.innerHTML=html;
     }
     async function loadIxcReplicaReport(force=false) {
         const loginId=traffic.ixcLoginId||null;
@@ -791,7 +800,7 @@
             const events=document.getElementById('jr-ixc-events');
             const consumption=document.getElementById('jr-ixc-consumption');
             const consumptionSource=document.getElementById('jr-ixc-consumption-source');
-            if(summary)summary.innerHTML=renderIxcAccessSummary(data);
+            refreshIxcAccessSummary();
             if(events)events.innerHTML=renderIxcEventHistory(data);
             if(consumption)consumption.innerHTML=renderIxcConsumption(data);
             if(consumptionSource)consumptionSource.textContent=data?.last_30_days?.source||'IXC/RADIUS';
@@ -936,6 +945,7 @@
                     sourceKey='ne';
                     sourceLabel=ne.source||'Huawei NE8000';
                     traffic.concentrator=ne.concentrator||traffic.concentrator;
+                    refreshIxcAccessSummary();
                 }
             }
 
@@ -1043,6 +1053,7 @@
             const s=data.session;
             traffic.online=true; traffic.latestSession=s;
             traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
+            refreshIxcAccessSummary();
             if(traffic.ixcLoginId || s.username) loadIxcReplicaReport();
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
@@ -1093,14 +1104,13 @@
     document.addEventListener('DOMContentLoaded', () => {
         ensureModal();
         setTimeout(enhanceControls, 500);
-        // Atualização visual a cada 1 s. A própria função limita a consulta
-        // de rede; o endpoint limita Connection Request ao CPE.
+        // A amostra é atualizada pela própria consulta. Não redesenhar o
+        // gráfico a cada segundo: recriar o SVG sem uma nova amostra causava
+        // o efeito visual de piscada na aba de monitoramento.
         window.setInterval(() => {
             if (typeof window.updateTr069LiveTraffic === 'function') {
                 window.updateTr069LiveTraffic();
             }
-            const chart=document.getElementById('bandwidth-bars');
-            if(chart && traffic.samples.length) chart.innerHTML=chartHtml(traffic.samples);
         }, 1000);
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.sessionKey=null;
