@@ -9,6 +9,7 @@ use App\GenieACS;
 use App\CPEProfiles;
 
 const IXC_SYNC_MISS_THRESHOLD = 3;
+const IXC_SYNC_ORPHAN_THRESHOLD = 12;
 
 function out(string $msg): void
 {
@@ -213,6 +214,8 @@ try {
                 $entry['ever_valid_in_ixc'] = true;
                 $entry['consecutive_misses'] = 0;
                 $entry['last_valid_at'] = gmdate('c');
+                $entry['orphan_misses'] = 0;
+                unset($entry['orphan_since']);
                 $entry['id_login'] = $fiber['id_login'] ?? null;
                 $entry['id_contrato'] = $fiber['id_contrato'] ?? null;
                 unset($entry['pending_since']);
@@ -258,7 +261,43 @@ try {
                         }
                     }
                 } else {
-                    out("IGNORADA {$serial}: nunca foi confirmada no IXC");
+                    $entry['orphan_misses'] = (int)($entry['orphan_misses'] ?? 0) + 1;
+                    $entry['orphan_since'] = $entry['orphan_since'] ?? gmdate('c');
+
+                    out("ORFA {$serial} nao encontrada no IXC ({$entry['orphan_misses']}/" . IXC_SYNC_ORPHAN_THRESHOLD . ")");
+                    audit('orphan_device_missing_in_ixc', [
+                        'device_id' => $deviceId,
+                        'serial' => $serial,
+                        'misses' => $entry['orphan_misses'],
+                        'apply' => $apply,
+                    ]);
+
+                    if ($entry['orphan_misses'] >= IXC_SYNC_ORPHAN_THRESHOLD) {
+                        if ($apply) {
+                            $delete = $genie->deleteDevice($deviceId);
+
+                            if (!empty($delete['success'])) {
+                                out("REMOVIDA ORFA {$serial} do GenieACS");
+                                audit('orphan_device_deleted_from_genieacs', [
+                                    'device_id' => $deviceId,
+                                    'serial' => $serial,
+                                    'http_code' => $delete['http_code'] ?? null,
+                                ]);
+                                unset($state['devices'][$deviceId]);
+                                continue;
+                            }
+
+                            out("ERRO ao remover ORFA {$serial} do GenieACS");
+                            audit('orphan_device_delete_failed', [
+                                'device_id' => $deviceId,
+                                'serial' => $serial,
+                                'http_code' => $delete['http_code'] ?? null,
+                                'error' => $delete['error'] ?? null,
+                            ]);
+                        } else {
+                            out("DRY-RUN: ORFA {$serial} seria removida agora");
+                        }
+                    }
                 }
             }
         } catch (Throwable $e) {
