@@ -138,6 +138,14 @@ class GenieACS {
     }
 
     /**
+     * Delete a device from GenieACS.
+     */
+    public function deleteDevice($deviceId) {
+        $encodedId = rawurlencode($deviceId);
+        return $this->request("/devices/{$encodedId}", 'DELETE');
+    }
+
+    /**
      * Execute task on device
      */
     public function executeTask($deviceId, $taskName, $params = []) {
