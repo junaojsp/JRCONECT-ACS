@@ -1223,12 +1223,12 @@ include __DIR__ . '/views/layouts/header.php';
             </section>
 
             <section class="jr-ref-card jr-ref-resets">
-                <div class="jr-ref-card-head"><i class="bi bi-arrow-repeat"></i><strong>Resets</strong></div>
+                <div class="jr-ref-card-head"><i class="bi bi-arrow-repeat"></i><strong>Reinícios</strong></div>
                 <div class="jr-ref-resets-body">
                     <div class="jr-ref-reset-main">
                         <strong id="ref-reset-today">0</strong>
-                        <span>Resets hoje</span>
-                        <div class="jr-ref-reset-ok"><i class="bi bi-check-circle-fill"></i><span>Nenhuma anomalia detectada no número de resets</span></div>
+                        <span>Reinícios hoje</span>
+                        <div class="jr-ref-reset-ok"><i class="bi bi-check-circle-fill"></i><span>Nenhuma anomalia detectada no número de reinícios</span></div>
                     </div>
                     <div class="jr-ref-reset-week">
                         <strong>Últimos 7 dias</strong>
