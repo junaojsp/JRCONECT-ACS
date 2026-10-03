@@ -256,6 +256,7 @@
             bars = Array.from(container.querySelectorAll('i'));
         }
 
+        container.classList.remove('jr-fixed-no-events');
         container.style.display = 'flex';
         container.style.alignItems = 'flex-end';
         container.style.justifyContent = 'space-around';
