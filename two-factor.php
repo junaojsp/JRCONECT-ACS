@@ -145,6 +145,8 @@ if (!is_array($recoveryCodes)) {
         .recovery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0}
         .recovery-grid code{display:block;padding:9px;border-radius:6px;background:#071d2a;color:#7ee4ff;text-align:center}
         .twofa-uri{font-size:10px;word-break:break-all;color:#6f8fa3}
+        .twofa-qr{display:flex;justify-content:center;margin:18px 0}
+        .twofa-qr > div{background:#fff;padding:12px;border-radius:10px}
     </style>
 </head>
 <body>
@@ -162,6 +164,12 @@ if (!is_array($recoveryCodes)) {
         <?php elseif ($setup): ?>
             <h1>Ativar autenticação em duas etapas</h1>
             <p>Seu perfil exige 2FA. No aplicativo autenticador, adicione uma conta TOTP usando a chave abaixo.</p>
+
+            <div class="twofa-qr">
+                <div id="twofa-qrcode" aria-label="QR Code para configurar o autenticador"></div>
+            </div>
+
+            <p class="text-center mb-3">Leia o QR Code com seu aplicativo autenticador.</p>
 
             <label class="form-label">Chave secreta</label>
             <div class="twofa-secret"><?php echo htmlspecialchars($secret, ENT_QUOTES, 'UTF-8'); ?></div>
@@ -195,5 +203,21 @@ if (!is_array($recoveryCodes)) {
         <?php endif; ?>
     </div>
 </div>
+<?php if (!is_array($recoveryCodes) && isset($setup) && $setup && !empty($otpUri)): ?>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var target = document.getElementById('twofa-qrcode');
+    if (!target || typeof QRCode === 'undefined') return;
+
+    new QRCode(target, {
+        text: <?php echo json_encode($otpUri, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+        width: 190,
+        height: 190,
+        correctLevel: QRCode.CorrectLevel.M
+    });
+});
+</script>
+<?php endif; ?>
 </body>
 </html>
