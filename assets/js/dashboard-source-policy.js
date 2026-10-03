@@ -269,11 +269,62 @@
                 : ' Hoje: ' + today.toLocaleString('pt-BR') + ' reinícios.')
             : '';
 
+        let level = 'informativo';
         let levelText = ' Faixa operacional: informativo.';
+
         if (total >= 6) {
+            level = 'alerta';
             levelText = ' Faixa operacional: alerta.';
         } else if (total >= 3) {
+            level = 'atenção';
             levelText = ' Faixa operacional: atenção.';
+        }
+
+        const summaryCard = summaryEl.closest('.jr-ref-card, .acs-final-card, .card');
+        if (summaryCard) {
+            summaryCard.dataset.rebootLevel = level;
+
+            let badge = summaryCard.querySelector('.jr-reboot-level-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'jr-reboot-level-badge';
+
+                const head = summaryCard.querySelector(
+                    '.jr-ref-card-head, .acs-final-card-head, .card-header'
+                );
+
+                if (head) {
+                    head.appendChild(badge);
+                }
+            }
+
+            badge.textContent = level === 'informativo'
+                ? 'Reinícios: normal'
+                : (level === 'atenção' ? 'Reinícios: atenção' : 'Reinícios: alerta');
+
+            Object.assign(badge.style, {
+                marginLeft: 'auto',
+                padding: '3px 8px',
+                borderRadius: '999px',
+                fontSize: '8px',
+                fontWeight: '700',
+                letterSpacing: '.02em',
+                border: '1px solid transparent'
+            });
+
+            if (level === 'alerta') {
+                badge.style.color = '#ff7b7b';
+                badge.style.background = 'rgba(255, 59, 59, .10)';
+                badge.style.borderColor = 'rgba(255, 91, 91, .38)';
+            } else if (level === 'atenção') {
+                badge.style.color = '#ffd166';
+                badge.style.background = 'rgba(255, 193, 7, .10)';
+                badge.style.borderColor = 'rgba(255, 193, 7, .35)';
+            } else {
+                badge.style.color = '#7ee0c3';
+                badge.style.background = 'rgba(39, 211, 159, .08)';
+                badge.style.borderColor = 'rgba(39, 211, 159, .28)';
+            }
         }
 
         let lastText = '';
