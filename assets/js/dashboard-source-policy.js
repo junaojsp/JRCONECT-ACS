@@ -337,7 +337,7 @@
             if (infoEl) {
                 const total = Number(data.total_7_days || 0);
                 infoEl.textContent = total > 0
-                    ? total.toLocaleString('pt-BR') + ' reinício(s) nos últimos 7 dias'
+                    ? total.toLocaleString('pt-BR') + (total === 1 ? ' reinício nos últimos 7 dias' : ' reinícios nos últimos 7 dias')
                     : 'Nenhum reinício registrado pelo JR CONECT ACS nos últimos 7 dias';
             }
 
