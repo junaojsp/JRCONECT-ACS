@@ -260,8 +260,12 @@
         container.style.alignItems = 'flex-end';
         container.style.justifyContent = 'space-around';
         container.style.gap = '6px';
-        container.style.height = '100%';
-        container.style.minHeight = '82px';
+        container.style.height = '72px';
+        container.style.minHeight = '72px';
+        container.style.maxHeight = '72px';
+        container.style.overflow = 'hidden';
+        container.style.boxSizing = 'border-box';
+        container.style.padding = '0 8px 4px';
 
         return bars;
     };
@@ -305,8 +309,8 @@
             const bars = ensureRebootBars();
             const max = Math.max(1, ...days.map(day => Number(day.count || 0)));
             const chartHeight = Math.max(
-                72,
-                Number(barsContainer?.clientHeight || 82) - 8
+                48,
+                Number(barsContainer?.clientHeight || 72) - 10
             );
 
             bars.forEach((bar, index) => {
