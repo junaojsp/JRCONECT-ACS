@@ -304,22 +304,28 @@
 
             const bars = ensureRebootBars();
             const max = Math.max(1, ...days.map(day => Number(day.count || 0)));
+            const chartHeight = Math.max(
+                72,
+                Number(barsContainer?.clientHeight || 82) - 8
+            );
 
             bars.forEach((bar, index) => {
                 const day = days[index] || {};
                 const count = Number(day.count || 0);
-                const height = count <= 0
-                    ? 4
-                    : Math.max(12, Math.round((count / max) * 100));
+                const heightPx = count <= 0
+                    ? 3
+                    : Math.max(14, Math.round((count / max) * chartHeight));
 
                 bar.style.display = 'block';
                 bar.style.flex = '1 1 0';
                 bar.style.minWidth = '5px';
                 bar.style.maxWidth = '18px';
-                bar.style.height = height + '%';
+                bar.style.height = heightPx + 'px';
                 bar.style.borderRadius = '3px 3px 0 0';
-                bar.style.background = 'currentColor';
-                bar.style.opacity = count > 0 ? '1' : '0.22';
+                bar.style.background = count > 0
+                    ? 'var(--bs-info, #0dcaf0)'
+                    : 'currentColor';
+                bar.style.opacity = count > 0 ? '0.95' : '0.18';
                 bar.title = (day.date || '') + ': ' + count + ' reinício(s)';
             });
 
