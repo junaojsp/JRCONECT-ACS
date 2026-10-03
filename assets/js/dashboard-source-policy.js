@@ -250,6 +250,9 @@
 
         const total = Number(data?.total_7_days || 0);
         const today = Number(data?.today || 0);
+        const recentEvents = Array.isArray(data?.recent_events)
+            ? data.recent_events
+            : [];
 
         if (total <= 0) {
             summaryEl.textContent = base;
@@ -266,11 +269,36 @@
                 : ' Hoje: ' + today.toLocaleString('pt-BR') + ' reinícios.')
             : '';
 
+        let levelText = ' Faixa operacional: informativo.';
+        if (total >= 6) {
+            levelText = ' Faixa operacional: alerta.';
+        } else if (total >= 3) {
+            levelText = ' Faixa operacional: atenção.';
+        }
+
+        let lastText = '';
+        const last = recentEvents[0] || null;
+
+        if (last) {
+            const serial = String(last.serial || '').trim();
+            const contract = String(last.id_contrato || '').trim();
+
+            const parts = [];
+            if (serial) parts.push('serial ' + serial);
+            if (contract) parts.push('contrato ' + contract);
+
+            if (parts.length) {
+                lastText = ' Último reinício: ' + parts.join(', ') + '.';
+            }
+        }
+
         summaryEl.textContent = base +
             ' Reinícios JR CONECT ACS: ' +
             totalText +
             '.' +
-            todayText;
+            todayText +
+            levelText +
+            lastText;
     };
 
     const ensureRebootBars = () => {
