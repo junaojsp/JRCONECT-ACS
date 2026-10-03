@@ -123,6 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="btn btn-primary w-100">
                     <i class="bi bi-box-arrow-in-right"></i> Entrar
                 </button>
+
+                <a href="/recover-two-factor.php"
+                   class="d-block text-center mt-3"
+                   style="color:#7ee4ff;text-decoration:none;font-size:.9rem;">
+                    <i class="bi bi-shield-lock"></i> Perdi acesso ao autenticador
+                </a>
             </form>
         </div>
     </div>
