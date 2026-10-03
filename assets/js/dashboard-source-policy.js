@@ -239,6 +239,40 @@
         }
     }
 
+    const updateOperationalSummaryWithReboots = data => {
+        const summaryEl = document.getElementById('ref-ai-summary');
+        if (!summaryEl) return;
+
+        const current = String(summaryEl.textContent || '').trim();
+        const base = current
+            .replace(/\s*Reinícios JR CONECT ACS:.*$/u, '')
+            .trim();
+
+        const total = Number(data?.total_7_days || 0);
+        const today = Number(data?.today || 0);
+
+        if (total <= 0) {
+            summaryEl.textContent = base;
+            return;
+        }
+
+        const totalText = total === 1
+            ? '1 reinício nos últimos 7 dias'
+            : total.toLocaleString('pt-BR') + ' reinícios nos últimos 7 dias';
+
+        const todayText = today > 0
+            ? (today === 1
+                ? ' Hoje: 1 reinício.'
+                : ' Hoje: ' + today.toLocaleString('pt-BR') + ' reinícios.')
+            : '';
+
+        summaryEl.textContent = base +
+            ' Reinícios JR CONECT ACS: ' +
+            totalText +
+            '.' +
+            todayText;
+    };
+
     const ensureRebootBars = () => {
         const container = document.querySelector('.jr-ref-reset-bars');
         if (!container) return [];
@@ -340,6 +374,8 @@
                     ? total.toLocaleString('pt-BR') + (total === 1 ? ' reinício nos últimos 7 dias' : ' reinícios nos últimos 7 dias')
                     : 'Nenhum reinício registrado pelo JR CONECT ACS nos últimos 7 dias';
             }
+
+            updateOperationalSummaryWithReboots(data);
 
             const resetCard = todayEl?.closest('.jr-ref-card, .acs-final-card, .card');
             if (resetCard) {
