@@ -1162,7 +1162,7 @@ include __DIR__ . '/views/layouts/header.php';
                 <div class="jr-ref-brand-icon"><i class="bi bi-diagram-3-fill"></i></div>
                 <div><strong>JR CONECT</strong><span>Gestão e Monitoramento de Equipamentos</span></div>
             </div>
-            <div class="jr-ref-search"><i class="bi bi-search"></i><input type="text" placeholder="Buscar equipamento, cliente, IP, MAC..." onkeydown="if(event.key==='Enter'&&this.value.trim()){window.location='/devices.php?search='+encodeURIComponent(this.value.trim())}"></div>
+            <div class="jr-ref-search"><i class="bi bi-search"></i><input type="text" placeholder="Buscar ONU, SSID 2,4 GHz, cliente, IP, MAC..." onkeydown="if(event.key==='Enter'&&this.value.trim()){window.location='/devices.php?search='+encodeURIComponent(this.value.trim())}"></div>
         </div>
 
         <div class="jr-ref-grid">
@@ -1946,196 +1946,32 @@ function extractIP(ipString) {
    EQUIPAMENTOS RECENTES
    ========================================================== */
 
+let recentDashboardRequest = 0;
+let recentDashboardDevices = [];
+
+function uniqueDashboardOnus(devices) {
+    const seen = new Set();
+    return devices.filter(device => {
+        const key = device.device_id || String(device.serial_number || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
 async function loadRecentDevices() {
-
-
-    if (
-        recentDevicesFetchInProgress
-    ) {
-
-        console.debug(
-            '[DASHBOARD] Consulta de equipamentos recentes já em andamento...'
-        );
-
-        return;
-
-    }
-
-
-    const container =
-        document.getElementById(
-            'recent-devices'
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML =
-        '<div class="spinner"></div>';
-
-
-    recentDevicesFetchInProgress =
-        true;
-
-
-    try {
-
-
-        const result =
-            await fetchAPI(
-                '/api/recent-devices.php',
-                {
-                    timeout:
-                        25000
-                }
-            );
-
-
-        if (
-            result &&
-            result.success
-        ) {
-
-
-            const devices =
-                result.devices;
-
-
-            if (
-                devices.length === 0
-            ) {
-
-
-                container.innerHTML =
-                    '<p class="text-center text-muted">Nenhuma atividade recente encontrada</p>';
-
-
-                return;
-
-            }
-
-
-            /*
-             * Verificar cadastro no mapa.
-             */
-
-            const mapStatusPromises =
-                devices.map(
-                    device =>
-
-
-                        fetchAPI(
-
-                            '/api/get-onu-location.php?serial_number=' +
-
-                            encodeURIComponent(
-                                device.serial_number
-                            )
-
-                        )
-
-
-                        .then(
-                            result => ({
-
-
-                                serial:
-                                    device.serial_number,
-
-
-                                inMap:
-                                    result &&
-                                    result.success &&
-                                    result.location &&
-                                    result.location.found,
-
-
-                                itemType:
-                                    result?.location?.item_type ||
-                                    'onu',
-
-
-                                itemId:
-                                    result?.location?.onu?.id ||
-                                    result?.location?.server?.id ||
-                                    null
-
-
-                            })
-                        )
-
-
-                        .catch(
-                            () => ({
-
-
-                                serial:
-                                    device.serial_number,
-
-
-                                inMap:
-                                    false,
-
-
-                                itemType:
-                                    'onu',
-
-
-                                itemId:
-                                    null
-
-
-                            })
-                        )
-
-                );
-
-
-            const mapStatuses =
-                await Promise.all(
-                    mapStatusPromises
-                );
-
-
-            const mapStatusMap =
-                {};
-
-
-            mapStatuses.forEach(
-                status => {
-
-
-                    mapStatusMap[
-                        status.serial
-                    ] = {
-
-
-                        inMap:
-                            status.inMap,
-
-
-                        itemType:
-                            status.itemType,
-
-
-                        itemId:
-                            status.itemId
-
-
-                    };
-
-
-                }
-            );
-
-
-            /*
-             * Criar tabela.
-             */
-
+    if (recentDevicesFetchInProgress) return;
+    const container = document.getElementById('recent-devices');
+    if (!container) return;
+    const request = ++recentDashboardRequest;
+    recentDevicesFetchInProgress = true;
+    let devices = recentDashboardDevices;
+    let mapStatusMap = {};
+    let mapLoaded = false;
+
+    function draw() {
+        if (request !== recentDashboardRequest) return;
             let html =
                 '<div class="table-responsive">' +
                 '<table class="table table-hover">' +
@@ -2146,7 +1982,7 @@ async function loadRecentDevices() {
             html += '<th>MAC</th>';
             html += '<th>Modelo</th>';
             html += '<th>IP</th>';
-            html += '<th>SSID</th>';
+            html += '<th>SSID 2,4 GHz</th>';
             html += '<th>PPPoE</th>';
             html += '<th>RX</th>';
             html += '<th>Temperatura</th>';
@@ -2385,6 +2221,8 @@ async function loadRecentDevices() {
                             `<button class="btn btn-sm btn-success me-1" onclick="window.open('${mapUrl}', '_blank')" title="Visualizar no mapa"><i class="bi bi-map"></i></button>`;
 
 
+                    } else if (!mapLoaded) {
+                        mapButton = '<button class="btn btn-sm btn-secondary me-1" disabled title="Consultando mapa"><i class="bi bi-map"></i></button>';
                     } else {
 
 
@@ -2419,7 +2257,7 @@ async function loadRecentDevices() {
 
 
                     html +=
-                        `<td>${device.wifi_ssid || 'N/D'}</td>`;
+                        `<td>${device.wifi_ssid_24ghz ?? device.wifi_ssid ?? 'N/D'}</td>`;
 
 
                     html +=
@@ -2473,57 +2311,63 @@ async function loadRecentDevices() {
             container.innerHTML =
                 html;
 
-
-        } else {
-
-
-            if (
-                result &&
-                result.error !== 'timeout'
-            ) {
-
-
-                container.innerHTML =
-                    '<p class="text-center text-danger">Falha ao carregar os equipamentos recentes</p>';
-
-
-            } else {
-
-
-                container.innerHTML =
-                    '<p class="text-center text-warning">Tempo limite excedido. Atualize a página.</p>';
-
-
-            }
-
-
-        }
-
-
-    } catch (error) {
-
-
-        console.error(
-            'Erro ao carregar equipamentos recentes:',
-            error
-        );
-
-
-        container.innerHTML =
-            '<p class="text-center text-danger">Erro ao carregar os dados</p>';
-
-
-    } finally {
-
-
-        recentDevicesFetchInProgress =
-            false;
-
-
     }
 
-}
+    if (devices.length) draw();
+    else container.innerHTML = '<div class="spinner"></div>';
 
+    try {
+        const result = await fetchAPI('/api/recent-devices.php', { timeout: 25000 });
+        if (!result?.success) throw new Error(result?.message || 'Consulta indisponível');
+        devices = uniqueDashboardOnus(Array.isArray(result.devices) ? result.devices : []);
+        recentDashboardDevices = devices;
+        if (!devices.length) {
+            container.innerHTML = '<p class="text-center text-muted">Nenhuma atividade recente encontrada</p>';
+            return;
+        }
+        // Render before requesting optional map and IXC information.
+        draw();
+        const body = JSON.stringify({ serial_numbers: devices.map(device => device.serial_number) });
+        await Promise.allSettled([
+            (async () => {
+                const result = await fetchAPI('/api/get-onu-location-batch.php', { method: 'POST', body });
+                if (!result?.success || !result.locations) return;
+                Object.entries(result.locations).forEach(([serial, location]) => {
+                    mapStatusMap[serial] = {
+                        inMap: location.found || false,
+                        itemType: location.item_type || 'onu',
+                        itemId: location.onu?.id || location.server?.id || null
+                    };
+                });
+                mapLoaded = true;
+                draw();
+            })(),
+            (async () => {
+                const result = await fetchAPI('/api/get-devices-ixc-batch.php', { method: 'POST', body });
+                if (!result?.success || !result.devices) return;
+                devices = devices.map(device => {
+                    const key = String(device.serial_number || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    const ixc = result.devices[key] || result.devices[device.serial_number];
+                    if (!ixc?.found) return device;
+                    return {
+                        ...device,
+                        ip_tr069: ixc.ip || device.ip_tr069,
+                        pppoe_username: ixc.pppoe_username || device.pppoe_username,
+                        rx_power: ixc.rx_power ?? device.rx_power,
+                        temperature: ixc.temperature ?? device.temperature
+                    };
+                });
+                recentDashboardDevices = devices;
+                draw();
+            })()
+        ]);
+    } catch (error) {
+        console.warn('Consulta da dashboard indisponível:', error);
+        if (!devices.length) container.innerHTML = '<p class="text-center text-danger">Falha ao carregar os equipamentos. Atualize a página.</p>';
+    } finally {
+        recentDevicesFetchInProgress = false;
+    }
+}
 
 /* ==========================================================
    SUMMON
