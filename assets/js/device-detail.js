@@ -663,6 +663,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </section>
 
+                <div class="acs-device-info-column">
                 <section class="acs-overview-card acs-card-wan acs-approved-wan">
                     <div class="acs-overview-card-header">
                         <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span><small class="ms-2 text-muted">IXC principal · TR-069 fallback</small></div>
@@ -678,13 +679,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <div><span><i class="bi bi-tag"></i>VLAN</span><strong id="wan-vlan">${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
                         <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong id="wan-last-error">${primaryWan.last_error || '-'}</strong></div>
                     </div>
-                </section>
-
-                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span><small class="ms-2 text-muted">Leitura e gerenciamento via TR-069</small></div>
-                    </div>
-                    <div class="acs-wifi-reference-grid"></div>
                 </section>
 
                 <section class="acs-overview-card acs-card-lan acs-approved-lan">
@@ -749,6 +743,14 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </section>
 
 
+
+                </div>
+                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span><small class="ms-2 text-muted">Leitura e gerenciamento via TR-069</small></div>
+                    </div>
+                    <div class="acs-wifi-reference-grid"></div>
+                </section>
 
                 ${renderOpticalHistoryCard()}
                 ${renderDeviceActionHistoryCard()}
