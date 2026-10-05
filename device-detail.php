@@ -32,7 +32,7 @@ include __DIR__ . '/views/layouts/header.php';
          CABECALHO OPERACIONAL DO EQUIPAMENTO
          ===================================================== -->
 
-    <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-4">
+    <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-5">
     <script src="/assets/js/device-readability.js?v=20261005-3"></script>
     <div class="acs-device-shell">
 
@@ -2337,7 +2337,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-action-history.js?v=20261005-2"></script>
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
-<link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-4">
+<link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-5">
 
 
 <?php
