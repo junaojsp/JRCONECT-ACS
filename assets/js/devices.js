@@ -95,18 +95,7 @@ async function loadDevices(isAutoRefresh = false) {
                     currentPage = 1;
                 }
 
-                devicesToRender = allDevices.filter(device => {
-                    const serialNumber = (device.serial_number || '').toLowerCase();
-                    const macAddress = (device.mac_address || '').toLowerCase();
-
-                    // Search in tags array
-                    let tagsMatch = false;
-                    if (device.tags && Array.isArray(device.tags) && device.tags.length > 0) {
-                        tagsMatch = device.tags.some(tag => tag.toLowerCase().includes(searchTerm));
-                    }
-
-                    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || (device.pppoe_username || '').toLowerCase().includes(searchTerm) || tagsMatch;
-                });
+                devicesToRender = allDevices.filter(device => deviceMatchesLocalSearch(device, searchTerm));
 
                 // Debug: Log search results during auto-refresh
                 if (isAutoRefresh && devicesToRender.length > 0) {
@@ -159,7 +148,18 @@ async function loadDevices(isAutoRefresh = false) {
     }
 }
 
+let devicesRenderRequest = 0;
+
 async function renderDevices(devices) {
+    const renderRequest = ++devicesRenderRequest;
+    const seen = new Set();
+    devices = devices.filter(device => {
+        const key = device.device_id || normalizeDeviceSerial(device.serial_number);
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     const tbody = document.getElementById('devices-tbody');
     tbody.innerHTML = '';
 
@@ -225,6 +225,10 @@ async function renderDevices(devices) {
             };
         });
     }
+
+    // A newer search may finish while the map lookup is pending.
+    if (renderRequest !== devicesRenderRequest || currentFilterType !== 'onu') return;
+    tbody.innerHTML = '';
 
     devicesToRender.forEach(device => {
         const row = document.createElement('tr');
@@ -489,7 +493,7 @@ function generateTableHeader(type) {
                     IP <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('ssid')" style="cursor: pointer;">
-                    SSID <i class="bi bi-chevron-expand sort-icon"></i>
+                    SSID 2,4 GHz <i class="bi bi-chevron-expand sort-icon"></i>
                 </th>
                 <th class="sortable" onclick="sortTable('pppoe_username')" style="cursor: pointer;">
                     PPPoE <i class="bi bi-chevron-expand sort-icon"></i>
@@ -569,7 +573,7 @@ function extractIP(ipString) {
 function updateSearchPlaceholder(type) {
     const searchInput = document.getElementById('search-input');
     if (type === 'onu') {
-        searchInput.placeholder = 'Buscar por serial, MAC, login, CPF ou nome do cliente...';
+        searchInput.placeholder = 'Buscar por serial, MAC, SSID 2,4 GHz, login, CPF ou nome...';
     } else {
         searchInput.placeholder = 'Search by Name...';
     }
@@ -587,8 +591,9 @@ function deviceMatchesLocalSearch(device, searchTerm) {
     const serialNumber = (device.serial_number || '').toLowerCase();
     const macAddress = (device.mac_address || '').toLowerCase();
     const pppoeUsername = (device.pppoe_username || '').toLowerCase();
+    const ssid = (device.wifi_ssid || '').toLowerCase();
     const tagsMatch = Array.isArray(device.tags) && device.tags.some(tag => String(tag).toLowerCase().includes(searchTerm));
-    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || pppoeUsername.includes(searchTerm) || tagsMatch;
+    return serialNumber.includes(searchTerm) || macAddress.includes(searchTerm) || pppoeUsername.includes(searchTerm) || (ssid !== 'n/a' && ssid.includes(searchTerm)) || tagsMatch;
 }
 
 async function searchClientDevices(searchTerm, localDevices) {

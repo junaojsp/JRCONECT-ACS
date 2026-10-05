@@ -5,6 +5,40 @@ namespace App;
  * GenieACS API Client
  */
 class GenieACS {
+    /**
+     * Primary 2.4 GHz SSID for the device list. Other radios remain in detail data.
+     * Legacy devices without band metadata use their standard first WLAN.
+     */
+    private static function primaryWifiSsid($device) {
+        $read = static function($node, $key) {
+            return $node[$key]['_value'] ?? null;
+        };
+        $legacy = $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration'] ?? [];
+        $fallback = null;
+        foreach ($legacy as $index => $wlan) {
+            if (!is_array($wlan)) continue;
+            $ssid = $read($wlan, 'SSID');
+            if (!is_string($ssid) || $ssid === '') continue;
+            $band = (string) ($read($wlan, 'OperatingFrequencyBand') ?? $read($wlan, 'X_HW_FrequencyBand') ?? '');
+            if (strpos($band, '2.4') !== false) return $ssid;
+            if ((string) $index === '1' && $band === '') $fallback = $ssid;
+        }
+        $wifi = $device['Device']['WiFi'] ?? [];
+        foreach (($wifi['SSID'] ?? []) as $index => $network) {
+            if (!is_array($network)) continue;
+            $ssid = $read($network, 'SSID');
+            if (!is_string($ssid) || $ssid === '') continue;
+            $band = '';
+            $reference = (string) ($read($network, 'LowerLayers') ?? '');
+            if (preg_match('/Device\\.WiFi\\.Radio\\.(\\d+)/', $reference, $match)) {
+                $band = (string) $read($wifi['Radio'][$match[1]] ?? [], 'OperatingFrequencyBand');
+            }
+            if (strpos($band, '2.4') !== false) return $ssid;
+            if ((string) $index === '1' && $band === '' && $fallback === null) $fallback = $ssid;
+        }
+        return $fallback ?? 'N/A';
+    }
+
     private $host;
     private $port;
     private $username;
@@ -524,15 +558,7 @@ class GenieACS {
         $data['uptime'] = $getParam('InternetGatewayDevice.DeviceInfo.UpTime') ??
                          $getParam('Device.DeviceInfo.UpTime') ?? 'N/A';
 
-        // WiFi info - try multiple paths and WLAN configurations
-        $wifiSsid = $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') ??
-                   $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ??
-                   $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.3.SSID') ??
-                   $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.4.SSID') ??
-                   $getParam('Device.WiFi.SSID.1.SSID') ??
-                   $getParam('Device.WiFi.SSID.2.SSID');
-
-        $data['wifi_ssid'] = $wifiSsid ?? 'N/A';
+        $data['wifi_ssid'] = self::primaryWifiSsid($device);
 
         $wifiPassword = $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.KeyPassphrase') ??
                        $getParam('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase') ??
