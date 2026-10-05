@@ -1,0 +1,68 @@
+/* Device page only. Loaded after the existing theme and compact overrides. */
+html.acs-device-readable {
+    --acs-read-body:16px; --acs-read-label:14px; --acs-read-title:18px;
+    --acs-read-power:24px; --acs-read-muted:#b7c7da;
+}
+html.acs-device-readable[data-acs-text-size="large"] {
+    --acs-read-body:18px; --acs-read-label:16px; --acs-read-title:20px; --acs-read-power:28px;
+}
+html.acs-device-readable .acs-text-size-control {display:flex;align-items:center;gap:8px;color:var(--acs-read-muted);font-size:var(--acs-read-label);flex-wrap:wrap}
+html.acs-device-readable .acs-text-size-control select {background:#142336;color:#eef4fb;border:1px solid #526881;border-radius:8px;min-height:42px;padding:6px 28px 6px 10px;font:inherit}
+html.acs-device-readable .acs-device-toolbar {flex-wrap:wrap;gap:16px}
+html.acs-device-readable .acs-device-toolbar-actions {flex-wrap:wrap;gap:8px}
+html.acs-device-readable :is(.acs-toolbar-action,.acs-device-subtitle,.acs-customer-strip,.acs-device-tabs,.jr-control-modal) {font-size:var(--acs-read-body)!important;line-height:1.5}
+html.acs-device-readable :is(.acs-toolbar-action,.acs-device-tabs .nav-link) {min-height:42px;font-size:var(--acs-read-label)!important}
+html.acs-device-readable #overview-content {font-size:var(--acs-read-body);line-height:1.5;--acs-ref-muted:var(--acs-read-muted)}
+html.acs-device-readable #overview-content .acs-overview-card :is(p,label,dt,small) {font-size:var(--acs-read-label)!important;line-height:1.5}
+html.acs-device-readable #overview-content .acs-overview-card strong {font-size:var(--acs-read-body)!important;line-height:1.5}
+html.acs-device-readable #overview-content .acs-overview-card span {font-size:var(--acs-read-label)!important;line-height:1.5}
+html.acs-device-readable .acs-customer-strip :is(span,small,p) {font-size:var(--acs-read-label)!important;line-height:1.5}
+html.acs-device-readable .acs-customer-strip strong {font-size:var(--acs-read-body)!important;overflow-wrap:anywhere}
+html.acs-device-readable #overview-content :is(.acs-overview-grid,.acs-overview-reorganized) {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px!important}
+html.acs-device-readable #overview-content .acs-overview-with-ai-bar>.acs-device-wide {grid-column:1/-1!important}
+html.acs-device-readable #overview-content .acs-overview-with-ai-bar>:is(.acs-approved-wan,.acs-approved-wifi,.acs-approved-lan,.acs-approved-diagnostics) {grid-column:auto!important}
+html.acs-device-readable #overview-content .acs-overview-card {min-width:0;min-height:0!important;width:100%!important;padding:20px!important}
+html.acs-device-readable #overview-content :is(.acs-action-history,.acs-optical-history) {grid-column:1/-1!important}
+html.acs-device-readable #overview-content .acs-overview-card-header {flex-wrap:wrap;gap:10px;padding-bottom:14px;margin-bottom:14px}
+html.acs-device-readable #overview-content :is(.acs-kicker,.acs-overview-card-header h5,.acs-device-combined-title) {font-size:var(--acs-read-title)!important;letter-spacing:normal!important;text-transform:none!important;line-height:1.4}
+html.acs-device-readable #overview-content :is(small,.small,.text-muted,.acs-card-meta,.acs-admin-note,.acs-lan-state,.acs-lan-device,.acs-event-placeholder) {font-size:var(--acs-read-label)!important;line-height:1.5!important;color:var(--acs-read-muted)!important}
+html.acs-device-readable #overview-content :is(.acs-reference-list,.acs-reference-footer-grid,.acs-reference-metrics) span {font-size:var(--acs-read-label)!important;color:var(--acs-read-muted)!important;letter-spacing:normal!important;text-transform:none!important}
+html.acs-device-readable #overview-content :is(.acs-reference-list,.acs-reference-footer-grid,.acs-reference-metrics) strong {font-size:var(--acs-read-body)!important;line-height:1.5!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;min-width:0}
+html.acs-device-readable #overview-content .acs-reference-list>div {grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;gap:14px;min-height:48px!important;padding:10px 0!important}
+html.acs-device-readable #overview-content .acs-fiber-summary-grid {gap:24px}
+html.acs-device-readable #overview-content .acs-reference-metrics>div {min-height:108px;padding:14px;display:flex;flex-direction:column;gap:8px;justify-content:center}
+html.acs-device-readable #overview-content :is(#optical-rx-power,#optical-tx-power) {font-size:var(--acs-read-power)!important;font-variant-numeric:tabular-nums}
+html.acs-device-readable #overview-content .badge {font-size:var(--acs-read-label)!important;line-height:1.35;white-space:normal;letter-spacing:normal;text-transform:none}
+html.acs-device-readable #overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer>div>strong {font-size:var(--acs-read-body)!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere}
+html.acs-device-readable #overview-content :is(.acs-status-pill,.acs-mini-badge,.acs-health-pill,.acs-health-pill span) {font-size:var(--acs-read-label)!important;line-height:1.4;white-space:normal}
+html.acs-device-readable #overview-content :is(button,.btn,.acs-soft-btn) {font-size:var(--acs-read-label)!important;min-height:42px;line-height:1.4;white-space:normal!important}
+html.acs-device-readable #overview-content .acs-ai-topbar {grid-template-columns:minmax(0,1fr)!important;gap:14px!important;padding:18px!important}
+html.acs-device-readable #overview-content :is(.acs-ai-topbar-copy strong,.acs-source-age strong,.acs-diagnostic-copy strong,.acs-lan-port-heading strong) {font-size:var(--acs-read-body)!important;line-height:1.4;white-space:normal!important}
+html.acs-device-readable #overview-content :is(.acs-ai-topbar-copy span,.acs-source-age span,.acs-ai-topbar-copy small) {font-size:var(--acs-read-label)!important;color:var(--acs-read-muted)!important}
+html.acs-device-readable #overview-content :is(.acs-ai-topbar-ops,.acs-source-ages,.acs-ai-topbar-action) {flex-wrap:wrap;gap:10px}
+html.acs-device-readable #overview-content .acs-source-age {min-width:145px;min-height:46px}
+html.acs-device-readable #overview-content .acs-lan-visual-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+html.acs-device-readable #overview-content .acs-diagnostic-item {min-height:72px;padding:14px;align-items:center}
+html.acs-device-readable #overview-content .acs-diagnostic-copy {min-width:0;overflow-wrap:anywhere}
+html.acs-device-readable #overview-content .acs-approved-wifi .jr-wifi-summary-row {grid-template-columns:1fr!important;padding:16px;gap:14px}
+html.acs-device-readable #overview-content .acs-approved-wifi .jr-wifi-row-main {grid-template-columns:1fr!important;gap:14px}
+html.acs-device-readable #overview-content .acs-approved-wifi .jr-wifi-row-data {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px}
+html.acs-device-readable #overview-content .acs-approved-wifi :is(.jr-wifi-row-title strong,.jr-wifi-row-data strong,.jr-manager-values dd) {font-size:var(--acs-read-body)!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;line-height:1.5}
+html.acs-device-readable #overview-content .acs-approved-wifi :is(.jr-wifi-row-title span,.jr-wifi-row-data span,.jr-wifi-health-strip,.jr-wifi-health-strip span,.jr-wifi-summary-footer small) {font-size:var(--acs-read-label)!important;line-height:1.5!important;white-space:normal!important;color:var(--acs-read-muted)!important}
+html.acs-device-readable #overview-content .jr-wifi-row-actions button {width:100%}
+html.acs-device-readable #overview-content :is(.jr-manager label,.jr-manager span,.jr-manager select,.jr-manager-values dt,.jr-manager-note,.jr-empty-control) {font-size:var(--acs-read-label)!important;line-height:1.5}
+html.acs-device-readable #overview-content .table {font-size:var(--acs-read-label)!important;line-height:1.5}
+html.acs-device-readable #overview-content .table :is(td,th) {padding:12px 10px}
+html.acs-device-readable .jr-control-modal :is(label,.form-control,.jr-target,.jr-control-note,.modal-footer button) {font-size:var(--acs-read-body)!important;line-height:1.5;min-height:42px}
+html.acs-device-readable :is(select,button,a,input):focus-visible {outline:3px solid #55d6e8;outline-offset:3px}
+@media(max-width:1100px) {
+    html.acs-device-readable #overview-content :is(.acs-overview-grid,.acs-overview-reorganized,.acs-fiber-summary-grid) {grid-template-columns:1fr!important}
+    html.acs-device-readable #overview-content .acs-overview-card {grid-column:1/-1!important}
+}
+@media(max-width:600px) {
+    html.acs-device-readable #overview-content .acs-overview-card {padding:16px!important}
+    html.acs-device-readable #overview-content .acs-reference-list>div {grid-template-columns:1fr!important;gap:4px}
+    html.acs-device-readable #overview-content .acs-approved-wifi .jr-wifi-row-data {grid-template-columns:1fr!important}
+    html.acs-device-readable #overview-content .acs-reference-metrics {grid-template-columns:1fr!important}
+    html.acs-device-readable #overview-content .acs-approved-layout .acs-fiber-optical .acs-device-optical-footer>div {flex-wrap:wrap!important}
+}
