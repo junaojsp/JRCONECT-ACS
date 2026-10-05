@@ -1,0 +1,65 @@
+/* Sidebar states override the legacy compact-only rules. */
+#sidebar {
+    transform: none !important;
+}
+#sidebar:not(.collapsed) {
+    width: 250px !important;
+    min-width: 250px !important;
+    max-width: 250px !important;
+    overflow: hidden auto !important;
+}
+#mainContent:not(.collapsed) {
+    margin-left: 250px !important;
+    width: calc(100% - 250px) !important;
+}
+#sidebar.collapsed {
+    width: 72px !important;
+    min-width: 72px !important;
+    max-width: 72px !important;
+}
+#mainContent.collapsed {
+    margin-left: 72px !important;
+    width: calc(100% - 72px) !important;
+}
+#sidebar:not(.collapsed) .sidebar-menu a {
+    width: calc(100% - 24px) !important;
+    padding: 0 14px !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+}
+#sidebar:not(.collapsed) .sidebar-menu a span,
+#sidebar:not(.collapsed) .sidebar-menu a .menu-text {
+    display: inline !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+#sidebar:not(.collapsed) .sidebar-menu a::after {
+    display: none !important;
+}
+#sidebar:not(.collapsed) .sidebar-brand-logo {
+    width: 168px !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
+#sidebarToggle:focus-visible {
+    outline: 2px solid #35d7f4;
+    outline-offset: 3px;
+}
+@media (max-width: 768px) {
+    #sidebar.collapsed {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+    }
+    #mainContent.collapsed,
+    #mainContent:not(.collapsed) {
+        margin-left: 60px !important;
+        width: calc(100% - 60px) !important;
+    }
+    #sidebar:not(.collapsed) {
+        width: min(250px, 85vw) !important;
+        min-width: 0 !important;
+        max-width: 85vw !important;
+        box-shadow: 8px 0 24px rgba(0, 0, 0, .3) !important;
+    }
+}

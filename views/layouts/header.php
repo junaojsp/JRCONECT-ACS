@@ -37,6 +37,8 @@
         href="/assets/css/style.css?v=<?php echo time(); ?>"
     >
 
+    <link rel="stylesheet" href="/assets/css/sidebar.css?v=20261005-toggle">
+
     <!-- Logger -->
     <script
         src="/assets/js/client-logger.js?v=<?php echo time(); ?>"
@@ -59,7 +61,7 @@
         </div>
 
 
-        <ul class="sidebar-menu">
+        <ul class="sidebar-menu" id="sidebar-menu">
 
             <li>
 
@@ -105,10 +107,6 @@
             </li>
 
 
-            <li>
-
-
-
 <li>
     <a
         href="/users.php"
@@ -133,12 +131,17 @@
               
 
 
+        </ul>
+
         <!-- Botão recolher menu -->
         <button
             class="sidebar-toggle"
             id="sidebarToggle"
             type="button"
             title="Recolher menu"
+            aria-label="Recolher menu"
+            aria-controls="sidebar-menu"
+            aria-expanded="true"
         >
             <i class="bi bi-chevron-left"></i>
         </button>

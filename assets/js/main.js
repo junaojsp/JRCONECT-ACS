@@ -234,59 +234,46 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Sidebar Toggle Functionality
-document.addEventListener('DOMContentLoaded', function() {
+// Keep the sidebar layout, control labels and saved preference in sync.
+function initSidebarToggle() {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-
-    if (!sidebar || !mainContent || !sidebarToggle) {
-        return;
-    }
-
-    const toggleIcon = sidebarToggle.querySelector('i');
-
-    // Check localStorage for saved state.
-    // First visit defaults to compact icon-only sidebar, like the ACS reference.
-    const savedSidebarState = localStorage.getItem('sidebarCollapsed');
-    const sidebarCollapsed = savedSidebarState === null ? true : savedSidebarState === 'true';
-
-    if (savedSidebarState === null) {
-        localStorage.setItem('sidebarCollapsed', 'true');
-    }
-
-    if (sidebarCollapsed) {
-        sidebar.classList.add('collapsed');
-        mainContent.classList.add('collapsed');
-        if (toggleIcon) {
-            toggleIcon.classList.remove('bi-chevron-left');
-            toggleIcon.classList.add('bi-chevron-right');
+    const button = document.getElementById('sidebarToggle');
+    if (!sidebar || !mainContent || !button || button.dataset.sidebarBound) return;
+    button.dataset.sidebarBound = 'true';
+    const icon = button.querySelector('i');
+    const applyState = collapsed => {
+        sidebar.classList.toggle('collapsed', collapsed);
+        mainContent.classList.toggle('collapsed', collapsed);
+        if (icon) {
+            icon.classList.toggle('bi-chevron-right', collapsed);
+            icon.classList.toggle('bi-chevron-left', !collapsed);
         }
-    }
-
-    // Toggle sidebar on button click
-    sidebarToggle.addEventListener('click', function(e) {
-        e.preventDefault();
-
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('collapsed');
-
-        // Update icon
-        if (sidebar.classList.contains('collapsed')) {
-            if (toggleIcon) {
-                toggleIcon.classList.remove('bi-chevron-left');
-                toggleIcon.classList.add('bi-chevron-right');
-            }
-            localStorage.setItem('sidebarCollapsed', 'true');
-        } else {
-            if (toggleIcon) {
-                toggleIcon.classList.remove('bi-chevron-right');
-                toggleIcon.classList.add('bi-chevron-left');
-            }
-            localStorage.setItem('sidebarCollapsed', 'false');
-        }
+        const label = collapsed ? 'Expandir menu' : 'Recolher menu';
+        button.title = label;
+        button.setAttribute('aria-label', label);
+        button.setAttribute('aria-expanded', String(!collapsed));
+    };
+    let collapsed = true;
+    try {
+        const saved = localStorage.getItem('sidebarCollapsed');
+        collapsed = saved === null ? true : saved === 'true';
+    } catch (error) { /* The control still works when browser storage is unavailable. */ }
+    applyState(collapsed);
+    button.addEventListener('click', event => {
+        event.preventDefault();
+        collapsed = !sidebar.classList.contains('collapsed');
+        applyState(collapsed);
+        try { localStorage.setItem('sidebarCollapsed', String(collapsed)); }
+        catch (error) { /* Preserve the current session's state. */ }
+        window.dispatchEvent(new Event('resize'));
     });
-});
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebarToggle);
+} else {
+    initSidebarToggle();
+}
 
 /* Short, in-memory cache for read-only ONU enrichment. No persisted customer data. */
 const onuReadCache = new Map();
