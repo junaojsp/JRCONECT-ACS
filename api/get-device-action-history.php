@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../lib/ActionHistory.php';
+require_once __DIR__ . '/../lib/ActionVerification.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, private');
 requireLogin();
@@ -55,11 +56,13 @@ try {
             unset($entry);
         } catch (Throwable $e) { $sync = false; }
     }
-    $output = array_map(static function ($entry) {
+    $verification = acsVerificationHistory($db, $entries, $device, $sync ? ($tasks ?? null) : null, $sync ? ($faults ?? null) : null);
+    $output = array_map(static function ($entry) use ($verification) {
         return ['id' => (int)$entry['id'], 'actor' => $entry['actor'], 'action' => $entry['action'],
             'fields' => $entry['fields_changed'], 'status' => $entry['status'],
             'created_at' => str_replace(' ', 'T', $entry['created_at']) . 'Z',
-            'updated_at' => str_replace(' ', 'T', $entry['updated_at']) . 'Z'];
+            'updated_at' => str_replace(' ', 'T', $entry['updated_at']) . 'Z',
+            'verification' => $verification[(int)$entry['id']] ?? null];
     }, $entries);
     jsonResponse(['success' => true, 'entries' => $output, 'sync_available' => $sync, 'has_more' => $hasMore,
         'next_before' => $hasMore ? (int)end($entries)['id'] : null]);

@@ -6,7 +6,7 @@ const deviceActionHistoryPending = new Map();
 function renderDeviceActionHistoryCard() {
     return `<section class="acs-overview-card acs-action-history">
         <div class="acs-overview-card-header"><div><span class="acs-kicker"><i class="bi bi-clock-history"></i> Ações e comandos</span>
-            <small class="d-block text-muted">Quem executou · horário · retorno do GenieACS</small></div>
+            <small class="d-block text-muted">Responsável · retorno do comando · confirmação dos campos</small></div>
             <button class="btn btn-sm btn-outline-secondary" type="button" onclick="loadDeviceActionHistory(currentDeviceData.device_id)" aria-label="Atualizar histórico de ações"><i class="bi bi-arrow-clockwise"></i></button></div>
         <div id="device-action-history-content" aria-live="polite"><p class="text-muted">Consultando ações…</p></div>
     </section>`;
@@ -30,14 +30,28 @@ function deviceActionHistoryView(data) {
         return `<tr><td>${deviceActionHistoryEscape(date(entry.created_at))}</td>
             <td>${deviceActionHistoryEscape(entry.actor)}</td>
             <td>${deviceActionHistoryEscape(actions[entry.action] || 'Comando')}${entry.fields ? `<small class="d-block text-muted">${deviceActionHistoryEscape(entry.fields)}</small>` : ''}</td>
-            <td><span class="badge bg-${state[1]}">${state[0]}</span></td></tr>`;
+            <td><span class="badge bg-${state[1]}">${state[0]}</span>${deviceActionVerificationView(entry.verification)}</td></tr>`;
     }).join('');
     return `<div class="table-responsive"><table class="table table-sm mb-2"><thead><tr><th>Horário</th><th>Responsável</th><th>Ação</th><th>Resultado</th></tr></thead><tbody>${rows}</tbody></table></div>
         <div class="d-flex gap-2 mb-2">
             ${deviceActionHistoryBefore ? '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="loadDeviceActionHistory(currentDeviceData.device_id)">Mais recentes</button>' : ''}
             ${data.has_more ? `<button class="btn btn-sm btn-outline-secondary" type="button" onclick="loadDeviceActionHistory(currentDeviceData.device_id, ${Number(data.next_before) || 0})">Ações anteriores</button>` : ''}
-        </div><p class="small text-muted mb-0">Concluído indica execução confirmada pelo retorno do GenieACS. Uma tarefa que desapareceu da fila fica sem confirmação. Senhas não são armazenadas neste histórico.</p>
+        </div><p class="small text-muted mb-0">Concluído é o retorno do comando. Campos confirmados exige leitura nova dos valores na ONU. Senhas e credenciais não são comparadas nem armazenadas. Uma tarefa que desapareceu da fila fica sem confirmação de execução.</p>
         ${data.sync_available === false ? '<p class="small text-warning mt-2 mb-0">Não foi possível atualizar a fila de comandos agora. Mantidos os últimos estados registrados.</p>' : ''}`;
+}
+
+function deviceActionVerificationView(verification) {
+    if (!verification) return '';
+    const states = {pending:['Aguardando leitura','secondary'], confirmed:['Campos confirmados','success'],
+        different:['Valores divergentes','warning'], unsupported:['Sem campos verificáveis','secondary'],
+        unavailable:['Leitura indisponível','secondary'], expired:['Prazo de leitura encerrado','secondary']};
+    const state = states[verification.status] || states.pending;
+    const count = Math.max(0, Number(verification.matched) || 0);
+    const total = Math.max(0, Number(verification.total) || 0);
+    return `<div class="mt-1"><span class="badge bg-${state[1]}">${state[0]}</span>
+        ${total ? `<small class="d-block text-muted">${count}/${total} campos coincidem</small>` : ''}
+        ${verification.excluded ? '<small class="d-block text-muted">Inclui campos não verificáveis</small>' : ''}
+        ${verification.sync_available === false ? '<small class="d-block text-warning">Consulta indisponível agora</small>' : ''}</div>`;
 }
 
 async function loadDeviceActionHistory(deviceId, before = null) {

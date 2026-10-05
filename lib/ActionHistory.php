@@ -4,8 +4,8 @@ declare(strict_types=1);
 function acsActionFields(array $parameters): string
 {
     $fields = [];
-    foreach ($parameters as $parameter) {
-        $path = is_array($parameter) ? (string)($parameter[0] ?? '') : '';
+    foreach ($parameters as $key => $parameter) {
+        $path = is_string($key) ? $key : (is_array($parameter) ? (string)($parameter[0] ?? '') : '');
         $field = match (true) {
             (bool)preg_match('/password|passphrase|preshared|configpassword/i', $path) => 'Senha',
             (bool)preg_match('/\.SSID$/i', $path) => 'SSID',

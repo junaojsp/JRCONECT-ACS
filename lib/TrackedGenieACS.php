@@ -3,10 +3,17 @@ namespace App;
 
 require_once __DIR__ . '/GenieACS.php';
 require_once __DIR__ . '/ActionHistory.php';
+require_once __DIR__ . '/ActionVerification.php';
 
 /** Log command metadata around the existing client. No task payloads are stored. */
 class TrackedGenieACS extends GenieACS
 {
+    private $verificationCredentials;
+    public function __construct($host = null, $port = 7557, $username = null, $password = null)
+    {
+        parent::__construct($host, $port, $username, $password);
+        $this->verificationCredentials = ['host'=>$host, 'port'=>$port, 'username'=>$username, 'password'=>$password];
+    }
     private function tracked($deviceId, $action, $fields, $send)
     {
         $id = \acsActionStart((string)$deviceId, $action, $fields);
@@ -27,8 +34,12 @@ class TrackedGenieACS extends GenieACS
     }
     public function setParameterValues($deviceId, $parameters, $timeout = 3000)
     {
-        return $this->tracked($deviceId, 'change', \acsActionFields($parameters),
+        $result = $this->tracked($deviceId, 'change', \acsActionFields($parameters),
             fn() => parent::setParameterValues($deviceId, $parameters, $timeout));
+        if (!empty($result['success']) && in_array((int)($result['http_code'] ?? 0), [200,202], true)) {
+            \acsVerificationStart($result['action_history_id'] ?? null, $parameters, $this->verificationCredentials);
+        }
+        return $result;
     }
     public function addRefreshTask($deviceId, $parameterPath)
     {
