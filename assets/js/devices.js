@@ -159,7 +159,22 @@ async function loadDevices(isAutoRefresh = false) {
     }
 }
 
+let devicesRenderRequest = 0;
+
+function listWifiSsid(device) {
+    return device.wifi_ssid_24ghz ?? device.wifi_ssid ?? 'N/A';
+}
+
 async function renderDevices(devices) {
+    const renderRequest = ++devicesRenderRequest;
+    const seen = new Set();
+    devices = devices.filter(device => {
+        const key = device.device_id || normalizeDeviceSerial(device.serial_number);
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     const tbody = document.getElementById('devices-tbody');
     tbody.innerHTML = '';
 
@@ -239,6 +254,10 @@ async function renderDevices(devices) {
             };
         }
     });
+
+    // Ignore enrichment from a search that has already been replaced.
+    if (renderRequest !== devicesRenderRequest || currentFilterType !== 'onu') return;
+    tbody.innerHTML = '';
 
     devicesToRender.forEach(device => {
         const row = document.createElement('tr');
@@ -362,7 +381,7 @@ async function renderDevices(devices) {
             <td>${device.mac_address}</td>
             <td data-sort-value="${device.product_class || ''}">${device.product_class || 'N/A'}</td>
             <td data-sort-value="${ipAddress}" title="Fonte: ${networkSource}">${ipDisplay}</td>
-            <td data-sort-value="${device.wifi_ssid}">${device.wifi_ssid}</td>
+            <td data-sort-value="${listWifiSsid(device)}">${device.wifi_ssid}</td>
             <td data-sort-value="${pppoeUsername}" title="Fonte: ${networkSource}">${pppoeUsername}</td>
             <td data-sort-value="${parseFloat(rxSourceValue) || -999}">${rxDisplay}</td>
             <td data-sort-value="${Number.isFinite(tempNumeric) ? tempNumeric : -999}">${tempDisplay}</td>
@@ -646,7 +665,7 @@ function deviceMatchesLocalSearch(device, searchTerm) {
         device.device_id,
         device.product_class,
         device.manufacturer,
-        device.wifi_ssid,
+        listWifiSsid(device),
         device.ip_tr069,
         device.ip_address,
         device.status
@@ -667,7 +686,9 @@ function deviceMatchesLocalSearch(device, searchTerm) {
 
     // Fallback: pesquisa em qualquer valor simples retornado pelo GenieACS.
     // Isso cobre modelos/fabricantes que usam nomes de campos diferentes.
-    return Object.values(device || {}).some(value => {
+    return Object.entries(device || {}).some(([key, value]) => {
+        // Other Wi-Fi bands and credentials belong only in equipment details.
+        if (/wifi|wlan|ssid|password|passphrase|pre.?shared/i.test(key)) return false;
         if (value == null) return false;
 
         if (Array.isArray(value)) {
@@ -883,8 +904,8 @@ function applySorting(devices, column, direction) {
                 valueB = valueB === 'N/A' ? '' : valueB.split('.').map(n => n.padStart(3, '0')).join('.');
                 break;
             case 'ssid':
-                valueA = (a.wifi_ssid || '').toLowerCase();
-                valueB = (b.wifi_ssid || '').toLowerCase();
+                valueA = (listWifiSsid(a) || '').toLowerCase();
+                valueB = (listWifiSsid(b) || '').toLowerCase();
                 break;
             case 'pppoe_username':
                 valueA = (a.ixc_pppoe_username || a.pppoe_username || '').toLowerCase();
