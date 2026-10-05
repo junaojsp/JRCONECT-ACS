@@ -1,0 +1,41 @@
+/* Dashboard and equipment list only; no changes to search or data requests. */
+html.acs-page-readable {--acs-page-body:16px;--acs-page-label:14px;--acs-page-title:18px;--acs-page-number:32px;--acs-page-muted:#b7c7da}
+html.acs-page-readable[data-acs-text-size="large"] {--acs-page-body:18px;--acs-page-label:16px;--acs-page-title:20px;--acs-page-number:36px}
+html.acs-page-readable #mainContent {font-size:var(--acs-page-body);line-height:1.5}
+html.acs-page-readable #mainContent .topbar {flex-wrap:wrap;gap:14px;min-height:68px;height:auto;padding-top:12px;padding-bottom:12px}
+html.acs-page-readable .acs-page-text-size {display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-left:auto;font-size:var(--acs-page-label);color:var(--acs-page-muted)}
+html.acs-page-readable .acs-page-text-size select {font:inherit;min-height:42px;padding:6px 28px 6px 10px;border:1px solid #526881;border-radius:8px;background:#142336;color:#eef4fb}
+html.acs-page-readable #mainContent :is(p,small,label,.small,.text-muted) {font-size:var(--acs-page-label)!important;line-height:1.5!important}
+html.acs-page-readable #mainContent :is(small,.text-muted) {color:var(--acs-page-muted)!important}
+html.acs-page-readable #mainContent :is(button,.btn,.nav-link,.page-link,.badge,.jrc-action) {font-size:var(--acs-page-label)!important;line-height:1.4;white-space:normal}
+html.acs-page-readable #mainContent :is(button,.btn,.nav-link,.page-link) {min-height:42px}
+html.acs-page-readable #mainContent :is(input:not([type="checkbox"]),select,.form-control,.form-select) {font-size:var(--acs-page-body)!important;min-height:44px}
+html.acs-page-readable #mainContent .table {font-size:var(--acs-page-body)!important;line-height:1.5}
+html.acs-page-readable #mainContent .table :is(td,th) {padding:12px 14px!important;vertical-align:middle;white-space:normal!important}
+html.acs-page-readable #mainContent .table :is(td,th) :is(span,strong,a) {font-size:var(--acs-page-body)!important;line-height:1.5}
+html.acs-page-readable #mainContent .table .badge {font-size:var(--acs-page-label)!important}
+html.acs-page-readable #mainContent .table td {overflow-wrap:anywhere}
+html.acs-page-readable #mainContent .table-responsive {overflow-x:auto}
+html.acs-page-readable #mainContent .table {min-width:980px}
+html.acs-page-readable #mainContent .card-header>.d-flex {flex-wrap:wrap;gap:12px}
+html.acs-page-readable #mainContent :is(.card-header,.jr-ref-card-head strong,.jrc-panel-title strong,.jr-ref-brand strong) {font-size:var(--acs-page-title)!important}
+html.acs-page-readable #mainContent :is(.jr-ref-shell,.jrc-dashboard) :is(span,p,small,b) {font-size:var(--acs-page-label)!important;line-height:1.5;letter-spacing:normal}
+html.acs-page-readable #mainContent :is(.jr-ref-shell,.jrc-dashboard) strong {font-size:var(--acs-page-body)!important;line-height:1.4}
+html.acs-page-readable #mainContent .jr-ref-card-head strong {font-size:var(--acs-page-title)!important}
+html.acs-page-readable #mainContent :is(.jr-ref-brand span,.jr-ref-caption,.jr-ref-status-numbers span,.jr-ref-mini-grid span,.jr-ref-network-side span,.jr-ref-reset-days span) {color:var(--acs-page-muted)!important}
+html.acs-page-readable #mainContent :is(.jr-ref-status-numbers strong,.jr-ref-ring strong,.jr-ref-activity-score strong,.jr-ref-reset-main strong,.jr-ref-model-highlight strong,.jrc-status-value) {font-size:var(--acs-page-number)!important;font-variant-numeric:tabular-nums}
+html.acs-page-readable #mainContent :is(.jr-ref-card-head,.jrc-panel-header) {min-height:64px;flex-wrap:wrap;gap:10px;padding:14px 18px}
+html.acs-page-readable #mainContent .jr-ref-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px}
+html.acs-page-readable #mainContent .jr-ref-card {min-width:0;height:auto!important}
+html.acs-page-readable #mainContent .jr-ref-mini-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px}
+html.acs-page-readable #mainContent :is(.jr-ref-ai-body,.jr-ref-caption,.jr-ref-auto,.jr-ref-model-row,.acs-mfr-row,.acs-final-alert-item) {font-size:var(--acs-page-label)!important;line-height:1.5}
+html.acs-page-readable #mainContent .jr-ref-search {min-width:0;min-height:44px}
+html.acs-page-readable #mainContent .jr-ref-top {flex-wrap:wrap;gap:16px}
+html.acs-page-readable #mainContent :is(.jr-ref-history-tabs,.jr-ref-pills) {flex-wrap:wrap;gap:8px}
+html.acs-page-readable :is(button,a,input,select):focus-visible {outline:3px solid #55d6e8;outline-offset:3px}
+@media(max-width:1100px) {html.acs-page-readable #mainContent .jr-ref-grid {grid-template-columns:minmax(0,1fr)!important}}
+@media(max-width:650px) {
+    html.acs-page-readable #mainContent .jr-ref-mini-grid {grid-template-columns:minmax(0,1fr)!important}
+    html.acs-page-readable .acs-page-text-size {margin-left:0}
+    html.acs-page-readable #mainContent .card-header>.d-flex>div {min-width:0;width:100%}
+}

@@ -38,6 +38,10 @@
     >
 
     <link rel="stylesheet" href="/assets/css/sidebar.css?v=20261005-toggle">
+    <?php if (($currentPage ?? '') === 'dashboard' || ($pageTitle ?? '') === 'Equipamentos'): ?>
+    <link rel="stylesheet" href="/assets/css/page-readability.css?v=20261005-1">
+    <script src="/assets/js/page-readability.js?v=20261005-1"></script>
+    <?php endif; ?>
 
     <!-- Logger -->
     <script
