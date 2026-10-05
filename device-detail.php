@@ -32,7 +32,7 @@ include __DIR__ . '/views/layouts/header.php';
          CABECALHO OPERACIONAL DO EQUIPAMENTO
          ===================================================== -->
 
-    <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-3">
+    <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-4">
     <script src="/assets/js/device-readability.js?v=20261005-3"></script>
     <div class="acs-device-shell">
 
@@ -264,6 +264,14 @@ include __DIR__ . '/views/layouts/header.php';
 
                 </li>
 
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="diagnostics-tab" data-bs-toggle="tab"
+                        data-bs-target="#diagnostics" type="button" role="tab"
+                        aria-controls="diagnostics" aria-selected="false">
+                        <i class="bi bi-tools"></i> Diagnósticos
+                    </button>
+                </li>
+
             </ul>
 
 
@@ -322,6 +330,64 @@ include __DIR__ . '/views/layouts/header.php';
                     role="tabpanel"
                 >
                     <div id="devices-content"></div>
+                </div>
+
+                <div class="tab-pane fade" id="diagnostics" role="tabpanel" aria-labelledby="diagnostics-tab">
+                    <div id="acs-diagnostics-content">
+                <section class="acs-overview-card acs-card-diagnostics acs-approved-diagnostics">
+                    <div class="acs-overview-card-header">
+                        <div><span class="acs-kicker"><i class="bi bi-tools"></i> Diagnósticos</span></div>
+                    </div>
+
+                    <div class="acs-diagnostic-list">
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('ping')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-geo-alt"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Teste de ping</strong>
+                                <small class="acs-diagnostic-services">
+                                    <i class="bi bi-instagram"></i>
+                                    <i class="bi bi-google"></i>
+                                    <i class="bi bi-facebook"></i>
+                                    <i class="bi bi-youtube"></i>
+                                </small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('traceroute')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-bezier2"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Traceroute</strong>
+                                <small class="acs-diagnostic-services">
+                                    <i class="bi bi-instagram"></i>
+                                    <i class="bi bi-google"></i>
+                                    <i class="bi bi-facebook"></i>
+                                    <i class="bi bi-youtube"></i>
+                                </small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('nearby')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-broadcast-pin"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Redes próximas</strong>
+                                <small>Wi-Fi · canal · sinal · interferência</small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+
+                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('speedtest')">
+                            <span class="acs-diagnostic-icon"><i class="bi bi-speedometer2"></i></span>
+                            <span class="acs-diagnostic-copy">
+                                <strong>Teste de velocidade</strong>
+                                <small>Download · Upload · Ping</small>
+                            </span>
+                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
+                        </button>
+                    </div>
+                </section>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" id="monitoring" role="tabpanel">
@@ -2271,7 +2337,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-action-history.js?v=20261005-2"></script>
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
-<link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-3">
+<link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-4">
 
 
 <?php
