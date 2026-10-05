@@ -207,70 +207,32 @@ async function renderDevices(devices) {
     // Update pagination UI
     updatePaginationUI(totalDevices);
 
-    // Enriquecimento em lote da página atual:
-    // - mapa: localização/topologia
-    // - IXC: rede/PPPoE/óptico como fonte principal
     const serialNumbers = devicesToRender.map(device => device.serial_number);
-
     let mapStatusMap = {};
     let ixcDeviceMap = {};
+    let mapLoaded = false;
+    const renderedRows = new Map();
 
-    try {
-        const [mapBatchResult, ixcBatchResult] = await Promise.all([
-            fetchAPI('/api/get-onu-location-batch.php', {
-                method: 'POST',
-                body: JSON.stringify({ serial_numbers: serialNumbers })
-            }),
-            fetchAPI('/api/get-devices-ixc-batch.php', {
-                method: 'POST',
-                body: JSON.stringify({ serial_numbers: serialNumbers })
-            })
-        ]);
-
-        if (mapBatchResult && mapBatchResult.success && mapBatchResult.locations) {
-            Object.keys(mapBatchResult.locations).forEach(serial => {
-                const location = mapBatchResult.locations[serial];
-                mapStatusMap[serial] = {
-                    inMap: location.found || false,
-                    itemType: location.item_type || 'onu',
-                    itemId: location.onu?.id || location.server?.id || null
-                };
-            });
-        }
-
-        if (ixcBatchResult && ixcBatchResult.success && ixcBatchResult.devices) {
-            ixcDeviceMap = ixcBatchResult.devices;
-        }
-    } catch (error) {
-        console.error('Batch enrichment failed:', error);
-    }
-
+    function drawRows() {
+        if (renderRequest !== devicesRenderRequest || currentFilterType !== 'onu') return;
     devicesToRender.forEach(device => {
-        if (!mapStatusMap[device.serial_number]) {
-            mapStatusMap[device.serial_number] = {
-                inMap: false,
-                itemType: 'onu',
-                itemId: null
-            };
+        let row = renderedRows.get(device.device_id);
+        const selected = row?.querySelector('.device-checkbox')?.checked || false;
+        const isNewRow = !row;
+        if (!row) {
+            row = document.createElement('tr');
+            renderedRows.set(device.device_id, row);
         }
-    });
-
-    // Ignore enrichment from a search that has already been replaced.
-    if (renderRequest !== devicesRenderRequest || currentFilterType !== 'onu') return;
-    tbody.innerHTML = '';
-
-    devicesToRender.forEach(device => {
-        const row = document.createElement('tr');
         const serialKey = normalizeDeviceSerial(device.serial_number);
         const ixc = ixcDeviceMap[serialKey] || ixcDeviceMap[device.serial_number] || {};
-        const ipAddress = extractIP(ixc.ip || device.ip_tr069);
-        const pppoeUsername = ixc.pppoe_username || device.pppoe_username || 'N/A';
+        const ipAddress = extractIP(ixc.ip || device.ixc_ip || device.ip_tr069);
+        const pppoeUsername = ixc.pppoe_username || device.ixc_pppoe_username || device.pppoe_username || 'N/A';
         const rxSourceValue = (ixc.rx_power !== null && ixc.rx_power !== undefined && ixc.rx_power !== '')
             ? ixc.rx_power
-            : device.rx_power;
+            : device.ixc_rx_power ?? device.rx_power;
         const tempSourceValue = (ixc.temperature !== null && ixc.temperature !== undefined && ixc.temperature !== '')
             ? ixc.temperature
-            : device.temperature;
+            : device.ixc_temperature ?? device.temperature;
         const networkSource = ixc.found ? (ixc.source || 'IXC') : 'TR-069 fallback';
 
         // Guarda o enriquecimento IXC no próprio objeto para busca/ordenação.
@@ -338,6 +300,8 @@ async function renderDevices(devices) {
             mapButton = `<button class="btn btn-sm btn-success me-1" onclick="window.open('${mapUrl}', '_blank')" title="View on Map">
                 <i class="bi bi-map"></i>
             </button>`;
+        } else if (!mapLoaded) {
+            mapButton = '<button class="btn btn-sm btn-secondary me-1" disabled title="Consultando mapa"><i class="bi bi-map"></i></button>';
         } else {
             // Gray button - shows alert
             mapButton = `<button class="btn btn-sm btn-secondary me-1" onclick="showNotInMapAlert('${encodeURIComponent(device.serial_number)}')" title="Not Registered in Map">
@@ -381,7 +345,7 @@ async function renderDevices(devices) {
             <td>${device.mac_address}</td>
             <td data-sort-value="${device.product_class || ''}">${device.product_class || 'N/A'}</td>
             <td data-sort-value="${ipAddress}" title="Fonte: ${networkSource}">${ipDisplay}</td>
-            <td data-sort-value="${listWifiSsid(device)}">${device.wifi_ssid}</td>
+            <td data-sort-value="${listWifiSsid(device)}">${listWifiSsid(device)}</td>
             <td data-sort-value="${pppoeUsername}" title="Fonte: ${networkSource}">${pppoeUsername}</td>
             <td data-sort-value="${parseFloat(rxSourceValue) || -999}">${rxDisplay}</td>
             <td data-sort-value="${Number.isFinite(tempNumeric) ? tempNumeric : -999}">${tempDisplay}</td>
@@ -395,8 +359,47 @@ async function renderDevices(devices) {
                 </button>
             </td>
         `;
-        tbody.appendChild(row);
+        if (isNewRow) tbody.appendChild(row);
+        const checkbox = row.querySelector('.device-checkbox');
+        if (checkbox) checkbox.checked = selected;
     });
+    }
+
+    // Display available device data before any network request completes.
+    drawRows();
+
+    const body = JSON.stringify({ serial_numbers: serialNumbers });
+    await Promise.allSettled([
+        (async () => {
+            try {
+                const result = await fetchAPI('/api/get-onu-location-batch.php', { method: 'POST', body });
+                if (result?.success && result.locations) {
+                    Object.entries(result.locations).forEach(([serial, location]) => {
+                        mapStatusMap[serial] = {
+                            inMap: location.found || false,
+                            itemType: location.item_type || 'onu',
+                            itemId: location.onu?.id || location.server?.id || null
+                        };
+                    });
+                    mapLoaded = true;
+                    drawRows();
+                }
+            } catch (error) {
+                console.warn('Map enrichment failed:', error);
+            }
+        })(),
+        (async () => {
+            try {
+                const result = await fetchAPI('/api/get-devices-ixc-batch.php', { method: 'POST', body });
+                if (result?.success && result.devices) {
+                    ixcDeviceMap = result.devices;
+                    drawRows();
+                }
+            } catch (error) {
+                console.warn('IXC enrichment failed:', error);
+            }
+        })()
+    ]);
 }
 
 // Render map items (for infrastructure: Server, OLT, ODC, ODP)
