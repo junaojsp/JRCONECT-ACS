@@ -579,8 +579,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         };
 
         document.getElementById('overview-content').innerHTML = `
-            <section class="acs-ai-topbar">
-                <div class="acs-ai-topbar-main">
+            <section class="jr-assistant-strip">
+                <div class="jr-assistant-main">
                     <div class="acs-ai-topbar-icon"><i class="bi bi-stars"></i></div>
                     <div class="acs-ai-topbar-copy">
                         <span>ASSISTENTE IA</span>
@@ -589,7 +589,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </div>
 
-                <div class="acs-ai-topbar-ops">
+                <div class="jr-assistant-ops">
                     <div id="acs-device-health" class="acs-health-pill neutral">
                         <i class="bi bi-heart-pulse"></i>
                         <span>VERIFICANDO</span>
@@ -609,7 +609,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     </div>
                 </div>
 
-                <div class="acs-ai-topbar-action">
+                <div class="jr-assistant-actions">
                     <button type="button" class="acs-soft-btn acs-ai-summary-btn" onclick="runDeviceAISummary()">
                         <i class="bi bi-clipboard2-pulse"></i><span>Resumo técnico</span>
                     </button>

@@ -75,22 +75,26 @@ html.acs-device-readable #acs-diagnostics-content .acs-diagnostic-list {display:
 html.acs-device-readable #acs-diagnostics-content .acs-diagnostic-item {width:100%;min-width:0;min-height:100px}
 @media(max-width:760px) {html.acs-device-readable #acs-diagnostics-content .acs-diagnostic-list {grid-template-columns:1fr}}
 
-/* Compact assistant strip: preserve readable type without three stacked rows. */
-html.acs-device-readable #overview-content .acs-ai-topbar {display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:center!important;gap:12px 18px!important;min-height:0!important;height:auto!important;padding:12px 16px!important}
-html.acs-device-readable #overview-content .acs-ai-topbar-main {flex:1 1 300px;min-width:0}
-html.acs-device-readable #overview-content .acs-ai-topbar-copy {min-width:0;gap:2px}
-html.acs-device-readable #overview-content .acs-ai-topbar-copy>span {font-size:var(--acs-read-label)!important;letter-spacing:normal}
-html.acs-device-readable #overview-content .acs-ai-topbar-ops {flex:1 1 380px;min-width:0;display:flex!important;flex-wrap:wrap;justify-content:flex-end!important;align-items:center!important;gap:8px!important;margin:0!important}
-html.acs-device-readable #overview-content .acs-ai-topbar-action {flex:0 1 auto;display:flex!important;flex-wrap:wrap;justify-content:flex-end!important;align-items:center!important;gap:8px!important;width:auto!important;margin:0!important;align-self:center!important}
-html.acs-device-readable #overview-content .acs-source-ages {display:flex;flex-wrap:wrap;gap:8px!important;width:auto!important}
-html.acs-device-readable #overview-content .acs-source-age {min-width:112px!important;min-height:42px;padding:6px 9px!important}
-html.acs-device-readable #overview-content .acs-health-pill {min-height:42px!important;max-width:230px;width:auto!important;padding:6px 10px!important}
-html.acs-device-readable #overview-content .acs-ai-topbar-action .acs-soft-btn {min-height:42px;padding:8px 12px!important}
-@media(max-width:1250px) {
-    html.acs-device-readable #overview-content .acs-ai-topbar-main {flex-basis:100%}
-    html.acs-device-readable #overview-content .acs-ai-topbar-ops {justify-content:flex-start!important}
+/* Independent layout avoids the old assistant bar's stacked grid overrides. */
+html.acs-device-readable #overview-content .jr-assistant-strip {display:grid;grid-template-columns:minmax(240px,1fr) auto auto;align-items:center;gap:12px 16px;grid-column:1/-1;width:100%;min-width:0;margin-bottom:18px;padding:12px 16px;border:1px solid #2a3850;border-radius:12px;background:linear-gradient(180deg,#1b2638,#182235)}
+html.acs-device-readable #overview-content .jr-assistant-main {display:flex;align-items:center;gap:10px;min-width:0}
+html.acs-device-readable #overview-content .jr-assistant-main .acs-ai-topbar-copy {gap:2px;min-width:0}
+html.acs-device-readable #overview-content .jr-assistant-main .acs-ai-topbar-copy>span {font-size:var(--acs-read-label)!important;color:var(--acs-read-muted);letter-spacing:normal}
+html.acs-device-readable #overview-content .jr-assistant-main .acs-ai-topbar-copy>strong {font-size:var(--acs-read-body)!important;line-height:1.4;white-space:normal!important}
+html.acs-device-readable #overview-content .jr-assistant-ops {display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;flex-wrap:wrap}
+html.acs-device-readable #overview-content .jr-assistant-ops .acs-source-ages {width:auto;gap:8px;flex-wrap:wrap}
+html.acs-device-readable #overview-content .jr-assistant-ops .acs-source-age {min-width:112px;min-height:42px}
+html.acs-device-readable #overview-content .jr-assistant-actions {display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+html.acs-device-readable #overview-content .jr-assistant-actions button {min-height:42px;padding:8px 12px!important;white-space:nowrap!important}
+@media(max-width:1150px) {
+    html.acs-device-readable #overview-content .jr-assistant-strip {grid-template-columns:minmax(0,1fr) auto}
+    html.acs-device-readable #overview-content .jr-assistant-main {grid-column:1;grid-row:1}
+    html.acs-device-readable #overview-content .jr-assistant-actions {grid-column:2;grid-row:1}
+    html.acs-device-readable #overview-content .jr-assistant-ops {grid-column:1/-1;grid-row:2;justify-content:flex-start}
 }
 @media(max-width:650px) {
-    html.acs-device-readable #overview-content .acs-ai-topbar-ops,
-    html.acs-device-readable #overview-content .acs-ai-topbar-action {flex:1 1 100%;justify-content:flex-start!important}
+    html.acs-device-readable #overview-content .jr-assistant-strip {grid-template-columns:minmax(0,1fr)}
+    html.acs-device-readable #overview-content .jr-assistant-main,
+    html.acs-device-readable #overview-content .jr-assistant-ops,
+    html.acs-device-readable #overview-content .jr-assistant-actions {grid-column:1;grid-row:auto}
 }
