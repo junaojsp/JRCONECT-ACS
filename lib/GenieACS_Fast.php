@@ -6,6 +6,40 @@ namespace App;
  * Simple and fast parsing - 10x faster than original parseDeviceData()
  */
 class GenieACS_Fast {
+    /**
+     * Primary 2.4 GHz SSID for the device list. Other radios remain in detail data.
+     * Legacy devices without band metadata use their standard first WLAN.
+     */
+    private static function primaryWifiSsid($device) {
+        $read = static function($node, $key) {
+            return $node[$key]['_value'] ?? null;
+        };
+        $legacy = $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration'] ?? [];
+        $fallback = null;
+        foreach ($legacy as $index => $wlan) {
+            if (!is_array($wlan)) continue;
+            $ssid = $read($wlan, 'SSID');
+            if (!is_string($ssid) || $ssid === '') continue;
+            $band = (string) ($read($wlan, 'OperatingFrequencyBand') ?? $read($wlan, 'X_HW_FrequencyBand') ?? '');
+            if (strpos($band, '2.4') !== false) return $ssid;
+            if ((string) $index === '1' && $band === '') $fallback = $ssid;
+        }
+        $wifi = $device['Device']['WiFi'] ?? [];
+        foreach (($wifi['SSID'] ?? []) as $index => $network) {
+            if (!is_array($network)) continue;
+            $ssid = $read($network, 'SSID');
+            if (!is_string($ssid) || $ssid === '') continue;
+            $band = '';
+            $reference = (string) ($read($network, 'LowerLayers') ?? '');
+            if (preg_match('/Device\\.WiFi\\.Radio\\.(\\d+)/', $reference, $match)) {
+                $band = (string) $read($wifi['Radio'][$match[1]] ?? [], 'OperatingFrequencyBand');
+            }
+            if (strpos($band, '2.4') !== false) return $ssid;
+            if ((string) $index === '1' && $band === '' && $fallback === null) $fallback = $ssid;
+        }
+        return $fallback ?? 'N/A';
+    }
+
 
     /**
      * Fast device data parser - optimized for performance
@@ -127,16 +161,7 @@ class GenieACS_Fast {
             $device['Device']['DeviceInfo']['UpTime']['_value'] ??
             0;
 
-        // WiFi SSID - check multiple WLAN configurations
-        $wifiSsid =
-            $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration']['1']['SSID']['_value'] ??
-            $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration']['2']['SSID']['_value'] ??
-            $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration']['3']['SSID']['_value'] ??
-            $device['InternetGatewayDevice']['LANDevice']['1']['WLANConfiguration']['4']['SSID']['_value'] ??
-            $device['Device']['WiFi']['SSID']['1']['SSID']['_value'] ??
-            'N/A';
-
-        $data['wifi_ssid'] = $wifiSsid;
+        $data['wifi_ssid'] = self::primaryWifiSsid($device);
 
         // WiFi Password
         $wifiPassword =
