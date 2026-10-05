@@ -287,3 +287,53 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+/* Short, in-memory cache for read-only ONU enrichment. No persisted customer data. */
+const onuReadCache = new Map();
+const onuReadPending = new Map();
+let onuReadGeneration = 0;
+function clearOnuReadCache() { onuReadGeneration++; onuReadCache.clear(); }
+async function fetchOnuBatch(url, serialNumbers) {
+    const generation = onuReadGeneration;
+    const field = url.includes('location') ? 'locations' : 'devices';
+    const serials = [...new Set(serialNumbers.map(String))];
+    const output = {};
+    const missing = [];
+    const now = Date.now();
+    serials.forEach(serial => {
+        const entry = onuReadCache.get(url + ':' + serial);
+        if (entry && now - entry.time < 30000) output[serial] = entry.value;
+        else missing.push(serial);
+    });
+    for (let offset = 0; offset < missing.length; offset += 100) {
+        const batch = missing.slice(offset, offset + 100).sort();
+        const key = generation + ':' + url + ':' + JSON.stringify(batch);
+        if (!onuReadPending.has(key)) {
+            const pending = (async () => {
+                const result = await fetchAPI(url, { method: 'POST', body: JSON.stringify({ serial_numbers: batch }) });
+                if (!result?.success || !result[field]) throw new Error(result?.message || 'Consulta indisponível');
+                const fetchedAt = new Date().toISOString();
+                const values = {};
+                batch.forEach(serial => {
+                    const value = result[field][serial];
+                    if (!value) return;
+                    values[serial] = { ...value, _queried_at: fetchedAt };
+                    if (generation === onuReadGeneration) onuReadCache.set(url + ':' + serial, {time: Date.now(), value: values[serial]});
+                });
+                return values;
+            })();
+            onuReadPending.set(key, pending);
+        }
+        try { Object.assign(output, await onuReadPending.get(key)); }
+        finally { onuReadPending.delete(key); }
+    }
+    return { success: true, [field]: output };
+}
+function onuReadingLabel(source, queriedAt, measuredAt) {
+    const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const queried = queriedAt ? new Date(queriedAt) : null;
+    const time = queried && Number.isFinite(queried.getTime()) ? queried.toLocaleTimeString('pt-BR') : null;
+    const detail = measuredAt ? 'Data da leitura na origem: ' + measuredAt : 'Data da leitura na origem não informada';
+    return '<small class="d-block text-muted" title="' + escape(detail) + '">' + escape(source) +
+        (time ? ' · consulta ' + escape(time) : ' · sem horário confirmado') + '</small>';
+}

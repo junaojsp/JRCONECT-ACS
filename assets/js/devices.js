@@ -6,6 +6,7 @@
 
 
 async function loadDevices(isAutoRefresh = false) {
+    if (!isAutoRefresh) clearOnuReadCache();
     // Save scroll position before refresh (for auto-refresh)
     if (isAutoRefresh) {
         savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
@@ -245,6 +246,8 @@ async function renderDevices(devices) {
             device.ixc_vlan = ixc.vlan ?? null;
             device.ixc_ipv6 = ixc.ipv6 ?? null;
             device.ixc_source = networkSource;
+            device.ixc_queried_at = ixc._queried_at;
+            device.ixc_last_signal_update = ixc.last_signal_update;
         }
 
         const mapInfo = mapStatusMap[device.serial_number] || { inMap: false, itemType: 'onu', itemId: null };
@@ -347,7 +350,7 @@ async function renderDevices(devices) {
             <td data-sort-value="${ipAddress}" title="Fonte: ${networkSource}">${ipDisplay}</td>
             <td data-sort-value="${listWifiSsid(device)}">${listWifiSsid(device)}</td>
             <td data-sort-value="${pppoeUsername}" title="Fonte: ${networkSource}">${pppoeUsername}</td>
-            <td data-sort-value="${parseFloat(rxSourceValue) || -999}">${rxDisplay}</td>
+            <td data-sort-value="${parseFloat(rxSourceValue) || -999}">${rxDisplay}${onuReadingLabel(ixc.rx_power != null ? "IXC" : device.ixc_rx_power != null ? "IXC" : "TR-069", ixc.rx_power != null ? ixc._queried_at : device.ixc_rx_power != null ? device.ixc_queried_at : null, ixc.last_signal_update || device.ixc_last_signal_update)}</td>
             <td data-sort-value="${Number.isFinite(tempNumeric) ? tempNumeric : -999}">${tempDisplay}</td>
             <td data-sort-value="${clientsCount}" class="text-center">${clientsBadge}</td>
             <td data-sort-value="${device.status}">${statusDisplay}</td>
@@ -372,7 +375,7 @@ async function renderDevices(devices) {
     await Promise.allSettled([
         (async () => {
             try {
-                const result = await fetchAPI('/api/get-onu-location-batch.php', { method: 'POST', body });
+                const result = await fetchOnuBatch('/api/get-onu-location-batch.php', serialNumbers);
                 if (result?.success && result.locations) {
                     Object.entries(result.locations).forEach(([serial, location]) => {
                         mapStatusMap[serial] = {
@@ -390,7 +393,7 @@ async function renderDevices(devices) {
         })(),
         (async () => {
             try {
-                const result = await fetchAPI('/api/get-devices-ixc-batch.php', { method: 'POST', body });
+                const result = await fetchOnuBatch('/api/get-devices-ixc-batch.php', serialNumbers);
                 if (result?.success && result.devices) {
                     ixcDeviceMap = result.devices;
                     drawRows();

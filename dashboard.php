@@ -2265,7 +2265,7 @@ async function loadRecentDevices() {
 
 
                     html +=
-                        `<td>${rxDisplay}</td>`;
+                        `<td>${rxDisplay}${onuReadingLabel(device.reading_source || "TR-069", device.reading_queried_at, device.reading_measured_at)}</td>`;
 
 
                     html +=
@@ -2327,10 +2327,10 @@ async function loadRecentDevices() {
         }
         // Render before requesting optional map and IXC information.
         draw();
-        const body = JSON.stringify({ serial_numbers: devices.map(device => device.serial_number) });
+        const serialNumbers = devices.map(device => device.serial_number);
         await Promise.allSettled([
             (async () => {
-                const result = await fetchAPI('/api/get-onu-location-batch.php', { method: 'POST', body });
+                const result = await fetchOnuBatch('/api/get-onu-location-batch.php', serialNumbers);
                 if (!result?.success || !result.locations) return;
                 Object.entries(result.locations).forEach(([serial, location]) => {
                     mapStatusMap[serial] = {
@@ -2343,7 +2343,7 @@ async function loadRecentDevices() {
                 draw();
             })(),
             (async () => {
-                const result = await fetchAPI('/api/get-devices-ixc-batch.php', { method: 'POST', body });
+                const result = await fetchOnuBatch('/api/get-devices-ixc-batch.php', serialNumbers);
                 if (!result?.success || !result.devices) return;
                 devices = devices.map(device => {
                     const key = String(device.serial_number || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -2354,7 +2354,10 @@ async function loadRecentDevices() {
                         ip_tr069: ixc.ip || device.ip_tr069,
                         pppoe_username: ixc.pppoe_username || device.pppoe_username,
                         rx_power: ixc.rx_power ?? device.rx_power,
-                        temperature: ixc.temperature ?? device.temperature
+                        temperature: ixc.temperature ?? device.temperature,
+                        reading_source: ixc.rx_power != null ? 'IXC' : 'TR-069',
+                        reading_queried_at: ixc.rx_power != null ? ixc._queried_at : null,
+                        reading_measured_at: ixc.rx_power != null ? ixc.last_signal_update : null
                     };
                 });
                 recentDashboardDevices = devices;
@@ -2725,6 +2728,7 @@ function updateServicesSummary() {
 }
 
 function refreshFinalDashboard() {
+    clearOnuReadCache();
     loadFinalDiscoveryData();
     loadRecentDevices();
 }

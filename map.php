@@ -910,7 +910,12 @@ document.addEventListener(
             )
         ) {
 
+            const focusStartedAt = Date.now();
             const waitForMapReady = () => {
+                if (window.acsMapLoadState === 'empty' || window.acsMapLoadState === 'failed' || Date.now() - focusStartedAt > 25000) {
+                    showToast('Não foi possível localizar o equipamento: mapa vazio, indisponível ou sem localização cadastrada.', 'warning', 7000);
+                    return;
+                }
 
                 if (
                     typeof allMapItems !== 'undefined' &&
@@ -933,9 +938,7 @@ document.addEventListener(
 
                                 focused =
                                     focusOnONUBySerial(
-                                        decodeURIComponent(
-                                            focusSerial
-                                        ),
+                                        focusSerial,
                                         17
                                     );
 

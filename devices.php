@@ -521,7 +521,7 @@ window.GENIEACS_CONFIGURED =
 
 
 <script src="/assets/js/devices/devices-state.js"></script>
-<script src="/assets/js/devices.js?v=20261005-fast-search"></script>
+<script src="/assets/js/devices.js?v=20261005-read-cache"></script>
 
 
 <?php

@@ -54,9 +54,11 @@ let isEditingPolyline = false; // Track if in polyline edit mode
 // MAP INITIALIZATION
 // ============================================================================
 
+window.acsMapLoadState = 'idle';
+let mapInitialViewSet = false;
 function initMap() {
-    // Default center (Indonesia)
-    map = L.map('map').setView([-6.2088, 106.8456], 13);
+    // Regional overview only; equipment positions come exclusively from registered coordinates.
+    map = L.map('map').setView([-23.28, -46.74], 12);
 
     // Initialize Leaflet.Editable with retry mechanism
     let editableRetries = 0;
@@ -210,7 +212,9 @@ async function loadMap() {
     }
 
     // CRITICAL: Load waypoints FIRST before drawing polylines
-    await loadConnectionWaypoints();
+    window.acsMapLoadState = 'loading';
+    try { await loadConnectionWaypoints(); }
+    catch (error) { console.warn('Waypoints unavailable; loading markers anyway:', error); }
 
     // Track which popup is currently open before clearing markers
     let openPopupItemId = null;
@@ -225,6 +229,11 @@ async function loadMap() {
 
     const itemsResult = await fetchAPI('/api/map-get-items.php');
 
+    if (!itemsResult?.success || !Array.isArray(itemsResult.items)) {
+        window.acsMapLoadState = 'failed';
+        showToast('Não foi possível consultar o cadastro do mapa. Verifique a integração.', 'warning');
+        return;
+    }
     if (itemsResult && itemsResult.success) {
         // Clear existing polylines EXCEPT the one being edited
         console.log('🔄 loadMap - Clearing polylines...');
@@ -278,11 +287,24 @@ async function loadMap() {
             }
         });
 
+        const validPosition = item => item.latitude !== null && item.longitude !== null &&
+            item.latitude !== '' && item.longitude !== '' &&
+            Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)) &&
+            Math.abs(Number(item.latitude)) <= 90 && Math.abs(Number(item.longitude)) <= 180;
         const items = itemsResult.items;
+        const validItems = items.filter(validPosition);
+        window.acsMapLoadState = validItems.length ? 'ready' : 'empty';
+        if (!mapInitialViewSet) {
+            if (!items.length) showToast('Mapa sem equipamentos cadastrados. Cadastre as localizações para visualizá-los.', 'info', 7000);
+            else if (!validItems.length) showToast('Os equipamentos do mapa não têm coordenadas válidas.', 'warning', 7000);
+            else map.fitBounds(validItems.map(item => [Number(item.latitude), Number(item.longitude)]), { padding: [40, 40], maxZoom: 16 });
+            mapInitialViewSet = true;
+        }
         allMapItems = items; // Store globally for displaying chain info in popup
 
         // Add or update markers
         items.forEach(item => {
+            if (!validPosition(item)) return;
             if (!visibleLayers[item.item_type]) return;
 
             // Skip ODC items that are hidden (created with Server)
@@ -897,7 +919,9 @@ function focusOnONUBySerial(serialNumber, zoomLevel = 17) {
     const onu = allMapItems.find(item => {
         if (item.item_type !== 'onu') return false;
         const deviceId = item.genieacs_device_id || '';
-        return deviceId.includes(serialNumber);
+        const normalize = value => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const serial = normalize(serialNumber);
+        return serial !== '' && normalize(deviceId.split('-').pop()) === serial;
     });
 
     if (!onu) {
