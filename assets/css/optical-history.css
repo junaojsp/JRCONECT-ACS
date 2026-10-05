@@ -1,0 +1,13 @@
+.acs-optical-history { grid-column: 1 / -1; }
+.acs-history-periods { display:flex; gap:5px; flex-wrap:wrap; }
+.acs-history-periods button { border:1px solid #35445b; border-radius:7px; background:transparent; color:#aebdd0; padding:5px 9px; font-size:12px; }
+.acs-history-periods button.active { background:#123348; border-color:#2589ad; color:#e9f6ff; }
+.acs-history-periods button:focus-visible { outline:2px solid #38bdf8; outline-offset:2px; }
+.acs-history-stats { display:flex; flex-wrap:wrap; gap:12px 24px; margin:12px 0 6px; color:#94a3b8; font-size:12px; }
+.acs-history-stats strong { display:block; color:#e2e8f0; font-size:15px; margin-top:3px; }
+.acs-history-chart { width:100%; display:block; margin:8px 0; }
+.acs-history-chart text { fill:#94a3b8; font-size:11px; }
+@media(max-width:650px) {
+    .acs-optical-history .acs-overview-card-header { align-items:flex-start; flex-direction:column; gap:10px; }
+    .acs-history-chart text { font-size:18px; }
+}
