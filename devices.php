@@ -165,108 +165,16 @@ include __DIR__ . '/views/layouts/header.php';
                 </li>
 
 
-                <li class="nav-item" role="presentation">
-
-                    <button
-                        class="nav-link"
-                        id="odp-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#odp"
-                        type="button"
-                        role="tab"
-                        onclick="filterByType('odp')"
-                    >
-                        <i class="bi bi-cube"></i>
-                        ODP
-
-                        <span
-                            class="badge bg-primary ms-1"
-                            id="count-odp"
-                        >
-                            0
-                        </span>
-
-                    </button>
-
-                </li>
+                
 
 
-                <li class="nav-item" role="presentation">
-
-                    <button
-                        class="nav-link"
-                        id="odc-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#odc"
-                        type="button"
-                        role="tab"
-                        onclick="filterByType('odc')"
-                    >
-                        <i class="bi bi-box"></i>
-                        ODC
-
-                        <span
-                            class="badge bg-primary ms-1"
-                            id="count-odc"
-                        >
-                            0
-                        </span>
-
-                    </button>
-
-                </li>
+                
 
 
-                <li class="nav-item" role="presentation">
-
-                    <button
-                        class="nav-link"
-                        id="olt-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#olt"
-                        type="button"
-                        role="tab"
-                        onclick="filterByType('olt')"
-                    >
-                        <i class="bi bi-broadcast-pin"></i>
-                        OLT
-
-                        <span
-                            class="badge bg-primary ms-1"
-                            id="count-olt"
-                        >
-                            0
-                        </span>
-
-                    </button>
-
-                </li>
+                
 
 
-                <li class="nav-item" role="presentation">
-
-                    <button
-                        class="nav-link"
-                        id="server-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#server"
-                        type="button"
-                        role="tab"
-                        onclick="filterByType('server')"
-                    >
-                        <i class="bi bi-server"></i>
-                        Servidor
-
-                        <span
-                            class="badge bg-primary ms-1"
-                            id="count-server"
-                        >
-                            0
-                        </span>
-
-                    </button>
-
-                </li>
+                
 
             </ul>
 
@@ -521,7 +429,7 @@ window.GENIEACS_CONFIGURED =
 
 
 <script src="/assets/js/devices/devices-state.js"></script>
-<script src="/assets/js/devices.js?v=20261005-read-cache"></script>
+<script src="/assets/js/devices.js?v=20261005-no-map"></script>
 
 
 <?php

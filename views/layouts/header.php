@@ -89,18 +89,7 @@
             </li>
 
 
-            <li>
-
-                <a
-                    href="/map.php"
-                    class="<?php echo ($currentPage ?? '') === 'map' ? 'active' : ''; ?>"
-                    data-tooltip="Mapa da Rede"
-                >
-                    <i class="bi bi-diagram-3"></i>
-                    <span>Mapa da Rede</span>
-                </a>
-
-            </li>
+            
 
             <li>
 

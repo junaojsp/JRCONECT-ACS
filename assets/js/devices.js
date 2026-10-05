@@ -26,12 +26,7 @@ async function loadDevices(isAutoRefresh = false) {
     let hasMore = true;
 
     try {
-        // Load first chunk with map data in parallel
-        const [firstChunk, mapCountsResult, mapItemsResult] = await Promise.all([
-            fetchAPI(`/api/get-devices.php?limit=${chunkSize}&skip=${skip}`),
-            fetchAPI('/api/get-map-counts.php'),
-            fetchAPI('/api/map-get-items.php')
-        ]);
+        const firstChunk = await fetchAPI(`/api/get-devices.php?limit=${chunkSize}&skip=${skip}`);
 
         if (!firstChunk || !firstChunk.success) {
             throw new Error(firstChunk?.message || 'Failed to load devices');
@@ -123,18 +118,9 @@ async function loadDevices(isAutoRefresh = false) {
             renderDevices(devicesToRender);
             updateDeviceCount(devicesToRender.length, allDevices.length);
             updateDeviceStats(allDevices);
-        } else {
-            // For infrastructure tabs, re-render map items
-            renderMapItems(currentFilterType);
-            updateDeviceStats([], false);
         }
 
-        // Update tab counts using map data
-        if (mapCountsResult && mapCountsResult.success) {
-            updateDeviceTypeCountsFromMap(allDevices, mapCountsResult.counts);
-        } else {
-            updateDeviceTypeCountsFromMap(allDevices, {});
-        }
+        updateDeviceTypeCounts(allDevices);
 
         // Restore scroll position and sort icons after auto-refresh
         if (isAutoRefresh) {
@@ -156,7 +142,7 @@ async function loadDevices(isAutoRefresh = false) {
         tbody.innerHTML = '<tr><td colspan="12" class="text-center text-danger">Failed to load devices: ' + error.message + '</td></tr>';
         updateDeviceCount(0, 0);
         updateDeviceStats([]);
-        updateDeviceTypeCountsFromMap([], {}); // Reset counts
+        updateDeviceTypeCounts([]);
     }
 }
 
@@ -180,14 +166,9 @@ async function renderDevices(devices) {
     tbody.innerHTML = '';
 
     // Determine appropriate colspan based on current filter type
-    const colspan = (currentFilterType === 'onu') ? 12 : 6;
+    const colspan = 13;
 
     if (devices.length === 0) {
-        // If showing infrastructure items, show map items instead
-        if (currentFilterType !== 'onu') {
-            renderMapItems(currentFilterType);
-            return;
-        }
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">No devices found</td></tr>`;
         updatePaginationUI(0);
         return;
@@ -209,9 +190,7 @@ async function renderDevices(devices) {
     updatePaginationUI(totalDevices);
 
     const serialNumbers = devicesToRender.map(device => device.serial_number);
-    let mapStatusMap = {};
     let ixcDeviceMap = {};
-    let mapLoaded = false;
     const renderedRows = new Map();
 
     function drawRows() {
@@ -250,9 +229,6 @@ async function renderDevices(devices) {
             device.ixc_last_signal_update = ixc.last_signal_update;
         }
 
-        const mapInfo = mapStatusMap[device.serial_number] || { inMap: false, itemType: 'onu', itemId: null };
-        const isInMap = mapInfo.inMap;
-
         // Create clickable IP link if IP is valid
         let ipDisplay;
         if (ipAddress !== 'N/A' && ipAddress !== '') {
@@ -286,30 +262,6 @@ async function renderDevices(devices) {
             rxDisplay = `<span class="badge ${rxBadgeClass}" title="Fonte: ${networkSource}">${rxSourceValue} dBm</span>`;
         } else {
             rxDisplay = `<span class="badge ${rxBadgeClass}">N/A</span>`;
-        }
-
-        // Map button - conditional based on registration status
-        let mapButton;
-        if (isInMap) {
-            // Green button - opens map in new tab
-            let mapUrl;
-            if (mapInfo.itemType === 'mikrotik') {
-                // For MikroTik devices, focus on server
-                mapUrl = `/map.php?focus_type=server&focus_id=${mapInfo.itemId}`;
-            } else {
-                // For ONU devices, focus on ONU
-                mapUrl = `/map.php?focus_type=onu&focus_serial=${encodeURIComponent(device.serial_number)}`;
-            }
-            mapButton = `<button class="btn btn-sm btn-success me-1" onclick="window.open('${mapUrl}', '_blank')" title="View on Map">
-                <i class="bi bi-map"></i>
-            </button>`;
-        } else if (!mapLoaded) {
-            mapButton = '<button class="btn btn-sm btn-secondary me-1" disabled title="Consultando mapa"><i class="bi bi-map"></i></button>';
-        } else {
-            // Gray button - shows alert
-            mapButton = `<button class="btn btn-sm btn-secondary me-1" onclick="showNotInMapAlert('${encodeURIComponent(device.serial_number)}')" title="Not Registered in Map">
-                <i class="bi bi-map"></i>
-            </button>`;
         }
 
         // Status badge with ping
@@ -356,7 +308,6 @@ async function renderDevices(devices) {
             <td data-sort-value="${device.status}">${statusDisplay}</td>
             <td class="tags-column" data-sort-value="${tagsSortValue}" style="display: ${tagsColumnDisplay};">${tagsDisplay}</td>
             <td>
-                ${mapButton}
                 <button class="btn btn-sm btn-primary" onclick="summonDeviceQuick('${device.device_id}')" title="Summon Device">
                     <i class="bi bi-lightning-charge"></i>
                 </button>
@@ -371,26 +322,7 @@ async function renderDevices(devices) {
     // Display available device data before any network request completes.
     drawRows();
 
-    const body = JSON.stringify({ serial_numbers: serialNumbers });
     await Promise.allSettled([
-        (async () => {
-            try {
-                const result = await fetchOnuBatch('/api/get-onu-location-batch.php', serialNumbers);
-                if (result?.success && result.locations) {
-                    Object.entries(result.locations).forEach(([serial, location]) => {
-                        mapStatusMap[serial] = {
-                            inMap: location.found || false,
-                            itemType: location.item_type || 'onu',
-                            itemId: location.onu?.id || location.server?.id || null
-                        };
-                    });
-                    mapLoaded = true;
-                    drawRows();
-                }
-            } catch (error) {
-                console.warn('Map enrichment failed:', error);
-            }
-        })(),
         (async () => {
             try {
                 const result = await fetchOnuBatch('/api/get-devices-ixc-batch.php', serialNumbers);
@@ -403,79 +335,6 @@ async function renderDevices(devices) {
             }
         })()
     ]);
-}
-
-// Render map items (for infrastructure: Server, OLT, ODC, ODP)
-function renderMapItems(itemType) {
-    const tbody = document.getElementById('devices-tbody');
-    tbody.innerHTML = '';
-
-    let items = [];
-
-    if (itemType === 'olt') {
-        // OLT stored in Server properties, not as separate items
-        // Extract OLT info from Servers that have olt_link configured
-        allMapItems.forEach(item => {
-            if (item.item_type === 'server' && item.properties && item.properties.olt_link) {
-                items.push({
-                    id: item.id,
-                    name: item.properties.olt_link || 'OLT',
-                    item_type: 'olt',
-                    latitude: item.latitude,
-                    longitude: item.longitude,
-                    status: item.status,
-                    server_name: item.name
-                });
-            }
-        });
-    } else {
-        // Filter map items by type for other infrastructure
-        items = allMapItems.filter(item => item.item_type === itemType);
-    }
-
-    if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No items found</td></tr>';
-        updateDeviceCount(0, 0);
-        return;
-    }
-
-    items.forEach(item => {
-        const row = document.createElement('tr');
-
-        // Get status badge
-        const status = item.status || 'unknown';
-        let statusBadge = '';
-        if (status === 'online') {
-            statusBadge = '<span class="badge online">Online</span>';
-        } else if (status === 'offline') {
-            statusBadge = '<span class="badge offline">Offline</span>';
-        } else {
-            statusBadge = '<span class="badge bg-secondary">Unknown</span>';
-        }
-
-        // Format coordinates
-        const lat = parseFloat(item.latitude).toFixed(6);
-        const lng = parseFloat(item.longitude).toFixed(6);
-
-        // For OLT, show server name in parentheses
-        const displayName = itemType === 'olt' ? `${item.name} (${item.server_name})` : item.name;
-
-        row.innerHTML = `
-            <td>${displayName}</td>
-            <td><span class="badge bg-primary">${itemType.toUpperCase()}</span></td>
-            <td>${lat}</td>
-            <td>${lng}</td>
-            <td>${statusBadge}</td>
-            <td>
-                <button class="btn btn-sm btn-success" onclick="window.open('/map.php?focus_type=server&focus_id=${item.id}', '_blank')" title="View on Map">
-                    <i class="bi bi-map"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    updateDeviceCount(items.length, items.length);
 }
 
 function updateDeviceCount(shown, total) {
@@ -512,25 +371,8 @@ function updateDeviceStats(devices, showStats = true) {
     `;
 }
 
-// Update device type counts in tab badges using map data
-function updateDeviceTypeCountsFromMap(devices, mapCounts) {
-    // Count ALL devices from GenieACS (no filtering by product_class)
-    const onuCount = devices.length;
-
-    const counts = {
-        onu: onuCount, // From all devices in GenieACS
-        odp: mapCounts.odp || 0, // From map
-        odc: mapCounts.odc || 0, // From map
-        olt: mapCounts.olt || 0, // From map
-        server: mapCounts.server || 0 // From map
-    };
-
-    // Update badges
-    document.getElementById('count-onu').textContent = counts.onu;
-    document.getElementById('count-odp').textContent = counts.odp;
-    document.getElementById('count-odc').textContent = counts.odc;
-    document.getElementById('count-olt').textContent = counts.olt;
-    document.getElementById('count-server').textContent = counts.server;
+function updateDeviceTypeCounts(devices) {
+    document.getElementById('count-onu').textContent = devices.length;
 }
 
 // Generate table header based on device type
@@ -579,23 +421,12 @@ function generateTableHeader(type) {
                 <th>Action</th>
             </tr>
         `;
-    } else {
-        // Infrastructure items table header (Map items: Server, OLT, ODC, ODP)
-        tableHeader.innerHTML = `
-            <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Latitude</th>
-                <th>Longitude</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        `;
     }
 }
 
-// Filter devices by type using map data
+// Select ONU equipment
 function filterByType(type) {
+    type = 'onu';
     currentFilterType = type;
 
     // Generate appropriate table header
@@ -618,11 +449,6 @@ function filterByType(type) {
         updateDeviceCount(allDevices.length, allDevices.length);
         // Show stats for ONU tab
         updateDeviceStats(allDevices, true);
-    } else {
-        // For ODP, ODC, OLT, Server: show map items
-        renderMapItems(type);
-        // Hide stats for infrastructure tabs
-        updateDeviceStats([], false);
     }
 }
 
@@ -745,143 +571,18 @@ async function searchClientDevices(searchTerm, localDevices) {
 
 function filterDevices() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
-
-    // Reset to page 1 when search term changes
     currentPage = 1;
-
-    // Get devices based on current tab
-    let baseDevices = allDevices;
-    if (currentFilterType === 'onu') {
-        // For ONU: show ALL devices from GenieACS (no filtering)
-        baseDevices = allDevices;
-    } else {
-        // For ODP, ODC, OLT, Server: use map data
-        const mapItemDeviceIds = new Set();
-
-        allMapItems.forEach(item => {
-            if (item.item_type === currentFilterType) {
-                // For Server, match by mikrotik_device_id in properties
-                if (currentFilterType === 'server' && item.properties && item.properties.mikrotik_device_id) {
-                    mapItemDeviceIds.add(item.properties.mikrotik_device_id);
-                }
-            }
-        });
-
-        // Filter devices that match map items
-        baseDevices = allDevices.filter(device => {
-            return mapItemDeviceIds.has(device.device_id);
-        });
-    }
-
-    if (searchTerm === '') {
-        if (currentFilterType === 'onu') {
-            renderDevices(baseDevices);
-            updateDeviceCount(baseDevices.length, allDevices.length);
-            updateDeviceStats(baseDevices, true);
-        } else {
-            renderMapItems(currentFilterType);
-            updateDeviceStats([], false);
-        }
-        return;
-    }
-
-    // Different search logic based on tab type
-    if (currentFilterType === 'onu') {
-        // Busca local imediata: serial, MAC, login PPPoE e tags.
-        const filteredDevices = baseDevices.filter(device => deviceMatchesLocalSearch(device, searchTerm));
-
-        // Debug: Log search results
-        console.log(`[SEARCH] Found ${filteredDevices.length} device(s) matching "${searchTerm}"`);
-
-        renderDevices(filteredDevices);
-        updateDeviceCount(filteredDevices.length, allDevices.length);
-        updateDeviceStats(filteredDevices, true);
-
-        // Complementa a busca no IXC por CPF, nome e login, com debounce.
-        clearTimeout(clientSearchTimer);
-        if (searchTerm.length >= 3) {
-            clientSearchTimer = setTimeout(() => searchClientDevices(searchTerm, filteredDevices), 450);
-        }
-    } else {
-        // Infrastructure: search by Name
-        let items = [];
-
-        if (currentFilterType === 'olt') {
-            // OLT stored in Server properties
-            allMapItems.forEach(item => {
-                if (item.item_type === 'server' && item.properties && item.properties.olt_link) {
-                    const oltName = (item.properties.olt_link || '').toLowerCase();
-                    const serverName = (item.name || '').toLowerCase();
-
-                    if (oltName.includes(searchTerm) || serverName.includes(searchTerm)) {
-                        items.push({
-                            id: item.id,
-                            name: item.properties.olt_link || 'OLT',
-                            item_type: 'olt',
-                            latitude: item.latitude,
-                            longitude: item.longitude,
-                            status: item.status,
-                            server_name: item.name
-                        });
-                    }
-                }
-            });
-        } else {
-            // Filter map items by type and name
-            items = allMapItems.filter(item => {
-                if (item.item_type !== currentFilterType) return false;
-                const itemName = (item.name || '').toLowerCase();
-                return itemName.includes(searchTerm);
-            });
-        }
-
-        // Render filtered items manually
-        const tbody = document.getElementById('devices-tbody');
-        tbody.innerHTML = '';
-
-        if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No items found</td></tr>';
-            updateDeviceCount(0, 0);
-            return;
-        }
-
-        items.forEach(item => {
-            const row = document.createElement('tr');
-
-            // Get status badge
-            const status = item.status || 'unknown';
-            let statusBadge = '';
-            if (status === 'online') {
-                statusBadge = '<span class="badge online">Online</span>';
-            } else if (status === 'offline') {
-                statusBadge = '<span class="badge offline">Offline</span>';
-            } else {
-                statusBadge = '<span class="badge bg-secondary">Unknown</span>';
-            }
-
-            // Format coordinates
-            const lat = parseFloat(item.latitude).toFixed(6);
-            const lng = parseFloat(item.longitude).toFixed(6);
-
-            // For OLT, show server name in parentheses
-            const displayName = currentFilterType === 'olt' ? `${item.name} (${item.server_name})` : item.name;
-
-            row.innerHTML = `
-                <td>${displayName}</td>
-                <td><span class="badge bg-primary">${currentFilterType.toUpperCase()}</span></td>
-                <td>${lat}</td>
-                <td>${lng}</td>
-                <td>${statusBadge}</td>
-                <td>
-                    <button class="btn btn-sm btn-success" onclick="window.open('/map.php?focus_type=server&focus_id=${item.id}', '_blank')" title="View on Map">
-                        <i class="bi bi-map"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        updateDeviceCount(items.length, items.length);
+    clearTimeout(clientSearchTimer);
+    // Invalidate any IXC search still running for a previous term.
+    clientSearchRequest++;
+    const filteredDevices = searchTerm
+        ? allDevices.filter(device => deviceMatchesLocalSearch(device, searchTerm))
+        : allDevices;
+    renderDevices(filteredDevices);
+    updateDeviceCount(filteredDevices.length, allDevices.length);
+    updateDeviceStats(filteredDevices, true);
+    if (searchTerm.length >= 3) {
+        clientSearchTimer = setTimeout(() => searchClientDevices(searchTerm, filteredDevices), 450);
     }
 }
 
@@ -1024,14 +725,6 @@ function summonDeviceQuick(deviceId) {
     currentSummonDeviceId = deviceId;
     document.getElementById('summon-device-id').textContent = deviceId;
     const modal = new bootstrap.Modal(document.getElementById('summonModal'), {
-        backdrop: false
-    });
-    modal.show();
-}
-
-function showNotInMapAlert(serialNumber) {
-    document.getElementById('not-in-map-serial').textContent = decodeURIComponent(serialNumber);
-    const modal = new bootstrap.Modal(document.getElementById('notInMapModal'), {
         backdrop: false
     });
     modal.show();
@@ -1433,3 +1126,4 @@ document.addEventListener('visibilitychange', function() {
 
     }
 });
+

@@ -164,21 +164,7 @@ include __DIR__ . '/views/layouts/header.php';
                 </li>
 
 
-                <li class="nav-item" role="presentation">
-
-                    <button
-                        class="nav-link"
-                        id="topology-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#topology"
-                        type="button"
-                        role="tab"
-                    >
-                        <i class="bi bi-diagram-3"></i>
-                        Localização na Topologia
-                    </button>
-
-                </li>
+                
 
 
                 <li class="nav-item" role="presentation">
@@ -291,13 +277,7 @@ include __DIR__ . '/views/layouts/header.php';
                 </div>
 
 
-                <div
-                    class="tab-pane fade"
-                    id="topology"
-                    role="tabpanel"
-                >
-                    <div id="topology-content"></div>
-                </div>
+                
 
 
                 <div

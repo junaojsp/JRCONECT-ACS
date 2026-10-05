@@ -1382,132 +1382,6 @@ include __DIR__ . '/views/layouts/header.php';
 
 
 
-<!-- =========================================================
-     MODAL - NÃO CADASTRADO NO MAPA
-     ========================================================= -->
-
-<div
-    class="modal fade"
-    id="notInMapModal"
-    tabindex="-1"
->
-
-
-    <div class="modal-dialog modal-dialog-centered">
-
-
-        <div class="modal-content">
-
-
-            <div class="modal-header">
-
-
-                <h5 class="modal-title">
-
-                    <i class="bi bi-exclamation-circle"></i>
-
-                    ONU não cadastrada
-
-                </h5>
-
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                ></button>
-
-
-            </div>
-
-
-            <div class="modal-body text-center py-4">
-
-
-                <i
-                    class="bi bi-map"
-                    style="
-                        font-size:3rem;
-                        color:var(--secondary-color);
-                    "
-                ></i>
-
-
-                <h5 class="mt-3">
-
-                    ONU não cadastrada no mapa
-
-                </h5>
-
-
-                <p class="text-muted mb-2">
-
-                    O equipamento com número de série
-
-                    <strong id="not-in-map-serial"></strong>
-
-                    ainda não está cadastrado no mapa da rede.
-
-                </p>
-
-
-                <p class="text-muted mb-0">
-
-                    <small>
-
-                        Adicione esta ONU ao mapa para
-                        visualizar sua localização na topologia.
-
-                    </small>
-
-                </p>
-
-
-            </div>
-
-
-            <div class="modal-footer">
-
-
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-bs-dismiss="modal"
-                >
-
-                    <i class="bi bi-x-lg"></i>
-
-                    Fechar
-
-                </button>
-
-
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    onclick="window.open('/map.php', '_blank')"
-                >
-
-                    <i class="bi bi-map"></i>
-
-                    Abrir mapa da rede
-
-                </button>
-
-
-            </div>
-
-
-        </div>
-
-
-    </div>
-
-
-</div>
-
-
-
 <script
     src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
 ></script>
@@ -1967,8 +1841,6 @@ async function loadRecentDevices() {
     const request = ++recentDashboardRequest;
     recentDevicesFetchInProgress = true;
     let devices = recentDashboardDevices;
-    let mapStatusMap = {};
-    let mapLoaded = false;
 
     function draw() {
         if (request !== recentDashboardRequest) return;
@@ -1998,27 +1870,6 @@ async function loadRecentDevices() {
 
             devices.forEach(
                 device => {
-
-
-                    const mapInfo =
-                        mapStatusMap[
-                            device.serial_number
-                        ] || {
-
-                            inMap:
-                                false,
-
-                            itemType:
-                                'onu',
-
-                            itemId:
-                                null
-
-                        };
-
-
-                    const isInMap =
-                        mapInfo.inMap;
 
 
                     const ipAddress =
@@ -2183,57 +2034,6 @@ async function loadRecentDevices() {
 
 
                     /*
-                     * Mapa.
-                     */
-
-                    let mapButton;
-
-
-                    if (
-                        isInMap
-                    ) {
-
-
-                        let mapUrl;
-
-
-                        if (
-                            mapInfo.itemType ===
-                            'mikrotik'
-                        ) {
-
-
-                            mapUrl =
-                                `/map.php?focus_type=server&focus_id=${mapInfo.itemId}`;
-
-
-                        } else {
-
-
-                            mapUrl =
-                                `/map.php?focus_type=onu&focus_serial=${encodeURIComponent(device.serial_number)}`;
-
-
-                        }
-
-
-                        mapButton =
-                            `<button class="btn btn-sm btn-success me-1" onclick="window.open('${mapUrl}', '_blank')" title="Visualizar no mapa"><i class="bi bi-map"></i></button>`;
-
-
-                    } else if (!mapLoaded) {
-                        mapButton = '<button class="btn btn-sm btn-secondary me-1" disabled title="Consultando mapa"><i class="bi bi-map"></i></button>';
-                    } else {
-
-
-                        mapButton =
-                            `<button class="btn btn-sm btn-secondary me-1" onclick="showNotInMapAlert('${encodeURIComponent(device.serial_number)}')" title="Não cadastrada no mapa"><i class="bi bi-map"></i></button>`;
-
-
-                    }
-
-
-                    /*
                      * Linha.
                      */
 
@@ -2285,10 +2085,6 @@ async function loadRecentDevices() {
 
 
                     html +=
-                        mapButton;
-
-
-                    html +=
                         `<button class="btn btn-sm btn-primary" onclick="summonDeviceQuick('${device.device_id}')" title="Solicitar comunicação"><i class="bi bi-lightning-charge"></i></button>`;
 
 
@@ -2325,23 +2121,10 @@ async function loadRecentDevices() {
             container.innerHTML = '<p class="text-center text-muted">Nenhuma atividade recente encontrada</p>';
             return;
         }
-        // Render before requesting optional map and IXC information.
+        // Render before requesting IXC information.
         draw();
         const serialNumbers = devices.map(device => device.serial_number);
         await Promise.allSettled([
-            (async () => {
-                const result = await fetchOnuBatch('/api/get-onu-location-batch.php', serialNumbers);
-                if (!result?.success || !result.locations) return;
-                Object.entries(result.locations).forEach(([serial, location]) => {
-                    mapStatusMap[serial] = {
-                        inMap: location.found || false,
-                        itemType: location.item_type || 'onu',
-                        itemId: location.onu?.id || location.server?.id || null
-                    };
-                });
-                mapLoaded = true;
-                draw();
-            })(),
             (async () => {
                 const result = await fetchOnuBatch('/api/get-devices-ixc-batch.php', serialNumbers);
                 if (!result?.success || !result.devices) return;
@@ -2402,45 +2185,6 @@ function summonDeviceQuick(
 
             document.getElementById(
                 'summonModal'
-            ),
-
-            {
-                backdrop:
-                    false
-            }
-
-        );
-
-
-    modal.show();
-
-}
-
-
-/* ==========================================================
-   ALERTA MAPA
-   ========================================================== */
-
-function showNotInMapAlert(
-    serialNumber
-) {
-
-
-    document
-        .getElementById(
-            'not-in-map-serial'
-        )
-        .textContent =
-        decodeURIComponent(
-            serialNumber
-        );
-
-
-    const modal =
-        new bootstrap.Modal(
-
-            document.getElementById(
-                'notInMapModal'
             ),
 
             {
