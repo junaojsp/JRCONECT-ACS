@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/IXCConfig.php';
 
-use App\GenieACS;
+require_once __DIR__ . '/TrackedGenieACS.php';
+use App\TrackedGenieACS as GenieACS;
 use App\CPEProfiles;
 
 function jrSimsIxcList(string $table, string $qtype, string $query, int $rp = 20): array
@@ -159,3 +160,4 @@ function jrSimsStatus(array $device): array
         'last_inform_age_seconds' => $age,
     ];
 }
+

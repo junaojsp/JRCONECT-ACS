@@ -751,12 +751,14 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
 
                 ${renderOpticalHistoryCard()}
+                ${renderDeviceActionHistoryCard()}
 
             </div>
         `;
 
         renderWifiHealthCard(device);
         loadOpticalHistory(device.serial_number);
+        loadDeviceActionHistory(device.device_id, deviceActionHistoryBefore);
 
         // Reaplica imediatamente o cache IXC após qualquer re-render,
         // inclusive no auto-refresh de 30s. Assim o card WAN não volta

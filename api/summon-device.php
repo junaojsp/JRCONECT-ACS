@@ -28,7 +28,8 @@ if (!$credentials) {
     jsonResponse(['success' => false, 'message' => 'GenieACS tidak terhubung']);
 }
 
-use App\GenieACS;
+require_once __DIR__ . '/../lib/TrackedGenieACS.php';
+use App\TrackedGenieACS as GenieACS;
 
 $genieacs = new GenieACS(
     $credentials['host'],
@@ -52,3 +53,4 @@ if ($result['success'] || $diagnostics['success']) {
     }
     jsonResponse(['success' => false, 'message' => $errorMsg]);
 }
+

@@ -2,7 +2,8 @@
 declare(strict_types=1);
 
 /* CPE controls: explicit interface selection; never infer permission from username. */
-use App\GenieACS;
+require_once __DIR__ . '/../lib/TrackedGenieACS.php';
+use App\TrackedGenieACS as GenieACS;
 
 function dcReply(array $body, int $status = 200): never {
     http_response_code($status);
@@ -382,3 +383,4 @@ try {
     if($status<400||$status>599) $status=500;
     dcReply(['success'=>false,'message'=>$status===500?'Falha interna ao consultar o controle. Verifique a configuração do servidor.':$error->getMessage()],$status);
 }
+

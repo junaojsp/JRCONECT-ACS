@@ -1,0 +1,7 @@
+.acs-action-history { grid-column:1 / -1 !important; width:100% !important; flex:0 0 100% !important; min-width:0; }
+.acs-action-history table { font-size:12px; }
+.acs-action-history th { white-space:nowrap; color:#94a3b8; }
+.acs-action-history td { vertical-align:middle; padding:9px 8px; }
+.acs-action-history .badge { font-size:11px; white-space:nowrap; }
+.acs-action-history .table-responsive { max-height:380px; overflow:auto; }
+.acs-action-history thead { position:sticky; top:0; background:#182235; }

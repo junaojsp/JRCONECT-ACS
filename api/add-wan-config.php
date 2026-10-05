@@ -31,7 +31,8 @@
  */
 
 require_once __DIR__ . '/../config/config.php';
-use App\GenieACS;
+require_once __DIR__ . '/../lib/TrackedGenieACS.php';
+use App\TrackedGenieACS as GenieACS;
 
 header('Content-Type: application/json');
 
@@ -161,3 +162,4 @@ if ($result['success']) {
 } else {
     jsonResponse(false, 'Failed to create WAN connection: ' . ($result['error'] ?? 'Unknown error'));
 }
+
