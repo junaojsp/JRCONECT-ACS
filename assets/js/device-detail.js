@@ -483,7 +483,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         const statusHeader = document.getElementById('device-status-header');
         if (statusHeader) {
             const online = String(device.status || '').toLowerCase() === 'online';
-            statusHeader.textContent = online ? 'ONLINE' : 'OFFLINE';
+            statusHeader.textContent = online ? 'Online' : 'Offline';
             statusHeader.classList.toggle('online', online);
             statusHeader.classList.toggle('offline', !online);
         }
@@ -588,6 +588,17 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         const hostCount = Array.isArray(device.connected_devices)
             ? device.connected_devices.length
             : (device.connected_devices_count ?? '—');
+        const escOverview = (value) => String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const ssid24 = device.wifi_ssid_24ghz || device.wifi_ssid_2g || device.wifi_ssid || '—';
+        const ssid5 = device.wifi_ssid_5ghz || device.wifi_ssid_5g || device.wifi_ssid_5g_name || device.wifi_ssid || '—';
+        const discoveryChip = document.getElementById('fb-discovery-chip');
+        if (discoveryChip) {
+            const auto = /auto/i.test(String(device.cpe_profile_source || ''));
+            discoveryChip.classList.toggle('is-on', auto);
+            discoveryChip.title = auto
+                ? 'Perfil identificado por descoberta automática neste CPE.'
+                : 'Este CPE usa o perfil já cadastrado. A descoberta não acrescentou outro modo de leitura.';
+        }
 
         document.getElementById('overview-content').innerHTML = `
             <section class="jr-assistant-strip">
@@ -628,19 +639,19 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </div>
             </section>
 
-            <div class="fb-onu acs-overview-grid acs-approved-layout acs-overview-reorganized acs-overview-with-ai-bar">
+            <div class="fb-onu">
                 <section class="acs-overview-card fb-diag-card">
                     <h2 class="fb-section-title">Diagnóstico rápido</h2>
                     <div class="fb-diag-grid">
-                        <div class="fb-diag-item ${onuOnline ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conectividade</span><strong>${onuOnline ? 'Online' : 'Sem contato'} · ${device.last_inform || '—'}</strong></div>
-                        <div class="fb-diag-item ${wanConnected ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conexão WAN</span><strong>${primaryWan.status || '—'}</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Sinal óptico (RX)</span><strong data-mirror="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Transmissão óptica (TX)</span><strong data-mirror="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Temperatura</span><strong data-mirror="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Voltagem</span><strong data-mirror="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
+                        <div class="fb-diag-item ${onuOnline ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conectividade</span><strong>${onuOnline ? 'Online' : 'Sem contato'} · ${escOverview(device.last_inform || '—')}</strong></div>
+                        <div class="fb-diag-item ${wanConnected ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conexão WAN</span><strong>${escOverview(primaryWan.status || '—')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Sinal óptico (RX)</span><strong data-optical="rx_power">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Transmissão óptica (TX)</span><strong data-optical="tx_power">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Temperatura</span><strong data-optical="temperature">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Voltagem</span><strong data-optical="voltage">Consultando...</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>PPPoE</span><strong data-mirror="wan-pppoe-user">${primaryWan.username || '—'}</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Hosts conectados</span><strong>${hostCount}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>PPPoE</span><strong data-mirror="wan-pppoe-user">${escOverview(primaryWan.username || '—')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></div>
                     </div>
                 </section>
 
@@ -648,8 +659,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     ${renderOpticalHistoryCard()}
                     <section class="acs-overview-card">
                         <div class="acs-overview-card-header">
-                            <span class="acs-kicker">Tráfego WAN (tempo real)</span>
-                            <span class="acs-mini-badge ${wanConnected ? 'success' : ''}">${primaryWan.status || 'STATUS'}</span>
+                            <span class="acs-kicker">Tráfego WAN</span>
+                            <span class="acs-mini-badge ${wanConnected ? 'success' : ''}">${escOverview(primaryWan.status || 'STATUS')}</span>
                         </div>
                         <div class="fb-traffic">
                             <div><span>Download agora</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
@@ -666,14 +677,14 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 <section class="fb-indicators">
                     <h2 class="fb-section-title">Indicadores</h2>
                     <div class="fb-ind-grid">
-                        <article class="fb-ind"><span>Sinal RX</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></article>
-                        <article class="fb-ind"><span>Sinal TX</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></article>
-                        <article class="fb-ind"><span>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></article>
-                        <article class="fb-ind"><span>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></article>
-                        <article class="fb-ind"><span>Tempo ligado</span><strong>${formatUptime(device.uptime)}</strong></article>
-                        <article class="fb-ind"><span>Última conexão</span><strong>${device.last_inform || '—'}</strong></article>
-                        <article class="fb-ind"><span>Hosts conectados</span><strong>${hostCount}</strong></article>
-                        <article class="fb-ind"><span>OLT / PON</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong><small id="optical-last-update">${renderOpticalLastUpdate()}</small><span id="optical-source" hidden></span></article>
+                        <article class="fb-ind"><span>Sinal RX</span><strong id="optical-rx-power">—</strong><em id="optical-rx-power-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Sinal TX</span><strong id="optical-tx-power">—</strong><em id="optical-tx-power-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Temperatura</span><strong id="optical-temperature">—</strong><em id="optical-temperature-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Voltagem</span><strong id="optical-voltage">—</strong><em id="optical-voltage-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Tempo ligado</span><strong>${formatUptime(device.uptime)}</strong><em class="fb-pill ${onuOnline ? 'is-good' : 'is-bad'}">${onuOnline ? 'Bom' : 'Offline'}</em></article>
+                        <article class="fb-ind"><span>Última conexão</span><strong>${escOverview(device.last_inform || '—')}</strong></article>
+                        <article class="fb-ind"><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></article>
+                        <article class="fb-ind"><span>OLT / PON</span><strong id="optical-pon-id">—</strong><small id="optical-last-update"></small><span id="optical-source" hidden></span></article>
                     </div>
                 </section>
 
@@ -681,44 +692,47 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     <section class="acs-overview-card acs-card-wan acs-approved-wan">
                         <div class="acs-overview-card-header">
                             <span class="acs-kicker">Conexão e Wi-Fi</span>
+                            <button class="acs-toolbar-action" type="button" onclick="document.getElementById('wifi-tab')?.click()">Abrir Wi-Fi</button>
                         </div>
                         <div class="acs-reference-list">
+                            <div><span>Cliente</span><strong id="fb-client-name">—</strong></div>
                             <div><span>IP WAN</span><strong id="wan-ip">${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
-                            <div><span>PPPoE</span><strong id="wan-pppoe-user">${primaryWan.username || '—'}</strong></div>
-                            <div><span>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
-                            <div><span>IPv6</span><strong id="wan-ipv6">${primaryWan.ipv6 || '—'}</strong></div>
-                            <div><span>VLAN</span><strong id="wan-vlan">${primaryWan.vlan_id || primaryWan.vlan || '—'}</strong></div>
-                            <div><span>Último erro</span><strong id="wan-last-error">${primaryWan.last_error || '—'}</strong></div>
+                            <div><span>PPPoE</span><strong id="wan-pppoe-user">${escOverview(primaryWan.username || '—')}</strong></div>
+                            <div><span>Método</span><strong>${escOverview(primaryWan.type || primaryWan.connection_type || 'PPPoE')}</strong></div>
+                            <div><span>IPv6</span><strong id="wan-ipv6">${escOverview(primaryWan.ipv6 || '—')}</strong></div>
+                            <div><span>VLAN</span><strong id="wan-vlan">${escOverview(primaryWan.vlan_id || primaryWan.vlan || '—')}</strong></div>
+                            <div><span>Wi-Fi 2,4 GHz</span><strong>${escOverview(ssid24)}</strong></div>
+                            <div><span>Wi-Fi 5 GHz</span><strong>${escOverview(ssid5)}</strong></div>
+                            <div><span>Último erro</span><strong id="wan-last-error">${escOverview(primaryWan.last_error || '—')}</strong></div>
                         </div>
-                        <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
                     </section>
-                    <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
+                    <section class="acs-overview-card acs-card-device acs-approved-device">
                         <div class="acs-overview-card-header">
-                            <span class="acs-kicker">Redes Wi-Fi</span>
+                            <span class="acs-kicker">Equipamento</span>
+                            <span class="acs-status-pill ${onuOnline ? 'online' : 'offline'}">${onuOnline ? 'Online' : 'Offline'}</span>
                         </div>
-                        <div class="acs-wifi-reference-grid"></div>
+                        <div class="acs-reference-list">
+                            <div><span>Modelo</span><strong>${escOverview(device.product_class || device.model || '—')}</strong></div>
+                            <div><span>Fabricante</span><strong>${escOverview(device.manufacturer || '—')}</strong></div>
+                            <div><span>Serial</span><strong>${escOverview(device.serial_number || '—')}</strong></div>
+                            <div><span>Firmware</span><strong>${escOverview(device.software_version || '—')}</strong></div>
+                            <div><span>Hardware</span><strong>${escOverview(device.hardware_version || '—')}</strong></div>
+                            <div><span>MAC</span><strong>${escOverview(device.mac_address || '—')}</strong></div>
+                            <div><span>Perfil TR-069</span><strong>${escOverview(profileLabel)}</strong></div>
+                        </div>
                     </section>
                 </div>
 
-                <section class="acs-overview-card acs-card-device acs-approved-device">
-                    <div class="acs-overview-card-header">
-                        <span class="acs-kicker">Equipamento</span>
-                        <span class="acs-status-pill ${onuOnline ? 'online' : 'offline'}">${onuOnline ? 'Online' : 'Offline'}</span>
-                    </div>
-                    <div class="acs-reference-list">
-                        <div><span>Modelo</span><strong>${device.product_class || device.model || '—'}</strong></div>
-                        <div><span>Fabricante</span><strong>${device.manufacturer || '—'}</strong></div>
-                        <div><span>Serial</span><strong>${device.serial_number || '—'}</strong></div>
-                        <div><span>Firmware</span><strong>${device.software_version || '—'}</strong></div>
-                        <div><span>Hardware</span><strong>${device.hardware_version || '—'}</strong></div>
-                        <div><span>MAC</span><strong>${device.mac_address || '—'}</strong></div>
-                        <div><span>Perfil TR-069</span><strong>${profileLabel}</strong></div>
-                    </div>
+                <section class="acs-overview-card fb-alerts-card">
+                    <h2 class="fb-section-title">Alertas ativos</h2>
+                    <div id="fb-active-alerts"><p class="fb-alert-empty">Consultando alertas...</p></div>
                 </section>
-
-                ${renderDeviceActionHistoryCard()}
             </div>
         `;
+
+        const historyMount = document.getElementById('history-content');
+        if (historyMount) historyMount.innerHTML = renderDeviceActionHistoryCard();
+        if (typeof paintActiveAlerts === 'function') paintActiveAlerts();
 
         renderWifiHealthCard(device);
         loadOpticalHistory(device.serial_number);
@@ -1761,6 +1775,14 @@ async function confirmSummon() {
     }
 }
 
+function fbOpenLegacyWifi() {
+    const device = (typeof currentDeviceData === 'object' && currentDeviceData) ? currentDeviceData : {};
+    const ssid = device.wifi_ssid_24ghz || device.wifi_ssid_2g || device.wifi_ssid || '';
+    const tab = document.getElementById('wifi-tab');
+    if (tab && !tab.classList.contains('active')) tab.click();
+    openEditWiFiModal(device.device_id || window.DEVICE_ID || '', ssid, device.wifi_password || '');
+}
+
 function openEditWiFiModal(deviceId, currentSsid, currentPassword) {
     // Set form values
     document.getElementById('edit-device-id').value = deviceId;
@@ -2793,24 +2815,161 @@ function applyIxcNetworkPrimary() {
 }
 
 
+function opticalPlainText(valueKey, unit) {
+    if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId) return 'Consultando...';
+    if (cachedOpticalData.error) return 'Sem leitura';
+    const numericValue = Number((cachedOpticalData.optical || {})[valueKey]);
+    if (!Number.isFinite(numericValue) || (unit === 'V' && numericValue <= 0)) return 'Sem leitura';
+    return numericValue.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }) + ' ' + unit;
+}
+
+function opticalTone(valueKey, statusKey) {
+    if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId || cachedOpticalData.error) {
+        return { label: 'Sem dado', tone: 'is-muted' };
+    }
+    const optical = cachedOpticalData.optical || {};
+    const numericValue = Number(optical[valueKey]);
+    if (!Number.isFinite(numericValue)) return { label: 'Sem dado', tone: 'is-muted' };
+    if (valueKey === 'rx_power') {
+        if (numericValue > -25) return { label: 'Bom', tone: 'is-good' };
+        if (numericValue > -27) return { label: 'Fraco', tone: 'is-warn' };
+        return { label: 'Crítico', tone: 'is-bad' };
+    }
+    const statusText = String(optical[statusKey] || '').trim();
+    const normalized = statusText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (normalized === 'critico' || normalized === 'critical') return { label: 'Crítico', tone: 'is-bad' };
+    if (normalized && normalized !== 'normal') return { label: statusText, tone: 'is-warn' };
+    return { label: 'Bom', tone: 'is-good' };
+}
+
+function paintOpticalReadout(id, valueKey, unit, statusKey) {
+    const text = opticalPlainText(valueKey, unit);
+    const tone = opticalTone(valueKey, statusKey);
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+    const pill = document.getElementById(id + '-pill');
+    if (pill) {
+        pill.textContent = tone.label;
+        pill.className = 'fb-pill ' + tone.tone;
+    }
+    document.querySelectorAll('[data-optical="' + valueKey + '"]').forEach(node => {
+        node.textContent = text;
+        if (valueKey === 'rx_power') {
+            const item = node.closest('.fb-diag-item');
+            if (item) {
+                item.classList.toggle('is-bad', tone.tone === 'is-bad');
+                item.classList.toggle('is-warn', tone.tone === 'is-warn');
+            }
+        }
+    });
+    document.querySelectorAll('[data-optical-pill="' + valueKey + '"]').forEach(node => {
+        node.textContent = tone.label;
+        node.className = 'fb-pill ' + tone.tone;
+    });
+}
+
+function opticalHtmlText(html) {
+    const holder = document.createElement('div');
+    holder.innerHTML = html;
+    return holder.textContent || '—';
+}
+
+function paintHeaderSignal() {
+    const statusHeader = document.getElementById('device-status-header');
+    if (!statusHeader || !currentDeviceData) return;
+    const online = String(currentDeviceData.status || '').toLowerCase() === 'online';
+    statusHeader.classList.remove('online', 'offline', 'warn');
+    if (!online) {
+        statusHeader.textContent = 'Offline';
+        statusHeader.classList.add('offline');
+        return;
+    }
+    const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
+    if (!Number.isFinite(rx) || (cachedOpticalData && cachedOpticalData.error)) {
+        statusHeader.textContent = 'Online';
+        statusHeader.classList.add('online');
+        return;
+    }
+    if (rx > -25) {
+        statusHeader.textContent = 'Bom';
+        statusHeader.classList.add('online');
+    } else if (rx > -27) {
+        statusHeader.textContent = 'Fraco';
+        statusHeader.classList.add('warn');
+    } else {
+        statusHeader.textContent = 'Crítico';
+        statusHeader.classList.add('offline');
+    }
+}
+
+function paintOpticalGauge() {
+    const mark = document.getElementById('optical-rx-gauge-mark');
+    if (!mark) return;
+    const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
+    if (!Number.isFinite(rx)) {
+        mark.style.left = '0%';
+        return;
+    }
+    const pct = Math.min(100, Math.max(0, (rx + 30) / 22 * 100));
+    mark.style.left = pct + '%';
+}
+
+function paintActiveAlerts() {
+    const box = document.getElementById('fb-active-alerts');
+    if (!box || !currentDeviceData) return;
+    const device = currentDeviceData;
+    const online = String(device.status || '').toLowerCase() === 'online';
+    const wan = (typeof getPrimaryWAN === 'function' ? getPrimaryWAN(device) : null) || {};
+    const wanStatus = String(wan.status || '').toLowerCase();
+    const wanConnected = ['connected', 'up', 'online', 'enabled'].includes(wanStatus);
+    const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const items = [];
+    if (!online) items.push({ tone: 'is-bad', title: 'Equipamento sem contato', detail: device.last_inform || 'Sem último inform' });
+    if (online && wanStatus && !wanConnected) items.push({ tone: 'is-bad', title: 'WAN desconectada', detail: wan.status });
+    if (Number.isFinite(rx) && rx <= -27) {
+        items.push({ tone: 'is-bad', title: 'Sinal óptico crítico', detail: rx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' dBm' });
+    } else if (Number.isFinite(rx) && rx <= -25) {
+        items.push({ tone: 'is-warn', title: 'Sinal óptico fraco', detail: rx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' dBm' });
+    }
+    if (!items.length) {
+        box.innerHTML = '<p class="fb-alert-empty">Nenhum alerta ativo neste equipamento.</p>';
+        return;
+    }
+    box.innerHTML = items.map(item =>
+        `<article class="fb-alert ${item.tone}"><i class="bi bi-exclamation-circle"></i><div><strong>${esc(item.title)}</strong><span>${esc(item.detail)}</span></div></article>`
+    ).join('');
+}
+
 function updateOpticalDomFromCache() {
     // IMPORTANTE: busca os elementos novamente depois da resposta.
     // O auto-refresh pode ter recriado todo o HTML enquanto a API estava consultando a OLT.
-    const rxEl = document.getElementById('optical-rx-power');
-    const txEl = document.getElementById('optical-tx-power');
-    const tempEl = document.getElementById('optical-temperature');
-    const voltageEl = document.getElementById('optical-voltage');
+    paintOpticalReadout('optical-rx-power', 'rx_power', 'dBm', 'rx_status');
+    paintOpticalReadout('optical-tx-power', 'tx_power', 'dBm', 'tx_status');
+    paintOpticalReadout('optical-temperature', 'temperature', '°C', 'temperature_status');
+    paintOpticalReadout('optical-voltage', 'voltage', 'V', 'voltage_status');
     const ponEl = document.getElementById('optical-pon-id');
     const lastUpdateEl = document.getElementById('optical-last-update');
     const sourceEl = document.getElementById('optical-source');
-
-    if (rxEl) rxEl.innerHTML = renderOpticalCachedValue('rx_power', 'dBm', 'rx_status');
-    if (txEl) txEl.innerHTML = renderOpticalCachedValue('tx_power', 'dBm', 'tx_status');
-    if (tempEl) tempEl.innerHTML = renderOpticalCachedValue('temperature', '°C', 'temperature_status');
-    if (voltageEl) voltageEl.innerHTML = renderOpticalCachedValue('voltage', 'V', 'voltage_status');
-    if (ponEl) ponEl.innerHTML = renderOpticalCachedPon();
-    if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
+    const ponText = opticalHtmlText(renderOpticalCachedPon());
+    const seenText = opticalHtmlText(renderOpticalLastUpdate());
+    if (ponEl) ponEl.textContent = ponText;
+    if (lastUpdateEl) lastUpdateEl.textContent = seenText;
+    const opticalPon = document.getElementById('fb-optical-pon');
+    const opticalSeen = document.getElementById('fb-optical-seen');
+    if (opticalPon) opticalPon.textContent = ponText;
+    if (opticalSeen) opticalSeen.textContent = seenText;
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
+    const clientName = document.getElementById('fb-client-name');
+    if (clientName && cachedOpticalData && cachedOpticalData.device_id === deviceId && !cachedOpticalData.error) {
+        clientName.textContent = cachedOpticalData.nome || '—';
+    }
+    paintHeaderSignal();
+    paintOpticalGauge();
+    paintActiveAlerts();
     document.querySelectorAll('[data-mirror]').forEach(node => {
         const source = document.getElementById(node.dataset.mirror);
         if (source) node.innerHTML = source.innerHTML;

@@ -437,3 +437,168 @@ html.acs-device-readable #overview-content .acs-wifi-health-state span i {
     .fb-diag-grid, .fb-ind-grid, .fb-traffic { grid-template-columns: 1fr; }
     html.acs-device-readable #overview-content .fb-onu .fb-onu-split { grid-template-columns: 1fr !important; }
 }
+
+.fb-device .fb-header-extra,
+.fb-device .fb-nav-retired,
+.fb-device .acs-customer-strip { display: none !important; }
+
+.fb-device .acs-header-status.warn {
+    color: #f5b942 !important;
+    background: #2c2416 !important;
+    border: 1px solid #6a5420 !important;
+}
+
+.fb-source-line {
+    display: flex;
+    gap: 8px;
+    margin: -6px 0 14px;
+}
+.fb-source-line span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid #2a2d34;
+    background: #14161b;
+    color: #8d939c;
+    font-size: 12px;
+}
+.fb-source-line span.is-on {
+    color: #f7f8fa;
+    border-color: #5a1d22;
+    background: #2a1214;
+}
+
+html.acs-device-readable #overview-content .fb-onu {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: 100% !important;
+}
+html.acs-device-readable #overview-content .fb-diag-card,
+html.acs-device-readable #overview-content .fb-diag-grid,
+html.acs-device-readable #overview-content .fb-diag-item {
+    visibility: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+html.acs-device-readable #overview-content .fb-diag-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px 22px !important;
+}
+html.acs-device-readable #overview-content .fb-diag-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 28px !important;
+}
+html.acs-device-readable #overview-content .fb-diag-item strong {
+    display: inline !important;
+    margin-left: auto !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #f7f8fa !important;
+    text-align: right !important;
+}
+html.acs-device-readable #overview-content .fb-diag-item.is-warn i { color: #f5b942 !important; }
+
+html.acs-device-readable .fb-device .fb-ind {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    min-height: 108px !important;
+}
+html.acs-device-readable .fb-device .fb-ind > strong {
+    display: block !important;
+    margin: 4px 0 0 !important;
+    font-size: 28px !important;
+    line-height: 1.05 !important;
+    font-weight: 650 !important;
+    color: #f7f8fa !important;
+    letter-spacing: -0.03em !important;
+}
+.fb-pill {
+    display: inline-flex !important;
+    align-items: center;
+    width: fit-content;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px !important;
+    font-style: normal;
+    line-height: 1.4 !important;
+    color: #8d939c;
+    background: #1c1f26;
+    border: 1px solid #32353d;
+}
+.fb-pill.is-good { color: #3dd68c; background: #14261c; border-color: #1f6b45; }
+.fb-pill.is-warn { color: #f5b942; background: #2c2416; border-color: #6a5420; }
+.fb-pill.is-bad { color: #ff6b6b; background: #2a1518; border-color: #7a1d24; }
+
+.fb-gauge { margin: 0 0 12px; }
+.fb-gauge-track {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #ff5d5d 0%, #f5b942 55%, #3dd68c 100%);
+}
+.fb-gauge-track span {
+    position: absolute;
+    top: -4px;
+    width: 4px;
+    height: 16px;
+    border-radius: 4px;
+    background: #f7f8fa;
+    transform: translateX(-50%);
+}
+.fb-gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    color: #8d939c;
+    font-size: 11px;
+}
+.fb-device .acs-history-chart { width: 100%; height: auto; display: block; }
+
+.fb-alerts-card .fb-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-top: 1px solid #26282f;
+}
+.fb-alerts-card .fb-alert i { margin-top: 2px; }
+.fb-alerts-card .fb-alert.is-bad i { color: #ff6b6b; }
+.fb-alerts-card .fb-alert.is-warn i { color: #f5b942; }
+.fb-alerts-card .fb-alert strong,
+.fb-alerts-card .fb-alert span { display: block; }
+.fb-alerts-card .fb-alert span { color: #8d939c; font-size: 12px; }
+.fb-alert-empty,
+.fb-tab-note { margin: 0; color: #8d939c; }
+.fb-optical-meta { margin-top: 14px; }
+
+.fb-action-row,
+.fb-device #wifi .acs-overview-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.fb-action-row { margin-top: 4px; }
+.fb-device #acs-diagnostics-content { display: flex; flex-direction: column; gap: 14px; }
+.fb-device #wifi .acs-overview-card-header { align-items: flex-start; justify-content: space-between; }
+.fb-device #wifi .acs-toolbar-action.fb-primary {
+    background: #e10600 !important;
+    border-color: #e10600 !important;
+    color: #fff !important;
+}
+
+@media (max-width: 1100px) {
+    html.acs-device-readable #overview-content .fb-diag-grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 700px) {
+    html.acs-device-readable #overview-content .fb-diag-grid { grid-template-columns: 1fr !important; }
+    html.acs-device-readable .fb-device .fb-ind > strong { font-size: 22px !important; }
+}

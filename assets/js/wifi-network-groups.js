@@ -126,7 +126,7 @@
     };
 
     function start() {
-        const root=document.getElementById('overview-content');
+        const root=document.getElementById('deviceTabContent') || document.getElementById('overview-content');
         if(!root || !window.DEVICE_ID)return;
         ensureMounted();
         const observer=new MutationObserver(()=>{

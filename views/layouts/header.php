@@ -164,7 +164,7 @@
                 <?php echo $pageTitle ?? 'JR CONECT ACS'; ?>
             </h4>
 
-            <?php if (($currentPage ?? '') === 'devices'): ?>
+            <?php if (($currentPage ?? '') === 'devices' && basename($_SERVER['SCRIPT_NAME'] ?? '') === 'devices.php'): ?>
             <label class="fb-top-search-wrap">
                 <i class="bi bi-search"></i>
                 <input

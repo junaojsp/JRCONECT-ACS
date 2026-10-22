@@ -15,6 +15,10 @@ function renderOpticalHistoryCard() {
                 <button type="button" onclick="loadOpticalHistory(currentDeviceData.serial_number, opticalHistoryHours, true)" title="Atualizar histórico" aria-label="Atualizar histórico"><i class="bi bi-arrow-clockwise"></i></button>
             </div>
         </div>
+        <div class="fb-gauge" id="optical-rx-gauge" aria-hidden="true">
+            <div class="fb-gauge-track"><span id="optical-rx-gauge-mark"></span></div>
+            <div class="fb-gauge-scale"><span>-30</span><span>-20</span><span>-8 dBm</span></div>
+        </div>
         <div id="optical-history-content" aria-live="polite"><p class="text-muted">Consultando histórico…</p></div>
     </section>`;
 }
@@ -37,16 +41,31 @@ function opticalHistoryView(data) {
     const y = rx => bottom - (rx - min) / (max - min) * (bottom - top);
     const format = value => Number(value).toFixed(2).replace('.', ',');
     const date = time => new Date(time).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'});
-    let path = '', previous = null;
     const gap = (data.bucket_seconds || 900) * 1500;
+    const segments = [];
+    let segment = [];
+    let previous = null;
     points.forEach(point => {
-        path += `${previous === null || point.time - previous > gap ? 'M' : 'L'}${x(point.time).toFixed(2)},${y(point.rx).toFixed(2)} `;
+        if (previous !== null && point.time - previous > gap && segment.length) {
+            segments.push(segment);
+            segment = [];
+        }
+        segment.push(point);
         previous = point.time;
     });
+    if (segment.length) segments.push(segment);
+    const line = segments.map(group => group.map((point, index) =>
+        `${index === 0 ? 'M' : 'L'}${x(point.time).toFixed(2)},${y(point.rx).toFixed(2)}`).join(' ')).join(' ');
+    const area = segments.map(group => {
+        const start = group[0];
+        const end = group[group.length - 1];
+        const stroke = group.map((point, index) => `${index === 0 ? 'M' : 'L'}${x(point.time).toFixed(2)},${y(point.rx).toFixed(2)}`).join(' ');
+        return `${stroke} L${x(end.time).toFixed(2)},${bottom} L${x(start.time).toFixed(2)},${bottom} Z`;
+    }).join(' ');
     const guides = [min, -27, -25, max].filter((value, index, values) => values.indexOf(value) === index).map(value =>
         `<line x1="${left}" x2="${right}" y1="${y(value)}" y2="${y(value)}" stroke="${value === -27 ? '#ef4444' : value === -25 ? '#eab308' : '#40506a'}" stroke-dasharray="4 5"/>
          <text x="42" y="${y(value) + 4}" text-anchor="end">${value}</text>`).join('');
-    const dots = points.map(point => `<circle cx="${x(point.time)}" cy="${y(point.rx)}" r="3" fill="#ff5d5d">
+    const dots = points.map(point => `<circle cx="${x(point.time)}" cy="${y(point.rx)}" r="2.4" fill="#ff5d5d">
         <title>${opticalHistoryEscape(date(point.time))} · RX médio ${format(point.rx)} dBm · mín ${format(point.min)} / máx ${format(point.max)}</title></circle>`).join('');
     const stats = data.stats || {};
     const worst = Math.min(...points.map(point => point.min));
@@ -60,7 +79,8 @@ function opticalHistoryView(data) {
         <span>Variação <strong>${format(best - worst)} dB</strong></span>
         <span>Leituras <strong>${Number(stats.samples) || 0}</strong></span>
         </div><svg class="acs-history-chart" viewBox="0 0 760 208" role="img" aria-label="Histórico da potência recebida em dBm">
-        ${guides}<path d="${path}" fill="none" stroke="#ff5d5d" stroke-width="2"/>${dots}
+        <defs><linearGradient id="fbRxFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff5d5d" stop-opacity="0.42"/><stop offset="100%" stop-color="#ff5d5d" stop-opacity="0.02"/></linearGradient></defs>
+        ${guides}<path d="${area}" fill="url(#fbRxFill)" stroke="none"/><path d="${line}" fill="none" stroke="#ff5d5d" stroke-width="2"/>${dots}
         <text x="${left}" y="198">${opticalHistoryEscape(date(first))}</text>
         <text x="${right}" y="198" text-anchor="end">${opticalHistoryEscape(date(last))}</text>
         </svg><p class="small text-muted mb-0">IXC · Média por intervalo de ${bucketLabel}; passe sobre os pontos para ver mínimo e máximo. Linhas de referência: −25 e −27 dBm.${opticalHistoryEscape(seenLabel)}</p>

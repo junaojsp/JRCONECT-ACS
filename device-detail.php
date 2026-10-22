@@ -2,7 +2,7 @@
 require_once __DIR__ . '/config/config.php';
 requireLogin();
 
-$pageTitle = 'Detalhes do Equipamento';
+$pageTitle = 'Dispositivos';
 $currentPage = 'devices';
 
 $genieacsConfigured = isGenieACSConfigured();
@@ -64,39 +64,39 @@ include __DIR__ . '/views/layouts/header.php';
             </div>
 
             <div class="acs-device-toolbar-actions">
-                <label class="acs-text-size-control" for="acs-text-size">
+                <label class="acs-text-size-control fb-header-extra" for="acs-text-size">
                     <span>Tamanho do texto</span>
                     <select id="acs-text-size">
                         <option value="standard">Padrão</option>
                         <option value="large">Grande</option>
                     </select>
                 </label>
-                <button class="acs-toolbar-action" type="button" onclick="runDeviceAISummary()" title="Resumo técnico">
+                <button class="acs-toolbar-action fb-header-extra" type="button" onclick="runDeviceAISummary()" title="Resumo técnico">
                     <i class="bi bi-clipboard2-pulse"></i>
                     <span>Resumo</span>
                 </button>
 
-                <button class="acs-toolbar-action fb-primary" type="button" onclick="openDeviceAIDrawer()" title="Abrir o assistente">
+                <button class="acs-toolbar-action fb-primary fb-header-extra" type="button" onclick="openDeviceAIDrawer()" title="Abrir o assistente">
                     <i class="bi bi-stars"></i>
                     <span>Assistente</span>
                 </button>
 
-                <button class="acs-toolbar-action" type="button" onclick="summonDevice()" title="Solicitar comunicação">
+                <button class="acs-toolbar-action fb-header-extra" type="button" onclick="summonDevice()" title="Solicitar comunicação">
                     <i class="bi bi-lightning-charge"></i>
                     <span>Comunicar</span>
                 </button>
 
-                <button class="acs-toolbar-action" type="button" onclick="startONUSpeedtest()" id="onu-speedtest-btn" title="Teste de velocidade">
+                <button class="acs-toolbar-action fb-header-extra" type="button" onclick="startONUSpeedtest()" id="onu-speedtest-btn" title="Teste de velocidade">
                     <i class="bi bi-speedometer2"></i>
                     <span>Speedtest</span>
                 </button>
 
-                <button class="acs-toolbar-action" type="button" onclick="showAddTagModal()" title="Adicionar etiqueta">
+                <button class="acs-toolbar-action fb-header-extra" type="button" onclick="showAddTagModal()" title="Adicionar etiqueta">
                     <i class="bi bi-tag"></i>
                     <span>Etiqueta</span>
                 </button>
 
-                <button class="acs-toolbar-action" type="button" onclick="openWebManagement()" title="Abrir gerenciamento web do equipamento">
+                <button class="acs-toolbar-action fb-header-extra" type="button" onclick="openWebManagement()" title="Abrir gerenciamento web do equipamento">
                     <i class="bi bi-box-arrow-up-right"></i>
                     <span>Web</span>
                 </button>
@@ -105,7 +105,7 @@ include __DIR__ . '/views/layouts/header.php';
                     <i class="bi bi-arrow-clockwise"></i>
                 </button>
 
-                <div class="dropdown">
+                <div class="dropdown fb-header-extra">
                     <button class="acs-toolbar-action acs-toolbar-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Mais ações">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
@@ -166,118 +166,51 @@ include __DIR__ . '/views/layouts/header.php';
                 role="tablist"
                 style="display:none;"
             >
-
                 <li class="nav-item" role="presentation" style="order:1">
-
-                    <button
-                        class="nav-link active"
-                        id="overview-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#overview"
-                        type="button"
-                        role="tab"
-                    >
-                        Visão geral
-                    </button>
-
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Visão geral</button>
                 </li>
-
-
-                
-
-
-                <li class="nav-item" role="presentation" style="order:3">
-
-                    <button
-                        class="nav-link"
-                        id="wan-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#wan"
-                        type="button"
-                        role="tab"
-                    >
-                        WAN / PPPoE
-
-                        <span
-                            id="wan-count-badge"
-                            class="badge bg-primary ms-1"
-                        >
-                            0
-                        </span>
-                    </button>
-
-                </li>
-
-
-                <li class="nav-item" role="presentation" style="order:6">
-
-                    <button
-                        class="nav-link"
-                        id="dhcp-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#dhcp"
-                        type="button"
-                        role="tab"
-                    >
-                        DHCP
-                    </button>
-
-                </li>
-
-
-                <li class="nav-item" role="presentation" style="order:5">
-
-                    <button
-                        class="nav-link"
-                        id="firmware-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#firmware"
-                        type="button"
-                        role="tab"
-                    >
-                        Sistema
-                    </button>
-
-                </li>
-
-
-                <li class="nav-item" role="presentation" style="order:7">
-                    <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">
-                        Monitoramento
-                    </button>
-                </li>
-
-                <li class="nav-item" role="presentation" style="order:4">
-
-                    <button
-                        class="nav-link"
-                        id="devices-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#devices"
-                        type="button"
-                        role="tab"
-                    >
-                        Rede / Hosts
-
-                        <span
-                            id="devices-count-badge"
-                            class="badge bg-primary ms-1"
-                        >
-                            0
-                        </span>
-                    </button>
-
-                </li>
-
                 <li class="nav-item" role="presentation" style="order:2">
-                    <button class="nav-link" id="diagnostics-tab" data-bs-toggle="tab"
-                        data-bs-target="#diagnostics" type="button" role="tab"
-                        aria-controls="diagnostics" aria-selected="false">
-                        <i class="bi bi-lightning-charge"></i> Ações
+                    <button class="nav-link" id="diagnostics-tab" data-bs-toggle="tab" data-bs-target="#diagnostics" type="button" role="tab" aria-controls="diagnostics" aria-selected="false">Ações</button>
+                </li>
+                <li class="nav-item" role="presentation" style="order:3">
+                    <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">Histórico</button>
+                </li>
+                <li class="nav-item" role="presentation" style="order:4">
+                    <button class="nav-link" id="optical-tab" data-bs-toggle="tab" data-bs-target="#optical" type="button" role="tab">Óptico</button>
+                </li>
+                <li class="nav-item" role="presentation" style="order:5">
+                    <button class="nav-link" id="wifi-tab" data-bs-toggle="tab" data-bs-target="#wifi" type="button" role="tab">Wi-Fi</button>
+                </li>
+                <li class="nav-item" role="presentation" style="order:6">
+                    <button class="nav-link" id="wan-tab" data-bs-toggle="tab" data-bs-target="#wan" type="button" role="tab">
+                        WAN / PPPoE
+                        <span id="wan-count-badge" class="badge bg-primary ms-1">0</span>
                     </button>
                 </li>
-
+                <li class="nav-item" role="presentation" style="order:7">
+                    <button class="nav-link" id="firmware-tab" data-bs-toggle="tab" data-bs-target="#firmware" type="button" role="tab">Sistema</button>
+                </li>
+                <li class="nav-item" role="presentation" style="order:8">
+                    <button class="nav-link" id="voice-tab" data-bs-toggle="tab" data-bs-target="#voice" type="button" role="tab">Voz</button>
+                </li>
+                <li class="nav-item" role="presentation" style="order:9">
+                    <button class="nav-link" id="devices-tab" data-bs-toggle="tab" data-bs-target="#devices" type="button" role="tab">
+                        Rede / Hosts
+                        <span id="devices-count-badge" class="badge bg-primary ms-1">0</span>
+                    </button>
+                </li>
+                <li class="nav-item fb-nav-retired" role="presentation">
+                    <button class="nav-link" id="dhcp-tab" data-bs-toggle="tab" data-bs-target="#dhcp" type="button" role="tab">DHCP</button>
+                </li>
+                <li class="nav-item fb-nav-retired" role="presentation">
+                    <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">Monitoramento</button>
+                </li>
             </ul>
+
+            <div class="fb-source-line" id="fb-source-line">
+                <span class="is-on">Coletados</span>
+                <span id="fb-discovery-chip">Descoberta completa</span>
+            </div>
 
 
             <!-- =================================================
@@ -337,8 +270,62 @@ include __DIR__ . '/views/layouts/header.php';
                     <div id="devices-content"></div>
                 </div>
 
+                <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                    <div id="history-content"></div>
+                </div>
+
+                <div class="tab-pane fade" id="optical" role="tabpanel" aria-labelledby="optical-tab">
+                    <section class="acs-overview-card fb-optical-tab">
+                        <h2 class="fb-section-title">Sinal óptico</h2>
+                        <p class="fb-tab-note">Leituras do IXC. O gráfico de RX ao longo do período fica na Visão geral.</p>
+                        <div class="fb-ind-grid">
+                            <article class="fb-ind"><span>Sinal RX</span><strong data-optical="rx_power">Consultando...</strong><em class="fb-pill" data-optical-pill="rx_power">—</em></article>
+                            <article class="fb-ind"><span>Sinal TX</span><strong data-optical="tx_power">Consultando...</strong><em class="fb-pill" data-optical-pill="tx_power">—</em></article>
+                            <article class="fb-ind"><span>Temperatura</span><strong data-optical="temperature">Consultando...</strong><em class="fb-pill" data-optical-pill="temperature">—</em></article>
+                            <article class="fb-ind"><span>Voltagem</span><strong data-optical="voltage">Consultando...</strong><em class="fb-pill" data-optical-pill="voltage">—</em></article>
+                        </div>
+                        <div class="acs-reference-list fb-optical-meta">
+                            <div><span>OLT / PON</span><strong id="fb-optical-pon">Consultando...</strong></div>
+                            <div><span>Última leitura</span><strong id="fb-optical-seen">Consultando...</strong></div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="tab-pane fade" id="wifi" role="tabpanel" aria-labelledby="wifi-tab">
+                    <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
+                        <div class="acs-overview-card-header">
+                            <div>
+                                <span class="acs-kicker">Wi-Fi</span>
+                                <small class="d-block text-muted">SSID e senha deste equipamento. A mesma alteração segue pela API usada no outro sistema.</small>
+                            </div>
+                            <button class="acs-toolbar-action fb-primary" type="button" onclick="fbOpenLegacyWifi()">Alterar SSID e senha</button>
+                        </div>
+                        <div class="acs-wifi-reference-grid"></div>
+                    </section>
+                </div>
+
+                <div class="tab-pane fade" id="voice" role="tabpanel" aria-labelledby="voice-tab">
+                    <section class="acs-overview-card">
+                        <h2 class="fb-section-title">Voz</h2>
+                        <p class="fb-alert-empty">Este CPE não informou linhas de voz nesta coleta.</p>
+                    </section>
+                </div>
+
                 <div class="tab-pane fade" id="diagnostics" role="tabpanel" aria-labelledby="diagnostics-tab">
                     <div id="acs-diagnostics-content">
+                <section class="acs-overview-card fb-actions-bar">
+                    <h2 class="fb-section-title">Ações do equipamento</h2>
+                    <div class="fb-action-row">
+                        <button class="acs-toolbar-action" type="button" onclick="summonDevice()"><i class="bi bi-lightning-charge"></i> Comunicar</button>
+                        <button class="acs-toolbar-action" type="button" onclick="startONUSpeedtest()"><i class="bi bi-speedometer2"></i> Speedtest</button>
+                        <button class="acs-toolbar-action" type="button" onclick="showAddTagModal()"><i class="bi bi-tag"></i> Etiqueta</button>
+                        <button class="acs-toolbar-action" type="button" onclick="showRemoveTagModal()"><i class="bi bi-tag-fill"></i> Remover etiqueta</button>
+                        <button class="acs-toolbar-action" type="button" onclick="openWebManagement()"><i class="bi bi-box-arrow-up-right"></i> Web</button>
+                        <button class="acs-toolbar-action" type="button" onclick="runDeviceAISummary()"><i class="bi bi-clipboard2-pulse"></i> Resumo</button>
+                        <button class="acs-toolbar-action" type="button" onclick="openDeviceAIDrawer()"><i class="bi bi-stars"></i> Assistente</button>
+                        <button class="acs-toolbar-action" type="button" onclick="loadDeviceDetail()"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
+                    </div>
+                </section>
                 <section class="acs-overview-card acs-card-diagnostics acs-approved-diagnostics">
                     <div class="acs-overview-card-header">
                         <div><span class="acs-kicker"><i class="bi bi-tools"></i> Diagnósticos</span></div>
@@ -2337,13 +2324,13 @@ function restoreSpeedtestButton() {
 
 <link rel="stylesheet" href="/assets/css/device-control-fix.css?v=<?php echo time(); ?>">
 <link rel="stylesheet" href="/assets/css/optical-history.css?v=20261005-1">
-<script src="/assets/js/optical-history.js?v=20261022-onu"></script>
+<script src="/assets/js/optical-history.js?v=20261022-onu4"></script>
 <link rel="stylesheet" href="/assets/css/device-action-history.css?v=20261005-1">
 <script src="/assets/js/device-action-history.js?v=20261005-2"></script>
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu3">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu4">
 
 
 <?php
