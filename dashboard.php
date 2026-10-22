@@ -1185,10 +1185,15 @@ include __DIR__ . '/views/layouts/header.php';
     .fb-overview .fb-panel-head h2{margin:0!important;color:#f3f5f7!important;font-size:15px!important;font-weight:650!important}
     .fb-overview .fb-panel-head a{color:#8d939c!important;font-size:13px!important;text-decoration:none!important}
     .fb-overview #recent-devices{padding:0 8px 8px!important}
-    .fb-overview #recent-devices .table{margin:0!important;color:#d7dbe2!important}
-    .fb-overview #recent-devices .table thead th{background:transparent!important;color:#8d939c!important;font-size:11px!important;letter-spacing:.04em!important;padding:10px 8px!important;border-color:#2a2d34!important}
-    .fb-overview #recent-devices .table tbody td{background:transparent!important;color:#d7dbe2!important;font-size:13px!important;padding:10px 8px!important;border-color:#26282f!important}
-    .fb-overview #recent-devices .table tbody tr:hover td{background:#1b1e25!important}
+    .fb-overview #recent-devices .table{margin:0!important;color:#d7dbe2!important;--bs-table-bg:#14161b;--bs-table-color:#d7dbe2;--bs-table-border-color:#2a2d34;--bs-table-hover-bg:#1b1e25;--bs-table-hover-color:#fff}
+    .fb-overview #recent-devices .table thead,
+    .fb-overview #recent-devices .table thead tr,
+    .fb-overview #recent-devices .table thead th{background:#14161b!important;background-color:#14161b!important;color:#8d939c!important;font-size:11px!important;letter-spacing:.04em!important;padding:10px 8px!important;border-color:#2a2d34!important;box-shadow:none!important}
+    .fb-overview #recent-devices .table tbody td{background:#14161b!important;background-color:#14161b!important;color:#d7dbe2!important;font-size:13px!important;padding:10px 8px!important;border-color:#26282f!important}
+    .fb-overview #recent-devices .table tbody tr:hover td{background:#1b1e25!important;background-color:#1b1e25!important}
+    .fb-overview #recent-devices .table a,
+    .fb-overview #recent-devices .table a:hover{color:#d7dbe2!important;text-decoration:none!important}
+    .fb-overview #recent-devices .table a:hover{color:#fff!important}
     .fb-overview .fb-equip{display:flex!important;align-items:center!important;gap:10px!important;color:#f3f5f7!important;text-decoration:none!important}
     .fb-overview .fb-equip strong{display:block!important;color:#f7f8fa!important;font-size:13px!important;font-weight:650!important}
     .fb-overview .fb-equip small,.fb-overview .fb-muted{display:block!important;color:#8d939c!important;font-size:12px!important}
