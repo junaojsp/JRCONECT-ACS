@@ -546,10 +546,12 @@ if (function_exists('requireLogin')) {
 
     </style>
 
+    <!-- JRC-ACS 2.0: camada de aparência, sem alterar as funções -->
+    <link rel="stylesheet" href="/assets/css/jrc-acs-v2-theme.css?v=1">
 </head>
 
 
-<body>
+<body class="jrc-v2 jrc-discovery">
 
 
 <div class="sidebar">
