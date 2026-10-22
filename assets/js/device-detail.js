@@ -2835,7 +2835,9 @@ function applyIxcNetworkPrimary() {
 function opticalPlainText(valueKey, unit) {
     if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId) return 'Consultando...';
     if (cachedOpticalData.error) return 'Sem leitura';
-    const numericValue = Number((cachedOpticalData.optical || {})[valueKey]);
+    const raw = (cachedOpticalData.optical || {})[valueKey];
+    if (raw === null || raw === undefined || String(raw).trim() === '') return 'Sem leitura';
+    const numericValue = Number(String(raw).replace(',', '.'));
     if (!Number.isFinite(numericValue) || (unit === 'V' && numericValue <= 0)) return 'Sem leitura';
     return numericValue.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,

@@ -16,6 +16,12 @@ function renderOpticalHistoryCard(slot = 'overview') {
                 <button type="button" onclick="loadOpticalHistory(currentDeviceData.serial_number, opticalHistoryHours, true)" title="Atualizar histórico" aria-label="Atualizar histórico"><i class="bi bi-arrow-clockwise"></i></button>
             </div>
         </div>
+        <div class="fb-optical-now">
+            <div><span>RX</span><strong data-optical="rx_power">—</strong></div>
+            <div><span>TX</span><strong data-optical="tx_power">—</strong></div>
+            <div><span>Temperatura</span><strong data-optical="temperature">—</strong></div>
+            <div><span>Voltagem</span><strong data-optical="voltage">—</strong></div>
+        </div>
         <div class="fb-gauge" data-optical-gauge aria-hidden="true">
             <div class="fb-gauge-track"><span data-gauge-mark></span></div>
             <div class="fb-gauge-scale"><span>-30</span><span data-gauge-label>RX</span><span>-8 dBm</span></div>

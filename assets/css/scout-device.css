@@ -711,7 +711,7 @@ html.acs-device-readable .fb-device .acs-reference-list > div > strong {
 
 .fb-device #acs-diagnostics-content {
     display: grid !important;
-    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) !important;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr) !important;
     gap: 14px !important;
     align-items: start !important;
 }
@@ -719,12 +719,55 @@ html.acs-device-readable .fb-device .acs-reference-list > div > strong {
 .fb-device #acs-diagnostics-content .acs-approved-diagnostics { grid-column: 1; grid-row: 2; }
 .fb-device #acs-diagnostics-content .fb-action-stage { grid-column: 2; grid-row: 1 / span 2; min-height: 280px; }
 .fb-device .acs-diagnostic-services { display: none !important; }
-.fb-device .acs-diagnostic-item,
+html.acs-device-readable .fb-device #acs-diagnostics-content .acs-diagnostic-list {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+}
+html.acs-device-readable .fb-device .acs-diagnostic-item,
 .fb-device .acs-diagnostic-list button {
+    display: grid !important;
+    grid-template-columns: 38px minmax(140px, 1fr) 34px !important;
+    width: 100% !important;
+    min-height: 52px !important;
+    height: auto !important;
+    align-items: center !important;
+    text-align: left !important;
     background: #1a1d24 !important;
     border: 1px solid #2a2d34 !important;
     color: #f3f5f7 !important;
     box-shadow: none !important;
+}
+html.acs-device-readable .fb-device .acs-diagnostic-copy,
+html.acs-device-readable .fb-device .acs-diagnostic-copy strong,
+html.acs-device-readable .fb-device .acs-diagnostic-copy small {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+}
+.fb-optical-now {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 12px;
+}
+.fb-optical-now > div {
+    background: #1a1d24;
+    border: 1px solid #2a2d34;
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+.fb-optical-now span { display: block; color: #8d939c; font-size: 12px; }
+html.acs-device-readable .fb-device .fb-optical-now strong {
+    display: block !important;
+    margin-top: 4px !important;
+    color: #f7f8fa !important;
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
 }
 .fb-device .acs-diagnostic-item:hover { border-color: #e10600 !important; }
 .fb-device .acs-diagnostic-icon,
