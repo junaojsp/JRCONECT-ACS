@@ -1128,6 +1128,7 @@ include __DIR__ . '/views/layouts/header.php';
 </style>
 
 
+<link rel="stylesheet" href="/assets/css/jrc-inventory-v2.css?v=20261022">
 <div class="jrc-dashboard">
 
 
@@ -1846,11 +1847,11 @@ async function loadRecentDevices() {
         if (request !== recentDashboardRequest) return;
             let html =
                 '<div class="table-responsive">' +
-                '<table class="table table-hover">' +
+                '<table class="table table-hover jrc-inventory-table">' +
                 '<thead><tr>';
 
 
-            html += '<th>Serial</th>';
+            html += '<th>Equipamento</th>';
             html += '<th>MAC</th>';
             html += '<th>Modelo</th>';
             html += '<th>IP</th>';
@@ -2041,7 +2042,7 @@ async function loadRecentDevices() {
 
 
                     html +=
-                        `<td><a href="/device-detail.php?id=${encodeURIComponent(device.device_id)}">${device.serial_number}</a></td>`;
+                        `<td><a class="jrc-device-identity" href="/device-detail.php?id=${encodeURIComponent(device.device_id)}"><span class="jrc-device-icon"><i class="bi bi-router"></i></span><span class="jrc-device-meta"><strong>${device.product_class || "Equipamento"}</strong><small>${device.serial_number || "Sem serial"}</small></span></a></td>`;
 
 
                     html +=

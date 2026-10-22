@@ -1,0 +1,20 @@
+/* JRCONECT inventory v2: presentation only. */
+.jrc-dashboard #recent-devices .table-responsive,.jrc-inventory-page .table-responsive{background:#14161b!important;border:1px solid #2a2d35!important;border-radius:14px!important;overflow-x:auto}
+.jrc-dashboard #recent-devices .jrc-inventory-table,.jrc-inventory-page #devices-table{width:100%;margin:0!important;border-collapse:collapse!important;--bs-table-bg:transparent;--bs-table-hover-bg:transparent;--bs-table-border-color:#292d35;color:#e7eaf0!important}
+.jrc-dashboard #recent-devices .jrc-inventory-table thead th,.jrc-inventory-page #devices-table thead th{background:#1b1e25!important;color:#949cab!important;border:0!important;border-bottom:1px solid #30343d!important;padding:15px 14px!important;font-size:10px!important;font-weight:700!important;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.jrc-dashboard #recent-devices .jrc-inventory-table tbody td,.jrc-inventory-page #devices-table tbody td{background:#151820!important;color:#dbe0e9!important;border:0!important;border-bottom:1px solid #282c35!important;box-shadow:none!important;padding:17px 14px!important;font-size:12px!important;vertical-align:middle!important}
+.jrc-dashboard #recent-devices .jrc-inventory-table tbody tr:hover td,.jrc-inventory-page #devices-table tbody tr:hover td{background:#20242e!important}
+.jrc-dashboard #recent-devices .jrc-inventory-table a,.jrc-inventory-page #devices-table a{color:#e8edf6;text-decoration:none}
+.jrc-dashboard #recent-devices .jrc-inventory-table a:hover,.jrc-inventory-page #devices-table a:hover{color:#ff7676}
+.jrc-device-identity{display:inline-flex!important;align-items:center;gap:11px;min-width:205px;max-width:300px}
+.jrc-device-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 38px;width:38px;height:38px;border-radius:10px;background:#332026;color:#ff7474;font-size:18px}
+.jrc-device-meta{display:flex;flex-direction:column;min-width:0;gap:3px}
+.jrc-device-meta strong{font-size:12px;font-weight:700;line-height:1.35;color:#f4f5f8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:225px}
+.jrc-device-meta small{font-size:10px;color:#9099a8;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:225px}
+.jrc-dashboard #recent-devices .badge,.jrc-inventory-page #devices-table .badge{border-radius:999px!important;padding:6px 9px!important;font-size:10px!important;font-weight:700!important}
+.jrc-dashboard #recent-devices .badge.online,.jrc-inventory-page #devices-table .badge.online{background:#173d30!important;color:#65e4a5!important}
+.jrc-dashboard #recent-devices .badge.offline,.jrc-inventory-page #devices-table .badge.offline{background:#44252a!important;color:#ff888e!important}
+.jrc-dashboard #recent-devices .badge.bg-success,.jrc-inventory-page #devices-table .badge.bg-success{background:#173d30!important;color:#65e4a5!important}
+.jrc-dashboard #recent-devices .badge.bg-warning,.jrc-inventory-page #devices-table .badge.bg-warning{background:#45381e!important;color:#ffcf6b!important}
+.jrc-dashboard #recent-devices .badge.bg-danger,.jrc-inventory-page #devices-table .badge.bg-danger{background:#44252a!important;color:#ff888e!important}
+@media(max-width:767px){.jrc-dashboard #recent-devices .jrc-inventory-table tbody td,.jrc-inventory-page #devices-table tbody td{padding:12px 10px!important}.jrc-device-identity{min-width:170px}}
