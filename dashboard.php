@@ -1191,8 +1191,13 @@ include __DIR__ . '/views/layouts/header.php';
     .fb-overview #recent-devices .table thead th{background:#14161b!important;background-color:#14161b!important;color:#8d939c!important;font-size:11px!important;letter-spacing:.04em!important;padding:10px 8px!important;border-color:#2a2d34!important;box-shadow:none!important}
     .fb-overview #recent-devices .table tbody td{background:#14161b!important;background-color:#14161b!important;color:#d7dbe2!important;font-size:13px!important;padding:10px 8px!important;border-color:#26282f!important}
     .fb-overview #recent-devices .table tbody tr:hover td{background:#1b1e25!important;background-color:#1b1e25!important}
+    .fb-overview #recent-devices a,
+    .fb-overview #recent-devices a:link,
+    .fb-overview #recent-devices a:visited,
     .fb-overview #recent-devices .table a,
-    .fb-overview #recent-devices .table a:hover{color:#d7dbe2!important;text-decoration:none!important}
+    .fb-overview #recent-devices .table a:link,
+    .fb-overview #recent-devices .table a:visited{color:#e8eaee!important;text-decoration:none!important}
+    .fb-overview #recent-devices a:hover,
     .fb-overview #recent-devices .table a:hover{color:#fff!important}
     .fb-overview .fb-equip{display:flex!important;align-items:center!important;gap:10px!important;color:#f3f5f7!important;text-decoration:none!important}
     .fb-overview .fb-equip strong{display:block!important;color:#f7f8fa!important;font-size:13px!important;font-weight:650!important}
