@@ -710,7 +710,7 @@ include __DIR__ . '/views/layouts/header.php';
 }
 
 </style>
-
+<link rel="stylesheet" href="/assets/css/jrc-inventory.css?v=1">
 
 <div class="jrc-dashboard">
 
