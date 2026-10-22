@@ -1946,15 +1946,12 @@ async function loadRecentDevices() {
         const result = await fetchAPI('/api/recent-devices.php', { timeout: 25000 });
         if (!result?.success) throw new Error(result?.message || 'Consulta indisponível');
         devices = uniqueDashboardOnus(Array.isArray(result.devices) ? result.devices : []);
-        recentDashboardDevices = devices;
         if (!devices.length) {
             if (!container.querySelector('tbody')) {
                 container.innerHTML = '<p class="text-center text-muted">Nenhuma atividade recente encontrada</p>';
             }
             return;
         }
-        // Render before requesting IXC information.
-        draw();
         const serialNumbers = devices.map(device => device.serial_number);
         await Promise.allSettled([
             (async () => {
@@ -1975,13 +1972,14 @@ async function loadRecentDevices() {
                         reading_measured_at: ixc.rx_power != null ? ixc.last_signal_update : null
                     };
                 });
-                recentDashboardDevices = devices;
-                draw();
             })()
         ]);
+        recentDashboardDevices = devices;
+        draw();
     } catch (error) {
         console.warn('Consulta da dashboard indisponível:', error);
-        if (!devices.length) container.innerHTML = '<p class="text-center text-danger">Falha ao carregar os equipamentos. Atualize a página.</p>';
+        if (devices.length) draw();
+        else if (!container.querySelector('tbody')) container.innerHTML = '<p class="text-center text-danger">Falha ao carregar os equipamentos. Atualize a página.</p>';
     } finally {
         recentDevicesFetchInProgress = false;
     }
