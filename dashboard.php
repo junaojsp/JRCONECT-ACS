@@ -1152,103 +1152,83 @@ include __DIR__ . '/views/layouts/header.php';
 <?php else: ?>
 
 
-    <!-- =====================================================
-         DASHBOARD  - MODELO REFERENCIA ESCURO
-         ===================================================== -->
+    <style>
+    .fb-overview{display:grid!important;grid-template-columns:minmax(0,1fr) 280px!important;gap:14px!important;align-items:start!important;color:#f3f5f7!important}
+    .fb-overview *{box-sizing:border-box!important}
+    .fb-overview h1{margin:0!important;color:#f7f8fa!important;font-size:28px!important;font-weight:650!important;letter-spacing:-.03em!important;line-height:1.15!important}
+    .fb-overview .fb-page-head p{margin:6px 0 0!important;color:#8d939c!important;font-size:14px!important}
+    .fb-overview .fb-stats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin:18px 0 14px!important}
+    .fb-overview .fb-stat{display:block!important;background:#14161b!important;border:1px solid #2a2d34!important;border-radius:16px!important;padding:16px!important;min-height:118px!important;box-shadow:none!important}
+    .fb-overview .fb-stat-icon{width:34px!important;height:34px!important;max-width:34px!important;border-radius:10px!important;display:grid!important;place-items:center!important;margin:0 0 16px!important;background:#1c2030!important;color:#8eb0ff!important}
+    .fb-overview .fb-stat-icon.is-red{background:#2a1518!important;color:#ff5d5d!important}
+    .fb-overview .fb-stat-icon.is-amber{background:#2c2416!important;color:#f5b942!important}
+    .fb-overview .fb-stat-icon.is-bell{background:#2a1518!important;color:#ff6b6b!important}
+    .fb-overview .fb-stat-icon i{font-size:16px!important;line-height:1!important;width:auto!important;height:auto!important;margin:0!important;background:transparent!important;border:0!important}
+    .fb-overview .fb-stat strong{display:block!important;color:#f7f8fa!important;font-size:30px!important;font-weight:650!important;line-height:1!important;background:transparent!important;border:0!important}
+    .fb-overview .fb-stat span{display:block!important;margin-top:6px!important;color:#8d939c!important;font-size:13px!important}
+    .fb-overview .fb-panel{background:#14161b!important;border:1px solid #2a2d34!important;border-radius:16px!important;overflow:hidden!important}
+    .fb-overview .fb-panel-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:14px 16px!important;border-bottom:1px solid #2a2d34!important}
+    .fb-overview .fb-panel-head h2{margin:0!important;color:#f3f5f7!important;font-size:15px!important;font-weight:650!important}
+    .fb-overview .fb-panel-head a{color:#8d939c!important;font-size:13px!important;text-decoration:none!important}
+    .fb-overview #recent-devices{padding:0 8px 8px!important}
+    .fb-overview #recent-devices .table{margin:0!important;color:#d7dbe2!important}
+    .fb-overview #recent-devices .table thead th{background:transparent!important;color:#8d939c!important;font-size:11px!important;letter-spacing:.04em!important;padding:10px 8px!important;border-color:#2a2d34!important}
+    .fb-overview #recent-devices .table tbody td{background:transparent!important;color:#d7dbe2!important;font-size:13px!important;padding:10px 8px!important;border-color:#26282f!important}
+    .fb-overview #recent-devices .table tbody tr:hover td{background:#1b1e25!important}
+    .fb-overview .fb-side{padding-bottom:8px!important}
+    .fb-overview .fb-side-row{display:grid!important;grid-template-columns:4px 1fr auto!important;gap:12px!important;align-items:center!important;padding:14px 16px!important;border-top:1px solid #26282f!important}
+    .fb-overview .fb-side-row small{display:block!important;color:#8d939c!important;font-size:12px!important}
+    .fb-overview .fb-side-row strong{color:#f7f8fa!important;font-size:22px!important;font-weight:650!important}
+    .fb-overview .fb-side-bar{width:4px!important;height:28px!important;border-radius:4px!important;background:#3ddc84!important}
+    .fb-overview .fb-side-bar.is-amber{background:#f5b942!important}
+    .fb-overview .fb-side-bar.is-red{background:#ff5d5d!important}
+    .fb-overview .fb-side-bar.is-muted{background:#6d727a!important}
+    @media(max-width:1100px){.fb-overview{grid-template-columns:1fr!important}.fb-overview .fb-stats{grid-template-columns:1fr 1fr!important}}
+    </style>
 
-    <div class="jr-ref-shell">
-        <div class="jr-ref-top">
-            <div class="jr-ref-brand">
-                <div class="jr-ref-brand-icon"><i class="bi bi-diagram-3-fill"></i></div>
-                <div><strong>JR CONECT</strong><span>Gestão e Monitoramento de Equipamentos</span></div>
+    <div class="fb-overview">
+        <div>
+            <div class="fb-page-head">
+                <h1>Visão geral</h1>
+                <p>Saúde da frota de CPEs em tempo real.</p>
             </div>
-            <div class="jr-ref-search"><i class="bi bi-search"></i><input type="text" placeholder="Buscar ONU, SSID 2,4 GHz, cliente, IP, MAC..." onkeydown="if(event.key==='Enter'&&this.value.trim()){window.location='/devices.php?search='+encodeURIComponent(this.value.trim())}"></div>
-        </div>
-
-        <div class="jr-ref-grid">
-            <section class="jr-ref-card jr-ref-status">
-                <div class="jr-ref-card-head"><i class="bi bi-speedometer2"></i><strong>Status dos dispositivos</strong></div>
-                <div class="jr-ref-status-numbers">
-                    <div><strong id="ref-online">-</strong><span><i class="dot green"></i>Online</span></div>
-                    <div><strong id="ref-total">-</strong><span>Total</span></div>
+            <div class="fb-stats">
+                <article class="fb-stat">
+                    <div class="fb-stat-icon"><i class="bi bi-router"></i></div>
+                    <strong id="ref-total">-</strong>
+                    <span>Equipamentos monitorados</span>
+                </article>
+                <article class="fb-stat">
+                    <div class="fb-stat-icon is-bell"><i class="bi bi-bell"></i></div>
+                    <strong id="fb-alerts">-</strong>
+                    <span>Alertas ativos</span>
+                </article>
+                <article class="fb-stat">
+                    <div class="fb-stat-icon is-amber"><i class="bi bi-exclamation-triangle"></i></div>
+                    <strong id="fb-weak">-</strong>
+                    <span>Sinal fraco</span>
+                </article>
+                <article class="fb-stat">
+                    <div class="fb-stat-icon is-red"><i class="bi bi-x-circle"></i></div>
+                    <strong id="ref-critical">-</strong>
+                    <span>Sinal crítico</span>
+                </article>
+            </div>
+            <section class="fb-panel">
+                <div class="fb-panel-head">
+                    <h2>Equipamentos</h2>
+                    <a href="/devices.php">Ver todos</a>
                 </div>
-                <div class="jr-ref-progress"><div id="ref-online-bar"></div><b id="ref-online-pct">-</b></div>
-                <div class="jr-ref-caption">Online nas últimas 24 horas</div>
-                <div id="ref-hour-bars" class="jr-ref-hour-bars"></div>
-            </section>
-
-            <section class="jr-ref-card jr-ref-network">
-                <div class="jr-ref-card-head"><i class="bi bi-diagram-2-fill"></i><strong>Estatísticas da rede</strong><div class="jr-ref-pills"><span class="active"></span><span></span></div></div>
-                <div class="jr-ref-network-body">
-                    <div class="jr-ref-ring">
-                        <canvas id="deviceChart"></canvas>
-                        <div><strong id="ref-availability">-</strong><span>Disponibilidade</span></div>
-                    </div>
-                    <div class="jr-ref-network-side">
-                        <div class="jr-ref-auto"><i class="bi bi-check-circle-fill"></i><span>Inventário oficial do sistema</span></div>
-                        <div class="jr-ref-mini-grid">
-                            <div><strong id="ref-tr069">-</strong><span>Dispositivos gerenciados</span></div>
-                            <div><strong id="ref-critical">-</strong><span>Sinal crítico</span></div>
-                            <div><strong id="ref-nosignal">-</strong><span>Sem leitura</span></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="jr-ref-card jr-ref-ai">
-                <div class="jr-ref-card-head purple"><i class="bi bi-stars"></i><strong>Resumo por IA</strong><span class="beta">beta</span></div>
-                <div class="jr-ref-ai-body">
-                    <p id="ref-ai-summary">Analisando os dados atuais do  e do ...</p>
-                    <button type="button" onclick="document.getElementById('ref-ai-summary').textContent=buildDashboardAISummary()">Atualizar análise <i class="bi bi-arrow-right"></i></button>
-                </div>
-            </section>
-
-            <section class="jr-ref-card jr-ref-activity">
-                <div class="jr-ref-card-head"><i class="bi bi-bar-chart-line"></i><strong>Atividade da rede nas últimas 24 horas</strong></div>
-                <div class="jr-ref-activity-body">
-                    <div class="jr-ref-activity-score"><strong id="ref-active-24h">-</strong><span>equipamentos com leitura recente</span></div>
-                    <div id="ref-activity-bars" class="jr-ref-activity-bars"></div>
-                </div>
-            </section>
-
-            <section class="jr-ref-card jr-ref-models">
-                <div class="jr-ref-card-head"><i class="bi bi-hdd-stack"></i><strong>Uso de dispositivos</strong></div>
-                <div class="jr-ref-models-body">
-                    <div class="jr-ref-model-highlight">
-                        <strong id="ref-top-model">-</strong><span>Modelo mais encontrado</span>
-                        <b id="ref-top-manufacturer">-</b><small>Fabricante mais presente</small>
-                    </div>
-                    <div id="ref-model-bars" class="jr-ref-model-bars"></div>
-                </div>
-            </section>
-
-            <section class="jr-ref-card jr-ref-resets">
-                <div class="jr-ref-card-head"><i class="bi bi-arrow-repeat"></i><strong>Reinícios</strong></div>
-                <div class="jr-ref-resets-body">
-                    <div class="jr-ref-reset-main">
-                        <strong id="ref-reset-today">0</strong>
-                        <span>Reinícios hoje</span>
-                        <div class="jr-ref-reset-ok"><i class="bi bi-check-circle-fill"></i><span>Nenhuma anomalia detectada no número de reinícios</span></div>
-                    </div>
-                    <div class="jr-ref-reset-week">
-                        <strong>Últimos 7 dias</strong>
-                        <span>Média <b id="ref-reset-average">0</b></span>
-                        <div class="jr-ref-reset-bars">
-                            <i style="height:18%"></i><i style="height:26%"></i><i style="height:22%"></i><i style="height:30%"></i><i style="height:25%"></i><i style="height:20%"></i><i style="height:24%"></i>
-                        </div>
-                        <div class="jr-ref-reset-days"><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span></div>
-                    </div>
-                </div>
+                <div id="recent-devices"><div class="spinner"></div></div>
             </section>
         </div>
-
-        <section class="jr-ref-card jr-ref-history">
-            <div class="jr-ref-card-head">
-                <i class="bi bi-list-ul"></i><strong>Histórico de dispositivos</strong>
-                <div class="jr-ref-history-tabs"><span class="active">Todos</span><span>Recentes</span></div>
-            </div>
-            <div id="recent-devices"><div class="spinner"></div></div>
-        </section>
+        <aside class="fb-panel fb-side">
+            <div class="fb-panel-head"><h2>Sinal da frota</h2></div>
+            <div class="fb-side-row"><span class="fb-side-bar"></span><div><small>Online nas últimas 24 h</small></div><strong id="ref-online">-</strong></div>
+            <div class="fb-side-row"><span class="fb-side-bar is-amber"></span><div><small>Sinal fraco</small></div><strong id="fb-weak-side">-</strong></div>
+            <div class="fb-side-row"><span class="fb-side-bar is-red"></span><div><small>Sinal crítico</small></div><strong id="fb-critical-side">-</strong></div>
+            <div class="fb-side-row"><span class="fb-side-bar is-muted"></span><div><small>Sem leitura</small></div><strong id="fb-nosignal">-</strong></div>
+        </aside>
     </div>
 
 <?php endif; ?>
@@ -2565,7 +2545,7 @@ function renderReferenceDashboard(devices, summary) {
         return Number.isFinite(t) ? t : null;
     };
 
-    let online = 0, critical = 0, noSignal = 0, active24 = 0;
+    let online = 0, critical = 0, weak = 0, noSignal = 0, active24 = 0;
     const hourly = Array(24).fill(0);
     const models = {};
     const manufacturers = {};
@@ -2588,6 +2568,8 @@ function renderReferenceDashboard(devices, summary) {
         } else if (rx <= -27) {
             critical++;
             if (alerts.length < 5) alerts.push({cls:'critical', text:'Sinal crítico - ' + (d?.serial || 'ONU')});
+        } else if (rx <= -25) {
+            weak++;
         }
 
         const model = (d?.acs?.product_class || d?.ixc?.onu_tipo || 'Não identificado').trim() || 'Não identificado';
@@ -2609,6 +2591,11 @@ function renderReferenceDashboard(devices, summary) {
     set('ref-availability', availability+'%');
     set('ref-tr069', fmt(summary?.tr069_active || 0));
     set('ref-critical', fmt(critical));
+    set('fb-critical-side', fmt(critical));
+    set('fb-weak', fmt(weak));
+    set('fb-weak-side', fmt(weak));
+    set('fb-nosignal', fmt(noSignal));
+    set('fb-alerts', fmt(critical + weak + noSignal));
     set('ref-nosignal', fmt(noSignal));
     set('ref-active-24h', fmt(active24));
 
