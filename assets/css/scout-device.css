@@ -313,3 +313,78 @@ html.acs-device-readable .fb-device .jr-assistant-strip,
     .fb-device .acs-device-toolbar { align-items: flex-start; }
     .fb-device .acs-customer-strip { grid-template-columns: 1fr !important; }
 }
+
+html.acs-device-readable #overview-content .fb-onu.acs-overview-grid,
+html.acs-device-readable #overview-content .fb-onu.acs-overview-reorganized {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    gap: 14px !important;
+}
+html.acs-device-readable #overview-content .fb-onu > * {
+    grid-column: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+.fb-section-title { margin: 0 0 12px; color: #f3f5f7; font-size: 14px; font-weight: 650; }
+.fb-diag-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 18px; }
+.fb-diag-item { display: flex; align-items: center; gap: 8px; min-width: 0; color: #d7dbe2; font-size: 13px; }
+.fb-diag-item i { color: #3ddc84; font-size: 8px; }
+.fb-diag-item.is-bad i { color: #ff6b6b; }
+.fb-diag-item span { color: #8d939c; }
+.fb-diag-item strong { margin-left: auto; color: #f7f8fa; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.fb-onu-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 14px; align-items: start; }
+.fb-ind-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.fb-ind { background: #14161b; border: 1px solid #2a2d34; border-radius: 14px; padding: 14px; min-width: 0; }
+.fb-ind span, .fb-ind small { display: block; color: #8d939c; font-size: 12px; }
+.fb-ind strong { display: block; margin-top: 8px; color: #f7f8fa; font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
+.fb-traffic { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.fb-traffic > div { background: #1a1d24; border: 1px solid #2a2d34; border-radius: 12px; padding: 12px; }
+.fb-traffic span, .fb-traffic small, .fb-traffic-note { color: #8d939c; }
+.fb-traffic strong { display: block; margin-top: 6px; color: #f7f8fa; font-size: 28px; line-height: 1; }
+.fb-device .acs-history-chart text { fill: #8d939c; }
+.fb-device .acs-reference-list > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #26282f; }
+.fb-device .acs-reference-list > div span { color: #8d939c; }
+.fb-device .acs-reference-list > div strong { color: #f3f5f7; text-align: right; }
+
+html body .fb-device :is(
+    .acs-overview-card,
+    .jr-assistant-strip,
+    .acs-customer-strip,
+    .acs-reference-metrics > div,
+    .acs-wifi-health-row,
+    .acs-wifi-band,
+    .acs-lan-visual,
+    .jr-wng-nav button,
+    .jr-wng-status,
+    .jr-wng-notice,
+    .acs-history-periods button,
+    .acs-action-history thead,
+    .acs-monitor-head,
+    .acs-live-card,
+    .acs-bandwidth-chart,
+    .acs-connection-report,
+    .acs-device-toolbar,
+    .acs-device-tabs-wrap,
+    .acs-device-tabs-wrap #deviceTabs
+) {
+    background: #14161b !important;
+    background-image: none !important;
+    border-color: #2a2d34 !important;
+    color: #f3f5f7 !important;
+}
+html body .fb-device :is(.acs-kicker i, .acs-customer-identity span, .acs-info-row > span i, .acs-wan-ip strong) {
+    color: #e8eaee !important;
+}
+html body .fb-device .acs-device-shell,
+html body .fb-device.acs-device-shell {
+    background: transparent !important;
+    border: 0 !important;
+}
+
+@media (max-width: 1100px) {
+    .fb-diag-grid, .fb-ind-grid, .fb-onu-split { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 700px) {
+    .fb-diag-grid, .fb-ind-grid, .fb-onu-split, .fb-traffic { grid-template-columns: 1fr; }
+}

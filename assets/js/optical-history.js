@@ -6,8 +6,8 @@ const opticalHistoryPending = new Map();
 function renderOpticalHistoryCard() {
     return `<section class="acs-overview-card acs-optical-history">
         <div class="acs-overview-card-header">
-            <div><span class="acs-kicker"><i class="bi bi-graph-up"></i> Histórico de potência RX</span>
-                <small class="d-block text-muted">Leituras do IXC · coleta a cada 15 minutos</small></div>
+            <div><span class="acs-kicker">Sinal óptico (GPON)</span>
+                <small class="d-block text-muted">RX ao longo do período · IXC</small></div>
             <div class="acs-history-periods" role="group" aria-label="Período do histórico">
                 <button type="button" onclick="loadOpticalHistory(currentDeviceData.serial_number, 24)" data-history-hours="24">24h</button>
                 <button type="button" onclick="loadOpticalHistory(currentDeviceData.serial_number, 168)" data-history-hours="168">7 dias</button>
@@ -46,7 +46,7 @@ function opticalHistoryView(data) {
     const guides = [min, -27, -25, max].filter((value, index, values) => values.indexOf(value) === index).map(value =>
         `<line x1="${left}" x2="${right}" y1="${y(value)}" y2="${y(value)}" stroke="${value === -27 ? '#ef4444' : value === -25 ? '#eab308' : '#40506a'}" stroke-dasharray="4 5"/>
          <text x="42" y="${y(value) + 4}" text-anchor="end">${value}</text>`).join('');
-    const dots = points.map(point => `<circle cx="${x(point.time)}" cy="${y(point.rx)}" r="3" fill="#38bdf8">
+    const dots = points.map(point => `<circle cx="${x(point.time)}" cy="${y(point.rx)}" r="3" fill="#ff5d5d">
         <title>${opticalHistoryEscape(date(point.time))} · RX médio ${format(point.rx)} dBm · mín ${format(point.min)} / máx ${format(point.max)}</title></circle>`).join('');
     const stats = data.stats || {};
     const worst = Math.min(...points.map(point => point.min));
@@ -60,7 +60,7 @@ function opticalHistoryView(data) {
         <span>Variação <strong>${format(best - worst)} dB</strong></span>
         <span>Leituras <strong>${Number(stats.samples) || 0}</strong></span>
         </div><svg class="acs-history-chart" viewBox="0 0 760 208" role="img" aria-label="Histórico da potência recebida em dBm">
-        ${guides}<path d="${path}" fill="none" stroke="#38bdf8" stroke-width="2"/>${dots}
+        ${guides}<path d="${path}" fill="none" stroke="#ff5d5d" stroke-width="2"/>${dots}
         <text x="${left}" y="198">${opticalHistoryEscape(date(first))}</text>
         <text x="${right}" y="198" text-anchor="end">${opticalHistoryEscape(date(last))}</text>
         </svg><p class="small text-muted mb-0">IXC · Média por intervalo de ${bucketLabel}; passe sobre os pontos para ver mínimo e máximo. Linhas de referência: −25 e −27 dBm.${opticalHistoryEscape(seenLabel)}</p>

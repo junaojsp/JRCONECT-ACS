@@ -269,7 +269,7 @@ include __DIR__ . '/views/layouts/header.php';
                     <button class="nav-link" id="diagnostics-tab" data-bs-toggle="tab"
                         data-bs-target="#diagnostics" type="button" role="tab"
                         aria-controls="diagnostics" aria-selected="false">
-                        <i class="bi bi-tools"></i> Diagnósticos
+                        <i class="bi bi-lightning-charge"></i> Ações
                     </button>
                 </li>
 
@@ -2333,13 +2333,13 @@ function restoreSpeedtestButton() {
 
 <link rel="stylesheet" href="/assets/css/device-control-fix.css?v=<?php echo time(); ?>">
 <link rel="stylesheet" href="/assets/css/optical-history.css?v=20261005-1">
-<script src="/assets/js/optical-history.js?v=20261005-1"></script>
+<script src="/assets/js/optical-history.js?v=20261022-onu"></script>
 <link rel="stylesheet" href="/assets/css/device-action-history.css?v=20261005-1">
 <script src="/assets/js/device-action-history.js?v=20261005-2"></script>
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-device">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu">
 
 
 <?php

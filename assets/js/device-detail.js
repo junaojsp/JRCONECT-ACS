@@ -578,6 +578,17 @@ async function loadDeviceDetail(isAutoRefresh = false) {
             `;
         };
 
+        const onuOnline = device.status === 'online';
+        const wanConnected = String(primaryWan.status || '').toLowerCase() === 'connected';
+        const profileLabel = device.cpe_profile_source === 'auto-discovery'
+            ? 'Auto Discovery'
+            : device.cpe_profile_source === 'static+auto-discovery'
+                ? 'Perfil + Auto Discovery'
+                : 'Perfil fixo';
+        const hostCount = Array.isArray(device.connected_devices)
+            ? device.connected_devices.length
+            : (device.connected_devices_count ?? '—');
+
         document.getElementById('overview-content').innerHTML = `
             <section class="jr-assistant-strip">
                 <div class="jr-assistant-main">
@@ -588,7 +599,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <small id="acs-ai-compact-status">Consultando provedor...</small>
                     </div>
                 </div>
-
                 <div class="jr-assistant-ops">
                     <div id="acs-device-health" class="acs-health-pill neutral">
                         <i class="bi bi-heart-pulse"></i>
@@ -608,7 +618,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         </div>
                     </div>
                 </div>
-
                 <div class="jr-assistant-actions">
                     <button type="button" class="acs-soft-btn acs-ai-summary-btn" onclick="runDeviceAISummary()">
                         <i class="bi bi-clipboard2-pulse"></i><span>Resumo técnico</span>
@@ -619,90 +628,95 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </div>
             </section>
 
-            <div class="acs-overview-grid acs-approved-layout acs-overview-reorganized acs-overview-with-ai-bar">
-
-                <section class="acs-overview-card acs-card-device acs-approved-device acs-fiber-card acs-device-wide">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-router"></i> Equipamento / Fibra</span><small class="ms-2 text-muted">CPE: TR-069 · Rede: IXC</small></div>
-                        <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
-                            <span class="acs-status-dot"></span>${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
-                        </span>
+            <div class="fb-onu acs-overview-grid acs-approved-layout acs-overview-reorganized acs-overview-with-ai-bar">
+                <section class="acs-overview-card fb-diag-card">
+                    <h2 class="fb-section-title">Diagnóstico rápido</h2>
+                    <div class="fb-diag-grid">
+                        <div class="fb-diag-item ${onuOnline ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conectividade</span><strong>${onuOnline ? 'Online' : 'Sem contato'} · ${device.last_inform || '—'}</strong></div>
+                        <div class="fb-diag-item ${wanConnected ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conexão WAN</span><strong>${primaryWan.status || '—'}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Sinal óptico (RX)</span><strong data-mirror="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Transmissão óptica (TX)</span><strong data-mirror="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Temperatura</span><strong data-mirror="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Voltagem</span><strong data-mirror="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>PPPoE</span><strong data-mirror="wan-pppoe-user">${primaryWan.username || '—'}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Hosts conectados</span><strong>${hostCount}</strong></div>
                     </div>
-                    <div class="acs-fiber-summary-grid">
-                        <div class="acs-fiber-info">
-                            <div class="acs-reference-list acs-icon-info-list">
-                                <div><span><i class="bi bi-router"></i>Modelo</span><strong>${device.product_class || device.model || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-upc-scan"></i>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-building"></i>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-diagram-3"></i>Perfil TR-069</span><strong>${
-                                    device.cpe_profile_source === 'auto-discovery'
-                                        ? 'Auto Discovery'
-                                        : device.cpe_profile_source === 'static+auto-discovery'
-                                            ? 'Perfil + Auto Discovery'
-                                            : 'Perfil fixo'
-                                }</strong></div>
-                                <div><span><i class="bi bi-cpu"></i>Firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-box-seam"></i>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-stopwatch"></i>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
-                                <div><span><i class="bi bi-clock-history"></i>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
-                            </div>
+                </section>
+
+                <div class="fb-onu-split">
+                    ${renderOpticalHistoryCard()}
+                    <section class="acs-overview-card">
+                        <div class="acs-overview-card-header">
+                            <span class="acs-kicker">Tráfego WAN (tempo real)</span>
+                            <span class="acs-mini-badge ${wanConnected ? 'success' : ''}">${primaryWan.status || 'STATUS'}</span>
                         </div>
-                        <div class="acs-fiber-optical">
-                            <div class="acs-device-combined-title"><i class="bi bi-reception-4"></i> Sinal óptico / GPON</div>
-                            <div class="acs-reference-metrics acs-device-optical-metrics acs-icon-metric-list">
-                                <div><span><i class="bi bi-arrow-down-circle"></i>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
-                                <div><span><i class="bi bi-arrow-up-circle"></i>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
-                                <div><span><i class="bi bi-thermometer-half"></i>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
-                                <div><span><i class="bi bi-lightning-charge"></i>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
-                            </div>
-                            <div class="acs-reference-footer-grid acs-device-optical-footer acs-icon-footer-list">
-                                <div><span><i class="bi bi-broadcast-pin"></i>OLT / PON</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
-                                <div><span><i class="bi bi-arrow-clockwise"></i>Atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
-                            </div>
+                        <div class="fb-traffic">
+                            <div><span>Download agora</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
+                            <div><span>Upload agora</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
                         </div>
-                    </div>
-                </section>
-
-                <div class="acs-device-info-column">
-                <section class="acs-overview-card acs-card-wan acs-approved-wan">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span><small class="ms-2 text-muted">IXC principal · TR-069 fallback</small></div>
-                        <span class="acs-mini-badge ${String(primaryWan.status || '').toLowerCase()==='connected'?'success':''}">${primaryWan.status || 'STATUS'}</span>
-                    </div>
-                    <div class="acs-reference-list acs-icon-info-list">
-                        <div><span><i class="bi bi-ethernet"></i>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
-                        <div><span><i class="bi bi-globe2"></i>IP</span><strong id="wan-ip">${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
-                        <div><span><i class="bi bi-diagram-3"></i>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
-                        <div><span><i class="bi bi-person-circle"></i>Usuário PPPoE</span><strong id="wan-pppoe-user">${primaryWan.username || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-globe-americas"></i>IPv6</span><strong id="wan-ipv6">${primaryWan.ipv6 || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-diagram-2"></i>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-tag"></i>VLAN</span><strong id="wan-vlan">${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
-                        <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong id="wan-last-error">${primaryWan.last_error || '-'}</strong></div>
-                    </div>
-                </section>
-
-                <section class="acs-overview-card acs-card-lan acs-approved-lan">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-ethernet"></i> Portas LAN</span></div>
-                    </div>
-                    <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
-                </section>
-
-
-
-
-
+                        <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
+                        <p class="fb-traffic-note" id="bandwidth-sample-status">Aguardando segunda leitura...</p>
+                        <span id="live-rx-total" hidden></span>
+                        <span id="live-tx-total" hidden></span>
+                        <span id="live-traffic-source" hidden></span>
+                    </section>
                 </div>
-                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span><small class="ms-2 text-muted">Leitura e gerenciamento via TR-069</small></div>
+
+                <section class="fb-indicators">
+                    <h2 class="fb-section-title">Indicadores</h2>
+                    <div class="fb-ind-grid">
+                        <article class="fb-ind"><span>Sinal RX</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></article>
+                        <article class="fb-ind"><span>Sinal TX</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></article>
+                        <article class="fb-ind"><span>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></article>
+                        <article class="fb-ind"><span>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></article>
+                        <article class="fb-ind"><span>Tempo ligado</span><strong>${formatUptime(device.uptime)}</strong></article>
+                        <article class="fb-ind"><span>Última conexão</span><strong>${device.last_inform || '—'}</strong></article>
+                        <article class="fb-ind"><span>Hosts conectados</span><strong>${hostCount}</strong></article>
+                        <article class="fb-ind"><span>OLT / PON</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong><small id="optical-last-update">${renderOpticalLastUpdate()}</small><span id="optical-source" hidden></span></article>
                     </div>
-                    <div class="acs-wifi-reference-grid"></div>
                 </section>
 
-                ${renderOpticalHistoryCard()}
-                ${renderDeviceActionHistoryCard()}
+                <div class="fb-onu-split">
+                    <section class="acs-overview-card acs-card-wan acs-approved-wan">
+                        <div class="acs-overview-card-header">
+                            <span class="acs-kicker">Conexão e Wi-Fi</span>
+                        </div>
+                        <div class="acs-reference-list">
+                            <div><span>IP WAN</span><strong id="wan-ip">${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
+                            <div><span>PPPoE</span><strong id="wan-pppoe-user">${primaryWan.username || '—'}</strong></div>
+                            <div><span>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
+                            <div><span>IPv6</span><strong id="wan-ipv6">${primaryWan.ipv6 || '—'}</strong></div>
+                            <div><span>VLAN</span><strong id="wan-vlan">${primaryWan.vlan_id || primaryWan.vlan || '—'}</strong></div>
+                            <div><span>Último erro</span><strong id="wan-last-error">${primaryWan.last_error || '—'}</strong></div>
+                        </div>
+                        <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
+                    </section>
+                    <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
+                        <div class="acs-overview-card-header">
+                            <span class="acs-kicker">Redes Wi-Fi</span>
+                        </div>
+                        <div class="acs-wifi-reference-grid"></div>
+                    </section>
+                </div>
 
+                <section class="acs-overview-card acs-card-device acs-approved-device">
+                    <div class="acs-overview-card-header">
+                        <span class="acs-kicker">Equipamento</span>
+                        <span class="acs-status-pill ${onuOnline ? 'online' : 'offline'}">${onuOnline ? 'Online' : 'Offline'}</span>
+                    </div>
+                    <div class="acs-reference-list">
+                        <div><span>Modelo</span><strong>${device.product_class || device.model || '—'}</strong></div>
+                        <div><span>Fabricante</span><strong>${device.manufacturer || '—'}</strong></div>
+                        <div><span>Serial</span><strong>${device.serial_number || '—'}</strong></div>
+                        <div><span>Firmware</span><strong>${device.software_version || '—'}</strong></div>
+                        <div><span>Hardware</span><strong>${device.hardware_version || '—'}</strong></div>
+                        <div><span>MAC</span><strong>${device.mac_address || '—'}</strong></div>
+                        <div><span>Perfil TR-069</span><strong>${profileLabel}</strong></div>
+                    </div>
+                </section>
+
+                ${renderDeviceActionHistoryCard()}
             </div>
         `;
 
@@ -2797,6 +2811,10 @@ function updateOpticalDomFromCache() {
     if (ponEl) ponEl.innerHTML = renderOpticalCachedPon();
     if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
+    document.querySelectorAll('[data-mirror]').forEach(node => {
+        const source = document.getElementById(node.dataset.mirror);
+        if (source) node.innerHTML = source.innerHTML;
+    });
     updateIxcOnuSummary();
     applyIxcNetworkPrimary();
     updateOverviewOperationalMeta();
@@ -3285,18 +3303,8 @@ function renderMonitoringTab(device) {
     return `
         <div class="acs-monitor-shell">
             <div class="acs-monitor-head">
-                <div><span class="acs-kicker"><i class="bi bi-activity"></i> TR-069</span><h4>Monitoramento da conexão</h4><p>Banda calculada entre as leituras recebidas do equipamento.</p></div>
+                <div><span class="acs-kicker"><i class="bi bi-activity"></i> TR-069</span><h4>Monitoramento da conexão</h4><p>O uso de banda em tempo real fica na Visão geral. Aqui continua o relatório da sessão.</p></div>
                 <span class="acs-mini-badge ${connected ? 'success' : ''}">${wan.status || 'Unknown'}</span>
-            </div>
-            <div class="acs-live-grid">
-                <div class="acs-live-card download"><span><i class="bi bi-arrow-down-circle"></i> Download em uso</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
-                <div class="acs-live-card upload"><span><i class="bi bi-arrow-up-circle"></i> Upload em uso</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
-                <div class="acs-live-card"><span><i class="bi bi-database-down"></i> Recebido</span><strong id="live-rx-total">${formatTrafficBytes(rx)}</strong><small id="live-traffic-source">${traffic.source}</small></div>
-                <div class="acs-live-card"><span><i class="bi bi-database-up"></i> Enviado</span><strong id="live-tx-total">${formatTrafficBytes(tx)}</strong><small>contador da sessão</small></div>
-            </div>
-            <div class="acs-bandwidth-chart">
-                <div class="acs-chart-title"><strong>Uso de banda</strong><span id="bandwidth-sample-status">Aguardando segunda leitura...</span></div>
-                <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
             </div>
             <div class="acs-connection-report">
                 <div class="acs-chart-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>

@@ -19,6 +19,7 @@
     <!-- Read-only unified-network identification; no device tasks on page load. -->
     <link rel="stylesheet" href="/assets/css/wifi-network-groups.css?v=groups-1">
     <script src="/assets/js/wifi-network-groups.js?v=groups-1"></script>
+    <link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu">
     <?php endif; ?>
 </body>
 </html>
