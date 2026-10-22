@@ -1007,3 +1007,21 @@ h6, .text-muted {
         font-size: 24px;
     }
 }
+
+/* Device inventory: draw one uninterrupted divider per row. */
+#devices-table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+#devices-table tbody tr {
+    border-bottom: 1px solid #292d36;
+}
+
+#devices-table tbody td {
+    border-bottom: 0 !important;
+}
+
+#devices-table tbody tr:last-child {
+    border-bottom: 0;
+}
