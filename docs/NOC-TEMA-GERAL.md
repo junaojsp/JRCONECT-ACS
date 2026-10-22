@@ -1,43 +1,23 @@
-# Tema geral do ACS
+# Tema visual do ACS — funções originais
 
-O tema azul do NOC cobre as páginas que usam o cabeçalho comum (dashboard atual, equipamentos atuais, detalhes, mapa, configurações, usuários, teste de velocidade e registros), além de Discovery, login, configuração inicial e páginas NOC.
+A mudança fica restrita à aparência: cores, menu, cabeçalhos, cartões, tabelas, formulários e modais. As páginas operacionais, consultas, validações, autenticação e ações existentes são mantidas.
 
-O instalador mescla apenas as referências aos novos arquivos CSS/JS nos cabeçalhos locais das páginas existentes. Preserva formulários, autenticação, permissões, ações e o destino do login. Os arquivos próprios do NOC continuam sendo atualizados pelo instalador seletivo.
+As URLs da prévia encaminham para as páginas operacionais: `/dashboard-noc.php` → `/dashboard.php`, `/devices-noc.php` → `/devices.php`, `/device-noc.php?id=...` → `/device-detail.php?id=...`. Assim a edição de Wi-Fi, WAN, ações em lote e demais controles usam as implementações existentes.
 
-Na cópia de testes do repositório:
+## Aplicar somente o visual
 
 ```sh
-python3 scripts/install-noc-fixes.py --target /var/www/gacs --theme
-sudo python3 scripts/install-noc-fixes.py --target /var/www/gacs --theme --apply
+cd /tmp/jrc-acs-noc
+git pull --ff-only origin feature/dashboard-noc-flowbix-inspirado
+sudo python3 scripts/install-noc-fixes.py --target /var/www/gacs --theme-only --apply
 ```
 
-A primeira execução mostra a prévia. A segunda valida PHP, cria backup privado e aplica. Para desfazer, utilize o caminho de backup informado:
+Sem `--apply`, mostra a prévia. Este modo copia somente CSS/JS do tema e as entradas de compatibilidade acima, e mescla as referências CSS/JS nos cabeçalhos existentes. Não instala APIs NOC, não migra configuração IXC, não altera cron, banco ou scripts de ações. Personalizações locais dos cabeçalhos e formulários são preservadas.
+
+O instalador valida a sintaxe PHP e cria backup privado. Para desfazer, use o caminho exibido:
 
 ```sh
 sudo python3 scripts/install-noc-fixes.py --target /var/www/gacs --restore /var/backups/jrc-noc-DATA
 ```
 
-Teste login, menu recolhido e móvel, busca, tabelas, formulários, modais, mapa e ações já existentes. Aplicar o tema não implementa automaticamente as funções vistas nas referências da Flowbix.
-
-## Diagnóstico de parâmetros da ONU
-
-A leitura WAN agora inclui os contadores `Stats.EthernetBytesReceived` e `Stats.EthernetBytesSent` definidos no [modelo oficial TR-098](https://cwmp-data-models.broadband-forum.org/tr-098-1-8-0.html), preservando aliases anteriores. São bytes acumulados; velocidade depende de amostras ao longo do tempo.
-
-Para identificar caminhos realmente presentes no HG6143D, execute a partir da cópia de testes, sem instalar o script no servidor web:
-
-```sh
-sudo -u www-data php scripts/inspect-noc-device.php --app /var/www/gacs --serial FHTT953C4D80 --values
-```
-
-Consulta somente uma CPE no ACS, sem enviar tarefas ou comandos. Exibe apenas caminhos de métricas, tipo, horário e amostras numéricas; filtra campos de credenciais e identificação. Sem `--values`, também omite as amostras numéricas. A ausência de um caminho no ACS não comprova falta de suporte na CPE. TX, temperatura, CPU e memória específicos do modelo dependem desse diagnóstico antes de novo mapeamento.
-
-
-### Quando o filtro de métricas não encontra os nomes do fabricante
-
-`--all-paths` lista até 2.000 caminhos com `_value` armazenado no ACS (inclusive nulo), além da indicação de presença de valor, tipo e horário. Continua excluindo nomes sensíveis. Este modo nunca imprime os valores, mesmo junto de `--values`. Objetos sem parâmetros coletados não são incluídos; não é uma descoberta de capacidades na CPE.
-
-```sh
-sudo -u www-data php scripts/inspect-noc-device.php --app /var/www/gacs --serial FHTT953C4D80 --all-paths
-```
-
-O relatório marca `truncated` se atingir o limite. O filtro normal de métricas inclui também o alias legado `VirtualParameters.gettemp`. Resultado vazio de um filtro não comprova ausência da função no equipamento: conferir os nomes armazenados antes de decidir se é necessário descobrir/coletar parâmetros na CPE.
+Após aplicar, pressione Ctrl+F5. Confira a abertura da mesma ONU e a presença do modal de edição Wi-Fi original. Os testes locais simulam o POST de Wi-Fi sem alterar equipamentos reais. O erro óptico observado anteriormente ainda depende de confirmação no servidor; esta atualização não afirma resolver a causa desse erro.

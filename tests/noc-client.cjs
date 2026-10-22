@@ -62,5 +62,8 @@ const response = (status, data, type = 'application/json') => ({
   node = await test(response(200, {success: true, summary: {}, captured_at: new Date(at*1000).toISOString(),
     history: {status:'ok',points:[{at:at-1200,total:10,online:9},{at:at,total:10,online:10}]}, issues: []}), null, true);
   assert(!node('noc-history-chart').innerHTML.includes('polyline'));
+  node = await test(response(200,{success:true,summary:{},issues:[{device_id:'test/id',serial:'TEST',reason:'Sem comunicação',priority:1}]}),null,true);
+  assert.match(node('noc-issues').innerHTML,/\/device-detail\.php\?id=test%2Fid/);
   console.log('PASS 12 frontend cases; global IXC optics, ACS history gaps and escaped PON labels');
 })().catch(error => {console.error(error); process.exitCode = 1;});
+

@@ -1,7 +1,6 @@
 """Add only theme assets to existing HTML heads; preserve application code and local customizations."""
 import re
-THEME_PAGES = ['views/layouts/header.php', 'views/layouts/noc-inventory-header.php',
-               'dashboard-noc.php', 'discovery.php', 'login.php', 'init.php']
+THEME_PAGES = ['views/layouts/header.php', 'discovery.php', 'login.php', 'init.php']
 START = '<!-- JRC NOC SHARED THEME -->'
 END = '<!-- /JRC NOC SHARED THEME -->'
 BLOCK = START + '\n<link rel="stylesheet" href="/assets/css/jrc-theme.css?v=1">\n<script src="/assets/js/jrc-theme.js?v=1" defer></script>\n' + END

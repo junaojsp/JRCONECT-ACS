@@ -34,6 +34,7 @@ const device = i => ({id:'test-'+i,serial:'SERIAL-'+i,manufacturer:'TEST',model:
   assert.ok(!app.node('inventory-rows').innerHTML.includes('<script>'));
   assert.ok(app.node('inventory-rows').innerHTML.includes('&lt;script&gt;'));
   assert.ok(app.node('inventory-rows').innerHTML.includes('0d 0h 0min'));
+  assert.ok(app.node('inventory-rows').innerHTML.includes('/device-detail.php?id=test-0'));
   app.node('inventory-next').handlers.click();
   assert.match(app.node('inventory-page-label').textContent,/Página 2 de 3/);
   app.node('inventory-search').value='SERIAL-51';app.node('inventory-search').handlers.input();

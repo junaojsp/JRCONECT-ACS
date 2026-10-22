@@ -21,7 +21,7 @@
     if (item.reason === 'RX óptico em atenção') return 'attention';
     return '';
   }
-  function detailLink(id) { return '/device-noc.php?id=' + encodeURIComponent(id); }
+  function detailLink(id) { return '/device-detail.php?id=' + encodeURIComponent(id); }
   function renderHistory(history, capturedAt) {
     const target=$('noc-history-chart');
     if(!target) return;

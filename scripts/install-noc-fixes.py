@@ -16,6 +16,8 @@ from concurrent.futures import ThreadPoolExecutor
 from noc_theme import THEME_PAGES, inject_theme
 
 SOURCE = pathlib.Path(__file__).resolve().parents[1]
+THEME_ONLY_FILES = ['assets/css/jrc-theme.css', 'assets/js/jrc-theme.js',
+                    'dashboard-noc.php', 'devices-noc.php', 'device-noc.php']
 NOC_FILES = ['assets/css/jrc-theme.css', 'assets/js/jrc-theme.js', 'assets/js/noc-device.js', 'devices-noc.php', 'device-noc.php', 'lib/NocInventory.php',
              'api/noc-devices.php', 'views/layouts/noc-inventory-header.php',
              'assets/css/noc-inventory.css', 'assets/js/noc-inventory.js', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php',
@@ -32,7 +34,15 @@ def safe_path(root, relative):
     return path
 
 
-def plan(root, theme=False):
+def plan(root, theme=False, theme_only=False):
+    if theme_only:
+        changes = {p: (SOURCE / p).read_bytes() for p in THEME_ONLY_FILES}
+        for relative in THEME_PAGES:
+            path = safe_path(root, relative)
+            if path.is_file():
+                changes[relative] = inject_theme(path.read_bytes())
+        return {p: data for p, data in changes.items()
+                if not safe_path(root, p).exists() or safe_path(root, p).read_bytes() != data}
     changes = {p: (SOURCE / p).read_bytes() for p in NOC_FILES}
     config = safe_path(root, 'lib/IXCConfig.php')
     if not config.exists():
@@ -106,6 +116,7 @@ def main():
     parser.add_argument('--php', default='php')
     parser.add_argument('--apply', action='store_true')
     parser.add_argument('--theme', action='store_true', help='Apply the shared visual theme to existing pages, preserving local code')
+    parser.add_argument('--theme-only', action='store_true', help='Install only the visual layer and compatibility links; preserve all operational APIs and scripts')
     parser.add_argument('--restore', help='Restore the files listed in a private installer backup')
     args = parser.parse_args()
     root = pathlib.Path(args.target).resolve()
@@ -127,7 +138,7 @@ def main():
                 path.unlink()
         print('Previous files restored. Private IXC credentials were not changed.')
         return
-    changes = plan(root, args.theme)
+    changes = plan(root, args.theme, args.theme_only)
     def check_syntax(item):
         relative, content = item
         if relative.endswith('.php'):
@@ -141,7 +152,7 @@ def main():
     for relative in changes:
         print('  ' + relative)
     if not args.apply:
-        print('Preview only. Run again with --apply after configuring the private IXC token.')
+        print('Preview only. Run again with --apply.' if args.theme_only else 'Preview only. Run again with --apply after configuring the private IXC token.')
         return
     if not changes:
         print('Already up to date.')

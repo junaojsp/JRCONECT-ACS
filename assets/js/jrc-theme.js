@@ -9,9 +9,7 @@
     if(!sidebar)return;
     const catalog=[
       ['/dashboard.php','Dashboard atual','bi-speedometer2'],
-      ['/dashboard-noc.php','Painel NOC 2.0','bi-activity'],
       ['/devices.php','Lista atual de equipamentos','bi-router'],
-      ['/devices-noc.php','Equipamentos NOC','bi-hdd-stack'],
       ['/discovery.php','Discovery TR-069','bi-search'],
       ['/map.php','Mapa da rede','bi-map'],
       ['/configuration.php','Configurações','bi-gear'],

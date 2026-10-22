@@ -63,7 +63,7 @@
       <td><b>${esc(text(d.manufacturer))} ${esc(text(d.model))}</b><small>${esc(text(d.serial))}</small></td>
       <td>${esc(text(d.ip))}</td><td>${signal(d)}</td><td><span class="noc-chip ${d.status==='online'?'online':'offline'}">${communication(d.status)}</span></td>
       <td>${duration(d.uptime)}</td><td>${esc(stamp(d.last_inform))}</td>
-      <td><a href="/device-noc.php?id=${encodeURIComponent(d.id)}">Abrir ↗</a></td></tr>`).join('')
+      <td><a href="/device-detail.php?id=${encodeURIComponent(d.id)}">Abrir ↗</a></td></tr>`).join('')
       || '<tr><td colspan="7" class="noc-empty">Nenhum equipamento corresponde aos filtros.</td></tr>';
     $('inventory-page-label').textContent = `${fmt(filtered.length)} encontrados · Página ${page} de ${max}`;
     $('inventory-prev').disabled = page <= 1;

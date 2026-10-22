@@ -19,9 +19,9 @@ root.mkdir()
 app = root / 'app'
 app.mkdir()
 try:
-    for folder in ['api', 'lib', 'assets/js', 'assets/css', 'config', 'cron', 'views/layouts']:
+    for folder in ['api', 'lib', 'assets/js', 'assets/css', 'config', 'cron', 'views/layouts', 'views/device-detail']:
         (app / folder).mkdir(parents=True, exist_ok=True)
-    for file in ['config/config.php', 'dashboard.php', 'login.php', 'index.php']:
+    for file in ['config/config.php', 'dashboard.php', 'login.php', 'index.php', 'device-detail.php', 'assets/js/device-detail.js', 'views/device-detail/modals.php', 'api/update-wifi-config.php']:
         (app / file).write_text('<?php /* local content must survive */')
     for themed in ['login.php', 'discovery.php', 'views/layouts/header.php']:
         (app / themed).write_text('<?php /* local access checks and controls */ ?><html><head><title>Local</title></head><body><form id="local-form" method="POST"><input name="username"></form></body></html>')
@@ -53,7 +53,7 @@ try {
     assert all((app / p).read_bytes() == b for p, b in originals.items())
     env = dict(os.environ, IXC_BASE_URL='https://example.invalid', IXC_TOKEN='synthetic-new-token')
     subprocess.run(command + ['--apply'], check=True, env=env, stdout=subprocess.DEVNULL)
-    for file in ['config/config.php', 'dashboard.php', 'index.php', 'lib/IXCConfig.php']:
+    for file in ['config/config.php', 'dashboard.php', 'index.php', 'lib/IXCConfig.php', 'device-detail.php', 'assets/js/device-detail.js', 'views/device-detail/modals.php', 'api/update-wifi-config.php']:
         assert (app / file).read_bytes() == originals[file]
     import re
     for themed in ['login.php', 'discovery.php', 'views/layouts/header.php']:
