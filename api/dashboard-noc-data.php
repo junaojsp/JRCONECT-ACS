@@ -140,11 +140,7 @@ try {
                 'last_inform' => $timestamp ? gmdate(DATE_ATOM, $timestamp) : null,
             ];
             if (count($issues) > 32) {
-                    $skip += $pageCount;
-        unset($response, $device);
-    } while ($pageCount === $pageSize);
-
-    usort($issues, static fn($a, $b) =>
+                usort($issues, static fn($a, $b) =>
                     ($a['priority'] <=> $b['priority'])
                     ?: strcmp((string) ($b['last_inform'] ?? ''), (string) ($a['last_inform'] ?? ''))
                 );
@@ -152,6 +148,10 @@ try {
             }
         }
     }
+
+        $skip += $pageCount;
+        unset($response, $device);
+    } while ($pageCount === $pageSize);
 
     usort($issues, static fn($a, $b) =>
         ($a['priority'] <=> $b['priority'])
