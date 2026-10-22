@@ -37,6 +37,9 @@
         href="/assets/css/style.css?v=<?php echo time(); ?>"
     >
 
+    <!-- JRC-ACS 2.0 visual skin (no behavioral changes) -->
+    <link rel="stylesheet" href="/assets/css/jrc-acs-2-layout.css?v=1">
+
     <!-- Logger -->
     <script
         src="/assets/js/client-logger.js?v=<?php echo time(); ?>"
