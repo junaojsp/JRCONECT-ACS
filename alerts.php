@@ -9,6 +9,199 @@ $genieacsConfigured = isGenieACSConfigured();
 include __DIR__ . '/views/layouts/header.php';
 ?>
 
+<style>
+.fb-page {
+    color: #f3f5f7 !important;
+    max-width: 1180px;
+}
+.fb-page * { box-sizing: border-box !important; }
+.fb-page h1 {
+    margin: 0 !important;
+    color: #f7f8fa !important;
+    font-size: 28px !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.03em !important;
+    line-height: 1.15 !important;
+}
+.fb-page .fb-page-head p {
+    margin: 6px 0 0 !important;
+    color: #8d939c !important;
+    font-size: 14px !important;
+}
+.fb-stats {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    margin: 18px 0 16px !important;
+}
+.fb-stat {
+    display: block !important;
+    background: #14161b !important;
+    border: 1px solid #2a2d34 !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+    min-height: 118px !important;
+    box-shadow: none !important;
+}
+.fb-stat-icon {
+    width: 34px !important;
+    height: 34px !important;
+    max-width: 34px !important;
+    border-radius: 10px !important;
+    display: grid !important;
+    place-items: center !important;
+    margin: 0 0 16px !important;
+    background: #1c2030 !important;
+    color: #8eb0ff !important;
+    overflow: hidden !important;
+}
+.fb-stat-icon.is-red { background: #2a1518 !important; color: #ff5d5d !important; }
+.fb-stat-icon.is-amber { background: #2c2416 !important; color: #f5b942 !important; }
+.fb-stat-icon.is-doc { background: #241820 !important; color: #ff8f8f !important; }
+.fb-stat-icon.is-ok { background: #14261c !important; color: #3ddc84 !important; }
+.fb-stat-icon i {
+    font-size: 16px !important;
+    line-height: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+.fb-stat strong {
+    display: block !important;
+    color: #f7f8fa !important;
+    font-size: 30px !important;
+    font-weight: 650 !important;
+    line-height: 1 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+.fb-stat span {
+    display: block !important;
+    margin-top: 6px !important;
+    color: #8d939c !important;
+    font-size: 13px !important;
+}
+.fb-filters {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+.fb-filters button {
+    appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    border: 1px solid #2c2f36 !important;
+    background: #17191e !important;
+    color: #c5cad3 !important;
+    border-radius: 999px !important;
+    padding: 7px 14px !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+}
+.fb-filters button.active {
+    background: #3a1216 !important;
+    border-color: #7a1d24 !important;
+    color: #fff !important;
+}
+.fb-alert {
+    display: grid !important;
+    grid-template-columns: 36px minmax(0, 1fr) auto !important;
+    gap: 14px !important;
+    align-items: center !important;
+    background: #14161b !important;
+    border: 1px solid #2a2d34 !important;
+    border-radius: 14px !important;
+    padding: 14px 16px !important;
+    margin: 0 0 10px !important;
+    box-shadow: none !important;
+}
+.fb-equip-icon {
+    width: 36px !important;
+    height: 36px !important;
+    max-width: 36px !important;
+    border-radius: 10px !important;
+    display: grid !important;
+    place-items: center !important;
+    background: #1c1f27 !important;
+    color: #ff8d8d !important;
+}
+.fb-equip-icon i {
+    font-size: 16px !important;
+    line-height: 1 !important;
+    width: auto !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+.fb-alert h3 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    margin: 0 0 4px !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    color: #f3f5f7 !important;
+}
+.fb-alert h3 a {
+    color: #f3f5f7 !important;
+    text-decoration: none !important;
+}
+.fb-alert h3 a:hover { color: #fff !important; }
+.fb-alert p {
+    margin: 0 !important;
+    color: #c5cad3 !important;
+    font-size: 13px !important;
+}
+.fb-alert .fb-meta {
+    margin-top: 4px !important;
+    color: #8d939c !important;
+    font-size: 12px !important;
+}
+.fb-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    background: #3a1518 !important;
+    color: #ff6b6b !important;
+    text-decoration: none !important;
+}
+.fb-chip.is-warn { background: #3a2e14 !important; color: #f5b942 !important; }
+.fb-chip.is-ok { background: #143222 !important; color: #3ddc84 !important; }
+.fb-alert .btn {
+    background: #1a1d24 !important;
+    border: 1px solid #32353d !important;
+    color: #e8eaee !important;
+    border-radius: 10px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+.fb-empty {
+    padding: 28px 8px !important;
+    color: #8d939c !important;
+}
+.fb-page hr { display: none !important; }
+@media (max-width: 980px) {
+    .fb-stats { grid-template-columns: 1fr 1fr !important; }
+    .fb-alert { grid-template-columns: 36px minmax(0, 1fr) !important; }
+    .fb-alert .btn { grid-column: 2 !important; justify-self: start !important; }
+}
+</style>
+
 <div class="fb-page">
     <div class="fb-page-head">
         <div>
@@ -41,7 +234,7 @@ include __DIR__ . '/views/layouts/header.php';
             <span>Info ativos</span>
         </article>
         <article class="fb-stat">
-            <div class="fb-stat-icon" style="background:#14261c;color:#3ddc84;"><i class="bi bi-check-circle"></i></div>
+            <div class="fb-stat-icon is-ok"><i class="bi bi-check-circle"></i></div>
             <strong id="alert-ack">0</strong>
             <span>Reconhecidos</span>
         </article>
