@@ -11,7 +11,7 @@ register_shutdown_function(static function () use (&$finished): void {
     }
 });
 try {
-    $options = getopt('', ['app:', 'serial:', 'values']);
+    $options = getopt('', ['app:', 'serial:', 'values', 'all-paths']);
     $app = realpath($options['app'] ?? '/var/www/gacs');
     $serial = $options['serial'] ?? '';
     if (!$app || !is_file($app . '/config/config.php') || !is_string($serial)
@@ -45,7 +45,7 @@ try {
     if (!is_array($data) || count($data) !== 1 || !isset($data[0])
         || ($data[0]['_deviceId']['_SerialNumber'] ?? null) !== $serial) throw new RuntimeException('Selection');
     require_once __DIR__ . '/../lib/NocTelemetryCatalogue.php';
-    $report = App\NocTelemetryCatalogue::collect($data[0], array_key_exists('values', $options));
+    $report = App\NocTelemetryCatalogue::collect($data[0], array_key_exists('values', $options), array_key_exists('all-paths', $options));
     unset($data, $body, $credentials, $db);
     while (ob_get_level()) ob_end_clean();
     $finished = true;
