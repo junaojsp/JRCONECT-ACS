@@ -3062,3 +3062,354 @@ canvas {
     }
 
 }
+
+/* =========================================================
+   JR CONECT ACS - OVERVIEW V2
+   ========================================================= */
+.acs-overview-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;width:100%}
+#overview-content>.acs-overview-grid{grid-column:1/-1;width:100%;}
+.acs-overview-card{grid-column:span 3;background:linear-gradient(145deg,rgba(11,31,46,.98),rgba(6,20,31,.98));border:1px solid rgba(88,157,190,.16);border-radius:14px;padding:16px;min-width:0;box-shadow:0 12px 30px rgba(0,0,0,.12)}
+.acs-card-admin,.acs-card-events{grid-column:span 3}
+.acs-overview-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:13px;margin-bottom:13px;border-bottom:1px solid rgba(105,159,187,.09)}
+.acs-overview-card-header h5{margin:4px 0 0;color:#e7f3f8;font-size:14px;font-weight:700}
+.acs-kicker{display:flex;align-items:center;gap:7px;color:#6f93a7;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em}
+.acs-kicker i{color:#27c9e8;font-size:12px}
+.acs-status-pill,.acs-mini-badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 8px;font-size:8px;font-weight:800;letter-spacing:.05em;white-space:nowrap}
+.acs-status-pill.online,.acs-mini-badge.success{color:#5de6ba;background:rgba(32,213,155,.09);border:1px solid rgba(32,213,155,.18)}
+.acs-status-pill.offline{color:#ff8591;background:rgba(240,100,114,.09);border:1px solid rgba(240,100,114,.18)}
+.acs-mini-badge{color:#6fdcf0;background:rgba(0,189,227,.08);border:1px solid rgba(0,189,227,.14)}
+.acs-status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.acs-device-identity,.acs-wifi-hero{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
+.acs-device-icon,.acs-wifi-hero>i{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(0,189,227,.08);border:1px solid rgba(0,189,227,.13);color:#42d2ec;font-size:20px}
+.acs-device-identity strong,.acs-wifi-hero strong{display:block;color:#ddecf3;font-size:12px}
+.acs-device-identity span,.acs-wifi-hero span{display:block;margin-top:3px;color:#648398;font-size:9px}
+.acs-info-list{display:flex;flex-direction:column}
+.acs-info-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:35px;padding:7px 0;border-bottom:1px solid rgba(105,159,187,.06)}
+.acs-info-row:last-child{border-bottom:0}
+.acs-info-row>span{display:flex;align-items:center;gap:7px;color:#69879a;font-size:9px}
+.acs-info-row>span i{color:#4ebbd0}
+.acs-info-row>strong{max-width:58%;color:#bfd1db;font-size:9px;font-weight:650;text-align:right;overflow-wrap:anywhere}
+.acs-card-meta{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid rgba(105,159,187,.07);color:#547286;font-size:8px}
+.acs-wan-ip{padding:15px;border-radius:11px;margin-bottom:8px;background:linear-gradient(135deg,rgba(0,189,227,.10),rgba(0,189,227,.025));border:1px solid rgba(0,189,227,.12)}
+.acs-wan-ip span{display:block;color:#66879a;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.acs-wan-ip strong{display:block;margin-top:4px;color:#67dff3;font-size:15px}
+.acs-truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acs-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.acs-soft-btn,.acs-icon-btn,.acs-eye-btn{border:1px solid rgba(0,189,227,.15);background:rgba(0,189,227,.06);color:#78dff1;border-radius:8px;font-size:9px;font-weight:700;transition:.16s ease}
+.acs-soft-btn{padding:8px 10px}
+.acs-soft-btn:hover,.acs-icon-btn:hover,.acs-eye-btn:hover{background:rgba(0,189,227,.12);color:#c5f6ff;border-color:rgba(0,189,227,.28)}
+.acs-icon-btn{width:31px;height:31px;display:grid;place-items:center}
+.acs-eye-btn{border:0;background:transparent;padding:2px 4px;margin-left:5px}
+.acs-optical-primary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:7px}
+.acs-optical-primary>div{padding:13px;border-radius:10px;background:rgba(255,255,255,.018);border:1px solid rgba(105,159,187,.08)}
+.acs-optical-primary span{display:block;color:#68889b;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.acs-optical-primary strong{display:block;margin-top:5px;color:#dcecf3;font-size:13px}
+.acs-password-row{margin-top:6px}
+.acs-big-number{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:125px}
+.acs-big-number strong{color:#69dcef;font-size:42px;line-height:1;font-weight:750}
+.acs-big-number span{margin-top:7px;color:#67879a;font-size:9px}
+.acs-full-btn{width:100%}
+.acs-diagnostic-list{display:flex;flex-direction:column;gap:8px}
+.acs-diagnostic-list button{width:100%;display:grid;grid-template-columns:32px 1fr 20px;align-items:center;gap:9px;text-align:left;padding:9px;border:1px solid rgba(105,159,187,.08);border-radius:9px;background:rgba(255,255,255,.012);color:#7bdced;transition:.16s ease}
+.acs-diagnostic-list button:hover{background:rgba(0,189,227,.05);border-color:rgba(0,189,227,.16)}
+.acs-diagnostic-list button>i:first-child{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:rgba(0,189,227,.07)}
+.acs-diagnostic-list strong{display:block;color:#bdd1dc;font-size:9px}
+.acs-diagnostic-list small{display:block;margin-top:2px;color:#58788c;font-size:8px}
+.acs-admin-note,.acs-event-placeholder{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding:11px;border-radius:9px;background:rgba(0,189,227,.035);border:1px solid rgba(0,189,227,.08);color:#718fa1;font-size:9px}
+.acs-event-placeholder{align-items:center;min-height:90px}
+.acs-event-placeholder strong{display:block;color:#b9ced9;font-size:10px}
+.acs-event-placeholder span{display:block;margin-top:4px;line-height:1.5}
+.acs-event-line{width:3px;align-self:stretch;border-radius:999px;background:linear-gradient(#21c7e7,rgba(33,199,231,.08))}
+@media(max-width:1400px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:span 4}}@media(max-width:1050px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:span 6}}
+@media(max-width:760px){.acs-overview-card,.acs-card-admin,.acs-card-events{grid-column:1/-1}.acs-card-actions{grid-template-columns:1fr}.acs-card-meta{flex-direction:column}}
+
+
+/* =========================================================
+   JR CONECT ACS - CABECALHO MODERNO DO EQUIPAMENTO
+   ========================================================= */
+.acs-device-shell{border:1px solid rgba(0,189,227,.28);border-radius:14px;background:#0d2535;overflow:hidden}
+.acs-device-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;border-bottom:1px solid rgba(105,159,187,.12);background:#0a1f2e}
+.acs-device-toolbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.acs-back-btn,.acs-device-avatar{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto}
+.acs-back-btn{border:1px solid rgba(0,189,227,.18);background:rgba(0,189,227,.05);color:#75dff4;text-decoration:none}
+.acs-back-btn:hover{background:rgba(0,189,227,.12);color:#b7f3ff}
+.acs-device-avatar{background:rgba(0,189,227,.08);border:1px solid rgba(0,189,227,.18);color:#20c7e8;font-size:17px}
+.acs-device-heading{min-width:0}
+.acs-device-title-row{display:flex;align-items:center;gap:9px}
+.acs-device-title-row h3{margin:0;color:#f1f7fb;font-size:18px;font-weight:750;line-height:1.2}
+.acs-device-subtitle{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px;color:#66879a;font-size:10px}
+.acs-device-subtitle #device-id-badge{color:#a8c9d8;font-weight:700}
+.acs-separator{opacity:.5}
+.acs-header-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:8px;font-weight:800;letter-spacing:.06em}
+.acs-header-status.online{color:#5de6ba;background:rgba(32,213,155,.09);border:1px solid rgba(32,213,155,.2)}
+.acs-header-status.offline{color:#ff8591;background:rgba(240,100,114,.09);border:1px solid rgba(240,100,114,.2)}
+.acs-device-toolbar-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.acs-toolbar-action{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;border-radius:8px;border:1px solid rgba(0,189,227,.16);background:rgba(0,189,227,.055);color:#87dff0;font-size:9px;font-weight:700;transition:.16s ease}
+.acs-toolbar-action:hover{background:rgba(0,189,227,.12);border-color:rgba(0,189,227,.3);color:#d6f8ff}
+.acs-toolbar-icon{width:34px;padding:0}
+.acs-device-tabs-wrap{padding:0 14px 14px}
+.acs-device-tabs-wrap #deviceTabs{margin:0 -14px 12px;padding:0 14px;border-bottom:1px solid rgba(105,159,187,.12);background:#091d2b}
+.acs-device-tabs-wrap #deviceTabs .nav-link{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:11px 12px;color:#66879a}
+.acs-device-tabs-wrap #deviceTabs .nav-link:hover{color:#b7dce9}
+.acs-device-tabs-wrap #deviceTabs .nav-link.active{color:#eaf8fc;border-bottom-color:#20c7e8;background:transparent}
+@media(max-width:900px){.acs-device-toolbar{align-items:flex-start;flex-direction:column}.acs-device-toolbar-actions{width:100%;overflow-x:auto;padding-bottom:2px}.acs-toolbar-action span{display:none}}
+
+
+/* =========================================================
+   JR CONECT ACS - LEGIBILIDADE + SIDEBAR COMPACTA
+   Inspirado na densidade visual do ACS de referencia
+   ========================================================= */
+
+/* Sidebar compacta por icones */
+.sidebar.collapsed{
+    width:76px !important;
+}
+.main-content.collapsed{
+    margin-left:76px !important;
+}
+.sidebar.collapsed .sidebar-header{
+    min-height:82px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:14px 0;
+}
+.sidebar.collapsed .sidebar-header i{
+    font-size:26px !important;
+    color:#28c9e8 !important;
+}
+.sidebar.collapsed .sidebar-menu{
+    padding-top:8px;
+}
+.sidebar.collapsed .sidebar-menu li{
+    display:flex;
+    justify-content:center;
+}
+.sidebar.collapsed .sidebar-menu a{
+    width:52px;
+    height:52px;
+    margin:4px auto;
+    padding:0 !important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid transparent;
+    border-radius:10px;
+}
+.sidebar.collapsed .sidebar-menu a i{
+    margin:0 !important;
+    font-size:18px !important;
+}
+.sidebar.collapsed .sidebar-menu a.active{
+    background:rgba(0,189,227,.08) !important;
+    border:1px solid rgba(0,189,227,.28) !important;
+    border-bottom:1px solid rgba(0,189,227,.28) !important;
+    color:#69e2f5 !important;
+}
+.sidebar.collapsed .sidebar-menu a:hover{
+    background:rgba(0,189,227,.07) !important;
+    border-color:rgba(0,189,227,.18);
+}
+.sidebar.collapsed .sidebar-menu a::after{
+    left:60px;
+    margin-left:0;
+    padding:7px 10px;
+    border:1px solid rgba(0,189,227,.15);
+    background:#0a1f2e;
+    color:#d7edf5;
+    font-size:11px;
+    border-radius:7px;
+}
+.sidebar.collapsed .sidebar-toggle{
+    left:18px;
+    width:38px;
+    height:38px;
+    border-radius:9px;
+    border:1px solid rgba(0,189,227,.22);
+    background:#102c3e;
+}
+
+/* Tipografia do detalhe: mais legivel sem perder densidade */
+.acs-device-title-row h3{font-size:20px}
+.acs-device-subtitle{font-size:11px}
+.acs-header-status{font-size:9px}
+.acs-toolbar-action{font-size:10px}
+
+.acs-device-tabs-wrap #deviceTabs .nav-link{
+    font-size:11px !important;
+    font-weight:650 !important;
+}
+
+.acs-overview-card-header h5{
+    font-size:16px;
+    line-height:1.25;
+}
+.acs-kicker{
+    font-size:10px;
+}
+.acs-kicker i{
+    font-size:13px;
+}
+.acs-status-pill,.acs-mini-badge{
+    font-size:9px;
+}
+.acs-device-identity strong,.acs-wifi-hero strong{
+    font-size:13px;
+}
+.acs-device-identity span,.acs-wifi-hero span{
+    font-size:10px;
+}
+.acs-info-row>span{
+    font-size:10px;
+}
+.acs-info-row>strong{
+    font-size:10px;
+}
+.acs-card-meta{
+    font-size:9px;
+}
+.acs-wan-ip span{
+    font-size:9px;
+}
+.acs-wan-ip strong{
+    font-size:16px;
+}
+.acs-soft-btn,.acs-icon-btn,.acs-eye-btn{
+    font-size:10px;
+}
+.acs-optical-primary span{
+    font-size:9px;
+}
+.acs-optical-primary strong{
+    font-size:14px;
+}
+.acs-big-number span{
+    font-size:10px;
+}
+.acs-diagnostic-list strong{
+    font-size:10px;
+}
+.acs-diagnostic-list small{
+    font-size:9px;
+}
+.acs-admin-note,.acs-event-placeholder{
+    font-size:10px;
+}
+.acs-event-placeholder strong{
+    font-size:11px;
+}
+
+@media(max-width:900px){
+    .sidebar.collapsed{width:70px !important}
+    .main-content.collapsed{margin-left:70px !important}
+}
+
+
+/* =========================================================
+   ABA WAN - PADRAO JR CONECT ACS
+   ========================================================= */
+.acs-wan-page{padding:4px 2px 2px}
+.acs-wan-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.acs-wan-page-header h4{margin:4px 0 3px;color:#edf9fd;font-size:18px;font-weight:750}
+.acs-wan-page-header p{margin:0;color:#66899b;font-size:10px}
+.acs-wan-header-actions{display:flex;align-items:center;gap:8px}
+.acs-wan-summary-pill{height:38px;min-width:70px;padding:5px 11px;border:1px solid rgba(0,189,227,.13);border-radius:9px;background:rgba(0,189,227,.035);display:flex;flex-direction:column;justify-content:center;align-items:center}
+.acs-wan-summary-pill strong{color:#70def1;font-size:13px;line-height:1}
+.acs-wan-summary-pill span{color:#66899b;font-size:8px;margin-top:3px}
+.acs-wan-primary-btn{height:38px;padding:0 13px;border:1px solid rgba(0,189,227,.28);border-radius:9px;background:rgba(0,189,227,.09);color:#72e2f5;font-size:10px;font-weight:700}
+.acs-wan-primary-btn:hover{background:rgba(0,189,227,.16);color:#baf5ff}
+.acs-wan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.acs-wan-card{min-width:0;padding:16px;border:1px solid rgba(105,159,187,.13);border-radius:12px;background:linear-gradient(145deg,rgba(8,31,45,.98),rgba(6,25,37,.98));box-shadow:0 10px 30px rgba(0,0,0,.10)}
+.acs-wan-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(105,159,187,.08)}
+.acs-wan-card-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.acs-wan-card-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(0,189,227,.16);background:rgba(0,189,227,.07);color:#54d9f1;font-size:16px}
+.acs-wan-index{display:block;color:#4d8297;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.acs-wan-card h5{margin:3px 0 0;color:#e7f5fa;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+.acs-wan-state{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.04em}
+.acs-wan-state span{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
+.acs-wan-state.online{color:#55e6ba;background:rgba(32,213,155,.08);border:1px solid rgba(32,213,155,.18)}
+.acs-wan-state.offline{color:#ff7b8d;background:rgba(240,100,114,.08);border:1px solid rgba(240,100,114,.18)}
+.acs-wan-tags{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0}
+.acs-wan-tags span{padding:4px 7px;border-radius:6px;background:rgba(0,189,227,.06);border:1px solid rgba(0,189,227,.11);color:#77cfe0;font-size:8px;font-weight:700}
+.acs-wan-tags span.danger{color:#ff8594;background:rgba(240,100,114,.06);border-color:rgba(240,100,114,.14)}
+.acs-wan-hero{padding:12px 13px;border:1px solid rgba(0,189,227,.13);border-radius:10px;background:rgba(0,189,227,.035);margin-bottom:10px}
+.acs-wan-hero span{display:block;color:#51798b;font-size:8px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.acs-wan-hero strong,.acs-wan-hero a{color:#69dcef;font-size:17px;font-weight:750;text-decoration:none}
+.acs-wan-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.acs-wan-details>div{min-height:38px;padding:8px 0;border-bottom:1px solid rgba(105,159,187,.065);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.acs-wan-details span{display:flex;align-items:center;gap:6px;color:#648b9d;font-size:9px}
+.acs-wan-details span i{color:#26bcd8}
+.acs-wan-details strong,.acs-wan-details a{color:#d9edf4;font-size:10px;font-weight:650;text-align:right;overflow-wrap:anywhere;text-decoration:none}
+.acs-wan-error-row strong{color:#ff8594}
+.acs-wan-card-actions{display:flex;justify-content:flex-end;gap:7px;padding-top:13px}
+.acs-wan-card-actions button{padding:6px 10px;border:1px solid rgba(0,189,227,.14);border-radius:7px;background:rgba(0,189,227,.05);color:#72dced;font-size:9px;font-weight:700}
+.acs-wan-card-actions button:hover{background:rgba(0,189,227,.11)}
+.acs-wan-card-actions button.danger{color:#ff8391;border-color:rgba(240,100,114,.14);background:rgba(240,100,114,.045)}
+.acs-wan-footnote{display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;border:1px solid rgba(0,189,227,.08);border-radius:9px;background:rgba(0,189,227,.025);color:#5d8395;font-size:9px}
+.acs-wan-footnote i{color:#25bdd9}
+.acs-wan-empty{min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(0,189,227,.16);border-radius:12px;background:rgba(0,189,227,.02);color:#62889a}
+.acs-wan-empty>i{font-size:28px;color:#37c9e3}
+.acs-wan-empty strong{font-size:14px;color:#d9edf4}
+.acs-wan-empty span{font-size:10px}
+.acs-wan-empty button{margin-top:5px;padding:7px 11px;border:1px solid rgba(0,189,227,.18);border-radius:8px;background:rgba(0,189,227,.07);color:#69dcef;font-size:9px;font-weight:700}
+@media(max-width:1050px){.acs-wan-grid{grid-template-columns:1fr}.acs-wan-page-header{align-items:flex-start;flex-direction:column}.acs-wan-header-actions{width:100%;flex-wrap:wrap}}
+@media(max-width:700px){.acs-wan-details{grid-template-columns:1fr}.acs-wan-card-top{flex-direction:column}.acs-wan-card-status{align-self:flex-start}}
+
+
+/* ABA FIRMWARE - JR CONECT ACS */
+.acs-firmware-page{padding:4px 2px 2px}
+.acs-firmware-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.acs-firmware-header h4{margin:4px 0 3px;color:#edf9fd;font-size:18px;font-weight:750}
+.acs-firmware-header p{margin:0;color:#66899b;font-size:10px}
+.acs-firmware-safe{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid rgba(32,213,155,.16);border-radius:8px;background:rgba(32,213,155,.055);color:#61dfb9;font-size:9px;font-weight:700}
+.acs-firmware-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:14px}
+.acs-firmware-card{padding:16px;border:1px solid rgba(105,159,187,.13);border-radius:12px;background:linear-gradient(145deg,rgba(8,31,45,.98),rgba(6,25,37,.98))}
+.acs-firmware-wide{grid-column:1/-1}
+.acs-firmware-card-title{display:flex;align-items:center;gap:10px;padding-bottom:13px;margin-bottom:12px;border-bottom:1px solid rgba(105,159,187,.08)}
+.acs-firmware-icon{width:39px;height:39px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(0,189,227,.16);background:rgba(0,189,227,.07);color:#54d9f1;font-size:16px}
+.acs-firmware-card-title span{display:block;color:#4d8297;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.acs-firmware-card-title h5{margin:3px 0 0;color:#e7f5fa;font-size:14px;font-weight:750}
+.acs-firmware-info>div{min-height:40px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(105,159,187,.065)}
+.acs-firmware-info span{color:#648b9d;font-size:9px}
+.acs-firmware-info strong{color:#d9edf4;font-size:10px;text-align:right}
+.acs-firmware-info strong.version{color:#65ddf0}
+.acs-firmware-dropzone{min-height:156px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;border:1px dashed rgba(0,189,227,.22);border-radius:10px;background:rgba(0,189,227,.025);text-align:center}
+.acs-firmware-dropzone>i{font-size:28px;color:#47d0e8;margin-bottom:7px}
+.acs-firmware-dropzone strong{color:#dceff5;font-size:11px}
+.acs-firmware-dropzone span{color:#66899b;font-size:9px;margin:4px 0 11px}
+.acs-firmware-dropzone button{padding:7px 11px;border:1px solid rgba(0,189,227,.12);border-radius:8px;background:rgba(0,189,227,.05);color:#547e90;font-size:9px}
+.acs-firmware-status{display:flex;align-items:center;justify-content:center;padding:18px 6px}
+.acs-firmware-step{display:flex;align-items:center;gap:9px;min-width:180px}
+.acs-firmware-step b{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:rgba(105,159,187,.07);border:1px solid rgba(105,159,187,.13);color:#62899a;font-size:10px}
+.acs-firmware-step.active b{color:#5ee2f6;background:rgba(0,189,227,.09);border-color:rgba(0,189,227,.22);box-shadow:0 0 12px rgba(0,189,227,.08)}
+.acs-firmware-step span{display:flex;flex-direction:column}
+.acs-firmware-step strong{color:#cfe7ef;font-size:9px}
+.acs-firmware-step small{color:#587e90;font-size:8px;margin-top:2px}
+.acs-firmware-line{height:1px;flex:1;max-width:90px;background:rgba(105,159,187,.12);margin:0 10px}
+.acs-firmware-warning{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid rgba(255,193,7,.10);border-radius:9px;background:rgba(255,193,7,.025);color:#8f8a6e;font-size:9px;line-height:1.5}
+.acs-firmware-warning i{color:#d7b84c}
+.acs-firmware-warning strong{color:#d8c77d}
+@media(max-width:900px){.acs-firmware-grid{grid-template-columns:1fr}.acs-firmware-wide{grid-column:auto}.acs-firmware-header{align-items:flex-start;flex-direction:column}.acs-firmware-status{align-items:flex-start;flex-direction:column;gap:8px}.acs-firmware-line{width:1px;height:18px;margin:0 0 0 14px}}
+
+
+/* JR CONECT ACS - physical LAN ports */
+.acs-physical-ports{margin:12px 0 13px;padding:11px;border:1px solid rgba(105,159,187,.08);background:rgba(0,189,227,.025);border-radius:10px}
+.acs-physical-ports-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;color:#79dfff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+.acs-physical-ports-title small{color:#66879a;font-size:8px;font-weight:700}
+.acs-physical-ports-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.acs-lan-port{min-width:0;padding:8px 4px 7px;border-radius:8px;border:1px solid rgba(105,159,187,.10);background:rgba(7,26,38,.72);text-align:center;transition:.16s ease}
+.acs-lan-port-icon{width:25px;height:22px;margin:0 auto 5px;display:grid;place-items:center;border-radius:6px;font-size:13px}
+.acs-lan-port strong,.acs-lan-port span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acs-lan-port strong{font-size:9px;color:#dcecf3}
+.acs-lan-port span{margin-top:2px;font-size:7px;color:#68899b}
+.acs-lan-port.link-up{border-color:rgba(32,213,155,.24);background:rgba(32,213,155,.045)}
+.acs-lan-port.link-up .acs-lan-port-icon{color:#55e3b1;background:rgba(32,213,155,.10);box-shadow:inset 0 0 0 1px rgba(32,213,155,.16)}
+.acs-lan-port.link-down .acs-lan-port-icon{color:#69879a;background:rgba(105,159,187,.055);box-shadow:inset 0 0 0 1px rgba(105,159,187,.09)}
+.acs-lan-port.disabled{opacity:.48}
+.acs-physical-ports-empty{padding:9px;border-radius:7px;background:rgba(105,159,187,.035);color:#66879a;font-size:8px;text-align:center}
+@media(max-width:1400px){.acs-physical-ports-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* JR CONECT ACS - monitoring and AI */
+.acs-bandwidth-bars{min-height:230px;display:flex;align-items:stretch;padding:4px 0}.acs-modern-chart{display:grid;grid-template-columns:76px 1fr;width:100%;height:210px}.acs-chart-scale{display:flex;flex-direction:column;justify-content:space-between;padding:7px 11px 25px 0;text-align:right;color:#7693a5;font-size:.7rem}.acs-chart-scale b{font-weight:400}.acs-chart-plot{position:relative;height:185px;border-left:1px solid #29485d;border-bottom:1px solid #29485d;background:linear-gradient(90deg,rgba(57,93,113,.11) 1px,transparent 1px) 0 0/12.5% 100%}.acs-chart-plot svg{width:100%;height:100%;overflow:visible}.acs-chart-plot .grid{stroke:#29485d;stroke-width:.45;fill:none}.acs-chart-plot .area.rx{fill:url(#rxArea)}.acs-chart-plot .area.tx{fill:url(#txArea)}.acs-chart-plot .line{fill:none;stroke-width:1.45;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}.acs-chart-plot .line.rx{stroke:#63d9ff}.acs-chart-plot .line.tx{stroke:#55dda6}.acs-chart-times{position:absolute;display:flex;justify-content:space-between;left:0;right:0;top:100%;padding-top:7px;color:#718da0;font-size:.68rem}.acs-chart-legend{display:flex;justify-content:center;gap:18px;color:#8fa8b7;font-size:.75rem;padding-top:11px}.acs-chart-legend span{display:flex;align-items:center;gap:5px}.acs-chart-legend i{width:9px;height:9px;border-radius:50%}.acs-chart-legend .rx{background:#63d9ff}.acs-chart-legend .tx{background:#55dda6}
+.acs-monitor-shell,.acs-ai-shell{display:grid;gap:16px}.acs-monitor-head,.acs-ai-hero{display:flex;align-items:center;gap:16px;background:#0d2535;border:1px solid #29485d;border-radius:14px;padding:18px}.acs-monitor-head>div,.acs-ai-hero>div:nth-child(2){flex:1}.acs-monitor-head h4,.acs-ai-hero h4{margin:2px 0 4px;color:#fff}.acs-monitor-head p,.acs-ai-hero p{margin:0;color:#91a9b9}.acs-live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.acs-live-card{background:#0d2535;border:1px solid #29485d;border-radius:13px;padding:16px;display:grid;gap:5px}.acs-live-card span{color:#91a9b9;font-size:.78rem}.acs-live-card strong{color:#fff;font-size:1.65rem}.acs-live-card small{color:#698596}.acs-live-card.download strong{color:#63d9ff}.acs-live-card.upload strong{color:#55dda6}.acs-bandwidth-chart,.acs-connection-report,.acs-ai-context,.acs-ai-chat{background:#0d2535;border:1px solid #29485d;border-radius:14px;padding:18px}.acs-chart-title{display:flex;justify-content:space-between;color:#fff;margin-bottom:14px}.acs-chart-title span{color:#7894a6;font-size:.78rem}.acs-bandwidth-bars{height:180px;display:flex;align-items:flex-end;gap:4px;border-bottom:1px solid #29485d;padding:12px 4px 0}.acs-bandwidth-pair{height:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;gap:2px}.acs-bandwidth-pair i{display:block;width:42%;min-width:3px;border-radius:3px 3px 0 0}.acs-bandwidth-pair .rx{background:#63d9ff}.acs-bandwidth-pair .tx{background:#55dda6}.acs-chart-wait{margin:auto;color:#7894a6;align-self:center}.acs-report-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.acs-report-grid>div{background:#091c29;border:1px solid #203e51;border-radius:9px;padding:11px}.acs-report-grid span{display:block;color:#7894a6;font-size:.72rem;margin-bottom:4px}.acs-report-grid strong{color:#e8f3f8;font-size:.88rem;word-break:break-word}.acs-monitor-empty{text-align:center;padding:50px;background:#0d2535;border:1px solid #29485d;border-radius:14px;color:#91a9b9}.acs-monitor-empty i{font-size:2rem;color:#63d9ff}.acs-ai-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:14px;background:#123b50;color:#67ddff;font-size:1.4rem}.acs-ai-grid{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(400px,1.2fr);gap:14px}.acs-ai-context{display:grid;gap:9px}.acs-ai-context strong{color:#fff;margin-bottom:3px}.acs-ai-context span{color:#a9bdc9;font-size:.84rem}.acs-ai-context i{color:#55dda6;margin-right:7px}.acs-ai-chat label{display:block;color:#fff;font-weight:700;margin-bottom:8px}.acs-ai-chat textarea{width:100%;resize:vertical;background:#081824;color:#eaf5fa;border:1px solid #315267;border-radius:9px;padding:12px;outline:none;margin-bottom:10px}.acs-ai-chat textarea:focus{border-color:#63d9ff}.acs-ai-answer{margin-top:12px;padding:12px;border-radius:9px;background:#091c29;color:#8fa8b7;font-size:.82rem}.acs-card-actions{margin-top:12px}@media(max-width:1100px){.acs-live-grid,.acs-report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.acs-ai-grid{grid-template-columns:1fr}}@media(max-width:650px){.acs-live-grid,.acs-report-grid{grid-template-columns:1fr}.acs-monitor-head,.acs-ai-hero{align-items:flex-start;flex-wrap:wrap}}

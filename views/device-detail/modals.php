@@ -4,22 +4,22 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-lightning-charge"></i> Konfirmasi Summon Device
+                    <i class="bi bi-lightning-charge"></i> Confirmar comunicação
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center py-4">
                 <i class="bi bi-exclamation-triangle" style="font-size: 3rem; color: var(--warning-color);"></i>
-                <h5 class="mt-3">Summon Device?</h5>
-                <p class="text-muted mb-0">Apakah Anda yakin ingin melakukan connection request ke device ini?</p>
-                <p class="text-muted mb-0"><small>Device ID: <strong id="summon-device-id"></strong></small></p>
+                <h5 class="mt-3">Solicitar comunicação?</h5>
+                <p class="text-muted mb-0">Deseja solicitar uma nova comunicação TR-069 para este equipamento?</p>
+                <p class="text-muted mb-0"><small>ID do equipamento: <strong id="summon-device-id"></strong></small></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-lg"></i> Batal
+                    <i class="bi bi-x-lg"></i> Cancelar
                 </button>
                 <button type="button" class="btn btn-primary" onclick="confirmSummon()">
-                    <i class="bi bi-lightning-charge"></i> Ya, Summon
+                    <i class="bi bi-lightning-charge"></i> Sim, comunicar
                 </button>
             </div>
         </div>
@@ -98,7 +98,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-lg"></i> Batal
+                    <i class="bi bi-x-lg"></i> Cancelar
                 </button>
                 <button type="button" class="btn btn-primary" onclick="confirmUpdateWiFi()">
                     <i class="bi bi-check-lg"></i> Update WiFi

@@ -1,4 +1,3 @@
-// Device ID is set via global variable in device-detail.php
 const deviceId = window.DEVICE_ID || '';
 let savedScrollPosition = 0;
 let savedHotspotData = {}; // Store last known hotspot data
@@ -8,6 +7,7 @@ let cachedOpticalData = null;
 let opticalLoading = false;
 let opticalLoadedForDevice = null;
 let opticalRequestCounter = 0;
+let currentDeviceData = null;
 
 // Helper function to get active tab name
 function getActiveTabName() {
@@ -102,12 +102,31 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
     if (result && result.success) {
         const device = result.device;
+        currentDeviceData = device;
 
         // Fetch ONU location from map
         const locationResult = await fetchAPI('/api/get-onu-location.php?serial_number=' + encodeURIComponent(device.serial_number));
 
-        // Update badge
+        // Update modern device header
         document.getElementById('device-id-badge').textContent = device.serial_number;
+
+        const modelTitle = document.getElementById('device-model-title');
+        if (modelTitle) {
+            modelTitle.textContent = device.product_class || device.model || device.manufacturer || 'Equipamento';
+        }
+
+        const ipHeader = document.getElementById('device-ip-header');
+        if (ipHeader) {
+            ipHeader.textContent = extractIP(device.ip_tr069) || 'IP não disponível';
+        }
+
+        const statusHeader = document.getElementById('device-status-header');
+        if (statusHeader) {
+            const online = String(device.status || '').toLowerCase() === 'online';
+            statusHeader.textContent = online ? 'ONLINE' : 'OFFLINE';
+            statusHeader.classList.toggle('online', online);
+            statusHeader.classList.toggle('offline', !online);
+        }
 
         // Update tags badge
         updateTagsBadge(device.tags || []);
@@ -116,137 +135,294 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         document.getElementById('wan-count-badge').textContent = device.wan_details ? device.wan_details.length : 0;
         document.getElementById('devices-count-badge').textContent = device.connected_devices ? device.connected_devices.length : 0;
 
-        // Populate Overview Tab
+        // Populate Overview Tab - JR CONECT ACS V2
         document.getElementById('overview-content').innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h6><i class="bi bi-info-circle"></i> Basic Information</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr><th width="40%">Device ID</th><td>${device.device_id}</td></tr>
-                        <tr><th>Serial Number</th><td>${device.serial_number}</td></tr>
-                        <tr><th>MAC Address</th><td>${device.mac_address}</td></tr>
-                        <tr><th>Last Inform</th><td>${device.last_inform}</td></tr>
-                        <tr><th>Status</th><td><span class="badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status}</span></td></tr>
-                        <tr><th>Manufacturer</th><td>${device.manufacturer}</td></tr>
-                        <tr><th>Product Class</th><td>${device.product_class}</td></tr>
-                        <tr><th>OUI</th><td>${device.oui}</td></tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h6><i class="bi bi-cpu"></i> Hardware/Software</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr><th width="40%">Hardware Version</th><td>${device.hardware_version}</td></tr>
-                        <tr><th>Software Version</th><td>${device.software_version}</td></tr>
-                        <tr><th>Uptime</th><td>${formatUptime(device.uptime)}</td></tr>
-                    </table>
+            <div class="acs-overview-grid">
 
-                    <h6 class="mt-4"><i class="bi bi-broadcast"></i> Optical Information</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr>
-                            <th width="40%">RX Power</th>
-                            <td id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>TX Power</th>
-                            <td id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>Temperature</th>
-                            <td id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>Voltage</th>
-                            <td id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</td>
-                        </tr>
-                        <tr>
-                            <th>PON ID</th>
-                            <td id="optical-pon-id">${renderOpticalCachedPon()}</td>
-                        </tr>
-                        <tr>
-                            <th>Última atualização</th>
-                            <td id="optical-last-update">${renderOpticalLastUpdate()}</td>
-                        </tr>
-                        <tr>
-                            <th>Fonte</th>
-                            <td id="optical-source">${renderOpticalSource()}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <h6><i class="bi bi-ethernet"></i> Network Information</h6>
-                    <table class="table table-sm table-bordered">
-                        <tr>
-                            <th width="20%">IP TR069</th>
-                            <td>${makeIPClickable(extractIP(device.ip_tr069))}</td>
-                        </tr>
-                        <tr>
-                            <th>WiFi SSID</th>
-                            <td>
-                                ${device.wifi_ssid}
-                                <button class="btn btn-sm btn-warning ms-2" onclick="openEditWiFiModal('${device.device_id}', '${device.wifi_ssid.replace(/'/g, "\\'")}', '${device.wifi_password.replace(/'/g, "\\'")}')">
-                                    <i class="bi bi-pencil"></i> Edit WiFi
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>WiFi Password</th>
-                            <td>
-                                <span id="wifi-pass-hidden">********</span>
-                                <span id="wifi-pass-shown" style="display:none;">${device.wifi_password}</span>
-                                <button class="btn btn-sm btn-link" onclick="togglePassword()">
-                                    <i id="toggle-icon" class="bi bi-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Full TR069 URL</th>
-                            <td><small>${device.ip_tr069}</small></td>
-                        </tr>
-                    </table>
+                <section class="acs-overview-card acs-card-device">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-router"></i> Dispositivo</span>
+                            <h5>${device.product_class || 'Equipamento'}</h5>
+                        </div>
+                        <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
+                            <span class="acs-status-dot"></span>
+                            ${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                    </div>
 
-                    <h6 class="mt-4">
-                        <i class="bi bi-shield-lock"></i> Admin Web Access
-                        ${(device.admin_user === 'N/A' || !device.admin_user || device.admin_user === '' || device.admin_user === null || device.admin_user === undefined) ?
-                            '<button id="get-credentials-btn" class="btn btn-sm btn-warning ms-2" onclick="summonForAdminCredentials()" title="Summon device to get admin credentials"><i class="bi bi-lightning-charge"></i> Get Credentials</button>' :
-                            ''}
-                    </h6>
+                    <div class="acs-device-identity">
+                        <div class="acs-device-icon"><i class="bi bi-hdd-network"></i></div>
+                        <div>
+                            <strong>${device.serial_number || 'N/D'}</strong>
+                            <span>${device.manufacturer || 'Fabricante não identificado'}</span>
+                        </div>
+                    </div>
+
+                    <div id="ixc-onu-summary" class="acs-info-list" style="margin-top:12px">
+                        <div class="acs-info-row"><span><i class="bi bi-database"></i> Cadastro oficial</span><strong>Consultando IXC...</strong></div>
+                    </div>
+
+                    ${renderPhysicalPorts(device.lan_ports)}
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-clock-history"></i> Última conexão</span>
+                            <strong>${device.last_inform || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-hourglass-split"></i> Uptime</span>
+                            <strong>${formatUptime(device.uptime)}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-code-slash"></i> Firmware</span>
+                            <strong>${device.software_version || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-cpu"></i> Hardware</span>
+                            <strong>${device.hardware_version || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-upc-scan"></i> MAC</span>
+                            <strong>${device.mac_address || 'N/D'}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-card-meta">
+                        <span>OUI: ${device.oui || 'N/D'}</span>
+                        <span>ID: ${device.device_id || 'N/D'}</span>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-wan">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-globe2"></i> Interface de Internet</span>
+                            <h5>WAN / TR-069</h5>
+                        </div>
+                        <span class="acs-mini-badge">${device.wan_details ? device.wan_details.length : 0} WAN</span>
+                    </div>
+
+                    <div class="acs-wan-ip">
+                        <span>IP TR-069</span>
+                        <strong>${makeIPClickable(extractIP(device.ip_tr069))}</strong>
+                    </div>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-link-45deg"></i> URL TR-069</span>
+                            <strong class="acs-truncate">${device.ip_tr069 || 'N/D'}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-broadcast-pin"></i> Conexões WAN</span>
+                            <strong>${device.wan_details ? device.wan_details.length : 0}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-diagram-3"></i> Clientes conectados</span>
+                            <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-card-actions">
+                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('wan-tab').click()">
+                            <i class="bi bi-arrow-up-right"></i> Ver conexões
+                        </button>
+                        <button class="acs-soft-btn" type="button" onclick="document.getElementById('devices-tab').click()">
+                            <i class="bi bi-people"></i> Ver clientes
+                        </button>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-optical">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-reception-4"></i> Óptico / GPON</span>
+                            <h5>Leituras da fibra</h5>
+                        </div>
+                        <span class="acs-mini-badge">PON</span>
+                    </div>
+
+                    <div class="acs-optical-primary">
+                        <div>
+                            <span>RX</span>
+                            <strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong>
+                        </div>
+                        <div>
+                            <span>TX</span>
+                            <strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-thermometer-half"></i> Temperatura</span>
+                            <strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-lightning"></i> Tensão</span>
+                            <strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-diagram-2"></i> PON</span>
+                            <strong id="optical-pon-id">${renderOpticalCachedPon()}</strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span><i class="bi bi-database-check"></i> Fonte</span>
+                            <strong id="optical-source">${renderOpticalSource()}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-card-meta">
+                        <span>Última atualização: <strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></span>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-wifi">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-wifi"></i> Rede Wi-Fi</span>
+                            <h5>${device.wifi_ssid || 'SSID não identificado'}</h5>
+                        </div>
+                        <button
+                            class="acs-icon-btn"
+                            type="button"
+                            title="Editar Wi-Fi"
+                            onclick="openEditWiFiModal('${device.device_id}', '${(device.wifi_ssid || '').replace(/'/g, "\\\\'")}', '${(device.wifi_password || '').replace(/'/g, "\\\\'")}')"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+
+                    <div class="acs-wifi-hero">
+                        <i class="bi bi-wifi"></i>
+                        <div>
+                            <span>SSID</span>
+                            <strong>${device.wifi_ssid || 'N/D'}</strong>
+                        </div>
+                    </div>
+
+                    <div class="acs-info-row acs-password-row">
+                        <span><i class="bi bi-lock"></i> Senha Wi-Fi</span>
+                        <strong>
+                            <span id="wifi-pass-hidden">********</span>
+                            <span id="wifi-pass-shown" style="display:none;">${device.wifi_password || 'N/D'}</span>
+                            <button class="acs-eye-btn" type="button" onclick="togglePassword()">
+                                <i id="toggle-icon" class="bi bi-eye"></i>
+                            </button>
+                        </strong>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-clients">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-people"></i> Dispositivos conectados</span>
+                            <h5>Clientes da rede</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-big-number">
+                        <strong>${device.connected_devices ? device.connected_devices.length : 0}</strong>
+                        <span>conectados no momento</span>
+                    </div>
+
+                    <button class="acs-soft-btn acs-full-btn" type="button" onclick="document.getElementById('devices-tab').click()">
+                        <i class="bi bi-hdd-network"></i> Abrir dispositivos conectados
+                    </button>
+                </section>
+
+                <section class="acs-overview-card acs-card-diagnostics">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-activity"></i> Diagnósticos</span>
+                            <h5>Ferramentas rápidas</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-diagnostic-list">
+                        <button type="button" onclick="startONUSpeedtest()">
+                            <i class="bi bi-speedometer2"></i>
+                            <span><strong>Teste de velocidade</strong><small>LibreSpeed JR CONECT</small></span>
+                            <i class="bi bi-play-circle"></i>
+                        </button>
+                        <button type="button" onclick="summonDevice()">
+                            <i class="bi bi-lightning-charge"></i>
+                            <span><strong>Solicitar comunicação</strong><small>Forçar nova sessão TR-069</small></span>
+                            <i class="bi bi-play-circle"></i>
+                        </button>
+                        <button type="button" onclick="document.getElementById('wan-tab').click()">
+                            <i class="bi bi-globe2"></i>
+                            <span><strong>Conectividade WAN</strong><small>Abrir parâmetros de Internet</small></span>
+                            <i class="bi bi-arrow-up-right-circle"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-admin">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-shield-lock"></i> Acesso administrativo</span>
+                            <h5>Credenciais do equipamento</h5>
+                        </div>
+                        ${(device.admin_user === 'N/A' || !device.admin_user) ?
+                            '<button id="get-credentials-btn" class="acs-soft-btn" type="button" onclick="summonForAdminCredentials()"><i class="bi bi-lightning-charge"></i> Obter</button>' :
+                            '<span class="acs-mini-badge success">DISPONÍVEL</span>'}
+                    </div>
+
                     <div id="credentials-status" class="alert alert-info" style="display:none;">
                         <i class="bi bi-info-circle"></i> <span id="credentials-status-text"></span>
                     </div>
-                    <table class="table table-sm table-bordered">
-                        <tr>
-                            <th width="20%">Super Admin User</th>
-                            <td>
-                                <code>${device.admin_user || 'N/A'}</code>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Super Admin Password</th>
-                            <td>
+
+                    <div class="acs-info-list">
+                        <div class="acs-info-row">
+                            <span>Super Admin</span>
+                            <strong><code>${device.admin_user || 'N/A'}</code></strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span>Senha Admin</span>
+                            <strong>
                                 <span id="admin-pass-hidden">********</span>
                                 <span id="admin-pass-shown" style="display:none;"><code>${device.admin_password || 'N/A'}</code></span>
-                                <button class="btn btn-sm btn-link" onclick="toggleAdminPassword()">
+                                <button class="acs-eye-btn" type="button" onclick="toggleAdminPassword()">
                                     <i id="admin-toggle-icon" class="bi bi-eye"></i>
                                 </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Telecom Password</th>
-                            <td>
+                            </strong>
+                        </div>
+                        <div class="acs-info-row">
+                            <span>Senha Telecom</span>
+                            <strong>
                                 <span id="telecom-pass-hidden">********</span>
                                 <span id="telecom-pass-shown" style="display:none;"><code>${device.telecom_password || 'N/A'}</code></span>
-                                <button class="btn btn-sm btn-link" onclick="toggleTelecomPassword()">
+                                <button class="acs-eye-btn" type="button" onclick="toggleTelecomPassword()">
                                     <i id="telecom-toggle-icon" class="bi bi-eye"></i>
                                 </button>
-                            </td>
-                        </tr>
-                    </table>
-                    ${(device.admin_user === 'N/A' || !device.admin_user || device.admin_user === '' || device.admin_user === null || device.admin_user === undefined) ?
-                        '<div class="alert alert-info mt-2"><i class="bi bi-info-circle"></i> <strong>Admin credentials belum tersedia.</strong><br><br>Klik tombol <strong>"Get Credentials"</strong> untuk mengambil username dan password dari device.<br><br>⏱️ <em>Proses membutuhkan waktu ~20 detik (otomatis summon 2x untuk device baru)</em></div>' :
+                            </strong>
+                        </div>
+                    </div>
+
+                    ${(device.admin_user === 'N/A' || !device.admin_user) ?
+                        '<div class="acs-admin-note"><i class="bi bi-info-circle"></i><span>As credenciais ainda não foram coletadas. Use <strong>Obter</strong> para solicitar ao equipamento.</span></div>' :
                         ''}
-                </div>
+                </section>
+
+                <section class="acs-overview-card acs-card-events">
+                    <div class="acs-overview-card-header">
+                        <div>
+                            <span class="acs-kicker"><i class="bi bi-clock-history"></i> Eventos</span>
+                            <h5>Atividade do equipamento</h5>
+                        </div>
+                        <span class="acs-mini-badge">EM BREVE</span>
+                    </div>
+
+                    <div class="acs-event-placeholder">
+                        <div class="acs-event-line"></div>
+                        <div>
+                            <strong>Histórico operacional</strong>
+                            <span>Esta área ficará preparada para alterações de Wi-Fi, reinicializações, falhas e eventos TR-069.</span>
+                        </div>
+                    </div>
+                </section>
+
             </div>
         `;
 
@@ -268,8 +444,16 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Populate DHCP Server Tab
         document.getElementById('dhcp-content').innerHTML = renderDHCPServerTab(device.dhcp_server);
 
+        // Populate Firmware Tab
+        document.getElementById('firmware-content').innerHTML = renderFirmwareTab(device);
+
         // Populate Connected Devices Tab
         document.getElementById('devices-content').innerHTML = renderConnectedDevicesTab(device.connected_devices);
+
+        // Populate Monitoring and AI tabs
+        document.getElementById('monitoring-content').innerHTML = renderMonitoringTab(device);
+        document.getElementById('ai-content').innerHTML = renderAIAssistantTab(device);
+        updateRadiusBandwidthSample();
 
         // Restore hotspot data after re-render (if available)
         if (isAutoRefresh && Object.keys(savedHotspotData).length > 0) {
@@ -332,6 +516,55 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         // Show error in loading area
         document.getElementById('loading-spinner').innerHTML = '<div class="alert alert-danger">Failed to load device details</div>';
     }
+}
+
+function renderPhysicalPorts(ports) {
+    if (!Array.isArray(ports) || ports.length === 0) {
+        return `
+            <div class="acs-physical-ports">
+                <div class="acs-physical-ports-title">
+                    <span><i class="bi bi-ethernet"></i> Portas físicas</span>
+                    <small>Sem leitura</small>
+                </div>
+                <div class="acs-physical-ports-empty">Dados das portas LAN ainda não coletados.</div>
+            </div>
+        `;
+    }
+
+    const formatSpeed = (value) => {
+        if (value === null || value === undefined || value === '' || value === 'N/A') return 'Auto';
+        const text = String(value).trim();
+        if (/^auto$/i.test(text)) return 'Auto';
+        const speed = Number(text);
+        if (!Number.isFinite(speed)) return text;
+        if (speed >= 1000) return (speed / 1000) + 'G';
+        return speed + 'M';
+    };
+
+    return `
+        <div class="acs-physical-ports">
+            <div class="acs-physical-ports-title">
+                <span><i class="bi bi-ethernet"></i> Portas físicas</span>
+                <small>${ports.length} LAN</small>
+            </div>
+            <div class="acs-physical-ports-grid">
+                ${ports.map(port => {
+                    const status = String(port.status || '').toLowerCase();
+                    const isUp = status === 'up' || status === 'connected';
+                    const isDisabled = port.enabled === false || String(port.enabled).toLowerCase() === 'false';
+
+                    return `
+                        <div class="acs-lan-port ${isUp ? 'link-up' : 'link-down'} ${isDisabled ? 'disabled' : ''}"
+                             title="${port.name}: ${port.status || 'N/D'}">
+                            <div class="acs-lan-port-icon"><i class="bi bi-ethernet"></i></div>
+                            <strong>${port.name}</strong>
+                            <span>${isUp ? formatSpeed(port.max_bit_rate) : 'Sem link'}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
 }
 
 function extractIP(ipString) {
@@ -614,212 +847,205 @@ function renderTopologyLocation(locationResult) {
 }
 
 function renderWANDetailsTab(wanDetails) {
+    const hasValue = (value) => (
+        value !== null &&
+        value !== undefined &&
+        value !== '' &&
+        value !== 'N/A' &&
+        value !== '0.0.0.0'
+    );
+
     if (!wanDetails || wanDetails.length === 0) {
         return `
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6><i class="bi bi-globe"></i> WAN Connection Details</h6>
-                <button class="btn btn-sm btn-success" onclick="openAddWANModal()"><i class="bi bi-plus-lg"></i> Add WAN Connection</button>
-            </div>
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No WAN connections configured on this device.
-                <button class="btn btn-sm btn-success ms-2" onclick="openAddWANModal()">
-                    <i class="bi bi-plus-lg"></i> Add First Connection
-                </button>
+            <div class="acs-wan-page">
+                <div class="acs-wan-page-header">
+                    <div>
+                        <span class="acs-kicker"><i class="bi bi-globe2"></i> Conectividade</span>
+                        <h4>Interfaces WAN</h4>
+                        <p>Nenhuma conexão WAN foi identificada neste equipamento.</p>
+                    </div>
+                    <button class="acs-wan-primary-btn" type="button" onclick="openAddWANModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar WAN
+                    </button>
+                </div>
+
+                <div class="acs-wan-empty">
+                    <i class="bi bi-router"></i>
+                    <strong>Sem conexões WAN</strong>
+                    <span>Quando o equipamento disponibilizar uma interface WAN pelo TR-069, ela aparecerá aqui.</span>
+                    <button type="button" onclick="openAddWANModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar primeira conexão
+                    </button>
+                </div>
             </div>
         `;
     }
 
-    let html = '<div class="d-flex justify-content-between align-items-center mb-3">';
-    html += '<h6><i class="bi bi-globe"></i> WAN Connection Details</h6>';
-    html += '<button class="btn btn-sm btn-success" onclick="openAddWANModal()"><i class="bi bi-plus-lg"></i> Add WAN Connection</button>';
-    html += '</div>';
+    const connectedCount = wanDetails.filter(wan => String(wan.status || '').toLowerCase() === 'connected').length;
 
-    wanDetails.forEach((wan, index) => {
-        const statusBadge = wan.status === 'Connected' ?
-            '<span class="badge online">Connected</span>' :
-            '<span class="badge offline">Disconnected</span>';
-
-        // Check if this is a bridge connection
-        const isBridge = wan.connection_type && (
-            wan.connection_type.includes('Bridge') ||
-            wan.connection_type.includes('Bridged')
-        );
-
-        // Extract VLAN ID from connection name
-        const vlanMatch = wan.name.match(/VID[_-]?(\d+)/i);
-        const vlanId = vlanMatch ? vlanMatch[1] : null;
-
-        // Check if this is TR069 connection
-        const isTR069 = (wan.service_list && (wan.service_list.toUpperCase().includes('TR069') || wan.service_list.toUpperCase().includes('CWMP'))) ||
-                        (wan.name && (wan.name.toUpperCase().includes('TR069') || wan.name.toUpperCase().includes('CWMP')));
-
-        html += `
-            <div class="card mb-3">
-                <div class="card-header bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>${wan.name}</strong>
-                            <span class="badge bg-info ms-2">${wan.type}</span>
-                            ${statusBadge}
-                            ${isBridge ? '<span class="badge bg-secondary ms-2">Bridge Mode</span>' : ''}
-                            ${isTR069 ? '<span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle"></i> TR069</span>' : ''}
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-warning" onclick='openEditWANModal(${JSON.stringify(wan)})'>
-                                <i class="bi bi-pencil"></i> Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick='openDeleteWANModal(${JSON.stringify(wan)})'>
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
+    let html = `
+        <div class="acs-wan-page">
+            <div class="acs-wan-page-header">
+                <div>
+                    <span class="acs-kicker"><i class="bi bi-globe2"></i> Conectividade</span>
+                    <h4>Interfaces WAN</h4>
+                    <p>Parâmetros de Internet coletados do equipamento via TR-069.</p>
                 </div>
-                <div class="card-body">`;
 
-        // Build table content (same as before)
-        if (isBridge) {
-            html += `
-                    <table class="table table-sm table-bordered mb-0">
-                        <tr>
-                            <th width="30%">Connection Type</th>
-                            <td>${wan.connection_type}</td>
-                        </tr>`;
-
-            if (vlanId) {
-                html += `
-                        <tr>
-                            <th>VLAN ID</th>
-                            <td>${vlanId}</td>
-                        </tr>`;
-            }
-
-            if (wan.binding && wan.binding !== 'N/A') {
-                html += `
-                        <tr>
-                            <th>Bound to</th>
-                            <td><span class="badge bg-primary">${wan.binding}</span></td>
-                        </tr>`;
-            }
-
-            html += `
-                    </table>`;
-        } else {
-            html += `
-                    <table class="table table-sm table-bordered mb-0">
-                        <tr>
-                            <th width="30%">Connection Type</th>
-                            <td>${wan.connection_type}</td>
-                        </tr>`;
-
-            if (vlanId) {
-                html += `
-                        <tr>
-                            <th>VLAN ID</th>
-                            <td>${vlanId}</td>
-                        </tr>`;
-            }
-
-            if (wan.binding && wan.binding !== 'N/A') {
-                html += `
-                        <tr>
-                            <th>Bound to</th>
-                            <td><span class="badge bg-primary">${wan.binding}</span></td>
-                        </tr>`;
-            }
-
-            if (wan.external_ip && wan.external_ip !== 'N/A' && wan.external_ip !== '0.0.0.0') {
-                html += `
-                        <tr>
-                            <th>External IP</th>
-                            <td>${makeIPClickable(wan.external_ip)}</td>
-                        </tr>`;
-            }
-
-            if (wan.gateway && wan.gateway !== 'N/A' && wan.gateway !== '0.0.0.0') {
-                html += `
-                        <tr>
-                            <th>Gateway</th>
-                            <td>${makeIPClickable(wan.gateway)}</td>
-                        </tr>`;
-            }
-
-            if (wan.subnet_mask && wan.subnet_mask !== 'N/A') {
-                html += `
-                        <tr>
-                            <th>Subnet Mask</th>
-                            <td>${wan.subnet_mask}</td>
-                        </tr>`;
-            }
-
-            if (wan.dns_servers && wan.dns_servers !== 'N/A' && wan.dns_servers !== '') {
-                html += `
-                        <tr>
-                            <th>DNS Servers</th>
-                            <td>${wan.dns_servers}</td>
-                        </tr>`;
-            }
-
-            if (wan.mac_address && wan.mac_address !== 'N/A' && wan.mac_address !== '00:00:00:00:00:00') {
-                html += `
-                        <tr>
-                            <th>MAC Address</th>
-                            <td>${wan.mac_address}</td>
-                        </tr>`;
-            }
-
-            if (wan.type === 'PPPoE') {
-                if (wan.username && wan.username !== 'N/A' && wan.username !== '') {
-                    html += `
-                        <tr>
-                            <th>Username</th>
-                            <td>${wan.username}</td>
-                        </tr>`;
-                }
-
-                if (wan.last_error && wan.last_error !== 'N/A') {
-                    html += `
-                        <tr>
-                            <th>Last Error</th>
-                            <td>${wan.last_error}</td>
-                        </tr>`;
-                }
-
-                if (wan.mru_size && wan.mru_size !== 'N/A' && wan.mru_size !== '0' && wan.mru_size !== 0) {
-                    html += `
-                        <tr>
-                            <th>MRU Size</th>
-                            <td>${wan.mru_size}</td>
-                        </tr>`;
-                }
-            }
-
-            if (wan.type === 'IP') {
-                if (wan.addressing_type && wan.addressing_type !== 'N/A') {
-                    html += `
-                        <tr>
-                            <th>Addressing Type</th>
-                            <td>${wan.addressing_type}</td>
-                        </tr>`;
-                }
-            }
-
-            if (wan.uptime && wan.uptime !== 'N/A' && wan.uptime !== '0' && wan.uptime !== 0) {
-                html += `
-                        <tr>
-                            <th>Uptime</th>
-                            <td>${formatUptime(wan.uptime)}</td>
-                        </tr>`;
-            }
-
-            html += `
-                    </table>`;
-        }
-
-        html += `
+                <div class="acs-wan-header-actions">
+                    <div class="acs-wan-summary-pill">
+                        <strong>${connectedCount}</strong>
+                        <span>conectada${connectedCount === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="acs-wan-summary-pill">
+                        <strong>${wanDetails.length}</strong>
+                        <span>total</span>
+                    </div>
+                    <button class="acs-wan-primary-btn" type="button" onclick="openAddWANModal()">
+                        <i class="bi bi-plus-lg"></i> Adicionar WAN
+                    </button>
                 </div>
             </div>
+
+            <div class="acs-wan-grid">
+    `;
+
+    wanDetails.forEach((wan, index) => {
+        const isConnected = String(wan.status || '').toLowerCase() === 'connected';
+        const connectionType = wan.connection_type || 'N/A';
+        const isBridge = /bridge|bridged/i.test(connectionType);
+        const vlanMatch = String(wan.name || '').match(/VID[_-]?(\d+)/i);
+        const vlanId = vlanMatch ? vlanMatch[1] : null;
+        const isTR069 = /TR069|CWMP/i.test(String(wan.service_list || '')) || /TR069|CWMP/i.test(String(wan.name || ''));
+        const displayName = wan.name || `WAN ${index + 1}`;
+        const typeLabel = wan.type || (isBridge ? 'Bridge' : 'WAN');
+
+        html += `
+            <section class="acs-wan-card">
+                <div class="acs-wan-card-top">
+                    <div class="acs-wan-card-identity">
+                        <div class="acs-wan-card-icon">
+                            <i class="bi ${isBridge ? 'bi-diagram-3' : (wan.type === 'PPPoE' ? 'bi-person-badge' : 'bi-globe2')}"></i>
+                        </div>
+                        <div>
+                            <span class="acs-wan-index">WAN ${index + 1}</span>
+                            <h5>${displayName}</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-wan-card-status">
+                        <span class="acs-wan-state ${isConnected ? 'online' : 'offline'}">
+                            <span></span>
+                            ${isConnected ? 'CONECTADA' : 'DESCONECTADA'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="acs-wan-tags">
+                    <span>${typeLabel}</span>
+                    <span>${connectionType}</span>
+                    ${vlanId ? `<span>VLAN ${vlanId}</span>` : ''}
+                    ${isTR069 ? '<span class="danger">TR-069</span>' : ''}
+                </div>
+
+                <div class="acs-wan-hero">
+                    <span>Endereço IP</span>
+                    <strong>${hasValue(wan.external_ip) ? makeIPClickable(wan.external_ip) : 'Não disponível'}</strong>
+                </div>
+
+                <div class="acs-wan-details">
+                    ${hasValue(wan.gateway) ? `
+                        <div>
+                            <span><i class="bi bi-signpost-2"></i> Gateway</span>
+                            <strong>${makeIPClickable(wan.gateway)}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.subnet_mask) ? `
+                        <div>
+                            <span><i class="bi bi-diagram-2"></i> Máscara</span>
+                            <strong>${wan.subnet_mask}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.dns_servers) ? `
+                        <div>
+                            <span><i class="bi bi-hdd-network"></i> DNS</span>
+                            <strong>${wan.dns_servers}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.mac_address) && wan.mac_address !== '00:00:00:00:00:00' ? `
+                        <div>
+                            <span><i class="bi bi-upc-scan"></i> MAC</span>
+                            <strong>${wan.mac_address}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'PPPoE' && hasValue(wan.username) ? `
+                        <div>
+                            <span><i class="bi bi-person"></i> Usuário PPPoE</span>
+                            <strong>${wan.username}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'IP' && hasValue(wan.addressing_type) ? `
+                        <div>
+                            <span><i class="bi bi-gear-wide-connected"></i> Endereçamento</span>
+                            <strong>${wan.addressing_type}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.binding) ? `
+                        <div>
+                            <span><i class="bi bi-link-45deg"></i> Binding</span>
+                            <strong>${wan.binding}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${hasValue(wan.uptime) && String(wan.uptime) !== '0' ? `
+                        <div>
+                            <span><i class="bi bi-clock-history"></i> Uptime</span>
+                            <strong>${formatUptime(wan.uptime)}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'PPPoE' && hasValue(wan.mru_size) && String(wan.mru_size) !== '0' ? `
+                        <div>
+                            <span><i class="bi bi-arrows-expand"></i> MRU</span>
+                            <strong>${wan.mru_size}</strong>
+                        </div>
+                    ` : ''}
+
+                    ${wan.type === 'PPPoE' && hasValue(wan.last_error) ? `
+                        <div class="acs-wan-error-row">
+                            <span><i class="bi bi-exclamation-triangle"></i> Último erro</span>
+                            <strong>${wan.last_error}</strong>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="acs-wan-card-actions">
+                    <button type="button" onclick='openEditWANModal(${JSON.stringify(wan)})'>
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button type="button" class="danger" onclick='openDeleteWANModal(${JSON.stringify(wan)})'>
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </div>
+            </section>
         `;
     });
+
+    html += `
+            </div>
+
+            <div class="acs-wan-footnote">
+                <i class="bi bi-info-circle"></i>
+                <span>IPv6 será exibido aqui quando adicionarmos a coleta desses parâmetros ao backend do ACS.</span>
+            </div>
+        </div>
+    `;
 
     return html;
 }
@@ -2436,6 +2662,24 @@ function updateOpticalDomFromCache() {
     if (ponEl) ponEl.innerHTML = renderOpticalCachedPon();
     if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
+    updateIxcOnuSummary();
+}
+
+function updateIxcOnuSummary() {
+    const container = document.getElementById('ixc-onu-summary');
+    if (!container) return;
+    if (!cachedOpticalData || cachedOpticalData.error) {
+        container.innerHTML = '<div class="acs-info-row"><span><i class="bi bi-database"></i> Cadastro oficial</span><strong>IXC indisponível</strong></div>';
+        return;
+    }
+    const value = (v) => escapeOpticalHtml(v == null || v === '' ? 'Não informado' : v);
+    const pon = [cachedOpticalData.slot, cachedOpticalData.pon, cachedOpticalData.onu_number]
+        .filter(v => v !== null && v !== undefined && v !== '')
+        .join(' / ') || cachedOpticalData.pon_id || 'Não informado';
+    container.innerHTML = `
+        <div class="acs-info-row"><span><i class="bi bi-database-check"></i> Cliente (IXC)</span><strong>${value(cachedOpticalData.nome)}</strong></div>
+        <div class="acs-info-row"><span><i class="bi bi-person-vcard"></i> Login / contrato</span><strong>${value(cachedOpticalData.id_login)} / ${value(cachedOpticalData.id_contrato)}</strong></div>
+        <div class="acs-info-row"><span><i class="bi bi-diagram-2"></i> Slot / PON / ONU</span><strong>${value(pon)}</strong></div>`;
 }
 
 async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
@@ -2514,9 +2758,14 @@ async function loadFiberhomeOptical(deviceIdToLoad, forceRefresh = false) {
         cachedOpticalData = {
             device_id: deviceIdToLoad,
             source: data.source || 'IXC',
+            nome: data.nome || null,
+            id_login: data.id_login ?? null,
+            id_contrato: data.id_contrato ?? null,
             pon_id: data.pon_id || null,
             onu_number: data.onu_number ?? null,
             olt_id: data.olt_id || null,
+            slot: data.slot ?? null,
+            pon: data.pon ?? null,
             optical: data.optical || {},
             error: null,
             loaded_at: Date.now()
@@ -2571,6 +2820,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDeviceDetail(); // Initial load (manual, scroll to top)
     // Auto refresh every 30 seconds (preserve scroll position)
     setInterval(() => loadDeviceDetail(true), 30000);
+    setInterval(updateRadiusBandwidthSample, 1000);
 
     // Auto-start/stop hotspot monitoring based on Connected Devices tab visibility
     const allTabs = document.querySelectorAll('[data-bs-toggle="tab"]');
@@ -2593,3 +2843,307 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+
+function renderFirmwareTab(device) {
+    const manufacturer = device.manufacturer || 'Não disponível';
+    const model = device.product_class || 'Não disponível';
+    const currentVersion = device.software_version || 'Não disponível';
+    const hardwareVersion = device.hardware_version || 'Não disponível';
+
+    return `
+        <div class="acs-firmware-page">
+            <div class="acs-firmware-header">
+                <div>
+                    <span class="acs-kicker"><i class="bi bi-cloud-arrow-up"></i> MANUTENÇÃO</span>
+                    <h4>Atualização de Firmware</h4>
+                    <p>Gerencie versões de software do equipamento através do ACS.</p>
+                </div>
+                <span class="acs-firmware-safe"><i class="bi bi-shield-check"></i> Atualização controlada</span>
+            </div>
+
+            <div class="acs-firmware-grid">
+                <section class="acs-firmware-card">
+                    <div class="acs-firmware-card-title">
+                        <div class="acs-firmware-icon"><i class="bi bi-router"></i></div>
+                        <div>
+                            <span>Equipamento</span>
+                            <h5>${model}</h5>
+                        </div>
+                    </div>
+                    <div class="acs-firmware-info">
+                        <div><span>Fabricante</span><strong>${manufacturer}</strong></div>
+                        <div><span>Hardware</span><strong>${hardwareVersion}</strong></div>
+                        <div><span>Firmware atual</span><strong class="version">${currentVersion}</strong></div>
+                    </div>
+                </section>
+
+                <section class="acs-firmware-card acs-firmware-update">
+                    <div class="acs-firmware-card-title">
+                        <div class="acs-firmware-icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                        <div>
+                            <span>Nova versão</span>
+                            <h5>Enviar firmware</h5>
+                        </div>
+                    </div>
+
+                    <div class="acs-firmware-dropzone">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <strong>Selecione o arquivo de firmware</strong>
+                        <span>O envio e a instalação serão habilitados na próxima etapa.</span>
+                        <button type="button" disabled><i class="bi bi-folder2-open"></i> Selecionar arquivo</button>
+                    </div>
+                </section>
+
+                <section class="acs-firmware-card acs-firmware-wide">
+                    <div class="acs-firmware-card-title">
+                        <div class="acs-firmware-icon"><i class="bi bi-activity"></i></div>
+                        <div>
+                            <span>Status</span>
+                            <h5>Processo de atualização</h5>
+                        </div>
+                    </div>
+                    <div class="acs-firmware-status">
+                        <div class="acs-firmware-step active"><b>1</b><span><strong>Equipamento identificado</strong><small>Modelo e versão atual coletados pelo ACS.</small></span></div>
+                        <div class="acs-firmware-line"></div>
+                        <div class="acs-firmware-step"><b>2</b><span><strong>Arquivo validado</strong><small>Aguardando seleção de firmware compatível.</small></span></div>
+                        <div class="acs-firmware-line"></div>
+                        <div class="acs-firmware-step"><b>3</b><span><strong>Instalação</strong><small>A atualização será enviada ao equipamento via TR-069.</small></span></div>
+                    </div>
+                    <div class="acs-firmware-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span><strong>Proteção ativa.</strong> O botão de instalação permanecerá bloqueado até implementarmos a validação do arquivo, modelo e versão. Nenhum firmware será enviado nesta etapa.</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+    `;
+}
+
+
+function openWebManagement() {
+    if (!currentDeviceData) {
+        alert('Os dados do equipamento ainda não foram carregados.');
+        return;
+    }
+    const raw = currentDeviceData.ip_tr069 || currentDeviceData.ip_address || '';
+    let host = '';
+    try {
+        host = /^https?:\/\//i.test(raw) ? new URL(raw).hostname : extractIP(raw);
+    } catch (e) {
+        host = extractIP(raw);
+    }
+    if (!host) {
+        alert('Não foi possível identificar o IP de gerenciamento deste equipamento.');
+        return;
+    }
+    window.open('http://' + host, '_blank', 'noopener,noreferrer');
+}
+
+
+let bandwidthSamples = [];
+
+function getPrimaryWAN(device) {
+    const list = Array.isArray(device?.wan_details) ? device.wan_details : [];
+    return list.find(w => String(w.status || '').toLowerCase() === 'connected') || list[0] || null;
+}
+
+function getTrafficCounters(device, wan) {
+    const wanRx = toCounter(wan?.bytes_received);
+    const wanTx = toCounter(wan?.bytes_sent);
+    if (wanRx !== null && wanTx !== null && (wanRx > 0 || wanTx > 0)) {
+        return { rx: wanRx, tx: wanTx, source: 'contador WAN' };
+    }
+    const lan = device?.lan_traffic;
+    const lanRx = toCounter(lan?.bytes_received);
+    const lanTx = toCounter(lan?.bytes_sent);
+    if (lanRx !== null && lanTx !== null) {
+        return { rx: lanRx, tx: lanTx, source: lan?.source || 'Portas LAN' };
+    }
+    return { rx: wanRx, tx: wanTx, source: 'contador WAN' };
+}
+
+function toCounter(value) {
+    if (value === null || value === undefined || value === '' || value === 'N/A') return null;
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function formatTrafficBytes(bytes) {
+    let value = toCounter(bytes);
+    if (value === null) return 'Sem leitura';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return (i === 0 ? value.toFixed(0) : value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)) + ' ' + units[i];
+}
+
+function formatCounter(value) {
+    const counter = toCounter(value);
+    return counter === null ? 'Sem leitura' : counter.toLocaleString('pt-BR');
+}
+
+function formatUptimeValue(value) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds)) return value || 'N/A';
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return [d ? d + 'd' : '', h ? h + 'h' : '', m + 'min'].filter(Boolean).join(' ');
+}
+
+function renderModernBandwidthChart(samples) {
+    if (!samples.length) return '<div class="acs-chart-wait">Aguardando segunda leitura do IXC/RADIUS.</div>';
+    const max = Math.max(1, ...samples.flatMap(s => [s.rxMbps, s.txMbps]));
+    const points = (field) => samples.map((s, i) => {
+        const x = samples.length === 1 ? 0 : (i / (samples.length - 1)) * 100;
+        const y = 100 - (s[field] / max) * 88 - 4;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(' ');
+    const labels = samples.filter((_, i) => i === 0 || i === samples.length - 1).map((s, i) => `<span class="${i ? 'end' : ''}">${new Date(s.time).toLocaleTimeString('pt-BR')}</span>`).join('');
+    return `<div class="acs-modern-chart"><div class="acs-chart-scale"><b>${max.toFixed(1)} Mbps</b><b>${(max / 2).toFixed(1)} Mbps</b><b>0 Mbps</b></div><div class="acs-chart-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Tráfego em tempo real"><defs><linearGradient id="rxArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#64d9ff" stop-opacity=".32"/><stop offset="1" stop-color="#64d9ff" stop-opacity="0"/></linearGradient><linearGradient id="txArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#55dda6" stop-opacity=".30"/><stop offset="1" stop-color="#55dda6" stop-opacity="0"/></linearGradient></defs><path class="grid" d="M0 4H100M0 48H100M0 92H100"/><polygon class="area rx" points="0,100 ${points('rxMbps')} 100,100"/><polygon class="area tx" points="0,100 ${points('txMbps')} 100,100"/><polyline class="line rx" points="${points('rxMbps')}"/><polyline class="line tx" points="${points('txMbps')}"/></svg><div class="acs-chart-times">${labels}</div></div></div><div class="acs-chart-legend"><span><i class="rx"></i>Download</span><span><i class="tx"></i>Upload</span><span>Últimos ${samples.length}s</span></div>`;
+}
+
+function renderMonitoringTab(device) {
+    const wan = getPrimaryWAN(device);
+    if (!wan) {
+        return '<div class="acs-monitor-empty"><i class="bi bi-graph-up"></i><h5>Monitoramento indisponível</h5><p>Nenhuma conexão WAN foi identificada neste equipamento.</p></div>';
+    }
+    const traffic = getTrafficCounters(device, wan);
+    const rx = traffic.rx;
+    const tx = traffic.tx;
+    const connected = String(wan.status || '').toLowerCase() === 'connected';
+    return `
+        <div class="acs-monitor-shell">
+            <div class="acs-monitor-head">
+                <div><span class="acs-kicker"><i class="bi bi-activity"></i> TR-069</span><h4>Monitoramento da conexão</h4><p>Banda calculada entre as leituras recebidas do equipamento.</p></div>
+                <span class="acs-mini-badge ${connected ? 'success' : ''}">${wan.status || 'Unknown'}</span>
+            </div>
+            <div class="acs-live-grid">
+                <div class="acs-live-card download"><span><i class="bi bi-arrow-down-circle"></i> Download em uso</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
+                <div class="acs-live-card upload"><span><i class="bi bi-arrow-up-circle"></i> Upload em uso</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
+                <div class="acs-live-card"><span><i class="bi bi-database-down"></i> Recebido</span><strong id="live-rx-total">${formatTrafficBytes(rx)}</strong><small id="live-traffic-source">${traffic.source}</small></div>
+                <div class="acs-live-card"><span><i class="bi bi-database-up"></i> Enviado</span><strong id="live-tx-total">${formatTrafficBytes(tx)}</strong><small>contador da sessão</small></div>
+            </div>
+            <div class="acs-bandwidth-chart">
+                <div class="acs-chart-title"><strong>Uso de banda</strong><span id="bandwidth-sample-status">Aguardando segunda leitura...</span></div>
+                <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
+            </div>
+            <div class="acs-connection-report">
+                <div class="acs-chart-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>
+                <div class="acs-report-grid">
+                    <div><span>Interface</span><strong>${wan.name || 'N/A'}</strong></div>
+                    <div><span>Tipo</span><strong>${wan.type || 'N/A'}</strong></div>
+                    <div><span>IP WAN</span><strong>${wan.external_ip || 'N/A'}</strong></div>
+                    <div><span>Uptime</span><strong>${formatUptimeValue(wan.uptime)}</strong></div>
+                    <div><span>Pacotes RX</span><strong>${formatCounter(wan.packets_received)}</strong></div>
+                    <div><span>Pacotes TX</span><strong>${formatCounter(wan.packets_sent)}</strong></div>
+                    <div><span>Erros RX/TX</span><strong>${formatCounter(wan.errors_received)} / ${formatCounter(wan.errors_sent)}</strong></div>
+                    <div><span>Último erro</span><strong>${wan.last_error || 'N/A'}</strong></div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function updateBandwidthSample(device) {
+    const wan = getPrimaryWAN(device);
+    if (!wan) return;
+    const now = Date.now();
+    const traffic = getTrafficCounters(device, wan);
+    const rx = traffic.rx;
+    const tx = traffic.tx;
+    const previous = bandwidthSamples.length ? bandwidthSamples[bandwidthSamples.length - 1] : null;
+    let rxMbps = null, txMbps = null;
+    if (previous && rx !== null && tx !== null && previous.rx !== null && previous.tx !== null && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
+        const seconds = (now - previous.time) / 1000;
+        rxMbps = ((rx - previous.rx) * 8) / seconds / 1000000;
+        txMbps = ((tx - previous.tx) * 8) / seconds / 1000000;
+    }
+    bandwidthSamples.push({time: now, rx, tx, rxMbps, txMbps});
+    if (bandwidthSamples.length > 24) bandwidthSamples.shift();
+
+    const rxEl = document.getElementById('live-rx-mbps');
+    const txEl = document.getElementById('live-tx-mbps');
+    if (rxEl) rxEl.textContent = rxMbps === null ? '--' : rxMbps.toFixed(2);
+    if (txEl) txEl.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
+
+    const status = document.getElementById('bandwidth-sample-status');
+    if (status) status.textContent = (rx === null || tx === null) ? 'Contadores ainda não foram coletados. Clique em Comunicar.' : (rxMbps === null ? 'Aguardando segunda leitura...' : 'Última amostra (' + traffic.source + '): ' + new Date(now).toLocaleTimeString('pt-BR'));
+
+    const chart = document.getElementById('bandwidth-bars');
+    if (chart) {
+        const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
+        chart.innerHTML = renderModernBandwidthChart(valid);
+    }
+}
+
+async function updateRadiusBandwidthSample() {
+    const chart = document.getElementById('bandwidth-bars');
+    if (!chart || !deviceId) return;
+    try {
+        const response = await fetch('/api/get-radius-session.php?device_id=' + encodeURIComponent(deviceId), { credentials: 'same-origin' });
+        const data = await response.json();
+        const session = data?.session;
+        const rx = toCounter(session?.bytes_received), tx = toCounter(session?.bytes_sent);
+        if (!data?.success || !data?.online || rx === null || tx === null) return;
+        const now = Date.now(), previous = bandwidthSamples[bandwidthSamples.length - 1];
+        let rxMbps = null, txMbps = null;
+        if (previous && now > previous.time && rx >= previous.rx && tx >= previous.tx) {
+            const seconds = (now - previous.time) / 1000;
+            rxMbps = ((rx - previous.rx) * 8) / seconds / 1000000;
+            txMbps = ((tx - previous.tx) * 8) / seconds / 1000000;
+        }
+        bandwidthSamples.push({ time: now, rx, tx, rxMbps, txMbps });
+        if (bandwidthSamples.length > 60) bandwidthSamples.shift();
+        const rxRate = document.getElementById('live-rx-mbps'), txRate = document.getElementById('live-tx-mbps');
+        if (rxRate) rxRate.textContent = rxMbps === null ? '--' : rxMbps.toFixed(2);
+        if (txRate) txRate.textContent = txMbps === null ? '--' : txMbps.toFixed(2);
+        const rxTotal = document.getElementById('live-rx-total'), txTotal = document.getElementById('live-tx-total'), source = document.getElementById('live-traffic-source');
+        if (rxTotal) rxTotal.textContent = formatTrafficBytes(rx);
+        if (txTotal) txTotal.textContent = formatTrafficBytes(tx);
+        if (source) source.textContent = 'IXC/RADIUS • ' + (session.interface || 'sessão PPPoE');
+        const status = document.getElementById('bandwidth-sample-status');
+        if (status) status.textContent = rxMbps === null ? 'IXC/RADIUS: aguardando segunda leitura...' : 'IXC/RADIUS • ' + new Date(now).toLocaleTimeString('pt-BR');
+        const valid = bandwidthSamples.filter(s => s.rxMbps !== null);
+        chart.innerHTML = renderModernBandwidthChart(valid);
+    } catch (_) { /* mantém a última amostra válida */ }
+}
+
+function renderAIAssistantTab(device) {
+    const wan = getPrimaryWAN(device);
+    const optical = cachedOpticalData || {};
+    const context = [
+        'Modelo: ' + (device.product_class || device.model || 'N/A'),
+        'Serial: ' + (device.serial_number || 'N/A'),
+        'Status: ' + (device.status || 'N/A'),
+        'WAN: ' + (wan ? (wan.status || 'N/A') : 'N/A'),
+        'Uptime: ' + (wan ? formatUptimeValue(wan.uptime) : 'N/A'),
+        'Último erro WAN: ' + (wan ? (wan.last_error || 'N/A') : 'N/A'),
+        'Dispositivos conectados: ' + (device.connected_devices_count ?? 0)
+    ];
+    return `
+        <div class="acs-ai-shell">
+            <div class="acs-ai-hero">
+                <div class="acs-ai-icon"><i class="bi bi-stars"></i></div>
+                <div><span class="acs-kicker">JR CONECT IA</span><h4>Assistente técnico do equipamento</h4><p>Área preparada para analisar diagnóstico, WAN, sinal óptico, Wi-Fi, clientes e histórico da conexão.</p></div>
+                <span class="acs-mini-badge">PREPARADO</span>
+            </div>
+            <div class="acs-ai-grid">
+                <div class="acs-ai-context"><strong>Contexto técnico disponível</strong>${context.map(x => '<span><i class="bi bi-check-circle"></i>'+x+'</span>').join('')}</div>
+                <div class="acs-ai-chat">
+                    <label for="acs-ai-question">Pergunte sobre este equipamento</label>
+                    <textarea id="acs-ai-question" rows="5" placeholder="Ex.: Analise esta conexão e indique possíveis problemas."></textarea>
+                    <button type="button" class="acs-soft-btn" onclick="runDeviceAIAnalysis()"><i class="bi bi-stars"></i> Analisar com IA</button>
+                    <div id="acs-ai-answer" class="acs-ai-answer">A integração com o provedor de IA será conectada na próxima etapa. Nenhum dado será enviado sem configuração explícita.</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function runDeviceAIAnalysis() {
+    const answer = document.getElementById('acs-ai-answer');
+    if (answer) answer.innerHTML = '<i class="bi bi-info-circle"></i> Interface de IA pronta. Agora falta definir o provedor/API que será usado no servidor para realizar as análises.';
+}
