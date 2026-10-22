@@ -13,8 +13,9 @@ import tempfile
 from types import SimpleNamespace
 
 SOURCE = pathlib.Path(__file__).resolve().parents[1]
-NOC_FILES = ['lib/NocGenieACS.php', 'lib/NocIxcOptical.php',
-             'api/dashboard-noc-data.php', 'assets/js/dashboard-noc.js', 'dashboard-noc.php']
+NOC_FILES = ['lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php',
+             'api/dashboard-noc-data.php', 'assets/js/dashboard-noc.js',
+             'assets/css/dashboard-noc.css', 'dashboard-noc.php']
 
 
 def safe_path(root, relative):

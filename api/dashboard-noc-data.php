@@ -170,7 +170,7 @@ try {
             if ($rxSource !== null) $summary[$rxSource === 'IXC' ? 'optical_from_ixc' : 'optical_from_tr069']++;
             if ($rx === null) {
                 $summary['optical_unavailable']++;
-            } elseif ($rx < -28) {
+            } elseif ($rx <= -28) {
                 $summary['optical_critical']++;
             } elseif ($rx <= -25) {
                 $summary['optical_attention']++;
@@ -181,7 +181,7 @@ try {
             // Ocorrencias atuais: nao representam alarmes persistidos nem falha massiva.
             $priority = null;
             $reason = '';
-            if ($isOnline && $rx !== null && $rx < -28) {
+            if ($isOnline && $rx !== null && $rx <= -28) {
                 $priority = 0;
                 $reason = 'RX óptico crítico';
             } elseif (!$isOnline) {
@@ -227,6 +227,13 @@ try {
     $summary['availability_percent'] = $summary['total'] > 0
         ? round(($summary['online'] / $summary['total']) * 100, 1)
         : null;
+    $history = ['status' => 'unavailable', 'window_seconds' => 86400, 'points' => []];
+    try {
+        require_once __DIR__ . '/../lib/NocHistory.php';
+        $history = \App\NocHistory::record($credentials, $summary, $now);
+    } catch (Throwable $e) {
+        error_log('[JRC NOC] History unavailable; ' . get_class($e));
+    }
 
     nocReply(200, [
         'success' => true,
@@ -234,15 +241,21 @@ try {
         'captured_at' => gmdate(DATE_ATOM, $now),
         'summary' => $summary,
         'issues' => array_slice($issues, 0, 8),
+        'history' => $history,
         'optical' => [
             'status' => $ixcStatus,
             'source_policy' => 'IXC principal / TR-069 fallback',
             'inventory_total' => $ixcSnapshot['inventory_total'] ?? null,
+            'summary' => $ixcSnapshot['summary'] ?? null,
+            'pons' => $ixcSnapshot['pons'] ?? [],
+            'critical_threshold_dbm' => -28,
+            'critical_threshold_inclusive' => true,
             'captured_at' => $ixcSnapshot !== null ? gmdate(DATE_ATOM, $ixcSnapshot['captured_at']) : null,
             'cache_ttl_seconds' => 120,
         ],
         'capabilities' => [
             'historical_availability' => false,
+            'observed_acs_history' => $history['status'] === 'ok',
             'pon_capacity' => false,
             'mass_outage_detection' => false,
             'ixc_optical_primary' => $ixcStatus === 'ok',

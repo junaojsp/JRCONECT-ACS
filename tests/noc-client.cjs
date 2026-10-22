@@ -45,11 +45,22 @@ const response = (status, data, type = 'application/json') => ({
   assert.equal(node('noc-critical').textContent, 'N/D');
   assert.match(node('noc-optical-notice').textContent, /Sem leitura óptica válida/);
   node = await test(response(200, {success: true, summary: {total: 1, optical_good: 1, optical_from_ixc: 1},
-    optical: {status: 'ok', inventory_total: 2413}, issues: []}), null, true, '1');
-  assert.equal(node('noc-critical').textContent, '0');
-  assert.match(node('noc-optical-notice').textContent, /2.413 registros/);
-  assert.match(node('noc-optical-source').textContent, /1 IXC/);
+    optical: {status: 'ok', inventory_total: 2413, summary: {total: 2413, good: 2000, attention: 100, critical: 111, unavailable: 202}}, issues: []}), null, true, '1');
+  assert.equal(node('noc-critical').textContent, '111');
+  assert.equal(node('noc-donut-total').textContent, '2.413');
+  assert.match(node('noc-optical-source').textContent, /2.413 registros/);
   node = await test(response(200, {success: true, summary: {}, optical: {status: 'not_configured'}, issues: []}), null, true);
   assert.match(node('noc-optical-notice').textContent, /IXC não configurado/);
-  console.log('PASS 10 frontend cases; last valid numbers preserved; optical coverage and inventory sources explicit');
+  const at=Date.now()/1000;
+  node = await test(response(200, {success: true, summary: {}, captured_at: new Date(at*1000).toISOString(),
+    history: {status:'ok', points:[{at:at-120,total:10,online:9},{at:at,total:10,online:10}]},
+    optical: {status:'ok',pons:[{olt_id:'<script>',slot:'1',pon:'2',registered:100,critical:10,unavailable:2}]}, issues: []}), null, true);
+  assert.match(node('noc-history-chart').innerHTML, /polyline/);
+  assert.match(node('noc-history-notice').textContent, /2 observações/);
+  assert.match(node('noc-pon-body').innerHTML, /&lt;script&gt;/);
+  assert(!node('noc-pon-body').innerHTML.includes('<script>'));
+  node = await test(response(200, {success: true, summary: {}, captured_at: new Date(at*1000).toISOString(),
+    history: {status:'ok',points:[{at:at-1200,total:10,online:9},{at:at,total:10,online:10}]}, issues: []}), null, true);
+  assert(!node('noc-history-chart').innerHTML.includes('polyline'));
+  console.log('PASS 12 frontend cases; global IXC optics, ACS history gaps and escaped PON labels');
 })().catch(error => {console.error(error); process.exitCode = 1;});

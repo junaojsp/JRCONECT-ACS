@@ -50,7 +50,8 @@ class Upstream(http.server.BaseHTTPRequestHandler):
         total = 0 if mode == 'ixc-empty' else 2500
         records = [{'id': str(i + 1), 'mac': f'SERIAL-{i}',
                     'sinal_rx': ['-30,5', -24, 0, -50, '-inf', ''][i % 6],
-                    'data_sinal': '2026-10-21 21:00:00', 'password': 'SECRET', 'login': 'SECRET'}
+                    'data_sinal': '2026-10-21 21:00:00', 'password': 'SECRET', 'login': 'SECRET',
+                    'id_transmissor': str(i % 3 + 1), 'slotno': '1', 'ponno': str(i % 7 + 1)}
                    for i in range(start, min(start + 100, total))]
         if mode == 'ixc-repeated' and start:
             records[0]['id'] = '1'
@@ -125,14 +126,14 @@ def main():
     php = [args.php]
     if args.curl_extension:
         php += ['-d', 'extension=' + str(pathlib.Path(args.curl_extension).resolve())]
-    for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/IXCConfig.php', 'dashboard-noc.php']:
+    for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php', 'lib/IXCConfig.php', 'dashboard-noc.php']:
         subprocess.run(php + ['-l', str(ROOT / path)], check=True)
     upstream = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
     threading.Thread(target=upstream.serve_forever, daemon=True).start()
     try:
         with test_directory(args.temp_dir) as temp:
             root = pathlib.Path(temp)
-            for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/IXCConfig.php', 'lib/helpers.php']:
+            for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php', 'lib/IXCConfig.php', 'lib/helpers.php']:
                 (root / path).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / path, root / path)
             (root / 'config').mkdir()
@@ -221,7 +222,9 @@ function getDBConnection() { return new TestDB(); }
                             assert [int(q['skip'][0]) for _, q in CALLS[before:]] == list(range(0, 2413, 100))
                             s = data['summary']
                             assert (s['total'], s['online'], s['offline']) == (2413, 1207, 1206), s
-                            assert (s['optical_good'], s['optical_attention'], s['optical_critical'], s['optical_unavailable']) == (403, 804, 402, 804), s
+                            assert (s['optical_good'], s['optical_attention'], s['optical_critical'], s['optical_unavailable']) == (403, 402, 804, 804), s
+                            assert data['history']['status'] == 'ok' and len(data['history']['points']) == 1
+                            assert data['history']['points'][0]['total'] == 2413
                             assert len(data['issues']) == 8
                             assert [i['priority'] for i in data['issues']] == sorted(i['priority'] for i in data['issues'])
                         if mode == 'empty':
@@ -236,9 +239,13 @@ function getDBConnection() { return new TestDB(); }
                             assert data['capabilities']['ixc_optical_primary'] == (status == 'ok')
                         if mode == 'ixc-ok':
                             assert data['optical']['inventory_total'] == 2500
-                            assert (s['optical_good'], s['optical_attention'], s['optical_critical'], s['optical_unavailable']) == (402, 402, 805, 804), s
+                            assert (s['optical_good'], s['optical_attention'], s['optical_critical'], s['optical_unavailable']) == (402, 0, 1207, 804), s
+                            assert data['optical']['summary'] == {'total': 2500, 'good': 417, 'attention': 0, 'critical': 834, 'unavailable': 1249}
+                            assert len(data['optical']['pons']) == 5
+                            assert all(p['registered'] >= p['critical'] for p in data['optical']['pons'])
+                            assert 'capacity' not in data['optical']['pons'][0]
                             assert (s['optical_from_ixc'], s['optical_from_tr069']) == (1207, 402), s
-                            assert all(i['priority'] == 0 and i['rx_source'] == 'IXC' for i in data['issues'])
+                            assert all(i['priority'] == 0 for i in data['issues'])
                             previous = any(m == mode for m, _ in IXC_CALLS[:ixc_before])
                             assert len(IXC_CALLS) - ixc_before == (0 if previous else 25)
                         print(f'PASS {mode}: HTTP {expected}, valid JSON (128M limit)')

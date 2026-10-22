@@ -46,6 +46,13 @@ class NocIxcOptical
         return is_finite($rx) && $rx < 0 && $rx >= -50 ? round($rx, 2) : null;
     }
 
+    public static function rxBand(?float $rx): string
+    {
+        if ($rx === null) return 'unavailable';
+        if ($rx <= -28) return 'critical';
+        return $rx <= -25 ? 'attention' : 'good';
+    }
+
     private function page(int $page, int $timeout): array
     {
         $table = 'radpop_radio_cliente_fibra';
@@ -91,7 +98,7 @@ class NocIxcOptical
     public function snapshot(int $budget = 12): array
     {
         // Identity includes the credential hash, preventing reuse after token rotation.
-        $identity = substr(hash('sha256', $this->url . "\0" . $this->token . "\0" . __DIR__), 0, 32);
+        $identity = substr(hash('sha256', 'v2' . $this->url . "\0" . $this->token . "\0" . __DIR__), 0, 32);
         $parent = getenv('NOC_CACHE_DIR') ?: sys_get_temp_dir();
         $dir = rtrim($parent, '/\\') . '/jrc-noc-ixc-' . $identity;
         if (is_link($dir) || (!is_dir($dir) && !@mkdir($dir, 0700, true))) {
@@ -106,7 +113,7 @@ class NocIxcOptical
             $raw = file_get_contents($path, false, null, 0, 4 * 1024 * 1024);
             $cache = is_string($raw) ? json_decode($raw, true) : null;
             $age = time() - (int) ($cache['captured_at'] ?? 0);
-            return is_array($cache) && ($cache['version'] ?? 0) === 1 && $age >= 0 && $age < 120
+            return is_array($cache) && ($cache['version'] ?? 0) === 2 && $age >= 0 && $age < 120
                 && is_array($cache['devices'] ?? null) ? $cache : null;
         };
         $cached = $readCache();
@@ -121,6 +128,8 @@ class NocIxcOptical
             if ($cached !== null) return $cached;
             $deadline = microtime(true) + max(1, min(12, $budget));
             $devices = [];
+            $summary = ['total' => 0, 'good' => 0, 'attention' => 0, 'critical' => 0, 'unavailable' => 0];
+            $pons = [];
             $lastId = 0;
             $seen = 0;
             for ($page = 1; $page <= 200; $page++) {
@@ -132,9 +141,26 @@ class NocIxcOptical
                     if ($id <= $lastId) throw new \RuntimeException('Unordered or repeated IXC page.');
                     $lastId = $id;
                     $seen++;
+                    $rx = self::normalizeRx($row['sinal_rx'] ?? null);
+                    $band = self::rxBand($rx);
+                    $summary['total']++;
+                    $summary[$band]++;
+                    // IXC registration is not live OLT state or PON capacity.
+                    $olt = is_scalar($row['id_transmissor'] ?? null) ? trim((string) $row['id_transmissor']) : '';
+                    $slot = is_scalar($row['slotno'] ?? null) ? trim((string) $row['slotno']) : '';
+                    $pon = is_scalar($row['ponno'] ?? null) ? trim((string) $row['ponno']) : '';
+                    if ($olt !== '' && $olt !== '0' && $pon !== '') {
+                        $key = $olt . ':' . $slot . ':' . $pon;
+                        if (!isset($pons[$key])) {
+                            $pons[$key] = ['olt_id' => $olt, 'slot' => $slot, 'pon' => $pon,
+                                'registered' => 0, 'critical' => 0, 'unavailable' => 0];
+                        }
+                        $pons[$key]['registered']++;
+                        if ($band === 'critical' || $band === 'unavailable') $pons[$key][$band]++;
+                    }
                     $serial = is_scalar($row['mac'] ?? null) ? (string) $row['mac'] : '';
                     foreach (self::serialAliases($serial) as $alias) {
-                        $devices[$alias] = ['rx' => self::normalizeRx($row['sinal_rx'] ?? null),
+                        $devices[$alias] = ['rx' => $rx,
                             'updated_at' => is_string($row['data_sinal'] ?? null) ? $row['data_sinal'] : null];
                     }
                 }
@@ -142,7 +168,13 @@ class NocIxcOptical
                 $total = is_numeric($data['total'] ?? null) ? (int) $data['total'] : null;
                 if ($count < 100 || ($total !== null && $seen >= $total)) {
                     if ($total !== null && $seen !== $total) throw new \RuntimeException('Incomplete IXC inventory.');
-                    $snapshot = ['version' => 1, 'captured_at' => time(), 'inventory_total' => $seen, 'devices' => $devices];
+                    $pons = array_values($pons);
+                    usort($pons, static function ($a, $b) {
+                        return ($b['critical'] <=> $a['critical']) ?: ($b['registered'] <=> $a['registered'])
+                            ?: strcmp($a['olt_id'] . ':' . $a['slot'] . ':' . $a['pon'], $b['olt_id'] . ':' . $b['slot'] . ':' . $b['pon']);
+                    });
+                    $snapshot = ['version' => 2, 'captured_at' => time(), 'inventory_total' => $seen,
+                        'summary' => $summary, 'pons' => array_slice($pons, 0, 5), 'devices' => $devices];
                     $temp = tempnam($dir, 'optical-');
                     try {
                         if ($temp === false || file_put_contents($temp, json_encode($snapshot, JSON_THROW_ON_ERROR)) === false

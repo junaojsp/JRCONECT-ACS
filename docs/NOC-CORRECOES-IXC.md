@@ -15,8 +15,15 @@ pelo usuário. Esta etapa adiciona o RX do IXC e repara problemas encontrados na
   Pode-se definir `NOC_CACHE_DIR` no FPM; o padrão é uma subpasta privada no temporário.
 - Correlação de serial normalizado, com variantes ASCII/hexadecimal do fabricante.
   RX IXC válido é prioritário; sem correspondência/RX válido, mantém o RX do TR-069.
-- As contagens continuam restritas aos equipamentos presentes no ACS. O total de registros
-  IXC aparece separadamente: 2.413 registros IXC não significam 2.413 equipamentos no ACS.
+- A saúde óptica e o cartão crítico usam o inventário IXC completo, como a dashboard antiga.
+  Inventário, comunicação e triagem por equipamento continuam no universo ACS: 2.413 registros
+  IXC não significam 2.413 equipamentos no ACS. O limite crítico é RX <= -28 dBm.
+- O visual azul/ciano aprovado passa a ter navegação própria, sem alterar o layout legado.
+  O gráfico registra observações ACS reais, no máximo uma por minuto, durante as consultas;
+  conserva 24 horas em armazenamento privado. Não retroage, não conta eventos Inform e
+  não calcula SLA. Lacunas superiores a dez minutos não são conectadas.
+- A tabela PON agrupa cadastros IXC por transmissor/slot/PON e prioriza RX crítico.
+  Não representa capacidade, ocupação física ou estado da porta OLT.
 - Sem medições ópticas válidas, o cartão crítico mostra `N/D`. RX sem leitura não significa
   sinal saudável. A tela identifica a fonte e apresenta a data do sinal nos itens disponíveis.
 - Sem configuração IXC ou em falha de consulta, o NOC mantém a leitura independente do ACS
