@@ -594,11 +594,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         const discoveryChip = document.getElementById('fb-discovery-chip');
         if (discoveryChip) {
             const auto = /auto/i.test(String(device.cpe_profile_source || ''));
-            discoveryChip.classList.toggle('is-on', auto);
+            discoveryChip.classList.toggle('is-auto', auto);
             discoveryChip.title = auto
                 ? 'Perfil identificado por descoberta automática neste CPE.'
                 : 'Este CPE usa o perfil já cadastrado. A descoberta não acrescentou outro modo de leitura.';
         }
+        const seenLabel = formatOpticalDate(device.last_inform);
+        const uptimeLabel = formatUptimeValue(device.uptime);
 
         document.getElementById('overview-content').innerHTML = `
             <section class="jr-assistant-strip">
@@ -643,13 +645,13 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 <section class="acs-overview-card fb-diag-card">
                     <h2 class="fb-section-title">Diagnóstico rápido</h2>
                     <div class="fb-diag-grid">
-                        <div class="fb-diag-item ${onuOnline ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conectividade</span><strong>${onuOnline ? 'Online' : 'Sem contato'} · ${escOverview(device.last_inform || '—')}</strong></div>
+                        <div class="fb-diag-item ${onuOnline ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conectividade</span><strong>${onuOnline ? 'Online' : 'Sem contato'} · ${escOverview(seenLabel)}</strong></div>
                         <div class="fb-diag-item ${wanConnected ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conexão WAN</span><strong>${escOverview(primaryWan.status || '—')}</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Sinal óptico (RX)</span><strong data-optical="rx_power">Consultando...</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Transmissão óptica (TX)</span><strong data-optical="tx_power">Consultando...</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Temperatura</span><strong data-optical="temperature">Consultando...</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Voltagem</span><strong data-optical="voltage">Consultando...</strong></div>
-                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Uptime</span><strong>${escOverview(uptimeLabel)}</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>PPPoE</span><strong data-mirror="wan-pppoe-user">${escOverview(primaryWan.username || '—')}</strong></div>
                         <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></div>
                     </div>
@@ -681,9 +683,9 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <article class="fb-ind"><span>Sinal TX</span><strong id="optical-tx-power">—</strong><em id="optical-tx-power-pill" class="fb-pill">—</em></article>
                         <article class="fb-ind"><span>Temperatura</span><strong id="optical-temperature">—</strong><em id="optical-temperature-pill" class="fb-pill">—</em></article>
                         <article class="fb-ind"><span>Voltagem</span><strong id="optical-voltage">—</strong><em id="optical-voltage-pill" class="fb-pill">—</em></article>
-                        <article class="fb-ind"><span>Tempo ligado</span><strong>${formatUptime(device.uptime)}</strong><em class="fb-pill ${onuOnline ? 'is-good' : 'is-bad'}">${onuOnline ? 'Bom' : 'Offline'}</em></article>
-                        <article class="fb-ind"><span>Última conexão</span><strong>${escOverview(device.last_inform || '—')}</strong></article>
-                        <article class="fb-ind"><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></article>
+                        <article class="fb-ind fb-ind-copy"><span>Tempo ligado</span><strong>${escOverview(uptimeLabel)}</strong></article>
+                        <article class="fb-ind fb-ind-copy"><span>Última conexão</span><strong>${escOverview(seenLabel)}</strong></article>
+                        <article class="fb-ind fb-ind-copy"><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></article>
                         <article class="fb-ind"><span>OLT / PON</span><strong id="optical-pon-id">—</strong><small id="optical-last-update"></small><span id="optical-source" hidden></span></article>
                     </div>
                 </section>
@@ -2826,7 +2828,11 @@ function opticalPlainText(valueKey, unit) {
     }) + ' ' + unit;
 }
 
-function opticalTone(valueKey, statusKey) {
+function opticalTone(valueKey, unit, statusKey) {
+    const reading = opticalPlainText(valueKey, unit);
+    if (reading === 'Consultando...' || reading === 'Sem leitura') {
+        return { label: 'Sem dado', tone: 'is-muted' };
+    }
     if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId || cachedOpticalData.error) {
         return { label: 'Sem dado', tone: 'is-muted' };
     }
@@ -2847,7 +2853,7 @@ function opticalTone(valueKey, statusKey) {
 
 function paintOpticalReadout(id, valueKey, unit, statusKey) {
     const text = opticalPlainText(valueKey, unit);
-    const tone = opticalTone(valueKey, statusKey);
+    const tone = opticalTone(valueKey, unit, statusKey);
     const el = document.getElementById(id);
     if (el) el.textContent = text;
     const pill = document.getElementById(id + '-pill');

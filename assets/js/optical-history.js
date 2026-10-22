@@ -83,7 +83,7 @@ function opticalHistoryView(data) {
         ${guides}<path d="${area}" fill="url(#fbRxFill)" stroke="none"/><path d="${line}" fill="none" stroke="#ff5d5d" stroke-width="2"/>${dots}
         <text x="${left}" y="198">${opticalHistoryEscape(date(first))}</text>
         <text x="${right}" y="198" text-anchor="end">${opticalHistoryEscape(date(last))}</text>
-        </svg><p class="small text-muted mb-0">IXC · Média por intervalo de ${bucketLabel}; passe sobre os pontos para ver mínimo e máximo. Linhas de referência: −25 e −27 dBm.${opticalHistoryEscape(seenLabel)}</p>
+        </svg><p class="small text-muted mb-0">IXC · média a cada ${bucketLabel}. Referência −25 e −27 dBm.${opticalHistoryEscape(seenLabel)}</p>
         ${Number(stats.unconfirmed_time) > 0 ? '<p class="small text-warning mt-2 mb-0">Há leituras sem horário informado pelo IXC. Nesses casos, o gráfico usa o horário em que o ACS observou o valor.</p>' : ''}`;
 }
 
