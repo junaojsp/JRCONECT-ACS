@@ -275,8 +275,8 @@ include __DIR__ . '/views/layouts/header.php';
             >
 
                 <table
-                    class="table table-hover"
                     id="devices-table"
+                    class="table table-hover jrc-inventory-table"
                     style="white-space: nowrap;"
                 >
 
@@ -428,8 +428,9 @@ window.GENIEACS_CONFIGURED =
 </script>
 
 
+<link rel="stylesheet" href="/assets/css/jrc-inventory-v2.css?v=20261022">
 <script src="/assets/js/devices/devices-state.js"></script>
-<script src="/assets/js/devices.js?v=20261005-no-map"></script>
+<script src="/assets/js/devices.js?v=20261022-inventory"></script>
 
 
 <?php
