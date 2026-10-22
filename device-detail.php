@@ -28,84 +28,45 @@ include __DIR__ . '/views/layouts/header.php';
 
 <?php else: ?>
 
-    <!-- =====================================================
-         BOTOES SUPERIORES
-         ===================================================== -->
+    <a class="fb-back" href="/devices.php"><i class="bi bi-arrow-left"></i> Dispositivos</a>
 
-    <div class="mb-3">
-
-        <a href="/devices.php" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Voltar para Equipamentos
-        </a>
-
-        <button
-            class="btn btn-primary"
-            onclick="summonDevice()"
-        >
-            <i class="bi bi-lightning-charge"></i>
-            Solicitar Comunicação
-        </button>
-
-        <button
-            class="btn btn-danger"
-            onclick="startONUSpeedtest()"
-            id="onu-speedtest-btn"
-        >
-            <i class="bi bi-speedometer2"></i>
-            Teste de Velocidade
-        </button>
-
-        <button
-            class="btn btn-success"
-            onclick="showAddTagModal()"
-        >
-            <i class="bi bi-tag"></i>
-            Adicionar Etiqueta
-        </button>
-
-        <button
-            class="btn btn-warning"
-            onclick="showRemoveTagModal()"
-        >
-            <i class="bi bi-tag-fill"></i>
-            Remover Etiqueta
-        </button>
-
-        <button
-            class="btn btn-info"
-            onclick="loadDeviceDetail()"
-        >
-            <i class="bi bi-arrow-clockwise"></i>
-            Atualizar
-        </button>
-
+    <div class="fb-device-head">
+        <div class="fb-device-id">
+            <span class="fb-equip-icon"><i class="bi bi-router"></i></span>
+            <div>
+                <h1 id="fb-device-name">Carregando equipamento</h1>
+                <p>
+                    <span id="device-id-badge">—</span>
+                    <span id="fb-device-health" class="fb-pill is-muted">—</span>
+                    <span id="device-tags-badge"></span>
+                </p>
+            </div>
+        </div>
+        <div class="fb-device-actions">
+            <button class="btn btn-secondary" type="button" onclick="loadDeviceDetail()">
+                <i class="bi bi-arrow-clockwise"></i>
+                Atualizar
+            </button>
+            <button class="btn btn-secondary" type="button" onclick="showAddTagModal()">
+                <i class="bi bi-tag"></i>
+                Etiqueta
+            </button>
+            <button class="btn btn-secondary" type="button" onclick="showRemoveTagModal()">
+                <i class="bi bi-tag-fill"></i>
+                Remover
+            </button>
+            <button class="btn btn-secondary" type="button" onclick="startONUSpeedtest()" id="onu-speedtest-btn">
+                <i class="bi bi-speedometer2"></i>
+                Velocidade
+            </button>
+            <button class="btn btn-primary" type="button" onclick="summonDevice()">
+                <i class="bi bi-lightning-charge"></i>
+                Solicitar comunicação
+            </button>
+        </div>
     </div>
 
-
-    <!-- =====================================================
-         CARD PRINCIPAL
-         ===================================================== -->
-
     <div class="card">
-
-        <div class="card-header">
-
-            <i class="bi bi-router"></i>
-            Detalhes do Equipamento
-
-            <span
-                id="device-id-badge"
-                class="badge bg-secondary ms-2"
-            >
-                Carregando...
-            </span>
-
-            <span id="device-tags-badge"></span>
-
-        </div>
-
-
         <div class="card-body">
 
             <div

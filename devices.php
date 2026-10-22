@@ -10,6 +10,14 @@ $genieacsConfigured = isGenieACSConfigured();
 include __DIR__ . '/views/layouts/header.php';
 ?>
 
+<div class="fb-page-head">
+    <div>
+        <h1>Dispositivos</h1>
+        <p>Inventário de CPEs da frota.</p>
+    </div>
+    <div class="fb-head-metrics" id="device-stats-badges"></div>
+</div>
+
 <?php if (!$genieacsConfigured): ?>
 
     <div class="alert alert-warning">
@@ -30,23 +38,7 @@ include __DIR__ . '/views/layouts/header.php';
                 <div>
 
                     <i class="bi bi-router"></i>
-                    Lista de Equipamentos
-
-                    <span id="device-stats-badges" style="margin-left: 10px;">
-
-                        <span class="badge bg-secondary">
-                            Total [0]
-                        </span>
-
-                        <span class="badge bg-success">
-                            Online [0]
-                        </span>
-
-                        <span class="badge bg-danger">
-                            Offline [0]
-                        </span>
-
-                    </span>
+                    Lista de equipamentos
 
                 </div>
 
@@ -287,7 +279,8 @@ include __DIR__ . '/views/layouts/header.php';
                             type="text"
                             class="form-control"
                             id="search-input"
-                            placeholder="Pesquisar por serial, MAC, login, CPF ou nome do cliente..."
+                            placeholder="Buscar serial, cliente, IP..."
+                            value="<?php echo htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                             onkeyup="filterDevices()"
                         >
 

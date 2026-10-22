@@ -62,14 +62,14 @@ if (function_exists('requireLogin')) {
     <style>
 
         :root {
-            --jr-bg: #071b2a;
-            --jr-sidebar: #0a1f2f;
-            --jr-panel: #102c3e;
-            --jr-panel-2: #0d2637;
-            --jr-border: #315267;
-            --jr-primary: #11b8e5;
-            --jr-text: #f2f7fa;
-            --jr-muted: #9bb2c1;
+            --jr-bg: #0c0d10;
+            --jr-sidebar: #101114;
+            --jr-panel: #14161b;
+            --jr-panel-2: #181b21;
+            --jr-border: #2a2d34;
+            --jr-primary: #ff3b3b;
+            --jr-text: #f3f5f7;
+            --jr-muted: #8d939c;
             --jr-green: #28b77a;
             --jr-yellow: #ffc107;
             --jr-red: #dc3545;
@@ -84,7 +84,7 @@ if (function_exists('requireLogin')) {
             margin: 0;
             background: var(--jr-bg);
             color: var(--jr-text);
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: Inter, "Segoe UI", sans-serif;
             font-size: 14px;
         }
 
@@ -97,7 +97,7 @@ if (function_exists('requireLogin')) {
             top: 0;
             left: 0;
             bottom: 0;
-            width: 190px;
+            width: 248px;
             background: var(--jr-sidebar);
             border-right: 1px solid var(--jr-border);
             z-index: 1000;
@@ -135,18 +135,18 @@ if (function_exists('requireLogin')) {
         }
 
         .sidebar-menu a:hover {
-            background: #12364b;
+            background: #1a1d24;
             color: #ffffff;
         }
 
         .sidebar-menu a.active {
-            background: #118caf;
-            color: #ffffff;
-            border-left-color: #2bd5ff;
+            background: #4a1519;
+            color: #ff5a5a;
+            border-left-color: #ff3b3b;
         }
 
         .main {
-            margin-left: 190px;
+            margin-left: 248px;
             min-height: 100vh;
         }
 
@@ -157,7 +157,7 @@ if (function_exists('requireLogin')) {
             justify-content: space-between;
             padding: 0 18px;
             border-bottom: 1px solid var(--jr-border);
-            background: #071927;
+            background: #0c0d10;
         }
 
         .topbar h1 {
@@ -578,7 +578,7 @@ if (function_exists('requireLogin')) {
 
             <i class="bi bi-router"></i>
 
-            Equipamentos
+            Dispositivos
 
         </a>
 
@@ -600,6 +600,15 @@ if (function_exists('requireLogin')) {
             <i class="bi bi-search"></i>
 
             Discovery TR-069
+
+        </a>
+
+
+        <a href="/alerts.php">
+
+            <i class="bi bi-bell"></i>
+
+            Alertas
 
         </a>
 

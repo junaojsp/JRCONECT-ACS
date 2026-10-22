@@ -712,704 +712,80 @@ include __DIR__ . '/views/layouts/header.php';
 </style>
 
 
-<div class="jrc-dashboard">
-
+<div class="fb-page">
 
 <?php if (!$genieacsConfigured): ?>
-
-
-    <div class="alert alert-warning">
-
-        <i class="bi bi-exclamation-triangle"></i>
-
+    <div class="fb-banner">
         O GenieACS ainda não foi configurado.
-
-        Configure primeiro em
-
-        <a href="/configuration.php">
-            Configurações
-        </a>.
-
+        <a href="/configuration.php">Abrir configuração</a>
+        para começar a monitorar a frota.
     </div>
-
-
-<?php else: ?>
-
-
-    <!-- =====================================================
-         CABEÇALHO DA DASHBOARD
-         ===================================================== -->
-
-    <div class="jrc-dashboard-title">
-
-        <div>
-
-            <h2>
-                Visão Geral
-            </h2>
-
-            <p>
-                Monitoramento dos equipamentos conectados ao JR CONECT ACS
-            </p>
-
-        </div>
-
-
-        <div class="jrc-live-status">
-
-            <span class="jrc-live-dot"></span>
-
-            ACS OPERACIONAL
-
-        </div>
-
-    </div>
-
-
-
-    <!-- =====================================================
-         PRIMEIRA LINHA
-         STATUS / ÓPTICO / RESUMO
-         ===================================================== -->
-
-    <div
-        class="jrc-dashboard-grid"
-        id="stats-container"
-    >
-
-
-        <!-- =================================================
-             STATUS DOS DISPOSITIVOS
-             ================================================= -->
-
-        <section class="jrc-panel">
-
-
-            <div class="jrc-panel-header">
-
-                <div class="jrc-panel-title">
-
-                    <i class="bi bi-router"></i>
-
-                    <div>
-
-                        <strong>
-                            Status dos dispositivos
-                        </strong>
-
-                        <small>
-                            Disponibilidade da rede
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <a
-                    href="/devices.php"
-                    class="jrc-action"
-                >
-
-                    Equipamentos
-
-                    <i class="bi bi-arrow-up-right"></i>
-
-                </a>
-
-            </div>
-
-
-            <div class="jrc-panel-body">
-
-
-                <div class="jrc-availability">
-
-
-                    <div class="jrc-availability-top">
-
-
-                        <div>
-
-                            <div
-                                class="jrc-availability-value"
-                                id="stat-uptime"
-                            >
-                                -
-                            </div>
-
-                            <span class="jrc-availability-label">
-                                Disponibilidade atual
-                            </span>
-
-                        </div>
-
-
-                        <div class="jrc-total-mini">
-
-                            <strong id="stat-total">
-                                -
-                            </strong>
-
-                            <span>
-                                Total de equipamentos
-                            </span>
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <div class="jrc-progress">
-
-                        <div
-                            class="jrc-progress-bar"
-                            id="availability-progress"
-                        ></div>
-
-                    </div>
-
-
-                </div>
-
-
-
-                <div class="jrc-status-grid">
-
-
-                    <a
-                        href="/devices.php"
-                        class="jrc-status-card online"
-                    >
-
-                        <div class="jrc-status-icon">
-
-                            <i class="bi bi-check-circle"></i>
-
-                        </div>
-
-                        <div>
-
-                            <strong
-                                class="jrc-status-value"
-                                id="stat-online"
-                            >
-                                -
-                            </strong>
-
-                            <span class="jrc-status-name">
-                                Online
-                            </span>
-
-                        </div>
-
-                    </a>
-
-
-
-                    <a
-                        href="/devices.php"
-                        class="jrc-status-card offline"
-                    >
-
-                        <div class="jrc-status-icon">
-
-                            <i class="bi bi-x-circle"></i>
-
-                        </div>
-
-                        <div>
-
-                            <strong
-                                class="jrc-status-value"
-                                id="stat-offline"
-                            >
-                                -
-                            </strong>
-
-                            <span class="jrc-status-name">
-                                Offline
-                            </span>
-
-                        </div>
-
-                    </a>
-
-
-                </div>
-
-
-
-                <div class="jrc-status-footer">
-
-                    <span>
-                        <i class="jrc-dot green"></i>
-                        Online
-                    </span>
-
-                    <span>
-                        <i class="jrc-dot red"></i>
-                        Offline
-                    </span>
-
-                    <span style="margin-left:auto;">
-                        Atualização automática
-                    </span>
-
-                </div>
-
-
-            </div>
-
-
-        </section>
-
-
-
-        <!-- =================================================
-             SINAL ÓPTICO
-             ================================================= -->
-
-        <section class="jrc-panel">
-
-
-            <div class="jrc-panel-header">
-
-
-                <div class="jrc-panel-title">
-
-                    <i class="bi bi-reception-4"></i>
-
-                    <div>
-
-                        <strong>
-                            Saúde da rede óptica
-                        </strong>
-
-                        <small>
-                            Distribuição do sinal PON
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="jrc-action"
-                    onclick="loadUplinkData()"
-                >
-
-                    <i class="bi bi-arrow-clockwise"></i>
-
-                    Atualizar
-
-                </button>
-
-
-            </div>
-
-
-            <div class="jrc-panel-body">
-
-                <div class="jrc-chart-box">
-
-                    <canvas id="uplinkChart"></canvas>
-
-                </div>
-
-            </div>
-
-
-        </section>
-
-
-
-        <!-- =================================================
-             RESUMO ACS / IA
-             ================================================= -->
-
-        <section class="jrc-panel jrc-ai-panel">
-
-
-            <div class="jrc-panel-header">
-
-
-                <div class="jrc-panel-title">
-
-                    <i class="bi bi-stars jrc-ai-icon"></i>
-
-                    <div>
-
-                        <strong>
-                            Resumo do ACS
-                        </strong>
-
-                        <small>
-                            Área preparada para análise inteligente
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <span
-                    class="badge"
-                    style="
-                        color:#b789ff;
-                        background:rgba(164,94,255,.08);
-                        border:1px solid rgba(164,94,255,.16);
-                    "
-                >
-                    BETA
-                </span>
-
-
-            </div>
-
-
-            <div class="jrc-panel-body jrc-ai-content">
-
-
-                <div>
-
-                    <div class="jrc-ai-intro">
-
-                        Esta área será utilizada para gerar
-                        análises automáticas da saúde da rede,
-                        equipamentos e comportamento do ACS.
-
-                    </div>
-
-
-                    <div class="jrc-ai-list">
-
-
-                        <div class="jrc-ai-item">
-
-                            <i class="bi bi-router"></i>
-
-                            Equipamentos offline e sem comunicação
-
-                        </div>
-
-
-                        <div class="jrc-ai-item">
-
-                            <i class="bi bi-reception-4"></i>
-
-                            Potência óptica fora do padrão
-
-                        </div>
-
-
-                        <div class="jrc-ai-item">
-
-                            <i class="bi bi-exclamation-triangle"></i>
-
-                            Eventos e falhas recorrentes
-
-                        </div>
-
-
-                        <div class="jrc-ai-item">
-
-                            <i class="bi bi-graph-up"></i>
-
-                            Tendências e saúde geral da rede
-
-                        </div>
-
-
-                    </div>
-
-                </div>
-
-
-                <div class="jrc-ai-footer">
-
-                    Próxima etapa:
-                    integração da análise automática do JR CONECT ACS.
-
-                </div>
-
-
-            </div>
-
-
-        </section>
-
-
-    </div>
-
-
-
-    <!-- =====================================================
-         SEGUNDA LINHA
-         DISTRIBUIÇÃO / VISÃO GERAL
-         ===================================================== -->
-
-    <div class="jrc-secondary-grid">
-
-
-        <!-- DISTRIBUIÇÃO DOS EQUIPAMENTOS -->
-
-        <section class="jrc-panel">
-
-
-            <div class="jrc-panel-header">
-
-
-                <div class="jrc-panel-title">
-
-                    <i class="bi bi-pie-chart"></i>
-
-                    <div>
-
-                        <strong>
-                            Distribuição dos equipamentos
-                        </strong>
-
-                        <small>
-                            Online e offline
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    class="jrc-action"
-                    onclick="loadDashboardData()"
-                >
-
-                    <i class="bi bi-arrow-clockwise"></i>
-
-                    Atualizar
-
-                </button>
-
-
-            </div>
-
-
-            <div class="jrc-panel-body">
-
-                <div class="jrc-chart-box">
-
-                    <canvas id="deviceChart"></canvas>
-
-                </div>
-
-            </div>
-
-
-        </section>
-
-
-
-        <!-- ACESSOS RÁPIDOS -->
-
-        <section class="jrc-panel">
-
-
-            <div class="jrc-panel-header">
-
-
-                <div class="jrc-panel-title">
-
-                    <i class="bi bi-grid"></i>
-
-                    <div>
-
-                        <strong>
-                            Acessos rápidos
-                        </strong>
-
-                        <small>
-                            Ferramentas operacionais
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-            </div>
-
-
-            <div class="jrc-panel-body">
-
-
-                <div
-                    style="
-                        display:grid;
-                        grid-template-columns:repeat(2,1fr);
-                        gap:10px;
-                    "
-                >
-
-
-                    <a
-                        href="/devices.php"
-                        class="jrc-ai-item"
-                        style="text-decoration:none;"
-                    >
-
-                        <i class="bi bi-router"></i>
-
-                        Equipamentos
-
-                    </a>
-
-
-                    <a
-                        href="/map.php"
-                        class="jrc-ai-item"
-                        style="text-decoration:none;"
-                    >
-
-                        <i class="bi bi-diagram-3"></i>
-
-                        Mapa da rede
-
-                    </a>
-
-
-                    <a
-                        href="/discovery.php"
-                        class="jrc-ai-item"
-                        style="text-decoration:none;"
-                    >
-
-                        <i class="bi bi-search"></i>
-
-                        Discovery TR-069
-
-                    </a>
-
-
-                    <a
-                        href="/configuration.php"
-                        class="jrc-ai-item"
-                        style="text-decoration:none;"
-                    >
-
-                        <i class="bi bi-gear"></i>
-
-                        Configurações
-
-                    </a>
-
-
-                    <a
-                        href="/users.php"
-                        class="jrc-ai-item"
-                        style="text-decoration:none;"
-                    >
-
-                        <i class="bi bi-people"></i>
-
-                        Usuários
-
-                    </a>
-
-
-                    <a
-                        href="/devices.php"
-                        class="jrc-ai-item"
-                        style="text-decoration:none;"
-                    >
-
-                        <i class="bi bi-activity"></i>
-
-                        Monitoramento
-
-                    </a>
-
-
-                </div>
-
-
-            </div>
-
-
-        </section>
-
-
-    </div>
-
-
-
-    <!-- =====================================================
-         ATIVIDADE RECENTE
-         ===================================================== -->
-
-    <section class="jrc-panel jrc-recent-panel">
-
-
-        <div class="jrc-panel-header">
-
-
-            <div class="jrc-panel-title">
-
-                <i class="bi bi-clock-history"></i>
-
-                <div>
-
-                    <strong>
-                        Atividade recente
-                    </strong>
-
-                    <small>
-                        Equipamentos visualizados recentemente
-                    </small>
-
-                </div>
-
-            </div>
-
-
-            <a
-                href="/devices.php"
-                class="jrc-action"
-            >
-
-                Ver todos
-
-                <i class="bi bi-arrow-right"></i>
-
-            </a>
-
-
-        </div>
-
-
-        <div class="jrc-recent-body">
-
-            <div id="recent-devices">
-
-                <div class="spinner"></div>
-
-            </div>
-
-        </div>
-
-
-    </section>
-
-
 <?php endif; ?>
 
+    <div class="fb-page-head">
+        <div>
+            <h1>Visão geral</h1>
+            <p>Saúde da frota de CPEs em tempo real.</p>
+        </div>
+    </div>
+
+    <div class="fb-stats">
+        <article class="fb-stat">
+            <div class="fb-stat-icon"><i class="bi bi-router"></i></div>
+            <strong id="stat-total"><?php echo $genieacsConfigured ? '—' : '0'; ?></strong>
+            <span>Equipamentos monitorados</span>
+        </article>
+        <article class="fb-stat">
+            <div class="fb-stat-icon" style="background:#14261c;color:#3ddc84;"><i class="bi bi-check-circle"></i></div>
+            <strong id="stat-online"><?php echo $genieacsConfigured ? '—' : '0'; ?></strong>
+            <span>Online</span>
+        </article>
+        <article class="fb-stat">
+            <div class="fb-stat-icon is-red"><i class="bi bi-x-circle"></i></div>
+            <strong id="stat-offline"><?php echo $genieacsConfigured ? '—' : '0'; ?></strong>
+            <span>Offline</span>
+        </article>
+        <article class="fb-stat">
+            <div class="fb-stat-icon is-amber"><i class="bi bi-activity"></i></div>
+            <strong id="stat-uptime"><?php echo $genieacsConfigured ? '—' : '0%'; ?></strong>
+            <span>Disponibilidade</span>
+        </article>
+    </div>
+    <div class="fb-progress" title="Disponibilidade da frota">
+        <div id="availability-progress"></div>
+    </div>
+
+    <div class="fb-split">
+        <section class="fb-panel">
+            <div class="fb-panel-head">
+                <h2>Equipamentos</h2>
+                <a href="/devices.php">Ver todos <i class="bi bi-chevron-right"></i></a>
+            </div>
+            <div id="recent-devices" class="fb-table-wrap">
+                <div class="fb-empty"><?php echo $genieacsConfigured ? 'Carregando frota…' : 'Nenhum equipamento até o ACS ser configurado.'; ?></div>
+            </div>
+        </section>
+
+        <section class="fb-panel">
+            <div class="fb-panel-head">
+                <h2>Distribuição</h2>
+            </div>
+            <div class="fb-chart">
+                <canvas id="deviceChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <section class="fb-panel" style="margin-top:14px;">
+        <div class="fb-panel-head">
+            <h2>Sinal óptico</h2>
+        </div>
+        <div class="fb-chart">
+            <canvas id="uplinkChart"></canvas>
+        </div>
+    </section>
 
 </div>
-
 
 
 <!-- =========================================================
@@ -1728,6 +1104,11 @@ async function loadDashboardData() {
                 .getElementById('stat-offline')
                 .textContent =
                 stats.offline;
+
+            const alertCount = document.getElementById('stat-alerts');
+            if (alertCount && (alertCount.textContent === '—' || alertCount.textContent === '-')) {
+                alertCount.textContent = stats.offline;
+            }
 
 
             const onlinePercentage =

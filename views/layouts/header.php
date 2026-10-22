@@ -1,193 +1,134 @@
+<?php
+$nav = $currentPage ?? '';
+$username = $_SESSION['username'] ?? 'operador';
+$roleLabel = trim((string) ($_SESSION['role'] ?? ''));
+if ($roleLabel === '') {
+    $roleLabel = 'Operador';
+}
+$initials = strtoupper(substr(preg_replace('/[^a-z0-9]/i', '', $username), 0, 2) ?: 'JR');
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title><?php echo $pageTitle ?? 'JR CONECT ACS'; ?></title>
+    <title><?php echo htmlspecialchars($pageTitle ?? 'JRC ACS', ENT_QUOTES, 'UTF-8'); ?></title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
-
-    <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
-
-    <!-- CSS Libraries -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="/assets/css/style.css?v=<?php echo time(); ?>"
-    >
-
-    <!-- Logger -->
-    <script
-        src="/assets/js/client-logger.js?v=<?php echo time(); ?>"
-    ></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="/assets/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="/assets/css/scout.css?v=20261022">
+    <script src="/assets/js/client-logger.js?v=<?php echo time(); ?>"></script>
 </head>
-
 <body>
-
-    <!-- Menu lateral -->
-    <div class="sidebar" id="sidebar">
-
-        <div class="sidebar-header">
-
-            <img
-                src="/assets/img/jrconect-logo.svg?v=20260921"
-                alt="JR CONECT Telecom"
-                class="sidebar-brand-logo"
-            >
-
+    <aside class="sidebar" id="sidebar">
+        <div class="fb-brand">
+            <span class="fb-mark">J</span>
+            <span class="fb-brand-text">
+                <strong>JRC</strong>
+                <small>ACS</small>
+            </span>
         </div>
 
-
-        <ul class="sidebar-menu">
-
+        <ul class="fb-nav">
+            <li class="fb-nav-label">Gestão</li>
             <li>
-
-                <a
-                    href="/dashboard.php"
-                    class="<?php echo ($currentPage ?? '') === 'dashboard' ? 'active' : ''; ?>"
-                    data-tooltip="Visão Geral"
-                >
-                    <i class="bi bi-speedometer2"></i>
-                    <span>Visão Geral</span>
+                <a href="/dashboard.php" class="<?php echo $nav === 'dashboard' ? 'active' : ''; ?>">
+                    <i class="bi bi-grid"></i>
+                    <span>Visão geral</span>
                 </a>
-
             </li>
-
-
             <li>
-
-                <a
-                    href="/devices.php"
-                    class="<?php echo ($currentPage ?? '') === 'devices' ? 'active' : ''; ?>"
-                    data-tooltip="Equipamentos"
-                >
+                <a href="/devices.php" class="<?php echo $nav === 'devices' ? 'active' : ''; ?>">
                     <i class="bi bi-router"></i>
-                    <span>Equipamentos</span>
+                    <span>Dispositivos</span>
                 </a>
-
             </li>
-
-
             <li>
-
-                <a
-                    href="/map.php"
-                    class="<?php echo ($currentPage ?? '') === 'map' ? 'active' : ''; ?>"
-                    data-tooltip="Mapa da Rede"
-                >
+                <a href="/discovery.php" class="<?php echo $nav === 'discovery' ? 'active' : ''; ?>">
+                    <i class="bi bi-key"></i>
+                    <span>Discovery</span>
+                </a>
+            </li>
+            <li>
+                <a href="/map.php" class="<?php echo $nav === 'map' ? 'active' : ''; ?>">
                     <i class="bi bi-diagram-3"></i>
-                    <span>Mapa da Rede</span>
+                    <span>Mapa da rede</span>
                 </a>
-
             </li>
-<a href="/discovery.php"
-   class="<?= ($pageTitle ?? '') === 'Discovery TR-069' ? 'active' : '' ?>"
-   data-tooltip="Discovery TR-069">
-    <i class="bi bi-search"></i>
-    <span>Discovery TR-069</span>
-</a>
-
             <li>
-
-                <a
-                    href="/configuration.php"
-                    class="<?php echo ($currentPage ?? '') === 'configuration' ? 'active' : ''; ?>"
-                    data-tooltip="Configurações"
-                >
-                    <i class="bi bi-gear"></i>
-                    <span>Configurações</span>
+                <a href="/alerts.php" class="<?php echo $nav === 'alerts' ? 'active' : ''; ?>">
+                    <i class="bi bi-bell"></i>
+                    <span>Alertas</span>
+                    <em class="fb-count" id="nav-alert-count" hidden>0</em>
                 </a>
-
+            </li>
+            <li>
+                <a href="/configuration.php" class="<?php echo $nav === 'configuration' ? 'active' : ''; ?>">
+                    <i class="bi bi-sliders"></i>
+                    <span>Configuração</span>
+                </a>
             </li>
 
-
+            <li class="fb-nav-label">Plataforma</li>
             <li>
+                <a href="/users.php" class="<?php echo $nav === 'users' ? 'active' : ''; ?>">
+                    <i class="bi bi-people"></i>
+                    <span>Usuários</span>
+                </a>
+            </li>
+            <li>
+                <a href="/view-logs.php" class="<?php echo $nav === 'logs' ? 'active' : ''; ?>">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Registros</span>
+                </a>
+            </li>
+        </ul>
 
-
-
-<li>
-    <a
-        href="/users.php"
-        class="<?php echo ($currentPage ?? '') === 'users' ? 'active' : ''; ?>"
-        data-tooltip="Usuários"
-    >
-        <i class="bi bi-people"></i>
-        <span>Usuários</span>
-    </a>
-</li>
-
-<li>
-    <a
-        href="/logout.php"
-        data-tooltip="Sair"
-    >
-        <i class="bi bi-box-arrow-right"></i>
-        <span>Sair</span>
-    </a>
-</li>
-
-              
-
-
-        <!-- Botão recolher menu -->
-        <button
-            class="sidebar-toggle"
-            id="sidebarToggle"
-            type="button"
-            title="Recolher menu"
-        >
-            <i class="bi bi-chevron-left"></i>
-        </button>
-
-    </div>
-
-
-    <!-- Conteúdo principal -->
-    <div
-        class="main-content"
-        id="mainContent"
-    >
-
-        <!-- Barra superior -->
-        <div class="topbar">
-
-            <h4>
-                <?php echo $pageTitle ?? 'JR CONECT ACS'; ?>
-            </h4>
-
-
-            <div class="user-info">
-
-                <span>
-                    <i class="bi bi-person-circle"></i>
-                    <?php echo $_SESSION['username'] ?? 'Usuário'; ?>
-                </span>
-
-            </div>
-
+        <div class="fb-sidebar-foot">
+            <span class="fb-avatar"><?php echo htmlspecialchars($initials, ENT_QUOTES, 'UTF-8'); ?></span>
+            <span class="fb-user-meta">
+                <strong><?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></strong>
+                <small><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></small>
+            </span>
+            <a class="fb-logout" href="/logout.php" title="Sair">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
         </div>
+    </aside>
 
-
-        <!-- Conteúdo -->
+    <div class="main-content" id="mainContent">
+        <div class="topbar">
+            <button class="fb-icon-btn" id="menuToggle" type="button" title="Menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <button class="fb-icon-btn" id="sidebarToggle" type="button" title="Recolher menu">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <div class="fb-workspace">
+                <span class="fb-mark" style="width:26px;height:26px;border-radius:8px;font-size:12px;">J</span>
+                <b>JRC ACS</b>
+                <span>produção</span>
+            </div>
+            <form class="fb-search" action="/devices.php" method="get">
+                <i class="bi bi-search"></i>
+                <input type="search" name="q" placeholder="Buscar serial, cliente, IP..." aria-label="Buscar equipamento">
+            </form>
+            <div class="fb-top-actions">
+                <button class="fb-icon-btn" type="button" title="Atualizar" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <a class="fb-icon-btn" href="/alerts.php" title="Alertas">
+                    <i class="bi bi-bell"></i>
+                </a>
+                <span class="fb-lang" title="Português">PT</span>
+                <a class="fb-icon-btn" href="/configuration.php" title="Configuração">
+                    <i class="bi bi-gear"></i>
+                </a>
+            </div>
+        </div>
         <div class="content-wrapper">

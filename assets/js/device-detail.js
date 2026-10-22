@@ -108,6 +108,26 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
         // Update badge
         document.getElementById('device-id-badge').textContent = device.serial_number;
+        const nameEl = document.getElementById('fb-device-name');
+        if (nameEl) {
+            const parts = [device.manufacturer, device.product_class].filter(part => part && part !== 'N/A');
+            nameEl.textContent = parts.join(' ') || device.serial_number || 'Equipamento';
+        }
+        const healthEl = document.getElementById('fb-device-health');
+        if (healthEl) {
+            const offline = device.status !== 'online';
+            const band = typeof scoutRxBand === 'function' ? scoutRxBand(device.rx_power) : null;
+            if (offline) {
+                healthEl.className = 'fb-pill is-bad';
+                healthEl.textContent = 'Sem contato';
+            } else if (band && band.key !== 'nodata') {
+                healthEl.className = 'fb-pill ' + band.pill;
+                healthEl.textContent = band.label;
+            } else {
+                healthEl.className = 'fb-pill is-good';
+                healthEl.textContent = 'Online';
+            }
+        }
 
         // Update tags badge
         updateTagsBadge(device.tags || []);
