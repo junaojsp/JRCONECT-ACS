@@ -148,6 +148,42 @@ async function loadDevices(isAutoRefresh = false) {
 
 let devicesRenderRequest = 0;
 
+function fleetEscape(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
+}
+
+function fleetUptime(value) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) return '—';
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    if (days > 0) return days + 'd ' + hours + 'h';
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return hours + 'h ' + minutes + 'min';
+    return Math.max(1, minutes) + ' min';
+}
+
+function fleetSeen(device) {
+    let timestamp = Number(device?.last_inform_timestamp);
+    if (!timestamp && device?.last_inform && device.last_inform !== 'N/A') {
+        const parsed = Date.parse(String(device.last_inform).replace(' ', 'T'));
+        if (!Number.isNaN(parsed)) timestamp = parsed / 1000;
+    }
+    if (!timestamp) return '—';
+    const diff = Math.max(0, Date.now() / 1000 - timestamp);
+    const days = Math.floor(diff / 86400);
+    if (days >= 1) return days + ' d';
+    const hours = Math.floor(diff / 3600);
+    if (hours >= 1) return hours + ' h';
+    return Math.max(1, Math.floor(diff / 60)) + ' min';
+}
+
 function listWifiSsid(device) {
     return device.wifi_ssid_24ghz ?? device.wifi_ssid ?? 'N/A';
 }
@@ -166,7 +202,7 @@ async function renderDevices(devices) {
     tbody.innerHTML = '';
 
     // Determine appropriate colspan based on current filter type
-    const colspan = 13;
+    const colspan = 6;
 
     if (devices.length === 0) {
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">No devices found</td></tr>`;
@@ -229,89 +265,28 @@ async function renderDevices(devices) {
             device.ixc_last_signal_update = ixc.last_signal_update;
         }
 
-        // Create clickable IP link if IP is valid
-        let ipDisplay;
-        if (ipAddress !== 'N/A' && ipAddress !== '') {
-            ipDisplay = `<a href="http://${ipAddress}" target="_blank" rel="noopener noreferrer" title="Open ${ipAddress} in new tab">${ipAddress}</a>`;
-        } else {
-            ipDisplay = ipAddress;
+        const titleParts = [device.manufacturer, device.product_class].filter(part => part && part !== 'N/A' && part !== 'N/D');
+        const equipTitle = fleetEscape(titleParts.join(' ') || device.product_class || 'Equipamento');
+        const serialText = fleetEscape(device.serial_number || '—');
+        const clientRaw = String(pppoeUsername || '').trim();
+        const clientText = (!clientRaw || clientRaw === 'N/A' || clientRaw === 'N/D') ? '—' : fleetEscape(clientRaw);
+        const ipText = (!ipAddress || ipAddress === 'N/A') ? '' : fleetEscape(ipAddress);
+        const ipCell = ipText ? `<a href="http://${ipText}" target="_blank" rel="noopener noreferrer">${ipText}</a>` : '—';
+        const rxNumber = parseFloat(rxSourceValue);
+        let signal = '<span class="fb-signal is-muted"><i class="bi bi-circle-fill"></i>Sem dado</span>';
+        if (Number.isFinite(rxNumber) && rxNumber !== -999) {
+            const band = rxNumber > -25 ? 'is-good' : (rxNumber > -27 ? 'is-warn' : 'is-bad');
+            signal = `<span class="fb-signal ${band}"><i class="bi bi-circle-fill"></i>${fleetEscape(rxNumber.toFixed(2))} dBm</span>`;
         }
-
-        // Connected clients count with badge
-        const clientsCount = device.connected_devices_count || 0;
-        let clientsBadge = '';
-        if (clientsCount > 0) {
-            clientsBadge = `<span class="badge bg-primary">${clientsCount}</span>`;
-        } else {
-            clientsBadge = `<span class="badge bg-secondary">0</span>`;
-        }
-
-        // RX Power badge with color based on signal strength
-        const rxPower = parseFloat(rxSourceValue);
-        let rxBadgeClass = 'bg-secondary'; // Default for N/A
-        let rxDisplay = rxSourceValue;
-
-        if (!isNaN(rxPower) && rxPower !== -999) {
-            if (rxPower > -25.00) {
-                rxBadgeClass = 'bg-success'; // Green: above -25 dBm
-            } else if (rxPower > -27.00) {
-                rxBadgeClass = 'bg-warning'; // Yellow: -25 to above -27 dBm
-            } else {
-                rxBadgeClass = 'bg-danger'; // Red: -27 dBm or worse
-            }
-            rxDisplay = `<span class="badge ${rxBadgeClass}" title="Fonte: ${networkSource}">${rxSourceValue} dBm</span>`;
-        } else {
-            rxDisplay = `<span class="badge ${rxBadgeClass}">N/A</span>`;
-        }
-
-        // Status badge with ping
-        let statusDisplay;
-        if (device.status === 'online') {
-            const ping = device.ping || '-';
-            statusDisplay = `<span class="badge online">ON [${ping}ms]</span>`;
-        } else {
-            statusDisplay = `<span class="badge offline">OFF [-]</span>`;
-        }
-
-        // Tags display - show as badges
-        let tagsDisplay = '';
-        let tagsSortValue = '';
-        if (device.tags && Array.isArray(device.tags) && device.tags.length > 0) {
-            tagsDisplay = device.tags.map(tag => `<span class="badge bg-info me-1">${tag}</span>`).join('');
-            tagsSortValue = device.tags.join(', '); // For sorting: join tags as string
-        } else {
-            tagsDisplay = '<span class="text-muted">-</span>';
-            tagsSortValue = ''; // Empty for sorting (will be sorted to bottom)
-        }
-
-        // Check tags column visibility state for consistent display
-        const tagsColumnDisplay = tagsColumnVisible ? '' : 'none';
-
-        const tempNumeric = parseFloat(tempSourceValue);
-        const tempDisplay = Number.isFinite(tempNumeric)
-            ? `<span title="Fonte: ${networkSource}">${tempNumeric.toFixed(1)}°C</span>`
-            : '<span class="text-muted">N/A</span>';
+        const detailHref = '/device-detail.php?id=' + encodeURIComponent(device.device_id || '');
 
         row.innerHTML = `
-            <td>
-                <input type="checkbox" class="device-checkbox" value="${encodeURIComponent(device.device_id)}" onchange="updateBulkActionButtons()">
-            </td>
-            <td><a href="/device-detail.php?id=${encodeURIComponent(device.device_id)}">${device.serial_number}</a></td>
-            <td>${device.mac_address}</td>
-            <td data-sort-value="${device.product_class || ''}">${device.product_class || 'N/A'}</td>
-            <td data-sort-value="${ipAddress}" title="Fonte: ${networkSource}">${ipDisplay}</td>
-            <td data-sort-value="${listWifiSsid(device)}">${listWifiSsid(device)}</td>
-            <td data-sort-value="${pppoeUsername}" title="Fonte: ${networkSource}">${pppoeUsername}</td>
-            <td data-sort-value="${parseFloat(rxSourceValue) || -999}">${rxDisplay}${onuReadingLabel(ixc.rx_power != null ? "IXC" : device.ixc_rx_power != null ? "IXC" : "TR-069", ixc.rx_power != null ? ixc._queried_at : device.ixc_rx_power != null ? device.ixc_queried_at : null, ixc.last_signal_update || device.ixc_last_signal_update)}</td>
-            <td data-sort-value="${Number.isFinite(tempNumeric) ? tempNumeric : -999}">${tempDisplay}</td>
-            <td data-sort-value="${clientsCount}" class="text-center">${clientsBadge}</td>
-            <td data-sort-value="${device.status}">${statusDisplay}</td>
-            <td class="tags-column" data-sort-value="${tagsSortValue}" style="display: ${tagsColumnDisplay};">${tagsDisplay}</td>
-            <td>
-                <button class="btn btn-sm btn-primary" onclick="summonDeviceQuick('${device.device_id}')" title="Summon Device">
-                    <i class="bi bi-lightning-charge"></i>
-                </button>
-            </td>
+            <td><a class="fb-equip" href="${detailHref}"><span class="fb-equip-icon"><i class="bi bi-router"></i></span><span><strong>${equipTitle}</strong><small>${serialText}</small></span></a></td>
+            <td class="fb-muted">${clientText}</td>
+            <td>${ipCell}</td>
+            <td>${signal}</td>
+            <td>${fleetEscape(fleetUptime(device.uptime))}</td>
+            <td class="fb-muted">${fleetEscape(fleetSeen(device))}</td>
         `;
         if (isNewRow) tbody.appendChild(row);
         const checkbox = row.querySelector('.device-checkbox');
@@ -329,6 +304,7 @@ async function renderDevices(devices) {
                 if (result?.success && result.devices) {
                     ixcDeviceMap = result.devices;
                     drawRows();
+                    updateDeviceStats(allDevices, true);
                 }
             } catch (error) {
                 console.warn('IXC enrichment failed:', error);
@@ -362,15 +338,20 @@ function updateDeviceStats(devices, showStats = true) {
     }
 
     const list = Array.isArray(devices) ? devices : [];
-    const total = list.length;
-    const online = list.filter(device => device.status === 'online').length;
-    const offline = total - online;
+    let weak = 0;
+    let critical = 0;
+    list.forEach(device => {
+        const rx = parseFloat(device.ixc_rx_power ?? device.rx_power);
+        if (!Number.isFinite(rx) || rx === -999) return;
+        if (rx <= -27) critical += 1;
+        else if (rx <= -25) weak += 1;
+    });
     const fmt = (value) => Number(value || 0).toLocaleString('pt-BR');
 
     statsContainer.innerHTML = `
-        <div class="fb-metric"><strong>${fmt(total)}</strong><span>Total</span></div>
-        <div class="fb-metric"><strong>${fmt(online)}</strong><span>Online</span></div>
-        <div class="fb-metric"><strong>${fmt(offline)}</strong><span>Offline</span></div>
+        <div class="fb-metric"><strong>${fmt(list.length)}</strong><span>total</span></div>
+        <div class="fb-metric is-warn"><strong>${fmt(weak)}</strong><span>fraco</span></div>
+        <div class="fb-metric is-bad"><strong>${fmt(critical)}</strong><span>crítico</span></div>
     `;
 }
 
@@ -383,45 +364,15 @@ function generateTableHeader(type) {
     const tableHeader = document.getElementById('table-header');
 
     if (type === 'onu') {
-        // Check current tags column visibility state
-        const tagsDisplay = tagsColumnVisible ? '' : 'none';
-
         // ONU devices table header (GenieACS devices)
         tableHeader.innerHTML = `
             <tr>
-                <th style="width: 40px;">
-                    <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll()" title="Select All">
-                </th>
-                <th>SN</th>
-                <th>MAC</th>
-                <th class="sortable" onclick="sortTable('product_class')" style="cursor: pointer;">
-                    Tipe <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('ip')" style="cursor: pointer;">
-                    IP <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('ssid')" style="cursor: pointer;">
-                    SSID <small class="text-muted">TR-069</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('pppoe_username')" style="cursor: pointer;">
-                    PPPoE <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('rx_power')" style="cursor: pointer;">
-                    Rx <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('temperature')" style="cursor: pointer;">
-                    Temp <small class="text-muted">IXC</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('connected_clients')" style="cursor: pointer;">
-                    Client <small class="text-muted">TR-069</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="sortable" onclick="sortTable('status')" style="cursor: pointer;">
-                    Status <small class="text-muted">TR-069</small> <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th class="tags-column sortable" onclick="sortTable('tags')" style="cursor: pointer; display: ${tagsDisplay};">
-                    Tags <i class="bi bi-chevron-expand sort-icon"></i>
-                </th>
-                <th>Action</th>
+                <th class="sortable" onclick="sortTable('product_class')">Equipamento</th>
+                <th class="sortable" onclick="sortTable('pppoe_username')">Cliente (PPPoE)</th>
+                <th class="sortable" onclick="sortTable('ip')">IP WAN</th>
+                <th class="sortable" onclick="sortTable('rx_power')">Sinal RX</th>
+                <th class="sortable" onclick="sortTable('uptime')">Uptime</th>
+                <th class="sortable" onclick="sortTable('last_inform')">Visto</th>
             </tr>
         `;
     }
@@ -603,8 +554,16 @@ function applySorting(devices, column, direction) {
 
         switch (column) {
             case 'product_class':
-                valueA = (a.product_class || '').toLowerCase();
-                valueB = (b.product_class || '').toLowerCase();
+                valueA = ([a.manufacturer, a.product_class].filter(Boolean).join(' ') || '').toLowerCase();
+                valueB = ([b.manufacturer, b.product_class].filter(Boolean).join(' ') || '').toLowerCase();
+                break;
+            case 'uptime':
+                valueA = Number(a.uptime) || 0;
+                valueB = Number(b.uptime) || 0;
+                break;
+            case 'last_inform':
+                valueA = Number(a.last_inform_timestamp) || Date.parse(String(a.last_inform || '').replace(' ', 'T')) || 0;
+                valueB = Number(b.last_inform_timestamp) || Date.parse(String(b.last_inform || '').replace(' ', 'T')) || 0;
                 break;
             case 'ip':
                 valueA = extractIP(a.ixc_ip || a.ip_tr069);

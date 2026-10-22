@@ -159,6 +159,19 @@
                 <?php echo $pageTitle ?? 'JR CONECT ACS'; ?>
             </h4>
 
+            <?php if (($currentPage ?? '') === 'devices'): ?>
+            <label class="fb-top-search-wrap">
+                <i class="bi bi-search"></i>
+                <input
+                    id="fleet-search"
+                    class="fb-top-search"
+                    type="search"
+                    placeholder="Buscar serial, cliente, IP..."
+                    oninput="var box=document.getElementById('search-input'); if(box) box.value=this.value; if(window.filterDevices) filterDevices();"
+                >
+            </label>
+            <?php endif; ?>
+
 
             <div class="user-info">
 

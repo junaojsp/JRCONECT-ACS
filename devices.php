@@ -29,6 +29,28 @@ html, body, .main-content, #mainContent, .content-wrapper, .page-content, .conta
 .fb-metric { text-align: right; min-width: 72px; }
 .fb-metric strong { display: block; color: #f7f8fa; font-size: 22px; font-weight: 650; line-height: 1; }
 .fb-metric span { display: block; margin-top: 4px; color: #8d939c; font-size: 12px; }
+.fb-metric.is-warn strong { color: #f5b942; }
+.fb-metric.is-bad strong { color: #ff6b6b; }
+.fb-devices .card-header,
+.fb-devices #deviceTypeTabs,
+.fb-devices .fb-legacy-tools { display: none !important; }
+.fb-devices .card-body { padding: 4px 8px 12px !important; }
+#devices-table { white-space: normal !important; }
+#devices-table thead th { text-transform: uppercase; letter-spacing: .04em; font-size: 11px !important; font-weight: 600 !important; cursor: pointer; }
+#devices-table td { vertical-align: middle; padding: 12px 10px !important; }
+.fb-equip { display: flex !important; align-items: center; gap: 10px; color: #f3f5f7 !important; }
+.fb-equip strong { display: block; color: #f7f8fa !important; font-size: 13px; font-weight: 650; }
+.fb-equip small, #devices-table .fb-muted { display: block; color: #8d939c !important; font-size: 12px; }
+.fb-equip-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: #1c1f27; color: #c5cad3; flex: 0 0 auto; }
+.fb-signal { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 650; background: #1c1f27; color: #c5cad3; }
+.fb-signal i { font-size: 8px; }
+.fb-signal.is-good { background: #143222; color: #3ddc84; }
+.fb-signal.is-warn { background: #3a2e14; color: #f5b942; }
+.fb-signal.is-bad { background: #3a1518; color: #ff6b6b; }
+.fb-top-search-wrap { position: relative; flex: 1; max-width: 460px; margin: 0 16px; }
+.fb-top-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #8d939c; }
+.fb-top-search { width: 100%; height: 38px; border-radius: 12px; border: 1px solid #2a2d34; background: #14161b; color: #f3f5f7; padding: 0 12px 0 34px; outline: none; }
+.topbar { gap: 12px; flex-wrap: wrap; }
 .fb-devices .card { background: #14161b !important; border: 1px solid #2a2d34 !important; border-radius: 16px !important; color: #f3f5f7 !important; box-shadow: none !important; }
 .fb-devices .card-header, .fb-devices .card-body { background: transparent !important; color: #f3f5f7 !important; border-color: #2a2d34 !important; }
 .fb-devices .text-muted, .fb-devices label { color: #8d939c !important; }
@@ -236,7 +258,7 @@ html, body, .main-content, #mainContent, .content-wrapper, .page-content, .conta
 
 
             <!-- Busca e paginação -->
-            <div class="row mb-3">
+            <div class="row mb-3 fb-legacy-tools">
 
 
                 <div class="col-md-4">
@@ -486,7 +508,7 @@ window.GENIEACS_CONFIGURED =
 
 
 <script src="/assets/js/devices/devices-state.js"></script>
-<script src="/assets/js/devices.js?v=20261022-devices"></script>
+<script src="/assets/js/devices.js?v=20261022-fleet"></script>
 
 
 <?php
