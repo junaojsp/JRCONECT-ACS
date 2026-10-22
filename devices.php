@@ -20,6 +20,7 @@ include __DIR__ . '/views/layouts/header.php';
     </div>
 
 <?php else: ?>
+<div class="jrc-inventory-page">
 
     <div class="card">
 
@@ -361,6 +362,7 @@ include __DIR__ . '/views/layouts/header.php';
 
             <!-- Tabela -->
             <div
+                id="devices-table-wrap"
                 class="table-responsive"
                 style="overflow-x: auto;"
             >
@@ -503,6 +505,7 @@ include __DIR__ . '/views/layouts/header.php';
     </div>
 
 
+</div>
     <?php
     include __DIR__ . '/views/devices/modals.php';
     ?>
@@ -519,6 +522,7 @@ window.GENIEACS_CONFIGURED =
 </script>
 
 
+<link rel="stylesheet" href="/assets/css/jrc-inventory.css?v=1">
 <script src="/assets/js/devices/devices-state.js"></script>
 <script src="/assets/js/devices.js?v=20261005-ssid24"></script>
 
