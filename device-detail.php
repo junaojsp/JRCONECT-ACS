@@ -34,15 +34,16 @@ include __DIR__ . '/views/layouts/header.php';
 
     <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
     <script src="/assets/js/device-readability.js?v=20261005-3"></script>
-    <div class="acs-device-shell">
+    <div class="acs-device-shell fb-device">
+
+        <a href="/devices.php" class="fb-device-back" title="Voltar para equipamentos">
+            <i class="bi bi-arrow-left"></i>
+            Dispositivos
+        </a>
 
         <div class="acs-device-toolbar">
 
             <div class="acs-device-toolbar-left">
-                <a href="/devices.php" class="acs-back-btn" title="Voltar para equipamentos">
-                    <i class="bi bi-arrow-left"></i>
-                </a>
-
                 <div class="acs-device-avatar">
                     <i class="bi bi-router"></i>
                 </div>
@@ -2338,6 +2339,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-device">
 
 
 <?php
