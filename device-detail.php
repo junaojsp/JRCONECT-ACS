@@ -71,6 +71,16 @@ include __DIR__ . '/views/layouts/header.php';
                         <option value="large">Grande</option>
                     </select>
                 </label>
+                <button class="acs-toolbar-action" type="button" onclick="runDeviceAISummary()" title="Resumo técnico">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                    <span>Resumo</span>
+                </button>
+
+                <button class="acs-toolbar-action fb-primary" type="button" onclick="openDeviceAIDrawer()" title="Abrir o assistente">
+                    <i class="bi bi-stars"></i>
+                    <span>Assistente</span>
+                </button>
+
                 <button class="acs-toolbar-action" type="button" onclick="summonDevice()" title="Solicitar comunicação">
                     <i class="bi bi-lightning-charge"></i>
                     <span>Comunicar</span>
@@ -157,7 +167,7 @@ include __DIR__ . '/views/layouts/header.php';
                 style="display:none;"
             >
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:1">
 
                     <button
                         class="nav-link active"
@@ -167,8 +177,7 @@ include __DIR__ . '/views/layouts/header.php';
                         type="button"
                         role="tab"
                     >
-                        <i class="bi bi-info-circle"></i>
-                        Visão Geral
+                        Visão geral
                     </button>
 
                 </li>
@@ -177,7 +186,7 @@ include __DIR__ . '/views/layouts/header.php';
                 
 
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:3">
 
                     <button
                         class="nav-link"
@@ -187,8 +196,7 @@ include __DIR__ . '/views/layouts/header.php';
                         type="button"
                         role="tab"
                     >
-                        <i class="bi bi-globe"></i>
-                        Conexões WAN
+                        WAN / PPPoE
 
                         <span
                             id="wan-count-badge"
@@ -201,7 +209,7 @@ include __DIR__ . '/views/layouts/header.php';
                 </li>
 
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:6">
 
                     <button
                         class="nav-link"
@@ -211,14 +219,13 @@ include __DIR__ . '/views/layouts/header.php';
                         type="button"
                         role="tab"
                     >
-                        <i class="bi bi-router"></i>
-                        Servidor DHCP
+                        DHCP
                     </button>
 
                 </li>
 
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:5">
 
                     <button
                         class="nav-link"
@@ -228,21 +235,19 @@ include __DIR__ . '/views/layouts/header.php';
                         type="button"
                         role="tab"
                     >
-                        <i class="bi bi-cloud-arrow-up"></i>
-                        Firmware
+                        Sistema
                     </button>
 
                 </li>
 
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:7">
                     <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">
-                        <i class="bi bi-graph-up-arrow"></i>
                         Monitoramento
                     </button>
                 </li>
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:4">
 
                     <button
                         class="nav-link"
@@ -252,8 +257,7 @@ include __DIR__ . '/views/layouts/header.php';
                         type="button"
                         role="tab"
                     >
-                        <i class="bi bi-hdd-network"></i>
-                        Dispositivos Conectados
+                        Rede / Hosts
 
                         <span
                             id="devices-count-badge"
@@ -265,7 +269,7 @@ include __DIR__ . '/views/layouts/header.php';
 
                 </li>
 
-                <li class="nav-item" role="presentation">
+                <li class="nav-item" role="presentation" style="order:2">
                     <button class="nav-link" id="diagnostics-tab" data-bs-toggle="tab"
                         data-bs-target="#diagnostics" type="button" role="tab"
                         aria-controls="diagnostics" aria-selected="false">
@@ -2339,7 +2343,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu2">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu3">
 
 
 <?php

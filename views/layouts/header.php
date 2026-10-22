@@ -38,7 +38,7 @@
     >
 
     <link rel="stylesheet" href="/assets/css/sidebar.css?v=20261005-toggle">
-    <link rel="stylesheet" href="/assets/css/scout-nav.css?v=20261022-menu">
+    <link rel="stylesheet" href="/assets/css/scout-nav.css?v=20261022-menu2">
     <?php if (($currentPage ?? '') === 'dashboard' || ($pageTitle ?? '') === 'Equipamentos'): ?>
     <link rel="stylesheet" href="/assets/css/page-readability.css?v=20261005-1">
     <script src="/assets/js/page-readability.js?v=20261005-1"></script>
@@ -87,9 +87,21 @@
                 </a>
             </li>
             <li>
+                <a href="/discovery.php" class="<?php echo $nav === 'discovery' ? 'active' : ''; ?>">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>Provisionamento</span>
+                </a>
+            </li>
+            <li>
                 <a href="/configuration.php" class="<?php echo $nav === 'configuration' ? 'active' : ''; ?>">
                     <i class="bi bi-gear"></i>
                     <span>Configuração</span>
+                </a>
+            </li>
+            <li>
+                <a href="/speedtest.php" class="<?php echo $nav === 'speedtest' ? 'active' : ''; ?>">
+                    <i class="bi bi-activity"></i>
+                    <span>Diagnóstico</span>
                 </a>
             </li>
             <li>

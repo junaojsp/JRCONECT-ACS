@@ -27,6 +27,23 @@ body .topbar {
     box-shadow: none !important;
     overflow: visible !important;
     color: #f3f5f7 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+}
+.fb-device .acs-customer-strip { order: 8 !important; }
+.fb-device .acs-device-tabs-wrap { order: 3 !important; }
+.fb-device .jr-assistant-strip { display: none !important; }
+.fb-device #deviceTabs .nav-link i { display: none !important; }
+.fb-device .acs-toolbar-action.fb-primary {
+    background: #e10600 !important;
+    border-color: #e10600 !important;
+    color: #fff !important;
+}
+.fb-device .fb-diag-card {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
 }
 .fb-device-back {
     display: inline-flex;
