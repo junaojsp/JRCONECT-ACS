@@ -237,6 +237,18 @@ html.acs-device-readable .fb-device .jr-assistant-strip,
     text-decoration: none !important;
 }
 .fb-device a:hover { color: #fff !important; }
+html body .fb-device :is(#overview-content, #wan-content, #dhcp-content, #devices-content, #deviceTabContent) :is(a, a:link, a:visited),
+html body .fb-device #wan-ip a,
+html body .fb-device .acs-reference-list a,
+html body .fb-device .acs-wan-hero a,
+html body .fb-device .acs-wan-details a {
+    color: #e8eaee !important;
+    text-decoration: none !important;
+}
+html body .fb-device :is(#overview-content, #wan-content, #dhcp-content, #devices-content, #deviceTabContent) a:hover,
+html body .fb-device #wan-ip a:hover {
+    color: #ffffff !important;
+}
 
 .fb-device .table,
 .fb-device .table thead,
@@ -709,45 +721,183 @@ html.acs-device-readable .fb-device .acs-reference-list > div > strong {
     color: #e8eaee !important;
 }
 
-.fb-device #acs-diagnostics-content {
+html body .fb-device #acs-diagnostics-content.fb-actions {
     display: grid !important;
-    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr) !important;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) !important;
     gap: 14px !important;
     align-items: start !important;
-}
-.fb-device #acs-diagnostics-content .fb-actions-bar { grid-column: 1; grid-row: 1; }
-.fb-device #acs-diagnostics-content .acs-approved-diagnostics { grid-column: 1; grid-row: 2; }
-.fb-device #acs-diagnostics-content .fb-action-stage { grid-column: 2; grid-row: 1 / span 2; min-height: 280px; }
-.fb-device .acs-diagnostic-services { display: none !important; }
-html.acs-device-readable .fb-device #acs-diagnostics-content .acs-diagnostic-list {
-    display: flex !important;
-    flex-direction: column !important;
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-}
-html.acs-device-readable .fb-device .acs-diagnostic-item,
-.fb-device .acs-diagnostic-list button {
-    display: grid !important;
-    grid-template-columns: 38px minmax(140px, 1fr) 34px !important;
     width: 100% !important;
-    min-height: 52px !important;
-    height: auto !important;
-    align-items: center !important;
-    text-align: left !important;
+}
+.fb-action-menu,
+.fb-action-stage {
+    background: #14161b;
+    border: 1px solid #2a2d34;
+    border-radius: 16px;
+    min-width: 0;
+}
+.fb-action-menu { padding: 12px; }
+.fb-action-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 0 12px;
+    height: 40px;
+    border: 1px solid #2a2d34;
+    border-radius: 12px;
+    background: #101216;
+    color: #8d939c;
+}
+.fb-action-search input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f3f5f7;
+    font-size: 13px;
+}
+.fb-action-search input::placeholder { color: #6d737c; }
+.fb-action-group { margin-top: 8px; }
+.fb-action-group > p {
+    margin: 10px 8px 4px;
+    color: #6d737c;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.fb-fav-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px 6px; }
+html.acs-device-readable .fb-device #acs-diagnostics-content .fb-fav-chip,
+.fb-device .fb-fav-chip {
+    min-height: 32px !important;
+    height: 32px;
+    padding: 0 12px !important;
+    border-radius: 999px !important;
+    border: 1px solid #32353d !important;
     background: #1a1d24 !important;
-    border: 1px solid #2a2d34 !important;
-    color: #f3f5f7 !important;
+    color: #d7dbe2 !important;
+    font-size: 13px !important;
+    line-height: 30px !important;
+    white-space: nowrap !important;
+}
+.fb-device .fb-fav-chip.is-on {
+    border-color: #e10600 !important;
+    color: #ff6b66 !important;
+    background: #241316 !important;
+}
+html.acs-device-readable .fb-device #acs-diagnostics-content .fb-action-item,
+.fb-device .fb-action-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-height: 36px !important;
+    height: 36px;
+    margin: 0;
+    padding: 0 10px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #d7dbe2 !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
     box-shadow: none !important;
 }
-html.acs-device-readable .fb-device .acs-diagnostic-copy,
-html.acs-device-readable .fb-device .acs-diagnostic-copy strong,
-html.acs-device-readable .fb-device .acs-diagnostic-copy small {
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
-    word-break: normal !important;
-    text-overflow: ellipsis !important;
-    overflow: hidden !important;
+.fb-device .fb-action-item i { width: 16px; color: #8d939c; font-size: 14px; }
+.fb-device .fb-action-item.is-on {
+    background: #3a1216 !important;
+    color: #fff !important;
 }
+.fb-device .fb-action-item.is-on i { color: #ff6b66; }
+.fb-device .fb-action-item.is-hidden,
+.fb-device .fb-fav-chip.is-hidden,
+.fb-device .fb-action-group.is-hidden { display: none !important; }
+.fb-action-stage { padding: 18px 18px 14px; }
+.fb-action-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fb-action-head > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.fb-action-head i { color: #d7dbe2; font-size: 16px; }
+.fb-action-head h2 { margin: 0; color: #f7f8fa; font-size: 18px; font-weight: 650; }
+.fb-action-safe {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #14261c;
+    color: #3dd68c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.fb-action-safe.is-off { display: none; }
+#fb-action-desc { margin: 10px 0 14px; color: #8d939c; font-size: 13px; line-height: 1.45; }
+.fb-action-host { display: grid; gap: 6px; margin-bottom: 14px; }
+.fb-action-host.is-off { display: none; }
+.fb-action-host span { color: #8d939c; font-size: 12px; }
+.fb-action-host input {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #2a2d34;
+    border-radius: 10px;
+    background: #101216;
+    color: #f3f5f7;
+    font-size: 14px;
+}
+html.acs-device-readable .fb-device #acs-diagnostics-content .fb-action-run,
+.fb-device .fb-action-run {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-height: 36px !important;
+    height: 36px;
+    padding: 0 16px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: #e10600 !important;
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    white-space: nowrap !important;
+}
+.fb-action-results { margin-top: 18px; padding-top: 12px; border-top: 1px solid #26282f; }
+.fb-action-results > span {
+    display: block;
+    margin-bottom: 10px;
+    color: #6d737c;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.fb-result-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 12px;
+    border: 1px solid #2a2d34;
+    border-radius: 12px;
+    background: #101216;
+}
+.fb-result-card > div { display: grid; grid-template-columns: 18px 1fr; column-gap: 8px; min-width: 0; }
+.fb-result-card i { grid-row: 1 / span 2; color: #8d939c; }
+.fb-result-card strong { color: #f3f5f7; font-size: 13px; }
+.fb-result-card span { color: #8d939c; font-size: 12px; }
+.fb-result-wait {
+    flex: none;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #2c2416;
+    color: #f5b942;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+}
+.fb-result-note { margin: 8px 0 0; color: #8d939c; font-size: 12px; line-height: 1.45; }
 .fb-optical-now {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -772,6 +922,9 @@ html.acs-device-readable .fb-device .fb-optical-now strong {
 .fb-device .acs-diagnostic-item:hover { border-color: #e10600 !important; }
 .fb-device .acs-diagnostic-icon,
 .fb-device .acs-diagnostic-play { color: #e8eaee !important; background: transparent !important; }
+@media (max-width: 900px) {
+    html body .fb-device #acs-diagnostics-content.fb-actions { grid-template-columns: 1fr !important; }
+}
 
 .fb-optical-metrics { margin-top: 14px; }
 .fb-optical-metrics .fb-ind small {
@@ -784,13 +937,6 @@ html.acs-device-readable .fb-device .fb-optical-now strong {
 }
 .fb-optical-meta-card { margin-top: 14px; }
 .fb-device #optical .acs-optical-history { margin-bottom: 0; }
-
-@media (max-width: 900px) {
-    .fb-device #acs-diagnostics-content { grid-template-columns: 1fr !important; }
-    .fb-device #acs-diagnostics-content .fb-actions-bar,
-    .fb-device #acs-diagnostics-content .acs-approved-diagnostics,
-    .fb-device #acs-diagnostics-content .fb-action-stage { grid-column: 1; grid-row: auto; }
-}
 
 .fb-alerts-card .fb-alert {
     display: flex;
@@ -816,7 +962,6 @@ html.acs-device-readable .fb-device .fb-optical-now strong {
     gap: 8px;
 }
 .fb-action-row { margin-top: 4px; }
-.fb-device #acs-diagnostics-content { display: flex; flex-direction: column; gap: 14px; }
 .fb-device #wifi .acs-overview-card-header { align-items: flex-start; justify-content: space-between; }
 .fb-device #wifi .acs-toolbar-action.fb-primary {
     background: #e10600 !important;

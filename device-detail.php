@@ -312,77 +312,72 @@ include __DIR__ . '/views/layouts/header.php';
                 </div>
 
                 <div class="tab-pane fade" id="diagnostics" role="tabpanel" aria-labelledby="diagnostics-tab">
-                    <div id="acs-diagnostics-content">
-                <section class="acs-overview-card fb-actions-bar">
-                    <h2 class="fb-section-title">Ações do equipamento</h2>
-                    <div class="fb-action-row">
-                        <button class="acs-toolbar-action" type="button" onclick="summonDevice()"><i class="bi bi-lightning-charge"></i> Comunicar</button>
-                        <button class="acs-toolbar-action" type="button" onclick="startONUSpeedtest()"><i class="bi bi-speedometer2"></i> Speedtest</button>
-                        <button class="acs-toolbar-action" type="button" onclick="showAddTagModal()"><i class="bi bi-tag"></i> Etiqueta</button>
-                        <button class="acs-toolbar-action" type="button" onclick="showRemoveTagModal()"><i class="bi bi-tag-fill"></i> Remover etiqueta</button>
-                        <button class="acs-toolbar-action" type="button" onclick="openWebManagement()"><i class="bi bi-box-arrow-up-right"></i> Web</button>
-                        <button class="acs-toolbar-action" type="button" onclick="runDeviceAISummary()"><i class="bi bi-clipboard2-pulse"></i> Resumo</button>
-                        <button class="acs-toolbar-action" type="button" onclick="openDeviceAIDrawer()"><i class="bi bi-stars"></i> Assistente</button>
-                        <button class="acs-toolbar-action" type="button" onclick="loadDeviceDetail()"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
-                    </div>
-                </section>
-                <section class="acs-overview-card fb-action-stage">
-                    <h2 class="fb-section-title">Execução</h2>
-                    <p class="fb-alert-empty">Escolha ping, traceroute, redes próximas ou speedtest na lista. O resultado usa a coleta deste CPE. Comunicar, etiqueta e acesso web ficam nas ações do equipamento.</p>
-                </section>
-                <section class="acs-overview-card acs-card-diagnostics acs-approved-diagnostics">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-tools"></i> Diagnósticos</span></div>
-                    </div>
+                    <div id="acs-diagnostics-content" class="fb-actions">
+                        <aside class="fb-action-menu">
+                            <label class="fb-action-search">
+                                <i class="bi bi-search"></i>
+                                <input id="fb-action-search" type="search" placeholder="buscar ação..." autocomplete="off">
+                            </label>
 
-                    <div class="acs-diagnostic-list">
-                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('ping')">
-                            <span class="acs-diagnostic-icon"><i class="bi bi-geo-alt"></i></span>
-                            <span class="acs-diagnostic-copy">
-                                <strong>Teste de ping</strong>
-                                <small class="acs-diagnostic-services">
-                                    <i class="bi bi-instagram"></i>
-                                    <i class="bi bi-google"></i>
-                                    <i class="bi bi-facebook"></i>
-                                    <i class="bi bi-youtube"></i>
-                                </small>
-                            </span>
-                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
-                        </button>
+                            <div class="fb-action-group" data-fb-group="favoritas">
+                                <p>Favoritas</p>
+                                <div class="fb-fav-row">
+                                    <button type="button" class="fb-fav-chip is-on" data-fb-action="ping">Ping</button>
+                                    <button type="button" class="fb-fav-chip" data-fb-action="speedtest">Velocidade</button>
+                                </div>
+                            </div>
 
-                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('traceroute')">
-                            <span class="acs-diagnostic-icon"><i class="bi bi-bezier2"></i></span>
-                            <span class="acs-diagnostic-copy">
-                                <strong>Traceroute</strong>
-                                <small class="acs-diagnostic-services">
-                                    <i class="bi bi-instagram"></i>
-                                    <i class="bi bi-google"></i>
-                                    <i class="bi bi-facebook"></i>
-                                    <i class="bi bi-youtube"></i>
-                                </small>
-                            </span>
-                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
-                        </button>
+                            <div class="fb-action-group" data-fb-group="diagnostico">
+                                <p>Diagnóstico</p>
+                                <button type="button" class="fb-action-item is-on" data-fb-action="ping"><i class="bi bi-activity"></i><span>Ping</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="traceroute"><i class="bi bi-signpost-split"></i><span>TraceRoute</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="speedtest"><i class="bi bi-speedometer2"></i><span>Velocidade</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="nearby"><i class="bi bi-broadcast"></i><span>Redes próximas</span></button>
+                            </div>
 
-                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('nearby')">
-                            <span class="acs-diagnostic-icon"><i class="bi bi-broadcast-pin"></i></span>
-                            <span class="acs-diagnostic-copy">
-                                <strong>Redes próximas</strong>
-                                <small>Wi-Fi · canal · sinal · interferência</small>
-                            </span>
-                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
-                        </button>
+                            <div class="fb-action-group" data-fb-group="wifi">
+                                <p>Wi-Fi</p>
+                                <button type="button" class="fb-action-item" data-fb-action="wifi-ssid"><i class="bi bi-wifi"></i><span>Trocar SSID</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="wifi-pass"><i class="bi bi-key"></i><span>Trocar senha</span></button>
+                            </div>
 
-                        <button type="button" class="acs-diagnostic-item" onclick="runNetworkDiagnostic('speedtest')">
-                            <span class="acs-diagnostic-icon"><i class="bi bi-speedometer2"></i></span>
-                            <span class="acs-diagnostic-copy">
-                                <strong>Teste de velocidade</strong>
-                                <small>Download · Upload · Ping</small>
-                            </span>
-                            <span class="acs-diagnostic-play"><i class="bi bi-play-fill"></i></span>
-                        </button>
-                    </div>
-                </section>
+                            <div class="fb-action-group" data-fb-group="conexao">
+                                <p>Conexão</p>
+                                <button type="button" class="fb-action-item" data-fb-action="summon"><i class="bi bi-arrow-repeat"></i><span>Comunicar</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="web"><i class="bi bi-box-arrow-up-right"></i><span>Acesso web</span></button>
+                            </div>
+
+                            <div class="fb-action-group" data-fb-group="manutencao">
+                                <p>Manutenção</p>
+                                <button type="button" class="fb-action-item" data-fb-action="tag"><i class="bi bi-tag"></i><span>Etiqueta</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="untag"><i class="bi bi-tag-fill"></i><span>Remover etiqueta</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="refresh"><i class="bi bi-arrow-clockwise"></i><span>Atualizar coleta</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="summary"><i class="bi bi-clipboard2-pulse"></i><span>Resumo</span></button>
+                                <button type="button" class="fb-action-item" data-fb-action="assistant"><i class="bi bi-stars"></i><span>Assistente</span></button>
+                            </div>
+                        </aside>
+
+                        <section class="fb-action-stage" aria-live="polite">
+                            <header class="fb-action-head">
+                                <div>
+                                    <i id="fb-action-icon" class="bi bi-activity"></i>
+                                    <h2 id="fb-action-title">Ping</h2>
+                                </div>
+                                <span id="fb-action-safe" class="fb-action-safe">Seguro</span>
+                            </header>
+                            <p id="fb-action-desc">Testa conectividade e latência até um host. O teste precisa sair do próprio CPE.</p>
+                            <label class="fb-action-host" id="fb-action-host-wrap">
+                                <span>Host de destino</span>
+                                <input id="fb-action-host" type="text" value="8.8.8.8" autocomplete="off" spellcheck="false">
+                            </label>
+                            <button type="button" class="fb-action-run" id="fb-action-run"><i class="bi bi-play-fill"></i> Executar</button>
+                            <div class="fb-action-results">
+                                <span>Resultado</span>
+                                <div id="fb-action-result">
+                                    <p class="fb-alert-empty">Nenhum resultado nesta sessão. Escolha a ação e execute.</p>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
 
@@ -2334,7 +2329,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu8">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu9">
 
 
 <?php

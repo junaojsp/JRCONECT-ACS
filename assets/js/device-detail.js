@@ -920,7 +920,7 @@ function makeIPClickable(ip) {
         return ip;
     }
 
-    return `<a href="http://${ip}" target="_blank" rel="noopener noreferrer" title="Open http://${ip}">${ip}</a>`;
+    return `<a class="fb-ip-link" href="http://${ip}" target="_blank" rel="noopener noreferrer" title="Abrir http://${ip}">${ip}</a>`;
 }
 
 function renderWANDetailsTab(wanDetails) {
@@ -4054,5 +4054,260 @@ function renderWifiHealthCard(device) {
             <button type="button" onclick="loadDeviceDetail()" title="Atualizar dados do Wi-Fi"><i class="bi bi-arrow-clockwise"></i> Atualizar dados Wi-Fi</button>
         </footer>`;
 }
+
+const FB_ACTION_CATALOG = {
+    ping: {
+        title: 'Ping',
+        icon: 'bi-activity',
+        safe: true,
+        host: true,
+        desc: 'Testa conectividade e latência até um host. O teste precisa sair do próprio CPE.',
+        run(host) { fbWritePendingResult('ping', host); }
+    },
+    traceroute: {
+        title: 'TraceRoute',
+        icon: 'bi-signpost-split',
+        safe: true,
+        host: true,
+        desc: 'Mostra o caminho até o host. A rota precisa ser coletada pelo CPE, não pelo servidor ACS.',
+        run(host) { fbWritePendingResult('traceroute', host); }
+    },
+    nearby: {
+        title: 'Redes próximas',
+        icon: 'bi-broadcast',
+        safe: true,
+        host: false,
+        desc: 'Lista Wi-Fi, canal, sinal e interferência vistos pelo rádio do equipamento.',
+        run() { fbWritePendingResult('nearby'); }
+    },
+    speedtest: {
+        title: 'Velocidade',
+        icon: 'bi-speedometer2',
+        safe: true,
+        host: false,
+        desc: 'Mede download, upload e ping no fluxo de velocidade já usado neste equipamento.',
+        run() {
+            if (typeof startONUSpeedtest === 'function') startONUSpeedtest();
+            fbWriteActionNote('bi-speedometer2', 'Velocidade', 'O teste abre na janela de velocidade deste equipamento.');
+        }
+    },
+    'wifi-ssid': {
+        title: 'Trocar SSID',
+        icon: 'bi-wifi',
+        safe: false,
+        host: false,
+        desc: 'Abre a edição de SSID e senha. A gravação usa a mesma API de Wi-Fi deste ACS.',
+        run() {
+            if (typeof fbOpenLegacyWifi === 'function') fbOpenLegacyWifi();
+            fbWriteActionNote('bi-wifi', 'Trocar SSID', 'A edição de SSID e senha foi aberta.');
+        }
+    },
+    'wifi-pass': {
+        title: 'Trocar senha',
+        icon: 'bi-key',
+        safe: false,
+        host: false,
+        desc: 'Abre a edição de SSID e senha. A gravação usa a mesma API de Wi-Fi deste ACS.',
+        run() {
+            if (typeof fbOpenLegacyWifi === 'function') fbOpenLegacyWifi();
+            fbWriteActionNote('bi-key', 'Trocar senha', 'A edição de SSID e senha foi aberta.');
+        }
+    },
+    summon: {
+        title: 'Comunicar',
+        icon: 'bi-arrow-repeat',
+        safe: true,
+        host: false,
+        desc: 'Pede ao equipamento uma nova comunicação com o ACS.',
+        run() {
+            if (typeof summonDevice === 'function') summonDevice();
+            fbWriteActionNote('bi-arrow-repeat', 'Comunicar', 'Confirme o pedido na janela de comunicação.');
+        }
+    },
+    web: {
+        title: 'Acesso web',
+        icon: 'bi-box-arrow-up-right',
+        safe: true,
+        host: false,
+        desc: 'Abre o gerenciamento web do equipamento no endereço que ele informou.',
+        run() {
+            if (typeof openWebManagement === 'function') openWebManagement();
+            fbWriteActionNote('bi-box-arrow-up-right', 'Acesso web', 'O gerenciamento web foi solicitado.');
+        }
+    },
+    tag: {
+        title: 'Etiqueta',
+        icon: 'bi-tag',
+        safe: false,
+        host: false,
+        desc: 'Adiciona uma etiqueta a este equipamento.',
+        run() {
+            if (typeof showAddTagModal === 'function') showAddTagModal();
+            fbWriteActionNote('bi-tag', 'Etiqueta', 'A janela de etiqueta foi aberta.');
+        }
+    },
+    untag: {
+        title: 'Remover etiqueta',
+        icon: 'bi-tag-fill',
+        safe: false,
+        host: false,
+        desc: 'Remove uma etiqueta deste equipamento.',
+        run() {
+            if (typeof showRemoveTagModal === 'function') showRemoveTagModal();
+            fbWriteActionNote('bi-tag-fill', 'Remover etiqueta', 'A janela para remover etiqueta foi aberta.');
+        }
+    },
+    refresh: {
+        title: 'Atualizar coleta',
+        icon: 'bi-arrow-clockwise',
+        safe: true,
+        host: false,
+        desc: 'Relê os dados deste equipamento no ACS.',
+        run() {
+            if (typeof loadDeviceDetail === 'function') loadDeviceDetail();
+            fbWriteActionNote('bi-arrow-clockwise', 'Atualizar coleta', 'A releitura do equipamento foi pedida.');
+        }
+    },
+    summary: {
+        title: 'Resumo',
+        icon: 'bi-clipboard2-pulse',
+        safe: true,
+        host: false,
+        desc: 'Gera o resumo técnico com os dados já coletados.',
+        run() {
+            if (typeof runDeviceAISummary === 'function') runDeviceAISummary();
+            fbWriteActionNote('bi-clipboard2-pulse', 'Resumo', 'O resumo técnico foi solicitado.');
+        }
+    },
+    assistant: {
+        title: 'Assistente',
+        icon: 'bi-stars',
+        safe: true,
+        host: false,
+        desc: 'Abre o assistente técnico deste equipamento.',
+        run() {
+            if (typeof openDeviceAIDrawer === 'function') openDeviceAIDrawer();
+            fbWriteActionNote('bi-stars', 'Assistente', 'O assistente foi aberto.');
+        }
+    }
+};
+
+function fbEscapeAction(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
+
+function fbActionHost() {
+    const input = document.getElementById('fb-action-host');
+    const value = input ? input.value.trim() : '';
+    return value || '8.8.8.8';
+}
+
+function fbWriteResultCard(icon, title, text, note) {
+    const slot = document.getElementById('fb-action-result');
+    if (!slot) return;
+    slot.innerHTML = `
+        <article class="fb-result-card">
+            <div>
+                <i class="bi ${fbEscapeAction(icon)}"></i>
+                <strong>${fbEscapeAction(title)}</strong>
+                <span>${fbEscapeAction(text)}</span>
+            </div>
+            <em class="fb-result-wait">Pendente</em>
+        </article>
+        ${note ? `<p class="fb-result-note">${fbEscapeAction(note)}</p>` : ''}`;
+}
+
+function fbWriteActionNote(icon, title, text) {
+    fbWriteResultCard(icon, title, text, '');
+}
+
+function fbWritePendingResult(tool, host) {
+    const target = host || '8.8.8.8';
+    const copy = {
+        ping: {
+            icon: 'bi-activity',
+            title: `Ping · ${target}`,
+            text: 'Aguardando o diagnóstico sair do CPE.',
+            note: 'Nenhum resultado é simulado. Quando o equipamento responder o diagnóstico TR-069, a latência até ' + target + ' aparece aqui.'
+        },
+        traceroute: {
+            icon: 'bi-signpost-split',
+            title: `TraceRoute · ${target}`,
+            text: 'Aguardando a rota ser coletada pelo CPE.',
+            note: 'Nenhum resultado é simulado. O caminho exibido precisa ser o do equipamento do cliente, não o do servidor ACS.'
+        },
+        nearby: {
+            icon: 'bi-broadcast',
+            title: 'Redes próximas',
+            text: 'Aguardando a varredura do rádio Wi-Fi do CPE.',
+            note: 'Quando o modelo informar o scan, SSID, canal, sinal e interferência aparecem aqui.'
+        }
+    }[tool];
+    if (!copy) return;
+    fbWriteResultCard(copy.icon, copy.title, copy.text, copy.note);
+}
+
+function fbSelectAction(id) {
+    const action = FB_ACTION_CATALOG[id];
+    const root = document.getElementById('acs-diagnostics-content');
+    if (!action || !root) return;
+    root.dataset.fbCurrent = id;
+    root.querySelectorAll('[data-fb-action]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.fbAction === id);
+    });
+    const icon = document.getElementById('fb-action-icon');
+    const title = document.getElementById('fb-action-title');
+    const desc = document.getElementById('fb-action-desc');
+    const safe = document.getElementById('fb-action-safe');
+    const hostWrap = document.getElementById('fb-action-host-wrap');
+    if (icon) icon.className = `bi ${action.icon}`;
+    if (title) title.textContent = action.title;
+    if (desc) desc.textContent = action.desc;
+    if (safe) safe.classList.toggle('is-off', !action.safe);
+    if (hostWrap) hostWrap.classList.toggle('is-off', !action.host);
+}
+
+function fbFilterActions() {
+    const query = (document.getElementById('fb-action-search')?.value || '').trim().toLowerCase();
+    document.querySelectorAll('#acs-diagnostics-content .fb-action-group').forEach((group) => {
+        let visible = 0;
+        group.querySelectorAll('[data-fb-action]').forEach((button) => {
+            const show = !query || button.textContent.trim().toLowerCase().includes(query);
+            button.classList.toggle('is-hidden', !show);
+            if (show) visible += 1;
+        });
+        group.classList.toggle('is-hidden', visible === 0);
+    });
+}
+
+function fbInitActionPalette() {
+    const root = document.getElementById('acs-diagnostics-content');
+    if (!root || root.dataset.fbReady === '1') return;
+    root.dataset.fbReady = '1';
+    root.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-fb-action]');
+        if (!button || button.id === 'fb-action-run') return;
+        fbSelectAction(button.dataset.fbAction);
+    });
+    document.getElementById('fb-action-run')?.addEventListener('click', () => {
+        const current = FB_ACTION_CATALOG[root.dataset.fbCurrent || 'ping'];
+        if (current) current.run(fbActionHost());
+    });
+    document.getElementById('fb-action-host')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        document.getElementById('fb-action-run')?.click();
+    });
+    document.getElementById('fb-action-search')?.addEventListener('input', fbFilterActions);
+    fbSelectAction('ping');
+}
+
+fbInitActionPalette();
 
 
