@@ -101,12 +101,14 @@
                 </a>
 
             </li>
-<a href="/discovery.php"
-   class="<?= ($pageTitle ?? '') === 'Discovery TR-069' ? 'active' : '' ?>"
-   data-tooltip="Discovery TR-069">
-    <i class="bi bi-search"></i>
-    <span>Discovery TR-069</span>
-</a>
+<li>
+    <a href="/provisionamento-onu.php"
+       class="<?php echo ($currentPage ?? '') === 'provisioning' ? 'active' : ''; ?>"
+       data-tooltip="Provisionamento de ONUs">
+        <i class="bi bi-diagram-3"></i>
+        <span>Provisionamento</span>
+    </a>
+</li>
 
             <li>
 
