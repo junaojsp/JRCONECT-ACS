@@ -2129,12 +2129,15 @@ async function confirmSummon() {
    INICIALIZAÇÃO
    ========================================================== */
 
+const overviewDeviceLoader = loadRecentDevices;
+
 document.addEventListener(
 
     'DOMContentLoaded',
 
     function() {
 
+        window.loadRecentDevices = overviewDeviceLoader;
 
         <?php if ($genieacsConfigured): ?>
 
@@ -2143,7 +2146,7 @@ document.addEventListener(
 
             loadUplinkData();
 
-            loadRecentDevices();
+            overviewDeviceLoader();
 
 
             /*
@@ -2159,7 +2162,7 @@ document.addEventListener(
 
                     loadUplinkData();
 
-                    loadRecentDevices();
+                    overviewDeviceLoader();
 
 
                 },
@@ -2306,7 +2309,7 @@ function updateServicesSummary() {
 function refreshFinalDashboard() {
     clearOnuReadCache();
     loadFinalDiscoveryData();
-    loadRecentDevices();
+    overviewDeviceLoader();
 }
 
 setInterval(updateDashboardClock, 1000);
