@@ -354,20 +354,23 @@ function updateDeviceCount(shown, total) {
 
 function updateDeviceStats(devices, showStats = true) {
     const statsContainer = document.getElementById('device-stats-badges');
+    if (!statsContainer) return;
 
     if (!showStats) {
         statsContainer.innerHTML = '';
         return;
     }
 
-    const total = devices.length;
-    const online = devices.filter(d => d.status === 'online').length;
+    const list = Array.isArray(devices) ? devices : [];
+    const total = list.length;
+    const online = list.filter(device => device.status === 'online').length;
     const offline = total - online;
+    const fmt = (value) => Number(value || 0).toLocaleString('pt-BR');
 
     statsContainer.innerHTML = `
-        <span class="badge bg-secondary">Total [${total}]</span>
-        <span class="badge bg-success">Online [${online}]</span>
-        <span class="badge bg-danger">Offline [${offline}]</span>
+        <div class="fb-metric"><strong>${fmt(total)}</strong><span>Total</span></div>
+        <div class="fb-metric"><strong>${fmt(online)}</strong><span>Online</span></div>
+        <div class="fb-metric"><strong>${fmt(offline)}</strong><span>Offline</span></div>
     `;
 }
 
