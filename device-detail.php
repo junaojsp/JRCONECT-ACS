@@ -2,8 +2,9 @@
 require_once __DIR__ . '/config/config.php';
 requireLogin();
 
-$pageTitle = 'Dispositivos';
-$currentPage = 'devices';
+$deviceAba = isset($_GET['aba']) ? (string) $_GET['aba'] : '';
+$pageTitle = $deviceAba === 'firmware' ? 'Firmware' : 'Dispositivos';
+$currentPage = $deviceAba === 'firmware' ? 'firmware' : 'devices';
 
 $genieacsConfigured = isGenieACSConfigured();
 
@@ -187,8 +188,8 @@ include __DIR__ . '/views/layouts/header.php';
                         <span id="wan-count-badge" class="badge bg-primary ms-1">0</span>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation" style="order:7">
-                    <button class="nav-link" id="firmware-tab" data-bs-toggle="tab" data-bs-target="#firmware" type="button" role="tab">Sistema</button>
+                <li class="nav-item fb-nav-retired" role="presentation">
+                    <button class="nav-link" id="firmware-tab" data-bs-toggle="tab" data-bs-target="#firmware" type="button" role="tab">Firmware</button>
                 </li>
                 <li class="nav-item" role="presentation" style="order:8">
                     <button class="nav-link" id="voice-tab" data-bs-toggle="tab" data-bs-target="#voice" type="button" role="tab">Voz</button>
@@ -2333,7 +2334,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu6">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu7">
 
 
 <?php

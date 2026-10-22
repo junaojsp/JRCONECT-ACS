@@ -61,6 +61,12 @@
         $navRole = 'Operador';
     }
     $navInitials = strtoupper(substr(preg_replace('/[^a-z0-9]/i', '', $navUser), 0, 2) ?: 'JR');
+    $firmwareDeviceId = (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'device-detail.php' && !empty($_GET['id']))
+        ? (string) $_GET['id']
+        : '';
+    $firmwareHref = $firmwareDeviceId !== ''
+        ? '/device-detail.php?id=' . rawurlencode($firmwareDeviceId) . '&aba=firmware'
+        : '/devices.php';
     ?>
     <div class="sidebar" id="sidebar">
 
@@ -96,6 +102,12 @@
                 <a href="/configuration.php" class="<?php echo $nav === 'configuration' ? 'active' : ''; ?>">
                     <i class="bi bi-gear"></i>
                     <span>Configuração</span>
+                </a>
+            </li>
+            <li>
+                <a id="nav-firmware" href="<?php echo htmlspecialchars($firmwareHref, ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo $nav === 'firmware' ? 'active' : ''; ?>">
+                    <i class="bi bi-cpu"></i>
+                    <span>Firmware</span>
                 </a>
             </li>
             <li>

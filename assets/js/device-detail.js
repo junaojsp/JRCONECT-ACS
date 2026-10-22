@@ -791,6 +791,19 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         if (!isAutoRefresh) {
             document.getElementById('deviceTabs').style.display = 'flex';
             document.getElementById('deviceTabContent').style.display = 'block';
+            if (new URLSearchParams(location.search).get('aba') === 'firmware') {
+                const firmwareTab = document.getElementById('firmware-tab');
+                if (firmwareTab && window.bootstrap?.Tab) {
+                    bootstrap.Tab.getOrCreateInstance(firmwareTab).show();
+                }
+            }
+            const firmwareLink = document.getElementById('nav-firmware');
+            const devicesLink = document.querySelector('.fb-nav a[href="/devices.php"]');
+            document.getElementById('deviceTabs')?.addEventListener('shown.bs.tab', (event) => {
+                const onFirmware = event.target?.id === 'firmware-tab';
+                firmwareLink?.classList.toggle('active', onFirmware);
+                devicesLink?.classList.toggle('active', !onFirmware);
+            });
         }
 
         // Restore scroll position after refresh (if saved)
