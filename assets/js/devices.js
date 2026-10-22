@@ -246,9 +246,6 @@ async function renderDevices(devices) {
         const rxSourceValue = (ixc.rx_power !== null && ixc.rx_power !== undefined && ixc.rx_power !== '')
             ? ixc.rx_power
             : device.ixc_rx_power ?? device.rx_power;
-        const tempSourceValue = (ixc.temperature !== null && ixc.temperature !== undefined && ixc.temperature !== '')
-            ? ixc.temperature
-            : device.ixc_temperature ?? device.temperature;
         const networkSource = ixc.found ? (ixc.source || 'IXC') : 'TR-069 fallback';
 
         // Guarda o enriquecimento IXC no próprio objeto para busca/ordenação.
