@@ -38,7 +38,7 @@
     >
 
     <link rel="stylesheet" href="/assets/css/sidebar.css?v=20261005-toggle">
-    <link rel="stylesheet" href="/assets/css/scout-nav.css?v=20261022">
+    <link rel="stylesheet" href="/assets/css/scout-nav.css?v=20261022-menu">
     <?php if (($currentPage ?? '') === 'dashboard' || ($pageTitle ?? '') === 'Equipamentos'): ?>
     <link rel="stylesheet" href="/assets/css/page-readability.css?v=20261005-1">
     <script src="/assets/js/page-readability.js?v=20261005-1"></script>
@@ -87,9 +87,9 @@
                 </a>
             </li>
             <li>
-                <a href="/discovery.php" class="<?php echo $nav === 'discovery' ? 'active' : ''; ?>">
-                    <i class="bi bi-search"></i>
-                    <span>Discovery</span>
+                <a href="/configuration.php" class="<?php echo $nav === 'configuration' ? 'active' : ''; ?>">
+                    <i class="bi bi-gear"></i>
+                    <span>Configuração</span>
                 </a>
             </li>
             <li>
@@ -99,22 +99,15 @@
                 </a>
             </li>
             <li>
-                <a href="/configuration.php" class="<?php echo $nav === 'configuration' ? 'active' : ''; ?>">
-                    <i class="bi bi-gear"></i>
-                    <span>Configuração</span>
+                <a href="/view-logs.php" class="<?php echo $nav === 'logs' ? 'active' : ''; ?>">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Relatórios</span>
                 </a>
             </li>
-            <li class="fb-nav-label">Plataforma</li>
             <li>
                 <a href="/users.php" class="<?php echo $nav === 'users' ? 'active' : ''; ?>">
-                    <i class="bi bi-people"></i>
-                    <span>Usuários</span>
-                </a>
-            </li>
-            <li>
-                <a href="/view-logs.php" class="<?php echo $nav === 'logs' ? 'active' : ''; ?>">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Registros</span>
+                    <i class="bi bi-person-gear"></i>
+                    <span>Administração</span>
                 </a>
             </li>
         </ul>

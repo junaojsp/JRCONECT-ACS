@@ -2339,7 +2339,7 @@ function restoreSpeedtestButton() {
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu2">
 
 
 <?php
