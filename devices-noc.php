@@ -21,4 +21,4 @@ include __DIR__ . '/views/layouts/noc-inventory-header.php';
   <footer class="inventory-pagination"><span id="inventory-page-label">—</span><div><button class="noc-button" type="button" id="inventory-prev">← Anterior</button><button class="noc-button" type="button" id="inventory-next">Próxima →</button></div></footer>
 </article>
 <p class="noc-disclaimer">Prévia de leitura. RX IXC prioritário, TR-069 como alternativa; a data do sinal pode ser anterior ao último Inform. Busca e filtros abrangem os registros carregados.</p>
-</section></main><script src="/assets/js/noc-inventory.js?v=2"></script></body></html>
+</section></main><script src="/assets/js/noc-inventory.js?v=3"></script></body></html>

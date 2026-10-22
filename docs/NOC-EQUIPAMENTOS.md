@@ -75,3 +75,11 @@ Testes locais isolam banco, ACS e IXC; não comprovam suporte de todos os modelo
 Executar `tests/noc-endpoint.py`, `tests/noc-client.cjs`, `tests/noc-inventory-client.cjs`
 e `tests/noc-install.py` com PHP CLI/cURL, Python e Node. `tests/noc-cache.py` reproduz
 atualização concorrente e espera limitada sem consultar IXC real. Não requerem acesso ao servidor.
+
+## Detalhe óptico: mesma consulta da tela atual
+
+O detalhe novo consulta `/api/get-onu-optical.php?device_id=...`, exatamente o endpoint usado por `assets/js/device-detail.js`. Ele pesquisa a ONU em `radpop_radio_cliente_fibra` no IXC e retorna `sinal_rx`, `sinal_tx`, `temperatura`, `voltagem`, PON e data da leitura. A consulta anterior do inventário NOC guardava somente RX, por isso não podia preencher as outras métricas ópticas do IXC.
+
+O inventário/identificação ainda aparece primeiro; em seguida a consulta óptica preenche as leituras válidas, com origem IXC e seu próprio horário. Falhas, serial/ID incompatível ou valores inválidos não apagam os dados disponíveis. São usados apenas campos conhecidos da resposta, sem renderizar nome, contrato ou credenciais. Não há tarefa/refresh na CPE nem consulta óptica individual para cada linha da lista.
+
+CPU, memória e contadores WAN não fazem parte dessa resposta óptica da tela antiga. Continuam dependendo de valores efetivamente reportados; esta correção não os preenche por estimativa.

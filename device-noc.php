@@ -36,4 +36,4 @@ include __DIR__ . '/views/layouts/noc-inventory-header.php';
 <article class="noc-panel device-standalone" data-sections="hosts" hidden><h3>Rede / Hosts</h3><div id="device-hosts"></div></article>
 </div>
 <p class="noc-disclaimer">Leitura somente · Dados ausentes aparecem como N/D. Comunicação ACS não confirma acesso à Internet. RX: normal &gt; -25; atenção -28 &lt; RX ≤ -25; crítico ≤ -28 dBm.</p>
-</section></main><script src="/assets/js/noc-device.js?v=1"></script><script src="/assets/js/noc-inventory.js?v=2"></script></body></html>
+</section></main><script src="/assets/js/noc-device.js?v=2"></script><script src="/assets/js/noc-inventory.js?v=3"></script></body></html>

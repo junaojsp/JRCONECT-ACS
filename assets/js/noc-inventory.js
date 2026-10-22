@@ -25,17 +25,17 @@
   let busy = false, devices = [], page = 1;
   const id = $('inventory-app').getAttribute('data-device-id');
 
-  async function read(url) {
+  async function read(url, inventory = true) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 35000);
     try {
       const response = await fetch(url, {credentials:'same-origin', cache:'no-store', headers:{Accept:'application/json'}, signal:controller.signal});
-      if (response.redirected || response.status === 401 || response.status === 403) throw new Error('Sessão expirada. Entre novamente.');
+      if (response.redirected || (inventory && (response.status === 401 || response.status === 403))) throw new Error('Sessão expirada. Entre novamente.');
       if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Resposta inválida da consulta. Atualize a página.');
       let data;
       try { data = await response.json(); } catch { throw new Error('Resposta incompleta da consulta. Tente novamente.'); }
-      if (!response.ok || !data?.success) throw new Error(data?.message || `Consulta indisponível (HTTP ${response.status}).`);
-      if (!Array.isArray(data.devices)) throw new Error('Inventário inválido na resposta.');
+      if (!response.ok || !data?.success) throw new Error(inventory ? (data?.message || `Consulta indisponível (HTTP ${response.status}).`) : 'Consulta óptica da tela atual indisponível.');
+      if (inventory && !Array.isArray(data.devices)) throw new Error('Inventário inválido na resposta.');
       return data;
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('A consulta excedeu o tempo limite. Tente novamente.');
@@ -99,6 +99,16 @@
         if (!device || device.id !== id || !Array.isArray(device.wan) || !Array.isArray(device.wifi)) throw new Error('Detalhes inválidos na resposta.');
         renderDetail(device);
         opticalWarning(last.optical_status && last.optical_status!=='ok' ? [last.optical_reason || last.optical_status] : []);
+        try {
+          // Exactly the same authenticated per-ONU endpoint used by device-detail.js.
+          const optical = await read('/api/get-onu-optical.php?device_id='+encodeURIComponent(id), false);
+          if (!window.mergeNocLegacyOptical(device,optical)) throw new Error('Resposta óptica incompatível.');
+          renderDetail(device);
+          opticalWarning([]);
+        } catch {
+          $('inventory-optical-warning').hidden=false;
+          $('inventory-optical-warning').textContent='A consulta óptica usada pela tela atual não foi concluída. Mantendo os dados disponíveis do ACS/inventário; tente Atualizar.';
+        }
       } else {
         let next = 0, complete = false;
         const rows = [], seen = new Set(), opticalFaults=[];
