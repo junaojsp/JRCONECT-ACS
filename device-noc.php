@@ -8,15 +8,32 @@ if (!is_string($inventoryId) || $inventoryId === '' || strlen($inventoryId) > 10
 $inventoryDetail = true;
 include __DIR__ . '/views/layouts/noc-inventory-header.php';
 ?>
-<div class="inventory-detail-links"><a href="/devices-noc.php">← Voltar aos equipamentos</a><a class="noc-button" href="/device-detail.php?id=<?php echo rawurlencode($inventoryId); ?>">Abrir tela atual e ações ↗</a></div>
-<article class="noc-panel inventory-identity"><i class="bi bi-router"></i><div><h2 id="device-model">Consultando equipamento…</h2><p id="device-identity">—</p></div><span class="noc-chip" id="device-status">Aguardando</span></article>
-<nav class="inventory-tabs" aria-label="Seções do equipamento"><a href="#device-overview">Visão geral</a><a href="#device-optical">Óptico</a><a href="#device-wan">WAN</a><a href="#device-wifi">Wi-Fi</a><a href="#device-system">Sistema</a></nav>
-<article class="noc-panel" id="device-overview"><header><div><h2><i class="bi bi-activity"></i> Diagnóstico rápido</h2><span>Dados disponíveis nesta consulta · sem executar comandos no equipamento</span></div></header><div class="inventory-diagnostics" id="device-diagnostics"><p>Consultando parâmetros…</p></div></article>
-<div class="noc-grid inventory-detail-grid">
-  <article class="noc-panel" id="device-optical"><header><div><h2><i class="bi bi-broadcast"></i> Sinal e temperatura</h2><span>Fontes e horários de cada leitura</span></div></header><div class="inventory-metrics" id="device-metrics"></div><footer>Leituras ausentes não são consideradas saudáveis. Limiares RX: normal &gt; -25; atenção -28 &lt; RX ≤ -25; crítico ≤ -28 dBm.</footer></article>
-  <article class="noc-panel" id="device-system"><header><div><h2><i class="bi bi-cpu"></i> Sistema</h2><span>Identificação reportada pelo ACS</span></div></header><dl class="inventory-properties" id="device-properties"></dl></article>
-  <article class="noc-panel" id="device-wan"><header><div><h2><i class="bi bi-globe"></i> Conexões WAN</h2><span>Estado reportado · não é teste de acesso à Internet</span></div></header><div id="device-wans"></div></article>
-  <article class="noc-panel" id="device-wifi"><header><div><h2><i class="bi bi-wifi"></i> Redes Wi-Fi</h2><span>SSIDs reportados · sem exibição de senhas</span></div></header><div id="device-networks"></div></article>
+<a class="device-back" href="/devices-noc.php">← Equipamentos</a>
+<div class="device-titlebar"><span class="device-router"><i class="bi bi-hdd-stack"></i></span><div><div class="device-title"><h2 id="device-model">Consultando equipamento…</h2><span class="noc-chip" id="device-status">Aguardando</span></div><p id="device-identity">—</p></div><a class="noc-button device-action" href="/device-detail.php?id=<?php echo rawurlencode($inventoryId); ?>"><i class="bi bi-lightning-charge"></i> Ações do equipamento ↗</a></div>
+<div class="device-tabs" role="tablist" aria-label="Seções do equipamento">
+<?php foreach (['overview' => 'Visão geral', 'actions' => 'Ações', 'history' => 'Histórico', 'optical' => 'Óptico', 'wifi' => 'Wi-Fi', 'wan' => 'WAN', 'system' => 'Sistema', 'voice' => 'Voz', 'hosts' => 'Rede / Hosts'] as $key => $label): ?>
+<button type="button" role="tab" id="tab-<?php echo $key; ?>" data-section="<?php echo $key; ?>" aria-controls="device-panels" aria-selected="<?php echo $key === 'overview' ? 'true' : 'false'; ?>" tabindex="<?php echo $key === 'overview' ? '0' : '-1'; ?>"><?php echo $label; ?></button>
+<?php endforeach; ?>
 </div>
-<p class="noc-disclaimer">Prévia de leitura · Instâncias conhecidas dos modelos TR-069. Para parâmetros adicionais, histórico e operações, use a tela atual do equipamento. Esta consulta não mede velocidade ou tráfego.</p>
-</section></main><script src="/assets/js/noc-inventory.js?v=1"></script></body></html>
+<div class="device-subnav"><span>Dados disponíveis</span><a href="/device-detail.php?id=<?php echo rawurlencode($inventoryId); ?>">Parâmetros completos na tela atual ↗</a></div>
+<div id="device-panels" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+<article class="noc-panel device-diagnostic-panel" id="device-overview" data-sections="overview"><h3>Diagnóstico rápido</h3><div class="inventory-diagnostics" id="device-diagnostics"><p>Consultando parâmetros…</p></div></article>
+<div class="device-visual-grid">
+  <article class="noc-panel device-signal-panel" id="device-optical" data-sections="overview optical"><h3>Sinal óptico <small>TR-069 / IXC</small></h3><div id="device-gauge"></div><div class="device-rx-chart" id="device-rx-chart"></div><p class="device-chart-note">Última leitura disponível · série histórica ainda não integrada.</p></article>
+  <article class="noc-panel device-traffic-panel" data-sections="overview wan"><h3>Tráfego WAN <small>Dados reportados</small></h3><div id="device-traffic"></div></article>
+</div>
+<section class="device-indicators" data-sections="overview optical system"><h3><i class="bi bi-activity"></i> Indicadores</h3><div class="inventory-metrics" id="device-metrics"></div></section>
+<div class="device-properties-grid">
+  <article class="noc-panel" data-sections="overview"><h3>Conexão &amp; Wi-Fi</h3><dl class="inventory-properties" id="device-connections"></dl></article>
+  <article class="noc-panel" id="device-system" data-sections="overview system"><h3>Equipamento</h3><dl class="inventory-properties" id="device-properties"></dl></article>
+</div>
+<section class="device-current-issues" data-sections="overview"><h3><i class="bi bi-bell"></i> Ocorrências desta leitura</h3><div id="device-current-issues"></div></section>
+<article class="noc-panel" id="device-wan" data-sections="wan" hidden><h3>Conexões WAN</h3><div id="device-wans"></div></article>
+<article class="noc-panel" id="device-wifi" data-sections="wifi" hidden><h3>Redes Wi-Fi</h3><div id="device-networks"></div></article>
+<article class="noc-panel device-standalone" data-sections="history" hidden><h3>Histórico do equipamento</h3><p>Esta prévia exibe as leituras reportadas com seus horários. A série histórica óptica e de tráfego ainda não está integrada nesta tela.</p><a href="/device-detail.php?id=<?php echo rawurlencode($inventoryId); ?>">Consultar histórico na tela atual ↗</a></article>
+<article class="noc-panel device-standalone" data-sections="actions" hidden><h3>Ações do equipamento</h3><p>Diagnósticos, Wi-Fi e manutenção continuam disponíveis na tela atual, com os controles existentes.</p><a class="noc-button" href="/device-detail.php?id=<?php echo rawurlencode($inventoryId); ?>">Abrir ações do equipamento ↗</a></article>
+<article class="noc-panel device-standalone" data-sections="voice" hidden><h3>Voz</h3><div id="device-voice"></div></article>
+<article class="noc-panel device-standalone" data-sections="hosts" hidden><h3>Rede / Hosts</h3><div id="device-hosts"></div></article>
+</div>
+<p class="noc-disclaimer">Leitura somente · Dados ausentes aparecem como N/D. Comunicação ACS não confirma acesso à Internet. RX: normal &gt; -25; atenção -28 &lt; RX ≤ -25; crítico ≤ -28 dBm.</p>
+</section></main><script src="/assets/js/noc-device.js?v=1"></script><script src="/assets/js/noc-inventory.js?v=2"></script></body></html>

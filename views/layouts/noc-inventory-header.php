@@ -10,8 +10,8 @@ $title = $inventoryDetail ? 'Detalhes do equipamento' : 'Equipamentos';
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/dashboard-noc.css?v=5">
-<link rel="stylesheet" href="/assets/css/noc-inventory.css?v=1">
-</head><body class="noc-app">
+<link rel="stylesheet" href="/assets/css/noc-inventory.css?v=2">
+</head><body class="noc-app<?php echo $inventoryDetail ? ' inventory-device' : ''; ?>">
 <a class="noc-skip" href="#noc-main">Ir para o conteúdo</a>
 <aside class="noc-sidebar" aria-label="Menu do ACS">
   <button class="noc-button inventory-menu-close" id="inventory-menu-close" type="button">Fechar menu ×</button>
@@ -36,3 +36,4 @@ $title = $inventoryDetail ? 'Detalhes do equipamento' : 'Equipamentos';
     <div class="noc-actions"><span class="noc-captured" id="inventory-captured">Aguardando leitura</span><button type="button" class="noc-button" id="inventory-refresh"><i class="bi bi-arrow-clockwise"></i> Atualizar</button><span class="noc-user"><i class="bi bi-person-circle"></i><span><?php echo $operator; ?><small>Operação da rede</small></span></span></div>
   </div>
   <div class="noc-alert" id="inventory-error" role="alert" hidden></div>
+  <div class="inventory-optical-warning" id="inventory-optical-warning" role="status" hidden></div>

@@ -54,7 +54,11 @@
     $('inventory-total').textContent = fmt(devices.length);
     $('inventory-online').textContent = fmt(devices.filter(d => d.status === 'online').length);
     $('inventory-offline').textContent = fmt(devices.filter(d => d.status !== 'online').length);
-    $('inventory-critical').textContent = fmt(devices.filter(d => d.rx_band === 'critical').length);
+    const validRx = devices.filter(d => Number.isFinite(d.rx?.value) && d.rx.value < 0 && d.rx.value >= -50);
+    $('inventory-critical').textContent = validRx.length ? fmt(validRx.filter(d => d.rx_band === 'critical').length) : 'N/D';
+    $('inventory-rx-coverage').textContent = validRx.length
+      ? `${fmt(validRx.length)} leituras válidas · ${fmt(devices.length-validRx.length)} sem RX`
+      : 'Nenhuma leitura RX válida nesta consulta';
     $('inventory-rows').innerHTML = filtered.slice((page-1)*25,page*25).map(d => `<tr>
       <td><b>${esc(text(d.manufacturer))} ${esc(text(d.model))}</b><small>${esc(text(d.serial))}</small></td>
       <td>${esc(text(d.ip))}</td><td>${signal(d)}</td><td><span class="noc-chip ${d.status==='online'?'online':'offline'}">${communication(d.status)}</span></td>
@@ -66,23 +70,22 @@
     $('inventory-next').disabled = page >= max;
   }
 
-  function renderDetail(d) {
-    $('device-model').textContent = [d.manufacturer,d.model].filter(Boolean).join(' ') || 'Equipamento ACS';
-    $('device-identity').textContent = `${text(d.serial)} · Último Inform: ${stamp(d.last_inform)}`;
-    $('device-status').textContent = communication(d.status);
-    $('device-status').className = 'noc-chip ' + (d.status==='online'?'online':'offline');
-    const diagnostics = [['Comunicação ACS',communication(d.status)],['IP reportado',text(d.ip)],
-      ['Sinal RX',Number.isFinite(d.rx?.value) ? d.rx.value.toFixed(2)+' dBm' : 'N/D'],
-      ['Tempo ligado',duration(d.uptime)],['Redes Wi-Fi reportadas',d.wifi.length],['Conexões WAN reportadas',d.wan.length]];
-    $('device-diagnostics').innerHTML = diagnostics.map(([label,value])=>`<div><span>${esc(label)}</span><b>${esc(value)}</b></div>`).join('');
-    const metrics = [['Potência RX',d.rx?.value,'dBm',d.rx?.source,d.rx?.updated_at,d.rx_band],
-      ['Potência TX',d.tx?.value,'dBm','TR-069',d.tx?.updated_at,''],
-      ['Temperatura',d.temperature?.value,'°C','TR-069',d.temperature?.updated_at,'']];
-    $('device-metrics').innerHTML = metrics.map(([label,value,unit,source,updated,band])=>`<div><span>${label}</span><strong class="${band==='critical'?'inventory-red':''}">${Number.isFinite(value) ? esc(value)+' '+unit : 'N/D'}</strong><small>${esc(text(source))}<br>${esc(stamp(updated))}</small></div>`).join('');
-    const props = [['Serial',d.serial],['Fabricante',d.manufacturer],['Modelo',d.model],['Firmware',d.firmware],['Hardware',d.hardware],['Tempo ligado',duration(d.uptime)],['Último Inform',stamp(d.last_inform)]];
-    $('device-properties').innerHTML = props.map(([label,value])=>`<div><dt>${label}</dt><dd>${esc(text(value))}</dd></div>`).join('');
-    $('device-wans').innerHTML = d.wan.map(w=>`<div class="inventory-reported"><b>${esc(text(w.ip))}</b><p>Estado reportado: ${esc(text(w.status))}</p><small>Leitura: ${esc(stamp(w.updated_at))}</small></div>`).join('') || '<p class="noc-empty">Nenhuma WAN nos caminhos conhecidos desta prévia. Consulte a tela atual para outros parâmetros.</p>';
-    $('device-networks').innerHTML = d.wifi.map(w=>`<div class="inventory-reported"><b>${esc(w.ssid)}</b><p>${w.enabled===true?'Habilitada':w.enabled===false?'Desabilitada':'Habilitação não informada'} · Estado: ${esc(text(w.status))}</p><small>Leitura: ${esc(stamp(w.updated_at))}</small></div>`).join('') || '<p class="noc-empty">Nenhum SSID nos caminhos conhecidos desta prévia. Ausência de leitura não significa rádio desligado.</p>';
+  function renderDetail(d) { window.renderNocDevice(d); }
+
+  function opticalWarning(faults) {
+    const labels = {not_configured:'Configuração IXC não disponível para esta consulta.',
+      invalid_configuration:'A configuração da conexão IXC precisa ser verificada.',
+      authorization:'O IXC recusou a autorização da consulta.',
+      timeout:'O IXC excedeu o tempo de resposta.', deadline:'A coleta IXC excedeu o tempo limite.',
+      rate_limited:'O IXC limitou a quantidade de consultas.', connection:'Não foi possível estabelecer a conexão IXC.',
+      http_error:'O IXC retornou erro na consulta.', invalid_response:'O IXC retornou uma resposta inválida.',
+      cache_unavailable:'O armazenamento privado da leitura IXC não está acessível.',
+      refresh_busy:'Outra consulta está atualizando o IXC; tente novamente em instantes.',
+      incomplete_inventory:'O IXC não retornou o inventário completo.', inventory_limit:'O inventário IXC excedeu o limite da consulta.'};
+    const reasons=[...new Set(faults.map(f=>labels[f] || 'A leitura IXC ficou indisponível nesta consulta.'))];
+    $('inventory-optical-warning').hidden=!reasons.length;
+    $('inventory-optical-warning').textContent=reasons.join(' ')+(reasons.length
+      ? ' Os sinais disponíveis usam as leituras válidas; N/D não significa sinal normal.' : '');
   }
 
   async function load() {
@@ -95,12 +98,14 @@
         const device = last.devices[0];
         if (!device || device.id !== id || !Array.isArray(device.wan) || !Array.isArray(device.wifi)) throw new Error('Detalhes inválidos na resposta.');
         renderDetail(device);
+        opticalWarning(last.optical_status && last.optical_status!=='ok' ? [last.optical_reason || last.optical_status] : []);
       } else {
         let next = 0, complete = false;
-        const rows = [], seen = new Set();
+        const rows = [], seen = new Set(), opticalFaults=[];
         $('inventory-load-status').textContent = 'Consultando inventário completo…';
         for (let count=0;count<201;count++) {
           last = await read('/api/noc-devices.php?skip='+next);
+          if(last.optical_status && last.optical_status!=='ok')opticalFaults.push(last.optical_reason || last.optical_status);
           for (const row of last.devices) {
             if (typeof row.id !== 'string' || seen.has(row.id)) throw new Error('O inventário mudou durante a consulta. Atualize para carregar novamente.');
             seen.add(row.id); rows.push(row);
@@ -113,7 +118,8 @@
         }
         if (!complete) throw new Error('Inventário excedeu o limite desta prévia. Use a lista atual.');
         devices = rows; page = 1; renderList();
-        $('inventory-load-status').textContent = `${fmt(devices.length)} equipamentos ACS · RX IXC ${last.optical_status==='ok'?'disponível':last.optical_status==='not_configured'?'não configurado':'indisponível'} · consulta concluída`;
+        opticalWarning(opticalFaults);
+        $('inventory-load-status').textContent = `${fmt(devices.length)} equipamentos ACS · RX IXC ${opticalFaults.length?'com falhas na consulta':'disponível'} · consulta concluída`;
       }
       $('inventory-captured').textContent = 'Consulta: '+stamp(last.captured_at);
     } catch(error) {

@@ -272,6 +272,8 @@ function getDBConnection() { return new TestDB(); }
                         ('unavailable', 'skip=0', 502), ('invalid-json', 'skip=0', 502),
                         ('bootstrap-exit', 'skip=0', 500), ('memory-fatal', 'skip=0', 500),
                         ('ixc-ok', 'id=device-000004', 200),
+                        ('ixc-unavailable', 'skip=0', 200), ('ixc-malformed', 'skip=0', 200),
+                        ('ixc-repeated', 'skip=0', 200),
                     ]:
                         url = f'http://127.0.0.1:{port}/api/noc-devices.php?scenario={mode}&{suffix}'
                         try:
@@ -295,6 +297,8 @@ function getDBConnection() { return new TestDB(); }
                                 assert rows[0]['temperature']['value'] == 48
                                 assert rows[0]['wifi'][0]['enabled'] is False
                                 assert rows[0]['firmware'] == 'TEST-FW'
+                        if mode in ['ixc-unavailable', 'ixc-malformed', 'ixc-repeated']:
+                            assert data['optical_reason'] == {'ixc-unavailable':'http_error','ixc-malformed':'invalid_response','ixc-repeated':'incomplete_inventory'}[mode], data
                         print(f'PASS inventory {mode} {suffix}: HTTP {expected}')
                     log.flush()
                     log.seek(0)

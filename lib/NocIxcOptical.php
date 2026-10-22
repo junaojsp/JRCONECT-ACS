@@ -16,7 +16,7 @@ class NocIxcOptical
         if (!$parts || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])
             || isset($parts['query']) || isset($parts['fragment']) || $this->token === ''
             || (($parts['scheme'] ?? '') !== 'https' && !(($parts['scheme'] ?? '') === 'http' && $local))) {
-            throw new \RuntimeException('Invalid IXC connection configuration.');
+            throw new \RuntimeException('Invalid IXC connection configuration.', 1100);
         }
     }
 
@@ -53,6 +53,16 @@ class NocIxcOptical
         return $rx <= -25 ? 'attention' : 'good';
     }
 
+    /** Fixed diagnostic codes only: never expose exception messages or upstream bodies. */
+    public static function failureReason(\Throwable $error): string
+    {
+        if ($error instanceof \JsonException) return 'invalid_response';
+        return [1100 => 'invalid_configuration', 1103 => 'timeout', 1104 => 'rate_limited',
+            1105 => 'authorization', 1106 => 'http_error', 1107 => 'connection',
+            1108 => 'invalid_response', 1110 => 'cache_unavailable', 1111 => 'refresh_busy',
+            1112 => 'deadline', 1113 => 'incomplete_inventory', 1114 => 'inventory_limit'][$error->getCode()] ?? 'unavailable';
+    }
+
     private function page(int $page, int $timeout): array
     {
         $table = 'radpop_radio_cliente_fibra';
@@ -77,9 +87,13 @@ class NocIxcOptical
         ]);
         $ok = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $errno = curl_errno($ch);
         curl_close($ch);
         if ($ok === false || $status < 200 || $status >= 300) {
-            throw new \RuntimeException('IXC inventory request failed.');
+            error_log('[JRC NOC IXC] Request failed; HTTP=' . $status . '; curl=' . $errno);
+            $code = $errno === CURLE_OPERATION_TIMEDOUT ? 1103 : ($errno ? 1107
+                : ($status === 429 ? 1104 : (in_array($status, [401, 403], true) ? 1105 : 1106)));
+            throw new \RuntimeException('IXC inventory request failed.', $code);
         }
         $data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         if (is_array($data) && !isset($data['registros']) && (string) ($data['total'] ?? '') === '0'
@@ -90,23 +104,24 @@ class NocIxcOptical
             || ($data['type'] ?? '') === 'error' || ($data['status'] ?? '') === 'error'
             || count($data['registros']) > 100
             || ($data['registros'] !== [] && array_keys($data['registros']) !== range(0, count($data['registros']) - 1))) {
-            throw new \RuntimeException('Invalid IXC inventory response.');
+            throw new \RuntimeException('Invalid IXC inventory response.', 1108);
         }
         return $data;
     }
 
     public function snapshot(int $budget = 12): array
     {
+        $deadline = microtime(true) + max(1, min(12, $budget));
         // Identity includes the credential hash, preventing reuse after token rotation.
         $identity = substr(hash('sha256', 'v2' . $this->url . "\0" . $this->token . "\0" . __DIR__), 0, 32);
         $parent = getenv('NOC_CACHE_DIR') ?: sys_get_temp_dir();
         $dir = rtrim($parent, '/\\') . '/jrc-noc-ixc-' . $identity;
         if (is_link($dir) || (!is_dir($dir) && !@mkdir($dir, 0700, true))) {
-            throw new \RuntimeException('Private NOC cache unavailable.');
+            throw new \RuntimeException('Private NOC cache unavailable.', 1110);
         }
         $path = $dir . '/optical.json';
         if (is_link($path) || is_link($dir . '/refresh.lock')) {
-            throw new \RuntimeException('Invalid NOC cache path.');
+            throw new \RuntimeException('Invalid NOC cache path.', 1110);
         }
         $readCache = static function () use ($path): ?array {
             if (!is_file($path)) return null;
@@ -119,14 +134,21 @@ class NocIxcOptical
         $cached = $readCache();
         if ($cached !== null) return $cached;
         $lock = fopen($dir . '/refresh.lock', 'c');
-        if (!$lock) throw new \RuntimeException('NOC cache lock unavailable.');
+        if (!$lock) throw new \RuntimeException('NOC cache lock unavailable.', 1110);
+        $ownsLock = false;
         try {
-            if (!flock($lock, LOCK_EX | LOCK_NB)) {
-                throw new \RuntimeException('NOC optical refresh already running.');
+            // A different NOC request may already be collecting the same inventory.
+            // Wait for its valid cache within our budget instead of treating contention as a failed IXC.
+            while (!($ownsLock = flock($lock, LOCK_EX | LOCK_NB))) {
+                $cached = $readCache();
+                if ($cached !== null) return $cached;
+                if (microtime(true) >= $deadline) {
+                    throw new \RuntimeException('NOC optical refresh already running.', 1111);
+                }
+                usleep(100000);
             }
             $cached = $readCache();
             if ($cached !== null) return $cached;
-            $deadline = microtime(true) + max(1, min(12, $budget));
             $devices = [];
             $summary = ['total' => 0, 'good' => 0, 'attention' => 0, 'critical' => 0, 'unavailable' => 0];
             $pons = [];
@@ -134,11 +156,11 @@ class NocIxcOptical
             $seen = 0;
             for ($page = 1; $page <= 200; $page++) {
                 $remaining = (int) ($deadline - microtime(true));
-                if ($remaining < 1) throw new \RuntimeException('IXC snapshot deadline exceeded.');
+                if ($remaining < 1) throw new \RuntimeException('IXC snapshot deadline exceeded.', 1112);
                 $data = $this->page($page, min(5, $remaining));
                 foreach ($data['registros'] as $row) {
                     $id = is_array($row) && is_numeric($row['id'] ?? null) ? (int) $row['id'] : 0;
-                    if ($id <= $lastId) throw new \RuntimeException('Unordered or repeated IXC page.');
+                    if ($id <= $lastId) throw new \RuntimeException('Unordered or repeated IXC page.', 1113);
                     $lastId = $id;
                     $seen++;
                     $rx = self::normalizeRx($row['sinal_rx'] ?? null);
@@ -167,7 +189,7 @@ class NocIxcOptical
                 $count = count($data['registros']);
                 $total = is_numeric($data['total'] ?? null) ? (int) $data['total'] : null;
                 if ($count < 100 || ($total !== null && $seen >= $total)) {
-                    if ($total !== null && $seen !== $total) throw new \RuntimeException('Incomplete IXC inventory.');
+                    if ($total !== null && $seen !== $total) throw new \RuntimeException('Incomplete IXC inventory.', 1113);
                     $pons = array_values($pons);
                     usort($pons, static function ($a, $b) {
                         return ($b['critical'] <=> $a['critical']) ?: ($b['registered'] <=> $a['registered'])
@@ -178,7 +200,7 @@ class NocIxcOptical
                     $temp = tempnam($dir, 'optical-');
                     try {
                         if ($temp === false || file_put_contents($temp, json_encode($snapshot, JSON_THROW_ON_ERROR)) === false
-                            || !rename($temp, $path)) throw new \RuntimeException('NOC cache write failed.');
+                            || !rename($temp, $path)) throw new \RuntimeException('NOC cache write failed.', 1110);
                     } finally {
                         if ($temp !== false && is_file($temp)) unlink($temp);
                     }
@@ -186,9 +208,9 @@ class NocIxcOptical
                 }
                 unset($data);
             }
-            throw new \RuntimeException('IXC inventory page limit exceeded.');
+            throw new \RuntimeException('IXC inventory page limit exceeded.', 1114);
         } finally {
-            flock($lock, LOCK_UN);
+            if ($ownsLock) flock($lock, LOCK_UN);
             fclose($lock);
         }
     }

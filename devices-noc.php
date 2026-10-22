@@ -8,7 +8,7 @@ include __DIR__ . '/views/layouts/noc-inventory-header.php';
   <article><span>Equipamentos ACS</span><strong id="inventory-total">—</strong><small>Inventário carregado</small></article>
   <article><span>Online TR-069</span><strong class="inventory-green" id="inventory-online">—</strong><small>Inform há menos de 5 min</small></article>
   <article><span>Sem Inform recente</span><strong id="inventory-offline">—</strong><small>Não confirma falha da Internet</small></article>
-  <article><span>RX crítico</span><strong class="inventory-red" id="inventory-critical">—</strong><small>RX ≤ -28 dBm · IXC / TR-069</small></article>
+  <article><span>RX crítico</span><strong class="inventory-red" id="inventory-critical">—</strong><small id="inventory-rx-coverage">RX ≤ -28 dBm · IXC / TR-069</small></article>
 </div>
 <article class="noc-panel">
   <header><div><h2><i class="bi bi-router"></i> Inventário de equipamentos</h2><span id="inventory-load-status" role="status">Consultando dispositivos…</span></div><a href="/devices.php">Lista atual e ações em lote ↗</a></header>
@@ -21,4 +21,4 @@ include __DIR__ . '/views/layouts/noc-inventory-header.php';
   <footer class="inventory-pagination"><span id="inventory-page-label">—</span><div><button class="noc-button" type="button" id="inventory-prev">← Anterior</button><button class="noc-button" type="button" id="inventory-next">Próxima →</button></div></footer>
 </article>
 <p class="noc-disclaimer">Prévia de leitura. RX IXC prioritário, TR-069 como alternativa; a data do sinal pode ser anterior ao último Inform. Busca e filtros abrangem os registros carregados.</p>
-</section></main><script src="/assets/js/noc-inventory.js?v=1"></script></body></html>
+</section></main><script src="/assets/js/noc-inventory.js?v=2"></script></body></html>

@@ -52,13 +52,15 @@ try {
     }
     $ixc = null;
     $ixcStatus = 'not_configured';
+    $ixcReason = null;
     try {
         $config = getIxcConfig();
         $ixcStatus = 'unavailable';
         $ixc = (new \App\NocIxcOptical($config))->snapshot(12);
         $ixcStatus = 'ok';
     } catch (Throwable $e) {
-        error_log('[JRC NOC inventory] Optical status=' . $ixcStatus . '; ' . get_class($e));
+        $ixcReason = $ixcStatus === 'not_configured' ? 'not_configured' : \App\NocIxcOptical::failureReason($e);
+        error_log('[JRC NOC inventory] Optical status=' . $ixcStatus . '; reason=' . $ixcReason);
     }
     $now = time();
     $devices = [];
@@ -70,7 +72,7 @@ try {
     }
     inventoryReply(200, ['success' => true, 'devices' => $devices, 'captured_at' => gmdate(DATE_ATOM, $now),
         'has_more' => $id === null && count($devices) === 100, 'next_skip' => (int) $skip + count($devices),
-        'optical_status' => $ixcStatus]);
+        'optical_status' => $ixcStatus, 'optical_reason' => $ixcReason]);
 } catch (Throwable $e) {
     error_log('[JRC NOC inventory] ' . get_class($e) . ' at ' . basename($e->getFile()) . ':' . $e->getLine());
     inventoryReply(500, ['success' => false, 'message' => 'Falha interna na consulta dos equipamentos.']);

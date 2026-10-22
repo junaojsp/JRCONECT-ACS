@@ -13,12 +13,19 @@ dashboard antiga, login, ações e APIs legadas não são modificados.
 - Limite da prévia: 20.000 dispositivos por carregamento; acima disso encaminha à lista atual.
 - Totais representam somente equipamentos ACS carregados. Sinal segue IXC prioritário com
   TR-069 como alternativa e as mesmas faixas da dashboard. Sem leitura é N/D.
+- Sem RX válido, o cartão crítico mostra N/D. Com leituras parciais, informa sua cobertura.
+  Uma falha IXC aparece em aviso visível com motivo limitado e seguro (autorização, conexão,
+  timeout, cache, coleta incompleta), sem devolver mensagens internas ou credenciais.
 - Atualização manual, sem consulta automática que interfira na busca do operador.
 
 ## Detalhes
 
 - Consulta exata por `_id`, serializado como string JSON, com limite de um dispositivo.
 - Visão geral, RX/TX/temperatura com data quando disponível, sistema, WAN e SSIDs.
+- Composição alinhada à referência recebida: cabeçalho compacto, abas funcionais e acessíveis,
+  diagnóstico em três colunas, sinal e tráfego lado a lado, indicadores e propriedades abaixo.
+- Abas de voz e hosts mostram apenas o que foi reportado; histórico e ações oferecem acesso
+  à tela atual. O gráfico RX mostra uma única amostra real; não preenche uma curva histórica.
 - Mantém os caminhos conhecidos do parser existente: WANDevice.1/WANConnectionDevice.1,
   conexões PPP/IP de 1 a 8, WLANConfiguration.1 a 8 e Device.WiFi.SSID.1 a 8.
 - Ausência nesses caminhos não comprova ausência de WAN ou rádio desligado. Redes adicionais,
@@ -26,10 +33,25 @@ dashboard antiga, login, ações e APIs legadas não são modificados.
 - TX desta prévia usa somente VirtualParameters.TXPower em dBm na faixa -10 a 10.
   Temperatura usa os caminhos já utilizados pelo parser legado e sua conversão raw /256.
   Novos modelos precisam de homologação de unidades antes de ampliar o mapeamento.
-- Não estima velocidade, tráfego, clientes Wi-Fi, CPU, memória ou conectividade Internet.
+- CPU, memória total/livre, hosts, estado NTP e primeira linha de voz usam campos explícitos
+  conhecidos de DeviceInfo/Hosts/Time/VoiceService. Memória em uso deriva de total/livre da
+  mesma árvore. Valores ausentes/fora de faixa ficam N/D; requer homologação por modelo.
+- Contadores acumulados da WAN usam TotalBytesReceived/TotalBytesSent. Não calcula velocidade
+  nem curva de tráfego a partir de uma amostra. Não estima clientes Wi-Fi ou conectividade Internet.
 - Projeção não solicita senhas, chaves ou usuários PPPoE; a resposta retorna somente campos
   permitidos mesmo que o upstream ignore a projeção. Não retorna ConnectionRequestURL.
-- O botão “Abrir tela atual e ações” usa o ID original; nenhuma ação é executada ao abrir a prévia.
+- O botão “Ações do equipamento” usa o ID original; nenhuma ação é executada ao abrir a prévia.
+
+## Leitura IXC compartilhada
+
+Dashboard, lista e detalhe usam o mesmo cache privado. Se outra consulta já estiver
+atualizando-o, aguardam a publicação de um resultado válido dentro do orçamento de até
+12 segundos, sem iniciar outra coleta. Se a atualização não terminar, retornam o motivo
+`refresh_busy`, mantendo o ACS independente. Não reutilizam cache vencido como leitura atual.
+
+A captura de produção mostrou lista indisponível e uma consulta posterior de detalhe com
+RX IXC válido. Isso evidencia intermitência, mas os logs solicitados não retornaram registros;
+a causa específica do incidente ainda precisa ser confirmada pela homologação dos motivos.
 
 ## Implantação e homologação
 
@@ -51,4 +73,5 @@ mantém seu destino. Atualizar o navegador com Ctrl+F5.
 
 Testes locais isolam banco, ACS e IXC; não comprovam suporte de todos os modelos em produção.
 Executar `tests/noc-endpoint.py`, `tests/noc-client.cjs`, `tests/noc-inventory-client.cjs`
-e `tests/noc-install.py` com PHP CLI/cURL, Python e Node. Não requerem acesso ao servidor.
+e `tests/noc-install.py` com PHP CLI/cURL, Python e Node. `tests/noc-cache.py` reproduz
+atualização concorrente e espera limitada sem consultar IXC real. Não requerem acesso ao servidor.

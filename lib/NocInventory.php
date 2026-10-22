@@ -11,6 +11,14 @@ class NocInventory
     private const TEMP = ['VirtualParameters.gettemp', 'VirtualParameters.Temperature',
         'InternetGatewayDevice.WANDevice.1.X_CT-COM_EponInterfaceConfig.TransceiverTemperature',
         'InternetGatewayDevice.DeviceInfo.Temperature'];
+    private const EXTRA = [
+        'cpu' => ['InternetGatewayDevice.DeviceInfo.ProcessStatus.CPUUsage', 'Device.DeviceInfo.ProcessStatus.CPUUsage'],
+        'memory_total' => ['InternetGatewayDevice.DeviceInfo.MemoryStatus.Total', 'Device.DeviceInfo.MemoryStatus.Total'],
+        'memory_free' => ['InternetGatewayDevice.DeviceInfo.MemoryStatus.Free', 'Device.DeviceInfo.MemoryStatus.Free'],
+        'hosts' => ['InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries', 'Device.Hosts.HostNumberOfEntries'],
+        'ntp' => ['InternetGatewayDevice.Time.Status', 'Device.Time.Status'],
+        'voice' => ['InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.Line.1.Status', 'Device.Services.VoiceService.1.VoiceProfile.1.Line.1.Status'],
+    ];
 
     public static function projection(bool $detail): array
     {
@@ -24,6 +32,10 @@ class NocInventory
         $fields[] = 'Device.IP.Interface.1.IPv4Address.1.IPAddress';
         if ($detail) {
             $fields = array_merge($fields, self::TEMP, ['VirtualParameters.TXPower']);
+            foreach (self::EXTRA as $paths) $fields = array_merge($fields, $paths);
+            foreach (self::wanBases() as $base) {
+                foreach (['Uptime', 'Stats.TotalBytesReceived', 'Stats.TotalBytesSent'] as $leaf) $fields[] = "$base.$leaf";
+            }
             foreach (['InternetGatewayDevice.DeviceInfo', 'Device.DeviceInfo'] as $base) {
                 foreach (['HardwareVersion', 'Manufacturer', 'ModelName', 'SerialNumber'] as $leaf) $fields[] = "$base.$leaf";
             }
@@ -64,7 +76,7 @@ class NocInventory
             $node = $node[$part];
         }
         $value = is_array($node) ? ($node['_value'] ?? null) : $node;
-        if (!is_scalar($value)) return ['value' => null];
+        if (!is_scalar($value) || (is_float($value) && !is_finite($value))) return ['value' => null];
         return ['value' => $value, 'path' => $path,
             'updated_at' => is_array($node) && is_string($node['_timestamp'] ?? null) ? $node['_timestamp'] : null];
     }
@@ -112,7 +124,10 @@ class NocInventory
             $state = self::read($device, "$base.ConnectionStatus");
             if ($ip['value'] === null && $state['value'] === null) continue;
             $wans[] = ['path' => $base, 'ip' => $text($ip['value']), 'status' => $text($state['value']),
-                'updated_at' => $ip['updated_at'] ?? $state['updated_at'] ?? null];
+                'updated_at' => $ip['updated_at'] ?? $state['updated_at'] ?? null,
+                'uptime' => self::read($device, "$base.Uptime")['value'],
+                'bytes_received' => self::read($device, "$base.Stats.TotalBytesReceived"),
+                'bytes_sent' => self::read($device, "$base.Stats.TotalBytesSent")];
         }
         $ip = null;
         foreach ($wans as $wan) {
@@ -148,7 +163,20 @@ class NocInventory
                 'status' => $text(self::read($device, "$base.Status")['value']),
                 'updated_at' => $ssid['updated_at'] ?? null];
         }
+        $extra = [];
+        foreach (self::EXTRA as $key => $paths) $extra[$key] = self::first($device, $paths);
+        $percent = static fn($v) => is_numeric($v) && is_finite((float) $v) && $v >= 0 && $v <= 100 ? (float) $v : null;
+        $extra['cpu']['value'] = $percent($extra['cpu']['value']);
+        $total = $extra['memory_total']['value']; $free = $extra['memory_free']['value'];
+        $memorySourceMatches = isset($extra['memory_total']['path'], $extra['memory_free']['path'])
+            && substr($extra['memory_total']['path'], 0, -6) === substr($extra['memory_free']['path'], 0, -5);
+        $extra['memory'] = ['value' => is_numeric($total) && is_numeric($free) && is_finite((float) $total)
+            && $memorySourceMatches && is_finite((float) $free) && $total > 0 && $free >= 0 && $free <= $total
+            ? round(100 * (1 - $free / $total), 1) : null];
+        $extra['hosts']['value'] = is_numeric($extra['hosts']['value']) && $extra['hosts']['value'] >= 0 && $extra['hosts']['value'] <= 1000000
+            ? (int) $extra['hosts']['value'] : null;
         return array_merge($row, ['temperature' => $temp, 'tx' => $tx, 'wan' => $wans, 'wifi' => $wifi,
+            'telemetry' => $extra,
             'hardware' => $text(self::first($device, ['InternetGatewayDevice.DeviceInfo.HardwareVersion', 'Device.DeviceInfo.HardwareVersion'])['value'])]);
     }
 }

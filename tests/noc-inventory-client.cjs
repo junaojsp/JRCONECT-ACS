@@ -9,8 +9,11 @@ function boot(id, fetcher) {
       hidden:true,handlers:{},getAttribute(){return id;},setAttribute(){},addEventListener(event,fn){this.handlers[event]=fn;}});
     return nodes.get(key);
   };
-  vm.runInNewContext(source, {document:{getElementById:node,addEventListener(){},body:{classList:{toggle(){},remove(){}}}},
-    window:{setTimeout,clearTimeout},AbortController,fetch:fetcher});
+  const context = {document:{getElementById:node,addEventListener(){},body:{classList:{toggle(){},remove(){}}}},
+    window:{setTimeout,clearTimeout},AbortController,fetch:fetcher};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../assets/js/noc-device.js'), 'utf8'),context);
+  vm.runInContext(source,context);
   return {node, async settle(){for(let i=0;i<30;i++){await new Promise(resolve=>setImmediate(resolve));if(!node('inventory-refresh').disabled)return;}throw Error('Client did not settle');}};
 }
 const response = (devices, extra={}) => ({ok:true,status:200,headers:{get(){return 'application/json';}},
@@ -56,5 +59,15 @@ const device = i => ({id:'test-'+i,serial:'SERIAL-'+i,manufacturer:'TEST',model:
   assert.match(app.node('inventory-error').textContent,/Sessão expirada/);
   app=boot('',async()=>({...response([]),headers:{get(){return 'text/html';}}}));await app.settle();
   assert.match(app.node('inventory-error').textContent,/Resposta inválida/);
+  const missing=device(9);missing.rx={value:null};missing.rx_band='unavailable';
+  app=boot('',async()=>response([missing],{optical_status:'unavailable',optical_reason:'refresh_busy'}));await app.settle();
+  assert.equal(app.node('inventory-critical').textContent,'N/D');
+  assert.match(app.node('inventory-rx-coverage').textContent,/Nenhuma leitura RX válida/);
+  assert.equal(app.node('inventory-optical-warning').hidden,false);
+  assert.match(app.node('inventory-optical-warning').textContent,/Outra consulta está atualizando/);
+  const normal=device(8);normal.rx.value=-24;normal.rx_band='good';
+  app=boot('',async()=>response([normal],{optical_status:'ok'}));await app.settle();
+  assert.equal(app.node('inventory-critical').textContent,'0');
+  assert.equal(app.node('inventory-optical-warning').hidden,true);
   console.log('PASS inventory UI: filters, pagination, escaping, zero values, stale data, repeated pages, detail, session and non-JSON failure');
 })().catch(error=>{console.error(error);process.exitCode=1;});

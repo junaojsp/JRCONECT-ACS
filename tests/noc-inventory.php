@@ -31,4 +31,14 @@ $device['InternetGatewayDevice']['DeviceInfo']['ModelName'] = ['_value' => 'FALL
 $device['InternetGatewayDevice']['DeviceInfo']['Manufacturer'] = ['_value' => 'FALLBACK-VENDOR'];
 $row = App\NocInventory::parse($device, null, $now, false);
 assert($row['serial'] === 'FALLBACK-SERIAL' && $row['model'] === 'FALLBACK-MODEL' && $row['manufacturer'] === 'FALLBACK-VENDOR');
+$device['InternetGatewayDevice']['DeviceInfo']['ProcessStatus']['CPUUsage'] = ['_value' => 29];
+$device['InternetGatewayDevice']['DeviceInfo']['MemoryStatus'] = ['Total' => ['_value' => 100], 'Free' => ['_value' => 61]];
+$row = App\NocInventory::parse($device, null, $now, true);
+assert($row['telemetry']['cpu']['value'] === 29.0 && $row['telemetry']['memory']['value'] === 39.0);
+$device['InternetGatewayDevice']['DeviceInfo']['MemoryStatus']['Total']['_value'] = '1e999';
+$row = App\NocInventory::parse($device, null, $now, true);
+assert($row['telemetry']['memory']['value'] === null);
+$device['InternetGatewayDevice']['DeviceInfo']['MemoryStatus']['Total']['_value'] = INF;
+$row = App\NocInventory::parse($device, null, $now, true);
+assert(json_encode($row) !== false && $row['telemetry']['memory']['value'] === null);
 echo "PASS inventory parsing: secrets excluded, IXC aliases/priority, boundaries, zero values, invalid readings and future Inform\n";
