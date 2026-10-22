@@ -17,18 +17,30 @@ class NocGenieACS
 
     public function getDevices(int $limit, int $skip, int $timeout): array
     {
+        return $this->query($limit, $skip, $timeout, [
+            '_id', '_deviceId', '_lastInform', 'VirtualParameters.RXPower',
+            'InternetGatewayDevice.WANDevice.1.X_CT-COM_EponInterfaceConfig.RXPower',
+            'Device.Optical.Interface.1.RxPower',
+        ]);
+    }
+
+    public function getInventory(int $limit, int $skip, int $timeout, ?string $id = null): array
+    {
+        require_once __DIR__ . '/NocInventory.php';
+        return $this->query($id === null ? $limit : 1, $id === null ? $skip : 0,
+            $timeout, NocInventory::projection($id !== null), $id);
+    }
+
+    private function query(int $limit, int $skip, int $timeout, array $projection, ?string $id = null): array
+    {
         // Do not fetch entire TR-069 trees (Wi-Fi/PPPoE passwords included).
         $params = [
-            'projection' => implode(',', [
-                '_id', '_deviceId', '_lastInform',
-                'VirtualParameters.RXPower',
-                'InternetGatewayDevice.WANDevice.1.X_CT-COM_EponInterfaceConfig.RXPower',
-                'Device.Optical.Interface.1.RxPower',
-            ]),
+            'projection' => implode(',', $projection),
             'limit' => max(1, min(100, $limit)),
             'skip' => max(0, $skip),
             'sort' => json_encode(['_id' => 1]),
         ];
+        if ($id !== null) $params['query'] = json_encode(['_id' => $id], JSON_THROW_ON_ERROR);
         $ch = curl_init($this->baseUrl . '/devices/?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986));
         $body = '';
         curl_setopt_array($ch, [

@@ -17,7 +17,7 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/dashboard-noc.css?v=4">
+  <link rel="stylesheet" href="/assets/css/dashboard-noc.css?v=5">
 </head>
 <body class="noc-app">
 <a class="noc-skip" href="#noc-main">Ir para os indicadores</a>
@@ -25,7 +25,7 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
   <a class="noc-brand" href="/dashboard-noc.php"><img src="/assets/img/jrconect-logo.svg" alt="JR Conect Telecom"></a>
   <nav aria-label="Navegação principal">
     <a class="active" href="/dashboard-noc.php" aria-current="page"><i class="bi bi-house-door-fill"></i> Visão geral</a>
-    <a href="/devices.php"><i class="bi bi-router"></i> Equipamentos</a>
+    <a href="/devices-noc.php"><i class="bi bi-router"></i> Equipamentos</a>
     <a href="/discovery.php"><i class="bi bi-search"></i> Discovery TR-069</a>
     <a href="#noc-optical"><i class="bi bi-activity"></i> Rede óptica</a>
     <a href="#noc-pons"><i class="bi bi-hdd-rack"></i> OLTs e PONs <small>IXC</small></a>
@@ -46,7 +46,7 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
       <p>Monitoramento ACS · TR-069 · FTTH</p>
     </div>
     <div class="noc-actions">
-      <a class="noc-button noc-period" href="#noc-availability"><i class="bi bi-calendar3"></i> Últimas 24 horas</a>
+      <a class="noc-button noc-period" href="#noc-availability-panel"><i class="bi bi-calendar3"></i> Últimas 24 horas</a>
       <span id="noc-captured" class="noc-captured">Aguardando leitura</span>
       <button type="button" class="noc-button" id="noc-refresh"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
       <span class="noc-user"><i class="bi bi-person-circle"></i><span><?php echo $nocUsername; ?><small>Operação da rede</small></span></span>
@@ -64,8 +64,8 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
   </div>
 
   <div class="noc-grid">
-    <article class="noc-panel noc-availability" id="noc-availability">
-      <header><div><h2><i class="bi bi-activity"></i> Comunicação da rede <em>24 horas</em></h2><span>Observações reais do GenieACS · Inform há menos de 5 min</span></div><a href="/devices.php">Ver equipamentos <i class="bi bi-arrow-up-right"></i></a></header>
+    <article class="noc-panel noc-availability" id="noc-availability-panel">
+      <header><div><h2><i class="bi bi-activity"></i> Comunicação da rede <em>24 horas</em></h2><span>Observações reais do GenieACS · Inform há menos de 5 min</span></div><a href="/devices-noc.php">Ver equipamentos <i class="bi bi-arrow-up-right"></i></a></header>
       <div class="noc-availability-content">
         <div class="noc-big-value" id="noc-availability-large">—</div>
         <p>Online na última consulta · não representa SLA</p>
@@ -89,7 +89,7 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
       <footer><span id="noc-optical-notice">Aguardando leituras ópticas.</span><br>Limiares iniciais de triagem; ajustar por modelo, OLT e parâmetros da rede. Valores do cadastro IXC não provocam uma coleta na OLT.</footer>
     </article>
     <article class="noc-panel" id="noc-occurrences">
-      <header><div><h2><i class="bi bi-bell-fill"></i> Alertas e ocorrências</h2><span>Triagem atual dos equipamentos ACS</span></div><a href="/devices.php">Ver todos <i class="bi bi-arrow-up-right"></i></a></header>
+      <header><div><h2><i class="bi bi-bell-fill"></i> Alertas e ocorrências</h2><span>Triagem atual dos equipamentos ACS</span></div><a href="/devices-noc.php">Ver todos <i class="bi bi-arrow-up-right"></i></a></header>
       <div class="noc-list" id="noc-issues"><p class="noc-empty">Consultando dispositivos…</p></div>
     </article>
     <article class="noc-panel" id="noc-pons">
@@ -100,12 +100,12 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
   </div>
 
   <article class="noc-panel noc-full" id="noc-priority">
-    <header><div><h2><i class="bi bi-list-ul"></i> Equipamentos que exigem atenção</h2><span>Até 8 dispositivos ACS prioritários · leitura óptica IXC / TR-069</span></div><a href="/devices.php">Lista completa <i class="bi bi-arrow-up-right"></i></a></header>
+    <header><div><h2><i class="bi bi-list-ul"></i> Equipamentos que exigem atenção</h2><span>Até 8 dispositivos ACS prioritários · leitura óptica IXC / TR-069</span></div><a href="/devices-noc.php">Lista completa <i class="bi bi-arrow-up-right"></i></a></header>
     <div class="noc-table-wrap"><table class="noc-table"><thead><tr><th>Dispositivo</th><th>Modelo</th><th>RX óptico</th><th>Situação</th><th>Último Inform</th><th>Ação</th></tr></thead><tbody id="noc-table-body"><tr><td colspan="6" class="noc-empty">Aguardando dados…</td></tr></tbody></table></div>
   </article>
   <p class="noc-disclaimer">JRC-ACS NOC 2.0 · Prévia em desenvolvimento · Leitura somente · Inventário e comunicação: GenieACS TR-069. Saúde óptica: inventário IXC completo. Triagem por equipamento ACS: IXC / TR-069. O status online mede a atualização no ACS, não confirma acesso à Internet do assinante.</p>
 </section>
 </main>
-<script src="/assets/js/dashboard-noc.js?v=4" defer></script>
+<script src="/assets/js/dashboard-noc.js?v=5" defer></script>
 </body>
 </html>

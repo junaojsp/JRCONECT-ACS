@@ -30,7 +30,11 @@ def device(index):
         '_id': f'device-{index:06}',
         '_deviceId': {'_SerialNumber': f'SERIAL-{index}', '_ProductClass': 'TEST', '_Manufacturer': 'TEST'},
         '_lastInform': (NOW - datetime.timedelta(seconds=60 if index % 2 == 0 else 600)).isoformat(),
-        'VirtualParameters': {'RXPower': {'_value': [-24, -25, -28, -29, 0, 'invalid'][index % 6]}},
+        'VirtualParameters': {'RXPower': {'_value': [-24, -25, -28, -29, 0, 'invalid'][index % 6]},
+                              'gettemp': {'_value': 48, '_timestamp': NOW.isoformat()}},
+        'InternetGatewayDevice': {'DeviceInfo': {'UpTime': {'_value': 90000}, 'SoftwareVersion': {'_value': 'TEST-FW'}},
+            'LANDevice': {'1': {'WLANConfiguration': {'1': {'SSID': {'_value': '<test-wifi>'}, 'Enable': {'_value': False},
+                'KeyPassphrase': {'_value': 'SECRET'}}}}}},
     }
 
 
@@ -74,8 +78,13 @@ class Upstream(http.server.BaseHTTPRequestHandler):
         assert json.loads(query['sort'][0]) == {'_id': 1}
         assert int(query['limit'][0]) <= 100
         projection = query['projection'][0].split(',')
-        assert len(projection) == 6 and '_lastInform' in projection
-        assert all('Password' not in p and 'WLAN' not in p for p in projection)
+        assert '_lastInform' in projection
+        assert all('Password' not in p and 'KeyPassphrase' not in p and 'Username' not in p for p in projection)
+        if len(projection) == 6:
+            assert all('WLAN' not in p for p in projection)
+        else:
+            assert 'InternetGatewayDevice.DeviceInfo.UpTime' in projection
+            assert all(p.rsplit('.', 1)[-1] not in ['WANDevice', 'WLANConfiguration', 'DeviceInfo'] for p in projection)
         skip, limit = int(query['skip'][0]), int(query['limit'][0])
         code = 503 if mode == 'unavailable' or (mode == 'later-failure' and skip) else 200
         if mode == 'invalid-json':
@@ -88,7 +97,12 @@ class Upstream(http.server.BaseHTTPRequestHandler):
             body = json.dumps([device(i) for i in range(101)]).encode()
         else:
             total = 0 if mode == 'empty' else 200 if mode == 'exact-page' else 2413
-            body = json.dumps([device(i) for i in range(skip, min(total, skip + limit))]).encode()
+            rows = [device(i) for i in range(skip, min(total, skip + limit))]
+            if 'query' in query:
+                requested = json.loads(query['query'][0])
+                assert set(requested) == {'_id'} and isinstance(requested['_id'], str)
+                rows = [device(4)] if requested['_id'] == 'device-000004' else []
+            body = json.dumps(rows).encode()
         self.send_response(code)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
@@ -126,14 +140,14 @@ def main():
     php = [args.php]
     if args.curl_extension:
         php += ['-d', 'extension=' + str(pathlib.Path(args.curl_extension).resolve())]
-    for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php', 'lib/IXCConfig.php', 'dashboard-noc.php']:
+    for path in ['api/noc-devices.php', 'lib/NocInventory.php', 'api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php', 'lib/IXCConfig.php', 'dashboard-noc.php']:
         subprocess.run(php + ['-l', str(ROOT / path)], check=True)
     upstream = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
     threading.Thread(target=upstream.serve_forever, daemon=True).start()
     try:
         with test_directory(args.temp_dir) as temp:
             root = pathlib.Path(temp)
-            for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php', 'lib/IXCConfig.php', 'lib/helpers.php']:
+            for path in ['api/noc-devices.php', 'lib/NocInventory.php', 'api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php', 'lib/IXCConfig.php', 'lib/helpers.php']:
                 (root / path).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / path, root / path)
             (root / 'config').mkdir()
@@ -249,6 +263,39 @@ function getDBConnection() { return new TestDB(); }
                             previous = any(m == mode for m, _ in IXC_CALLS[:ixc_before])
                             assert len(IXC_CALLS) - ixc_before == (0 if previous else 25)
                         print(f'PASS {mode}: HTTP {expected}, valid JSON (128M limit)')
+                    for mode, suffix, expected in [
+                        ('normal', 'skip=0', 200), ('normal', 'skip=2400', 200),
+                        ('normal', 'id=device-000004', 200), ('normal', 'id=missing', 404),
+                        ('normal', 'id[$ne]=x', 400), ('normal', 'skip=-1', 400),
+                        ('normal', 'skip=20001', 400), ('normal', 'skip[]=0', 400),
+                        ('unauthorized', 'skip=0', 401), ('unconfigured', 'skip=0', 503),
+                        ('unavailable', 'skip=0', 502), ('invalid-json', 'skip=0', 502),
+                        ('bootstrap-exit', 'skip=0', 500), ('memory-fatal', 'skip=0', 500),
+                        ('ixc-ok', 'id=device-000004', 200),
+                    ]:
+                        url = f'http://127.0.0.1:{port}/api/noc-devices.php?scenario={mode}&{suffix}'
+                        try:
+                            response = urllib.request.urlopen(url, timeout=40)
+                        except urllib.error.HTTPError as error:
+                            response = error
+                        raw = response.read().decode()
+                        assert response.code == expected, (mode, suffix, response.code, raw)
+                        assert 'application/json' in response.headers['Content-Type']
+                        assert 'no-store' in response.headers['Cache-Control']
+                        assert 'SECRET' not in raw and 'KeyPassphrase' not in raw and 'password' not in raw.lower()
+                        data = json.loads(raw)
+                        if expected == 200:
+                            rows = data['devices']
+                            if suffix == 'skip=0':
+                                assert len(rows) == 100 and data['has_more'] and data['next_skip'] == 100
+                            elif suffix == 'skip=2400':
+                                assert len(rows) == 13 and not data['has_more']
+                            else:
+                                assert len(rows) == 1 and rows[0]['id'] == 'device-000004'
+                                assert rows[0]['temperature']['value'] == 48
+                                assert rows[0]['wifi'][0]['enabled'] is False
+                                assert rows[0]['firmware'] == 'TEST-FW'
+                        print(f'PASS inventory {mode} {suffix}: HTTP {expected}')
                     log.flush()
                     log.seek(0)
                     normal_peak = next(line.split('NOC_TEST_PEAK normal=')[1].strip()

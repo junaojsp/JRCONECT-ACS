@@ -19,7 +19,7 @@ root.mkdir()
 app = root / 'app'
 app.mkdir()
 try:
-    for folder in ['api', 'lib', 'assets/js', 'assets/css', 'config', 'cron']:
+    for folder in ['api', 'lib', 'assets/js', 'assets/css', 'config', 'cron', 'views/layouts']:
         (app / folder).mkdir(parents=True, exist_ok=True)
     for file in ['config/config.php', 'dashboard.php', 'login.php', 'index.php']:
         (app / file).write_text('<?php /* local content must survive */')

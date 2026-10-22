@@ -6,6 +6,9 @@ pelo usuário. Esta etapa adiciona o RX do IXC e repara problemas encontrados na
 
 ## O que muda
 
+Esta branch também inclui as prévias de equipamentos e detalhes individuais. O mesmo
+instalador seletivo inclui seus arquivos; ver `docs/NOC-EQUIPAMENTOS.md` para homologação.
+
 - `NocIxcOptical.php` lista somente o cadastro `radpop_radio_cliente_fibra`, em páginas de
   100, com `ixcsoft: listar`. Não chama diagnóstico, refresh, reinício ou ações em CPEs.
   Limita cada resposta a 2 MiB, cada requisição a 5 s e a coleta óptica a 12 s/20 mil registros.

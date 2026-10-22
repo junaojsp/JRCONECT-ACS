@@ -17,6 +17,9 @@ não um manual técnico público do Scout ACS. A documentação em app.flowbix.c
 - Histórico das observações ACS feitas pelo painel, sem preencher períodos sem coleta.
 - Agrupamento cadastral por OLT/slot/PON, ordenado por quantidade de RX crítico.
 - Navegação para as funções existentes; dashboard antiga e login preservados.
+- Prévia de lista ACS com busca, filtros de comunicação/RX e paginação visual.
+- Prévia individual com identidade, RX/TX/temperatura disponíveis, sistema, WAN e Wi-Fi;
+  acesso à tela atual e às ações existentes. Limitações em `docs/NOC-EQUIPAMENTOS.md`.
 
 ## Próximas etapas das funções mostradas nas imagens
 
@@ -33,6 +36,6 @@ não um manual técnico público do Scout ACS. A documentação em app.flowbix.c
 | Saúde OLT/PON e falhas coletivas | Telemetria OLT/Zabbix/SNMP, associação correta e série temporal; o cadastro IXC não confirma estado ou capacidade da porta |
 | Catálogo de chaves, provisionamento e descoberta | Inventariar capacidades existentes e homologar por modelo antes de expor novos fluxos |
 
-A sequência é consolidar a visão geral, modernizar a lista de dispositivos e depois a tela
-individual, com abas de visão geral, óptico, WAN, Wi-Fi, hosts e histórico. Os valores das
-imagens promocionais não entram na aplicação. Limiares devem ser definidos para a rede JR Conect.
+A visão geral, a lista e os detalhes individuais têm prévias próprias para homologação.
+As próximas ampliações incluem hosts, histórico persistente e novos perfis de parâmetros.
+Os valores das imagens promocionais não entram na aplicação. Limiares devem ser definidos para a rede JR Conect.
