@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/config.php';
 requireLogin();
+// Liberar sessao para nao bloquear outras telas durante leitura.
+if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: private, no-store, max-age=0');
@@ -56,18 +58,15 @@ try {
         nocReply(503, ['success' => false, 'message' => 'Conexão GenieACS não configurada.']);
     }
 
-    $genie = new \App\GenieACS(
+    require_once __DIR__ . '/../lib/NocGenieACS.php';
+    $genie = new \App\NocGenieACS(
         $credentials['host'],
         $credentials['port'],
         $credentials['username'],
         $credentials['password']
     );
-    $response = $genie->getDevices();
-    if (empty($response['success']) || !isset($response['data']) || !is_array($response['data'])) {
-        nocReply(502, ['success' => false, 'message' => 'Não foi possível consultar os dispositivos do GenieACS.']);
-    }
-
     $now = time();
+    $deadline = microtime(true) + 65;
     $summary = [
         'total' => 0,
         'online' => 0,
@@ -79,7 +78,17 @@ try {
     ];
     $issues = [];
 
-    foreach ($response['data'] as $device) {
+    $skip = 0;
+    $pageSize = 100;
+    do {
+        $remaining = (int) ($deadline - microtime(true));
+        if ($remaining < 1) nocReply(504, ['success' => false, 'message' => 'Consulta excedeu o tempo limite.']);
+        $response = $genie->getDevices($pageSize, $skip, min(15, $remaining));
+        if (empty($response['success']) || !is_array($response['data'] ?? null)) {
+            nocReply(502, ['success' => false, 'message' => 'Falha ao consultar lotes do GenieACS.']);
+        }
+        $pageCount = count($response['data']);
+        foreach ($response['data'] as $device) {
         if (!is_array($device)) {
             continue;
         }
@@ -131,7 +140,11 @@ try {
                 'last_inform' => $timestamp ? gmdate(DATE_ATOM, $timestamp) : null,
             ];
             if (count($issues) > 32) {
-                usort($issues, static fn($a, $b) =>
+                    $skip += $pageCount;
+        unset($response, $device);
+    } while ($pageCount === $pageSize);
+
+    usort($issues, static fn($a, $b) =>
                     ($a['priority'] <=> $b['priority'])
                     ?: strcmp((string) ($b['last_inform'] ?? ''), (string) ($a['last_inform'] ?? ''))
                 );
