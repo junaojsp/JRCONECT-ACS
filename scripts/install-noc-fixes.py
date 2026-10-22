@@ -1,5 +1,6 @@
 """Selective Debian installer. Default is a preview; --apply writes with backup.
-Never runs cron jobs, accesses IXC/GenieACS, or changes login/dashboard/config credentials.
+Never runs cron jobs or accesses IXC/GenieACS. Theme merges preserve authentication,
+login routing, application handlers and private configuration.
 """
 import argparse
 import datetime
@@ -11,9 +12,11 @@ import stat
 import subprocess
 import tempfile
 from types import SimpleNamespace
+from concurrent.futures import ThreadPoolExecutor
+from noc_theme import THEME_PAGES, inject_theme
 
 SOURCE = pathlib.Path(__file__).resolve().parents[1]
-NOC_FILES = ['assets/js/noc-device.js', 'devices-noc.php', 'device-noc.php', 'lib/NocInventory.php',
+NOC_FILES = ['assets/css/jrc-theme.css', 'assets/js/jrc-theme.js', 'assets/js/noc-device.js', 'devices-noc.php', 'device-noc.php', 'lib/NocInventory.php',
              'api/noc-devices.php', 'views/layouts/noc-inventory-header.php',
              'assets/css/noc-inventory.css', 'assets/js/noc-inventory.js', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/NocHistory.php',
              'api/dashboard-noc-data.php', 'assets/js/dashboard-noc.js',
@@ -29,7 +32,7 @@ def safe_path(root, relative):
     return path
 
 
-def plan(root):
+def plan(root, theme=False):
     changes = {p: (SOURCE / p).read_bytes() for p in NOC_FILES}
     config = safe_path(root, 'lib/IXCConfig.php')
     if not config.exists():
@@ -64,6 +67,11 @@ def plan(root):
                 "    $ixcBaseUrl = $ixcConfig['base_url'];\n"
                 "    $ixcToken = $ixcConfig['token'];\n\n\n") + updated[end:]
             changes[relative] = updated.encode('utf-8')
+    if theme:
+        for relative in THEME_PAGES:
+            path = safe_path(root, relative)
+            if relative in changes or path.is_file():
+                changes[relative] = inject_theme(changes.get(relative, path.read_bytes() if path.is_file() else b''))
     return {p: data for p, data in changes.items()
             if not safe_path(root, p).exists() or safe_path(root, p).read_bytes() != data}
 
@@ -97,6 +105,7 @@ def main():
     parser.add_argument('--backup-root', default='/var/backups')
     parser.add_argument('--php', default='php')
     parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--theme', action='store_true', help='Apply the shared visual theme to existing pages, preserving local code')
     parser.add_argument('--restore', help='Restore the files listed in a private installer backup')
     args = parser.parse_args()
     root = pathlib.Path(args.target).resolve()
@@ -105,7 +114,7 @@ def main():
     if args.restore:
         backup = pathlib.Path(args.restore).resolve()
         manifest = json.loads((backup / 'manifest.json').read_text())
-        allowed = set(NOC_FILES + ['lib/IXCConfig.php', 'cron/device-monitor.php',
+        allowed = set(NOC_FILES + THEME_PAGES + ['lib/IXCConfig.php', 'cron/device-monitor.php',
                                   'cron/webhook-monitor.php', 'api/get-onu-optical.php'])
         if manifest['target'] != str(root) or not set(manifest['files']).issubset(allowed):
             raise RuntimeError('Backup does not match this application.')
@@ -118,12 +127,16 @@ def main():
                 path.unlink()
         print('Previous files restored. Private IXC credentials were not changed.')
         return
-    changes = plan(root)
-    for relative, content in changes.items():
+    changes = plan(root, args.theme)
+    def check_syntax(item):
+        relative, content = item
         if relative.endswith('.php'):
-            checked = subprocess.run([args.php, '-l'], input=content, capture_output=True)
+            checked = subprocess.run([args.php, '-l'], input=content, capture_output=True, timeout=60)
             if checked.returncode:
                 raise RuntimeError('PHP syntax check failed: ' + relative)
+    # Independent read-only checks; finish all before creating backups or writing the application.
+    with ThreadPoolExecutor(max_workers=4) as checks:
+        list(checks.map(check_syntax, changes.items()))
     print('Validated changes:')
     for relative in changes:
         print('  ' + relative)
@@ -176,7 +189,7 @@ def main():
                 replace(path, data, metadata)
         raise
     print('Installed successfully. Private backup: ' + str(backup))
-    print('No login, current dashboard, configuration credentials or running services were changed.')
+    print('Queries, action handlers, authentication routing, credentials and running services were preserved.')
 
 
 if __name__ == '__main__':

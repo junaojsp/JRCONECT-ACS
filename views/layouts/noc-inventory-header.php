@@ -11,6 +11,10 @@ $title = $inventoryDetail ? 'Detalhes do equipamento' : 'Equipamentos';
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/dashboard-noc.css?v=5">
 <link rel="stylesheet" href="/assets/css/noc-inventory.css?v=2">
+<!-- JRC NOC SHARED THEME -->
+<link rel="stylesheet" href="/assets/css/jrc-theme.css?v=1">
+<script src="/assets/js/jrc-theme.js?v=1" defer></script>
+<!-- /JRC NOC SHARED THEME -->
 </head><body class="noc-app<?php echo $inventoryDetail ? ' inventory-device' : ''; ?>">
 <a class="noc-skip" href="#noc-main">Ir para o conteúdo</a>
 <aside class="noc-sidebar" aria-label="Menu do ACS">

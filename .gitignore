@@ -75,3 +75,7 @@ secrets*
 
 # Configuração privada IXC (somente exemplo no Git)
 /config/ixc.php
+
+# Python tooling caches
+__pycache__/
+*.pyc

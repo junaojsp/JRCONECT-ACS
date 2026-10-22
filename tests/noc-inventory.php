@@ -42,3 +42,15 @@ $device['InternetGatewayDevice']['DeviceInfo']['MemoryStatus']['Total']['_value'
 $row = App\NocInventory::parse($device, null, $now, true);
 assert(json_encode($row) !== false && $row['telemetry']['memory']['value'] === null);
 echo "PASS inventory parsing: secrets excluded, IXC aliases/priority, boundaries, zero values, invalid readings and future Inform\n";
+
+$device['InternetGatewayDevice']['WANDevice']['1']['WANConnectionDevice']['1']['WANPPPConnection']['1'] = [
+    'ConnectionStatus'=>['_value'=>'Connected'], 'Stats'=>[
+        'EthernetBytesReceived'=>['_value'=>0], 'EthernetBytesSent'=>['_value'=>123],
+        'TotalBytesReceived'=>['_value'=>999], 'TotalBytesSent'=>['_value'=>999]]];
+$row=App\NocInventory::parse($device,null,$now,true);
+assert($row['wan'][0]['bytes_received']['value']===0);
+assert($row['wan'][0]['bytes_sent']['value']===123);
+unset($device['InternetGatewayDevice']['WANDevice']['1']['WANConnectionDevice']['1']['WANPPPConnection']['1']['Stats']['EthernetBytesReceived']);
+$row=App\NocInventory::parse($device,null,$now,true);
+assert($row['wan'][0]['bytes_received']['value']===999);
+echo "PASS standard TR-098 Ethernet counters: zero precedence and fallback\n";

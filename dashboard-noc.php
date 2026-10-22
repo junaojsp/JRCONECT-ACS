@@ -18,6 +18,10 @@ $nocUsername = htmlspecialchars((string) ($_SESSION['username'] ?? 'Administrado
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/dashboard-noc.css?v=5">
+<!-- JRC NOC SHARED THEME -->
+<link rel="stylesheet" href="/assets/css/jrc-theme.css?v=1">
+<script src="/assets/js/jrc-theme.js?v=1" defer></script>
+<!-- /JRC NOC SHARED THEME -->
 </head>
 <body class="noc-app">
 <a class="noc-skip" href="#noc-main">Ir para os indicadores</a>

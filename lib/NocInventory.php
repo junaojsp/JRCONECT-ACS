@@ -34,7 +34,8 @@ class NocInventory
             $fields = array_merge($fields, self::TEMP, ['VirtualParameters.TXPower']);
             foreach (self::EXTRA as $paths) $fields = array_merge($fields, $paths);
             foreach (self::wanBases() as $base) {
-                foreach (['Uptime', 'Stats.TotalBytesReceived', 'Stats.TotalBytesSent'] as $leaf) $fields[] = "$base.$leaf";
+                foreach (['Uptime', 'Stats.EthernetBytesReceived', 'Stats.EthernetBytesSent',
+                    'Stats.TotalBytesReceived', 'Stats.TotalBytesSent'] as $leaf) $fields[] = "$base.$leaf";
             }
             foreach (['InternetGatewayDevice.DeviceInfo', 'Device.DeviceInfo'] as $base) {
                 foreach (['HardwareVersion', 'Manufacturer', 'ModelName', 'SerialNumber'] as $leaf) $fields[] = "$base.$leaf";
@@ -126,8 +127,8 @@ class NocInventory
             $wans[] = ['path' => $base, 'ip' => $text($ip['value']), 'status' => $text($state['value']),
                 'updated_at' => $ip['updated_at'] ?? $state['updated_at'] ?? null,
                 'uptime' => self::read($device, "$base.Uptime")['value'],
-                'bytes_received' => self::read($device, "$base.Stats.TotalBytesReceived"),
-                'bytes_sent' => self::read($device, "$base.Stats.TotalBytesSent")];
+                'bytes_received' => self::first($device, ["$base.Stats.EthernetBytesReceived", "$base.Stats.TotalBytesReceived"]),
+                'bytes_sent' => self::first($device, ["$base.Stats.EthernetBytesSent", "$base.Stats.TotalBytesSent"])];
         }
         $ip = null;
         foreach ($wans as $wan) {
