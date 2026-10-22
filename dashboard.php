@@ -1189,6 +1189,15 @@ include __DIR__ . '/views/layouts/header.php';
     .fb-overview #recent-devices .table thead th{background:transparent!important;color:#8d939c!important;font-size:11px!important;letter-spacing:.04em!important;padding:10px 8px!important;border-color:#2a2d34!important}
     .fb-overview #recent-devices .table tbody td{background:transparent!important;color:#d7dbe2!important;font-size:13px!important;padding:10px 8px!important;border-color:#26282f!important}
     .fb-overview #recent-devices .table tbody tr:hover td{background:#1b1e25!important}
+    .fb-overview .fb-equip{display:flex!important;align-items:center!important;gap:10px!important;color:#f3f5f7!important;text-decoration:none!important}
+    .fb-overview .fb-equip strong{display:block!important;color:#f7f8fa!important;font-size:13px!important;font-weight:650!important}
+    .fb-overview .fb-equip small,.fb-overview .fb-muted{display:block!important;color:#8d939c!important;font-size:12px!important}
+    .fb-overview .fb-equip-icon{width:32px!important;height:32px!important;border-radius:10px!important;display:grid!important;place-items:center!important;background:#1c1f27!important;color:#c5cad3!important;flex:0 0 auto!important}
+    .fb-overview .fb-signal{display:inline-flex!important;align-items:center!important;gap:6px!important;border-radius:999px!important;padding:3px 8px!important;font-size:12px!important;font-weight:650!important;background:#1c1f27!important;color:#c5cad3!important}
+    .fb-overview .fb-signal i{font-size:8px!important}
+    .fb-overview .fb-signal.is-good{background:#143222!important;color:#3ddc84!important}
+    .fb-overview .fb-signal.is-warn{background:#3a2e14!important;color:#f5b942!important}
+    .fb-overview .fb-signal.is-bad{background:#3a1518!important;color:#ff6b6b!important}
     .fb-overview .fb-side{padding-bottom:8px!important}
     .fb-overview .fb-side-row{display:grid!important;grid-template-columns:4px 1fr auto!important;gap:12px!important;align-items:center!important;padding:14px 16px!important;border-top:1px solid #26282f!important}
     .fb-overview .fb-side-row small{display:block!important;color:#8d939c!important;font-size:12px!important}
@@ -1832,6 +1841,29 @@ function uniqueDashboardOnus(devices) {
     });
 }
 
+
+function overviewUptime(value) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) return '—';
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    if (days > 0) return days + 'd ' + hours + 'h';
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return hours + 'h ' + minutes + 'min';
+    return Math.max(1, minutes) + ' min';
+}
+
+function overviewSeen(timestamp) {
+    const value = Number(timestamp);
+    if (!value) return '—';
+    const diff = Math.max(0, Date.now() / 1000 - value);
+    const days = Math.floor(diff / 86400);
+    if (days >= 1) return days + ' d';
+    const hours = Math.floor(diff / 3600);
+    if (hours >= 1) return hours + ' h';
+    return Math.max(1, Math.floor(diff / 60)) + ' min';
+}
+
 async function loadRecentDevices() {
     if (recentDevicesFetchInProgress) return;
     const container = document.getElementById('recent-devices');
@@ -1842,23 +1874,28 @@ async function loadRecentDevices() {
 
     function draw() {
         if (request !== recentDashboardRequest) return;
+        const signature = devices.map(device => [
+            device.device_id,
+            device.serial_number,
+            device.pppoe_username,
+            device.rx_power,
+            device.uptime,
+            device.last_inform_timestamp
+        ].join('|')).join('\n');
+        if (signature && signature === container.dataset.signature && container.querySelector('tbody')) return;
+        container.dataset.signature = signature;
             let html =
                 '<div class="table-responsive">' +
                 '<table class="table table-hover">' +
                 '<thead><tr>';
 
 
-            html += '<th>Serial</th>';
-            html += '<th>MAC</th>';
-            html += '<th>Modelo</th>';
-            html += '<th>IP</th>';
-            html += '<th>SSID 2,4 GHz</th>';
-            html += '<th>PPPoE</th>';
-            html += '<th>RX</th>';
-            html += '<th>Temperatura</th>';
-            html += '<th>Clientes</th>';
-            html += '<th>Status</th>';
-            html += '<th>Ações</th>';
+            html += '<th>Equipamento</th>';
+            html += '<th>Cliente (PPPoE)</th>';
+            html += '<th>IP WAN</th>';
+            html += '<th>Sinal RX</th>';
+            html += '<th>Uptime</th>';
+            html += '<th>Visto</th>';
 
 
             html +=
@@ -1866,237 +1903,32 @@ async function loadRecentDevices() {
 
 
 
-            devices.forEach(
-                device => {
-
-
-                    const ipAddress =
-                        extractIP(
-                            device.ip_tr069
-                        );
-
-
-                    /*
-                     * IP.
-                     */
-
-                    let ipDisplay;
-
-
-                    if (
-                        ipAddress !== 'N/A' &&
-                        ipAddress !== ''
-                    ) {
-
-
-                        ipDisplay =
-                            `<a href="http://${ipAddress}" target="_blank" rel="noopener noreferrer">${ipAddress}</a>`;
-
-
-                    } else {
-
-
-                        ipDisplay =
-                            ipAddress;
-
-
+            devices.forEach(device => {
+                    const ipAddress = extractIP(device.ip_tr069);
+                    const ipDisplay = (ipAddress && ipAddress !== 'N/A')
+                        ? `<a href="http://${escapeDashboardHtml(ipAddress)}" target="_blank" rel="noopener noreferrer">${escapeDashboardHtml(ipAddress)}</a>`
+                        : '—';
+                    const titleParts = [device.manufacturer, device.product_class].filter(part => part && part !== 'N/A' && part !== 'N/D');
+                    const title = escapeDashboardHtml(titleParts.join(' ') || 'Equipamento');
+                    const serial = escapeDashboardHtml(device.serial_number || '—');
+                    const clientRaw = String(device.pppoe_username || '').trim();
+                    const client = (!clientRaw || clientRaw === 'N/A' || clientRaw === 'N/D') ? '—' : escapeDashboardHtml(clientRaw);
+                    const rxPower = parseFloat(device.rx_power);
+                    let signal = '<span class="fb-signal is-muted"><i class="bi bi-circle-fill"></i>Sem dado</span>';
+                    if (!isNaN(rxPower) && rxPower !== -999) {
+                        const band = rxPower > -25 ? 'is-good' : (rxPower > -27 ? 'is-warn' : 'is-bad');
+                        signal = `<span class="fb-signal ${band}"><i class="bi bi-circle-fill"></i>${escapeDashboardHtml(Number(rxPower).toFixed(2))} dBm</span>`;
                     }
-
-
-                    /*
-                     * Clientes.
-                     */
-
-                    const clientsCount =
-                        device.connected_devices_count ||
-                        0;
-
-
-                    let clientsBadge;
-
-
-                    if (
-                        clientsCount > 0
-                    ) {
-
-
-                        clientsBadge =
-                            `<span class="badge bg-primary">${clientsCount}</span>`;
-
-
-                    } else {
-
-
-                        clientsBadge =
-                            '<span class="badge bg-secondary">0</span>';
-
-
-                    }
-
-
-                    /*
-                     * Potência RX.
-                     */
-
-                    const rxPower =
-                        parseFloat(
-                            device.rx_power
-                        );
-
-
-                    let rxBadgeClass =
-                        'bg-secondary';
-
-
-                    let rxDisplay =
-                        device.rx_power;
-
-
-                    if (
-                        !isNaN(rxPower) &&
-                        rxPower !== -999
-                    ) {
-
-
-                        if (
-                            rxPower > -25
-                        ) {
-
-
-                            rxBadgeClass =
-                                'bg-success';
-
-
-                        } else if (
-                            rxPower > -27
-                        ) {
-
-
-                            rxBadgeClass =
-                                'bg-warning';
-
-
-                        } else {
-
-
-                            rxBadgeClass =
-                                'bg-danger';
-
-
-                        }
-
-
-                        rxDisplay =
-                            `<span class="badge ${rxBadgeClass}">${device.rx_power} dBm</span>`;
-
-
-                    } else {
-
-
-                        rxDisplay =
-                            `<span class="badge ${rxBadgeClass}">N/D</span>`;
-
-
-                    }
-
-
-                    /*
-                     * Status.
-                     */
-
-                    let statusBadge;
-
-
-                    if (
-                        device.status === 'online'
-                    ) {
-
-
-                        const ping =
-                            device.ping ||
-                            '-';
-
-
-                        statusBadge =
-                            `<span class="badge online">ONLINE [${ping}ms]</span>`;
-
-
-                    } else {
-
-
-                        statusBadge =
-                            '<span class="badge offline">OFFLINE [-]</span>';
-
-
-                    }
-
-
-                    /*
-                     * Linha.
-                     */
-
-                    html += '<tr>';
-
-
-                    html +=
-                        `<td><a href="/device-detail.php?id=${encodeURIComponent(device.device_id)}">${device.serial_number}</a></td>`;
-
-
-                    html +=
-                        `<td>${device.mac_address || 'N/D'}</td>`;
-
-
-                    html +=
-                        `<td>${device.product_class || 'N/D'}</td>`;
-
-
-                    html +=
-                        `<td>${ipDisplay}</td>`;
-
-
-                    html +=
-                        `<td>${device.wifi_ssid_24ghz ?? device.wifi_ssid ?? 'N/D'}</td>`;
-
-
-                    html +=
-                        `<td>${device.pppoe_username || 'N/D'}</td>`;
-
-
-                    html +=
-                        `<td>${rxDisplay}${onuReadingLabel(device.reading_source || "TR-069", device.reading_queried_at, device.reading_measured_at)}</td>`;
-
-
-                    html +=
-                        `<td>${device.temperature || 'N/A'}°C</td>`;
-
-
-                    html +=
-                        `<td class="text-center">${clientsBadge}</td>`;
-
-
-                    html +=
-                        `<td>${statusBadge}</td>`;
-
-
-                    html +=
-                        '<td>';
-
-
-                    html +=
-                        `<button class="btn btn-sm btn-primary" onclick="summonDeviceQuick('${device.device_id}')" title="Solicitar comunicação"><i class="bi bi-lightning-charge"></i></button>`;
-
-
-                    html +=
-                        '</td>';
-
-
-                    html +=
-                        '</tr>';
-
-
-                }
-            );
-
+                    const href = '/device-detail.php?id=' + encodeURIComponent(device.device_id || '');
+                    html += '<tr>'
+                        + `<td><a class="fb-equip" href="${href}"><span class="fb-equip-icon"><i class="bi bi-router"></i></span><span><strong>${title}</strong><small>${serial}</small></span></a></td>`
+                        + `<td class="fb-muted">${client}</td>`
+                        + `<td>${ipDisplay}</td>`
+                        + `<td>${signal}</td>`
+                        + `<td>${escapeDashboardHtml(overviewUptime(device.uptime))}</td>`
+                        + `<td class="fb-muted">${escapeDashboardHtml(overviewSeen(device.last_inform_timestamp))}</td>`
+                        + '</tr>';
+                });
 
             html +=
                 '</tbody></table></div>';
@@ -2108,7 +1940,7 @@ async function loadRecentDevices() {
     }
 
     if (devices.length) draw();
-    else container.innerHTML = '<div class="spinner"></div>';
+    else if (!container.querySelector('tbody')) container.innerHTML = '<div class="spinner"></div>';
 
     try {
         const result = await fetchAPI('/api/recent-devices.php', { timeout: 25000 });
@@ -2116,7 +1948,9 @@ async function loadRecentDevices() {
         devices = uniqueDashboardOnus(Array.isArray(result.devices) ? result.devices : []);
         recentDashboardDevices = devices;
         if (!devices.length) {
-            container.innerHTML = '<p class="text-center text-muted">Nenhuma atividade recente encontrada</p>';
+            if (!container.querySelector('tbody')) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhuma atividade recente encontrada</p>';
+            }
             return;
         }
         // Render before requesting IXC information.
