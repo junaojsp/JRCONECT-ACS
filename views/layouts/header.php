@@ -41,9 +41,11 @@
     <script
         src="/assets/js/client-logger.js?v=<?php echo time(); ?>"
     ></script>
+    <!-- JRC-ACS 2.0: camada de aparência, sem alterar as funções -->
+    <link rel="stylesheet" href="/assets/css/jrc-acs-v2-theme.css?v=1">
 </head>
 
-<body>
+<body class="jrc-v2">
 
     <!-- Menu lateral -->
     <div class="sidebar" id="sidebar">
