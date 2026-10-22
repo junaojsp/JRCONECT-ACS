@@ -275,16 +275,15 @@ include __DIR__ . '/views/layouts/header.php';
                 </div>
 
                 <div class="tab-pane fade" id="optical" role="tabpanel" aria-labelledby="optical-tab">
-                    <section class="acs-overview-card fb-optical-tab">
-                        <h2 class="fb-section-title">Sinal óptico</h2>
-                        <p class="fb-tab-note">Leituras do IXC. O gráfico de RX ao longo do período fica na Visão geral.</p>
-                        <div class="fb-ind-grid">
-                            <article class="fb-ind"><span>Sinal RX</span><strong data-optical="rx_power">Consultando...</strong><em class="fb-pill" data-optical-pill="rx_power">—</em></article>
-                            <article class="fb-ind"><span>Sinal TX</span><strong data-optical="tx_power">Consultando...</strong><em class="fb-pill" data-optical-pill="tx_power">—</em></article>
-                            <article class="fb-ind"><span>Temperatura</span><strong data-optical="temperature">Consultando...</strong><em class="fb-pill" data-optical-pill="temperature">—</em></article>
-                            <article class="fb-ind"><span>Voltagem</span><strong data-optical="voltage">Consultando...</strong><em class="fb-pill" data-optical-pill="voltage">—</em></article>
-                        </div>
-                        <div class="acs-reference-list fb-optical-meta">
+                    <div id="optical-chart-mount"></div>
+                    <div class="fb-ind-grid fb-optical-metrics">
+                        <article class="fb-ind"><span>Sinal RX</span><strong data-optical="rx_power">Consultando...</strong><em class="fb-pill" data-optical-pill="rx_power">—</em><small>Potência recebida da OLT. Abaixo de −25 dBm o enlace começa a oscilar.</small></article>
+                        <article class="fb-ind"><span>Sinal TX</span><strong data-optical="tx_power">Consultando...</strong><em class="fb-pill" data-optical-pill="tx_power">—</em><small>Potência que a ONU envia de volta para a OLT.</small></article>
+                        <article class="fb-ind"><span>Temperatura</span><strong data-optical="temperature">Consultando...</strong><em class="fb-pill" data-optical-pill="temperature">—</em><small>Temperatura do módulo óptico.</small></article>
+                        <article class="fb-ind"><span>Voltagem</span><strong data-optical="voltage">Consultando...</strong><em class="fb-pill" data-optical-pill="voltage">—</em><small>Tensão de alimentação do módulo óptico.</small></article>
+                    </div>
+                    <section class="acs-overview-card fb-optical-meta-card">
+                        <div class="acs-reference-list">
                             <div><span>OLT / PON</span><strong id="fb-optical-pon">Consultando...</strong></div>
                             <div><span>Última leitura</span><strong id="fb-optical-seen">Consultando...</strong></div>
                         </div>
@@ -296,7 +295,7 @@ include __DIR__ . '/views/layouts/header.php';
                         <div class="acs-overview-card-header">
                             <div>
                                 <span class="acs-kicker">Wi-Fi</span>
-                                <small class="d-block text-muted">SSID e senha deste equipamento. A mesma alteração segue pela API usada no outro sistema.</small>
+                                <small class="d-block text-muted">SSID e senha das redes deste equipamento.</small>
                             </div>
                             <button class="acs-toolbar-action fb-primary" type="button" onclick="fbOpenLegacyWifi()">Alterar SSID e senha</button>
                         </div>
@@ -325,6 +324,10 @@ include __DIR__ . '/views/layouts/header.php';
                         <button class="acs-toolbar-action" type="button" onclick="openDeviceAIDrawer()"><i class="bi bi-stars"></i> Assistente</button>
                         <button class="acs-toolbar-action" type="button" onclick="loadDeviceDetail()"><i class="bi bi-arrow-clockwise"></i> Atualizar</button>
                     </div>
+                </section>
+                <section class="acs-overview-card fb-action-stage">
+                    <h2 class="fb-section-title">Execução</h2>
+                    <p class="fb-alert-empty">Escolha ping, traceroute, redes próximas ou speedtest na lista. O resultado usa a coleta deste CPE. Comunicar, etiqueta e acesso web ficam nas ações do equipamento.</p>
                 </section>
                 <section class="acs-overview-card acs-card-diagnostics acs-approved-diagnostics">
                     <div class="acs-overview-card-header">
@@ -2324,13 +2327,13 @@ function restoreSpeedtestButton() {
 
 <link rel="stylesheet" href="/assets/css/device-control-fix.css?v=<?php echo time(); ?>">
 <link rel="stylesheet" href="/assets/css/optical-history.css?v=20261005-1">
-<script src="/assets/js/optical-history.js?v=20261022-onu5"></script>
+<script src="/assets/js/optical-history.js?v=20261022-onu6"></script>
 <link rel="stylesheet" href="/assets/css/device-action-history.css?v=20261005-1">
 <script src="/assets/js/device-action-history.js?v=20261005-2"></script>
 <script src="/assets/js/device-detail.js?v=<?php echo time(); ?>"></script>
 <script src="/assets/js/device-control-fix.js?v=<?php echo time(); ?>"></script>
 <link rel="stylesheet" href="/assets/css/device-readability.css?v=20261005-6">
-<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu5">
+<link rel="stylesheet" href="/assets/css/scout-device.css?v=20261022-onu6">
 
 
 <?php

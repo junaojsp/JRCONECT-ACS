@@ -630,6 +630,100 @@ html.acs-device-readable .fb-device .acs-reference-list > div > strong {
     padding: 4px 10px !important;
 }
 
+.fb-device #wifi .jr-wifi-summary-row,
+.fb-device #wifi .acs-wifi-health-row,
+.fb-device #wifi .jr-wifi-summary-card {
+    background: #1a1d24 !important;
+    background-image: none !important;
+    border: 1px solid #2a2d34 !important;
+    color: #f3f5f7 !important;
+}
+.fb-device #wifi .jr-wifi-row-title i,
+.fb-device #wifi .jr-wifi-summary-head i,
+.fb-device #wifi .acs-wifi-health-state > i { color: #e8eaee !important; }
+.fb-device #wifi .jr-wifi-row-data span,
+.fb-device #wifi .jr-wifi-summary-values dt,
+.fb-device #wifi .acs-wifi-health-detail small { color: #8d939c !important; }
+.fb-device #wifi .jr-wifi-row-data strong,
+.fb-device #wifi .jr-wifi-summary-values dd,
+.fb-device #wifi .jr-wifi-row-title strong { color: #f7f8fa !important; }
+.fb-device #wifi .acs-soft-btn,
+.fb-device #wifi .acs-soft-btn.primary {
+    background: #14161b !important;
+    border: 1px solid #32353d !important;
+    color: #f3f5f7 !important;
+}
+.fb-device #wifi .jr-wifi-summary-footer,
+.fb-device #wifi .jr-wifi-health-strip,
+.fb-device #wifi .jr-wifi-summary-footer small { color: #8d939c !important; }
+
+.fb-device .acs-wan-page,
+.fb-device .acs-wan-card,
+.fb-device .acs-wan-empty {
+    background: #14161b !important;
+    background-image: none !important;
+    border-color: #2a2d34 !important;
+    box-shadow: none !important;
+    color: #f3f5f7 !important;
+}
+.fb-device .acs-wan-page-header h4,
+.fb-device .acs-wan-card h5,
+.fb-device .acs-wan-card strong { color: #f7f8fa !important; }
+.fb-device .acs-wan-page-header p,
+.fb-device .acs-wan-card span,
+.fb-device .acs-wan-details span { color: #8d939c !important; }
+.fb-device .acs-wan-card-icon,
+.fb-device .acs-wan-primary-btn,
+.fb-device .acs-wan-card-actions button,
+.fb-device .acs-wan-summary-pill {
+    background: #1c1f26 !important;
+    border-color: #32353d !important;
+    color: #e8eaee !important;
+    box-shadow: none !important;
+}
+.fb-device .acs-wan-card-top,
+.fb-device .acs-wan-details > div { border-color: #26282f !important; }
+
+.fb-device #acs-diagnostics-content {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) !important;
+    gap: 14px !important;
+    align-items: start !important;
+}
+.fb-device #acs-diagnostics-content .fb-actions-bar { grid-column: 1; grid-row: 1; }
+.fb-device #acs-diagnostics-content .acs-approved-diagnostics { grid-column: 1; grid-row: 2; }
+.fb-device #acs-diagnostics-content .fb-action-stage { grid-column: 2; grid-row: 1 / span 2; min-height: 280px; }
+.fb-device .acs-diagnostic-services { display: none !important; }
+.fb-device .acs-diagnostic-item,
+.fb-device .acs-diagnostic-list button {
+    background: #1a1d24 !important;
+    border: 1px solid #2a2d34 !important;
+    color: #f3f5f7 !important;
+    box-shadow: none !important;
+}
+.fb-device .acs-diagnostic-item:hover { border-color: #e10600 !important; }
+.fb-device .acs-diagnostic-icon,
+.fb-device .acs-diagnostic-play { color: #e8eaee !important; background: transparent !important; }
+
+.fb-optical-metrics { margin-top: 14px; }
+.fb-optical-metrics .fb-ind small {
+    display: block;
+    margin-top: 8px;
+    color: #8d939c;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: normal !important;
+}
+.fb-optical-meta-card { margin-top: 14px; }
+.fb-device #optical .acs-optical-history { margin-bottom: 0; }
+
+@media (max-width: 900px) {
+    .fb-device #acs-diagnostics-content { grid-template-columns: 1fr !important; }
+    .fb-device #acs-diagnostics-content .fb-actions-bar,
+    .fb-device #acs-diagnostics-content .acs-approved-diagnostics,
+    .fb-device #acs-diagnostics-content .fb-action-stage { grid-column: 1; grid-row: auto; }
+}
+
 .fb-alerts-card .fb-alert {
     display: flex;
     align-items: flex-start;

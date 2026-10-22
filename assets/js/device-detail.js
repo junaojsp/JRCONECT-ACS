@@ -734,6 +734,8 @@ async function loadDeviceDetail(isAutoRefresh = false) {
 
         const historyMount = document.getElementById('history-content');
         if (historyMount) historyMount.innerHTML = renderDeviceActionHistoryCard();
+        const opticalMount = document.getElementById('optical-chart-mount');
+        if (opticalMount) opticalMount.innerHTML = renderOpticalHistoryCard('tab');
         if (typeof paintActiveAlerts === 'function') paintActiveAlerts();
 
         renderWifiHealthCard(device);
@@ -2912,15 +2914,14 @@ function paintHeaderSignal() {
 }
 
 function paintOpticalGauge() {
-    const mark = document.getElementById('optical-rx-gauge-mark');
-    if (!mark) return;
     const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
-    if (!Number.isFinite(rx)) {
-        mark.style.left = '0%';
-        return;
-    }
-    const pct = Math.min(100, Math.max(0, (rx + 30) / 22 * 100));
-    mark.style.left = pct + '%';
+    const finite = Number.isFinite(rx);
+    const pct = finite ? Math.min(100, Math.max(0, (rx + 30) / 22 * 100)) : 0;
+    const label = finite
+        ? rx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' dBm'
+        : 'RX';
+    document.querySelectorAll('[data-gauge-mark]').forEach(mark => { mark.style.left = pct + '%'; });
+    document.querySelectorAll('[data-gauge-label]').forEach(node => { node.textContent = label; });
 }
 
 function paintActiveAlerts() {
