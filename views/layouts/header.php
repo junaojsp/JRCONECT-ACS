@@ -38,6 +38,7 @@
     >
 
     <link rel="stylesheet" href="/assets/css/sidebar.css?v=20261005-toggle">
+    <link rel="stylesheet" href="/assets/css/scout-nav.css?v=20261022">
     <?php if (($currentPage ?? '') === 'dashboard' || ($pageTitle ?? '') === 'Equipamentos'): ?>
     <link rel="stylesheet" href="/assets/css/page-readability.css?v=20261005-1">
     <script src="/assets/js/page-readability.js?v=20261005-1"></script>
@@ -52,96 +53,88 @@
 <body>
 
     <!-- Menu lateral -->
+    <?php
+    $nav = $currentPage ?? '';
+    $navUser = $_SESSION['username'] ?? 'operador';
+    $navRole = trim((string) ($_SESSION['role'] ?? ''));
+    if ($navRole === '') {
+        $navRole = 'Operador';
+    }
+    $navInitials = strtoupper(substr(preg_replace('/[^a-z0-9]/i', '', $navUser), 0, 2) ?: 'JR');
+    ?>
     <div class="sidebar" id="sidebar">
 
-        <div class="sidebar-header">
-
-            <img
-                src="/assets/img/jrconect-logo.svg?v=20260921"
-                alt="JR CONECT Telecom"
-                class="sidebar-brand-logo"
-            >
-
+        <div class="fb-brand">
+            <span class="fb-mark">J</span>
+            <span class="fb-brand-text">
+                <strong>JRC</strong>
+                <small>ACS</small>
+            </span>
         </div>
 
-
-        <ul class="sidebar-menu" id="sidebar-menu">
-
+        <ul class="fb-nav" id="sidebar-menu">
+            <li class="fb-nav-label">Gestão</li>
             <li>
-
-                <a
-                    href="/dashboard.php"
-                    class="<?php echo ($currentPage ?? '') === 'dashboard' ? 'active' : ''; ?>"
-                    data-tooltip="Visão Geral"
-                >
-                    <i class="bi bi-speedometer2"></i>
-                    <span>Visão Geral</span>
+                <a href="/dashboard.php" class="<?php echo $nav === 'dashboard' ? 'active' : ''; ?>">
+                    <i class="bi bi-grid"></i>
+                    <span>Visão geral</span>
                 </a>
-
             </li>
-
-
             <li>
-
-                <a
-                    href="/devices.php"
-                    class="<?php echo ($currentPage ?? '') === 'devices' ? 'active' : ''; ?>"
-                    data-tooltip="Equipamentos"
-                >
+                <a href="/devices.php" class="<?php echo $nav === 'devices' ? 'active' : ''; ?>">
                     <i class="bi bi-router"></i>
-                    <span>Equipamentos</span>
+                    <span>Dispositivos</span>
                 </a>
-
             </li>
-
-
-            
-
             <li>
-
-                <a
-                    href="/configuration.php"
-                    class="<?php echo ($currentPage ?? '') === 'configuration' ? 'active' : ''; ?>"
-                    data-tooltip="Configurações"
-                >
-                    <i class="bi bi-gear"></i>
-                    <span>Configurações</span>
+                <a href="/discovery.php" class="<?php echo $nav === 'discovery' ? 'active' : ''; ?>">
+                    <i class="bi bi-search"></i>
+                    <span>Discovery</span>
                 </a>
-
             </li>
-
-
-<li>
-    <a
-        href="/users.php"
-        class="<?php echo ($currentPage ?? '') === 'users' ? 'active' : ''; ?>"
-        data-tooltip="Usuários"
-    >
-        <i class="bi bi-people"></i>
-        <span>Usuários</span>
-    </a>
-</li>
-
-<li>
-    <a
-        href="/logout.php"
-        data-tooltip="Sair"
-    >
-        <i class="bi bi-box-arrow-right"></i>
-        <span>Sair</span>
-    </a>
-</li>
-
-              
-
-
+            <li>
+                <a href="/alerts.php" class="<?php echo $nav === 'alerts' ? 'active' : ''; ?>">
+                    <i class="bi bi-bell"></i>
+                    <span>Alertas</span>
+                </a>
+            </li>
+            <li>
+                <a href="/configuration.php" class="<?php echo $nav === 'configuration' ? 'active' : ''; ?>">
+                    <i class="bi bi-gear"></i>
+                    <span>Configuração</span>
+                </a>
+            </li>
+            <li class="fb-nav-label">Plataforma</li>
+            <li>
+                <a href="/users.php" class="<?php echo $nav === 'users' ? 'active' : ''; ?>">
+                    <i class="bi bi-people"></i>
+                    <span>Usuários</span>
+                </a>
+            </li>
+            <li>
+                <a href="/view-logs.php" class="<?php echo $nav === 'logs' ? 'active' : ''; ?>">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Registros</span>
+                </a>
+            </li>
         </ul>
 
-        <!-- Botão recolher menu -->
+        <div class="fb-user">
+            <span class="fb-avatar"><?php echo htmlspecialchars($navInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+            <span class="fb-user-text">
+                <strong><?php echo htmlspecialchars($navUser, ENT_QUOTES, 'UTF-8'); ?></strong>
+                <small><?php echo htmlspecialchars($navRole, ENT_QUOTES, 'UTF-8'); ?></small>
+            </span>
+            <a class="fb-logout" href="/logout.php" title="Sair">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+
         <button
             class="sidebar-toggle"
             id="sidebarToggle"
             type="button"
+            hidden
             title="Recolher menu"
             aria-label="Recolher menu"
             aria-controls="sidebar-menu"
