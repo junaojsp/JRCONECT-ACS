@@ -1161,6 +1161,18 @@ include __DIR__ . '/views/layouts/header.php';
         background: #101114 !important;
         border-color: #1c1e24 !important;
     }
+    #sidebarToggle.sidebar-toggle {
+        background: #1c1f26 !important;
+        border: 1px solid #32353d !important;
+        color: #e8eaee !important;
+        box-shadow: none !important;
+        border-radius: 10px !important;
+    }
+    #sidebarToggle.sidebar-toggle:hover {
+        background: #2a2d34 !important;
+        color: #fff !important;
+        transform: none !important;
+    }
     .topbar, .navbar, header.topbar, body .topbar {
         background: #0c0d10 !important;
         border-bottom: 1px solid #1c1e24 !important;
