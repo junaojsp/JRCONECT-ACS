@@ -21,6 +21,7 @@ import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CALLS = []
+IXC_CALLS = []
 NOW = datetime.datetime.now(datetime.timezone.utc)
 
 
@@ -36,6 +37,33 @@ def device(index):
 class Upstream(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
+
+    def do_POST(self):
+        assert self.path == '/webservice/v1/radpop_radio_cliente_fibra'
+        assert self.headers['ixcsoft'] == 'listar'
+        mode = base64.b64decode(self.headers['Authorization'].split()[1]).decode().split(':')[0]
+        query = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        assert query['qtype'] == 'radpop_radio_cliente_fibra.id' and query['oper'] == '>'
+        assert query['rp'] == '100' and query['sortorder'] == 'asc'
+        IXC_CALLS.append((mode, query))
+        start = (int(query['page']) - 1) * 100
+        total = 0 if mode == 'ixc-empty' else 2500
+        records = [{'id': str(i + 1), 'mac': f'SERIAL-{i}',
+                    'sinal_rx': ['-30,5', -24, 0, -50, '-inf', ''][i % 6],
+                    'data_sinal': '2026-10-21 21:00:00', 'password': 'SECRET', 'login': 'SECRET'}
+                   for i in range(start, min(start + 100, total))]
+        if mode == 'ixc-repeated' and start:
+            records[0]['id'] = '1'
+        if mode == 'ixc-truncated' and start:
+            records = []
+        data = {'total': str(total), 'registros': records}
+        if mode == 'ixc-malformed':
+            data = {'error': 'SECRET'}
+        body = json.dumps(data).encode()
+        self.send_response(503 if mode == 'ixc-unavailable' else 200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_GET(self):
         query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
@@ -97,20 +125,27 @@ def main():
     php = [args.php]
     if args.curl_extension:
         php += ['-d', 'extension=' + str(pathlib.Path(args.curl_extension).resolve())]
-    for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'dashboard-noc.php']:
+    for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/IXCConfig.php', 'dashboard-noc.php']:
         subprocess.run(php + ['-l', str(ROOT / path)], check=True)
     upstream = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Upstream)
     threading.Thread(target=upstream.serve_forever, daemon=True).start()
     try:
         with test_directory(args.temp_dir) as temp:
             root = pathlib.Path(temp)
-            for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/helpers.php']:
+            for path in ['api/dashboard-noc-data.php', 'lib/NocGenieACS.php', 'lib/NocIxcOptical.php', 'lib/IXCConfig.php', 'lib/helpers.php']:
                 (root / path).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / path, root / path)
             (root / 'config').mkdir()
             (root / 'config/config.php').write_text('''<?php
 session_start();
 $mode = $_GET['scenario'] ?? 'normal';
+putenv('IXC_BASE_URL');
+putenv('IXC_TOKEN');
+putenv('NOC_CACHE_DIR=' . __DIR__ . '/../cache');
+if (strpos($mode, 'ixc-') === 0) {
+    putenv('IXC_BASE_URL=http://127.0.0.1:PORT');
+    putenv('IXC_TOKEN=' . $mode . ':SECRET');
+}
 $_SESSION = $mode === 'unauthorized' ? [] : ['user_id' => 1];
 require_once __DIR__ . '/../lib/helpers.php';
 register_shutdown_function(static function () use ($mode) {
@@ -158,8 +193,12 @@ function getDBConnection() { return new TestDB(); }
                         ('object', 502), ('oversized', 502), ('extra-devices', 502),
                         ('bootstrap-throw', 500), ('bootstrap-exit', 500), ('database-throw', 500),
                         ('memory-fatal', 500),
+                        ('ixc-ok', 200), ('ixc-ok', 200), ('ixc-empty', 200),
+                        ('ixc-unavailable', 200), ('ixc-malformed', 200),
+                        ('ixc-repeated', 200), ('ixc-truncated', 200),
                     ]:
                         before = len(CALLS)
+                        ixc_before = len(IXC_CALLS)
                         url = f'http://127.0.0.1:{port}/api/dashboard-noc-data.php?scenario={mode}'
                         try:
                             response = urllib.request.urlopen(url, timeout=60)
@@ -189,12 +228,33 @@ function getDBConnection() { return new TestDB(); }
                             assert data['summary']['total'] == 0 and data['summary']['availability_percent'] is None
                         if mode == 'exact-page':
                             assert len(CALLS) - before == 3 and data['summary']['total'] == 200
+                        if mode.startswith('ixc-'):
+                            s = data['summary']
+                            assert s['total'] == 2413  # IXC-only records never change the ACS inventory.
+                            status = 'ok' if mode in ('ixc-ok', 'ixc-empty') else 'unavailable'
+                            assert data['optical']['status'] == status, (mode, data['optical'])
+                            assert data['capabilities']['ixc_optical_primary'] == (status == 'ok')
+                        if mode == 'ixc-ok':
+                            assert data['optical']['inventory_total'] == 2500
+                            assert (s['optical_good'], s['optical_attention'], s['optical_critical'], s['optical_unavailable']) == (402, 402, 805, 804), s
+                            assert (s['optical_from_ixc'], s['optical_from_tr069']) == (1207, 402), s
+                            assert all(i['priority'] == 0 and i['rx_source'] == 'IXC' for i in data['issues'])
+                            previous = any(m == mode for m, _ in IXC_CALLS[:ixc_before])
+                            assert len(IXC_CALLS) - ixc_before == (0 if previous else 25)
                         print(f'PASS {mode}: HTTP {expected}, valid JSON (128M limit)')
                     log.flush()
                     log.seek(0)
                     normal_peak = next(line.split('NOC_TEST_PEAK normal=')[1].strip()
                                        for line in log if 'NOC_TEST_PEAK normal=' in line)
                     print('Normal snapshot peak PHP memory: ' + normal_peak + ' bytes')
+                    log.seek(0)
+                    ixc_peak = next(line.split('NOC_TEST_PEAK ixc-ok=')[1].strip()
+                                    for line in log if 'NOC_TEST_PEAK ixc-ok=' in line)
+                    print('IXC + ACS snapshot peak PHP memory: ' + ixc_peak + ' bytes')
+                    for cache in (root / 'cache').glob('*/optical.json'):
+                        raw = cache.read_text()
+                        assert 'SECRET' not in raw and 'password' not in raw and 'login' not in raw
+                    print('PASS private cache contains only sanitized optical data; cache hit avoids IXC requests')
                 finally:
                     proc.terminate()
                     proc.wait(timeout=10)

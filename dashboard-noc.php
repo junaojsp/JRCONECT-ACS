@@ -30,7 +30,7 @@ include __DIR__ . '/views/layouts/header.php';
     <div class="noc-kpi kpi-blue"><span class="noc-kpi-icon"><i class="bi bi-router"></i></span><span class="noc-kpi-label">ONUs / CPEs monitorados</span><strong id="noc-total">—</strong><small>Dispositivos no GenieACS</small></div>
     <div class="noc-kpi kpi-green"><span class="noc-kpi-icon"><i class="bi bi-wifi"></i></span><span class="noc-kpi-label">Online</span><strong id="noc-online">—</strong><small>Inform recebido há menos de 5 min</small></div>
     <div class="noc-kpi kpi-red"><span class="noc-kpi-icon"><i class="bi bi-wifi-off"></i></span><span class="noc-kpi-label">Offline TR-069</span><strong id="noc-offline">—</strong><small>Sem Inform recente</small></div>
-    <div class="noc-kpi kpi-amber"><span class="noc-kpi-icon"><i class="bi bi-exclamation-triangle"></i></span><span class="noc-kpi-label">RX óptico crítico</span><strong id="noc-critical">—</strong><small>Leituras abaixo de -28 dBm</small></div>
+    <div class="noc-kpi kpi-amber"><span class="noc-kpi-icon"><i class="bi bi-exclamation-triangle"></i></span><span class="noc-kpi-label">RX óptico crítico</span><strong id="noc-critical">—</strong><small>Entre as leituras válidas, RX &lt; -28 dBm</small></div>
     <div class="noc-kpi kpi-teal"><span class="noc-kpi-icon"><i class="bi bi-bar-chart"></i></span><span class="noc-kpi-label">Disponibilidade atual</span><strong id="noc-availability">—</strong><small>Online / total (não é SLA)</small></div>
   </div>
 
@@ -46,7 +46,7 @@ include __DIR__ . '/views/layouts/header.php';
       <footer><i class="bi bi-info-circle"></i> Histórico de 24h ainda não integrado. Não são exibidos pontos fictícios.</footer>
     </article>
     <article class="noc-panel noc-optics">
-      <header><div><h2><i class="bi bi-broadcast"></i> Saúde do sinal óptico</h2><span>RX reportado pelo TR-069</span></div><a href="/discovery.php">Discovery <i class="bi bi-arrow-up-right"></i></a></header>
+      <header><div><h2><i class="bi bi-broadcast"></i> Saúde do sinal óptico</h2><span id="noc-optical-source">IXC principal / TR-069 fallback · equipamentos do ACS</span></div><a href="/discovery.php">Discovery <i class="bi bi-arrow-up-right"></i></a></header>
       <div class="noc-optical-content">
         <div class="noc-donut" id="noc-donut"><div><strong id="noc-donut-total">—</strong><span>Leituras</span></div></div>
         <div class="noc-optical-legend">
@@ -56,7 +56,7 @@ include __DIR__ . '/views/layouts/header.php';
           <div><span><i class="dot gray"></i> Sem leitura</span><b id="noc-optical-unknown">—</b></div>
         </div>
       </div>
-      <footer>Limiares iniciais de triagem; ajustar por modelo, OLT e parâmetros da rede.</footer>
+      <footer><span id="noc-optical-notice">Aguardando leituras ópticas.</span><br>Limiares iniciais de triagem; ajustar por modelo, OLT e parâmetros da rede. Valores do cadastro IXC não provocam uma coleta na OLT.</footer>
     </article>
     <article class="noc-panel">
       <header><div><h2><i class="bi bi-bell"></i> Ocorrências atuais</h2><span>Prioridades calculadas por snapshot, não são alarmes históricos</span></div><a href="/devices.php">Ver todos <i class="bi bi-arrow-up-right"></i></a></header>
@@ -72,7 +72,7 @@ include __DIR__ . '/views/layouts/header.php';
     <header><div><h2><i class="bi bi-list-ul"></i> Equipamentos que exigem atenção</h2><span>Até 8 dispositivos prioritários · sem exibição de credenciais</span></div><a href="/devices.php">Lista completa <i class="bi bi-arrow-up-right"></i></a></header>
     <div class="noc-table-wrap"><table class="noc-table"><thead><tr><th>Dispositivo</th><th>Modelo</th><th>RX óptico</th><th>Situação</th><th>Último Inform</th><th>Ação</th></tr></thead><tbody id="noc-table-body"><tr><td colspan="6" class="noc-empty">Aguardando dados…</td></tr></tbody></table></div>
   </article>
-  <p class="noc-disclaimer">JRC-ACS NOC 2.0 · Prévia em desenvolvimento · Leitura somente · Fonte: GenieACS TR-069. O status online mede a atualização no ACS, não confirma acesso à Internet do assinante.</p>
+  <p class="noc-disclaimer">JRC-ACS NOC 2.0 · Prévia em desenvolvimento · Leitura somente · Inventário e comunicação: GenieACS TR-069. Óptico: IXC principal / TR-069 fallback. O status online mede a atualização no ACS, não confirma acesso à Internet do assinante.</p>
 </section>
-<script src="/assets/js/dashboard-noc.js?v=2" defer></script>
+<script src="/assets/js/dashboard-noc.js?v=3" defer></script>
 <?php include __DIR__ . '/views/layouts/footer.php'; ?>

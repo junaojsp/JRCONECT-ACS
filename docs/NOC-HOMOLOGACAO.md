@@ -1,5 +1,8 @@
 # NOC 2.0: correção de memória e homologação
 
+> Registro da primeira correção de memória. Para a versão que também integra RX do IXC,
+> corrige os scripts cron e remove o token literal, usar [NOC-CORRECOES-IXC.md](NOC-CORRECOES-IXC.md).
+
 ## Diagnóstico confirmado
 
 O log do servidor enviado em 21/10/2026 registra `Allowed memory size of 134217728 bytes exhausted`

@@ -96,6 +96,19 @@ try {
     );
     $now = time();
     $deadline = microtime(true) + 45;
+    require_once __DIR__ . '/../lib/IXCConfig.php';
+    require_once __DIR__ . '/../lib/NocIxcOptical.php';
+    $ixcSnapshot = null;
+    $ixcStatus = 'not_configured';
+    try {
+        $ixcConfig = getIxcConfig();
+        $ixcStatus = 'unavailable';
+        $ixcSnapshot = (new \App\NocIxcOptical($ixcConfig))->snapshot(12);
+        $ixcStatus = 'ok';
+    } catch (Throwable $e) {
+        // Optical failure does not hide the independently valid ACS inventory.
+        error_log('[JRC NOC] IXC optical status=' . $ixcStatus . '; ' . get_class($e));
+    }
     $skip = 0;
     $pageSize = 100;
     $summary = [
@@ -106,6 +119,8 @@ try {
         'optical_attention' => 0,
         'optical_critical' => 0,
         'optical_unavailable' => 0,
+        'optical_from_ixc' => 0,
+        'optical_from_tr069' => 0,
     ];
     $issues = [];
 
@@ -132,7 +147,27 @@ try {
                 && ($now - $timestamp) < 300;
 
             $summary[$isOnline ? 'online' : 'offline']++;
-            $rx = nocReadRx($device);
+            $rx = null;
+            $rxUpdatedAt = null;
+            $rxSource = null;
+            $identity = is_array($device['_deviceId'] ?? null) ? $device['_deviceId'] : [];
+            $serial = is_scalar($identity['_SerialNumber'] ?? null) ? (string) $identity['_SerialNumber'] : '';
+            if ($ixcSnapshot !== null) {
+                foreach (\App\NocIxcOptical::serialAliases($serial) as $alias) {
+                    $optical = $ixcSnapshot['devices'][$alias] ?? [];
+                    $rx = \App\NocIxcOptical::normalizeRx($optical['rx'] ?? null);
+                    if ($rx !== null) {
+                        $rxSource = 'IXC';
+                        $rxUpdatedAt = $optical['updated_at'] ?? null;
+                        break;
+                    }
+                }
+            }
+            if ($rx === null) {
+                $rx = nocReadRx($device);
+                if ($rx !== null) $rxSource = 'TR-069';
+            }
+            if ($rxSource !== null) $summary[$rxSource === 'IXC' ? 'optical_from_ixc' : 'optical_from_tr069']++;
             if ($rx === null) {
                 $summary['optical_unavailable']++;
             } elseif ($rx < -28) {
@@ -158,7 +193,6 @@ try {
             }
 
             if ($priority !== null) {
-                $identity = $device['_deviceId'] ?? [];
                 $issues[] = [
                     'device_id' => (string) ($device['_id'] ?? ''),
                     'serial' => (string) ($identity['_SerialNumber'] ?? 'N/D'),
@@ -166,6 +200,8 @@ try {
                     'manufacturer' => (string) ($identity['_Manufacturer'] ?? 'N/D'),
                     'status' => $isOnline ? 'online' : 'offline',
                     'rx' => $rx,
+                    'rx_source' => $rxSource,
+                    'rx_updated_at' => $rxUpdatedAt,
                     'reason' => $reason,
                     'priority' => $priority,
                     'last_inform' => $timestamp ? gmdate(DATE_ATOM, $timestamp) : null,
@@ -198,11 +234,18 @@ try {
         'captured_at' => gmdate(DATE_ATOM, $now),
         'summary' => $summary,
         'issues' => array_slice($issues, 0, 8),
+        'optical' => [
+            'status' => $ixcStatus,
+            'source_policy' => 'IXC principal / TR-069 fallback',
+            'inventory_total' => $ixcSnapshot['inventory_total'] ?? null,
+            'captured_at' => $ixcSnapshot !== null ? gmdate(DATE_ATOM, $ixcSnapshot['captured_at']) : null,
+            'cache_ttl_seconds' => 120,
+        ],
         'capabilities' => [
             'historical_availability' => false,
             'pon_capacity' => false,
             'mass_outage_detection' => false,
-            'ixc_optical_primary' => false,
+            'ixc_optical_primary' => $ixcStatus === 'ok',
         ],
     ]);
 } catch (Throwable $e) {

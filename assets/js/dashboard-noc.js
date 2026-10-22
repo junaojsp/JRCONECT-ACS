@@ -29,7 +29,18 @@
     const critical=Number(s.optical_critical)||0, unknown=Number(s.optical_unavailable)||0;
     const percent=total>0 ? 100*online/total : 0;
     setText('noc-total',fmt(total));setText('noc-online',fmt(online));setText('noc-offline',fmt(offline));
-    setText('noc-critical',fmt(critical));
+    const valid=good+attention+critical;
+    setText('noc-critical',valid>0?fmt(critical):'N/D');
+    const optical=data.optical||{};
+    const fromIxc=Number(s.optical_from_ixc)||0,fromTr069=Number(s.optical_from_tr069)||0;
+    setText('noc-optical-source','RX válido: '+fmt(fromIxc)+' IXC · '+fmt(fromTr069)+' TR-069 · equipamentos do ACS');
+    const inventory=typeof optical.inventory_total==='number'
+      ? 'Inventário IXC: '+fmt(optical.inventory_total)+' registros; indicadores acima restritos aos '+fmt(total)+' equipamentos do ACS. ' : '';
+    const note=optical.status==='ok'
+      ? 'Consulta IXC: '+dateLabel(optical.captured_at)+' (cache de até 2 min).'
+      : optical.status==='not_configured'?'IXC não configurado; usando apenas RX disponível no TR-069.'
+      : 'IXC indisponível; usando apenas RX disponível no TR-069.';
+    setText('noc-optical-notice',inventory+note+(valid===0?' Sem leitura óptica válida; não é possível avaliar a criticidade.':''));
     const availability=total>0 ? percent.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%' : 'N/D';
     setText('noc-availability',availability);setText('noc-availability-large',availability);
     setText('noc-legend-online',fmt(online));setText('noc-legend-offline',fmt(offline));
@@ -37,7 +48,6 @@
     $('noc-progress-bar').style.width=Math.min(100,Math.max(0,percent))+'%';
     setText('noc-optical-good',fmt(good));setText('noc-optical-attention',fmt(attention));
     setText('noc-optical-critical',fmt(critical));setText('noc-optical-unknown',fmt(unknown));
-    const valid=good+attention+critical;
     setText('noc-donut-total',fmt(valid));
     const opticalTotal=valid+unknown;
     if(opticalTotal>0){
@@ -58,7 +68,8 @@
       }).join('');
       table.innerHTML=items.map(item=>{
         const cls=issueClass(item),rx=typeof item.rx==='number'?item.rx.toFixed(2)+' dBm':'N/D';
-        return '<tr><td>'+esc(item.serial)+'</td><td>'+esc(item.model)+'</td><td class="'+(cls==='critical'?'rx-critical':cls==='attention'?'rx-attention':'')+'">'+esc(rx)+'</td><td><span class="noc-chip '+cls+'">'+esc(item.reason)+'</span></td><td>'+esc(dateLabel(item.last_inform))+'</td><td><a href="'+detailLink(String(item.device_id||''))+'">Abrir <i class="bi bi-arrow-up-right"></i></a></td></tr>';
+        const rxInfo=typeof item.rx==='number'?'<br><small>'+esc(item.rx_source||'TR-069')+(item.rx_updated_at?' · '+esc(item.rx_updated_at):'')+'</small>':'';
+        return '<tr><td>'+esc(item.serial)+'</td><td>'+esc(item.model)+'</td><td class="'+(cls==='critical'?'rx-critical':cls==='attention'?'rx-attention':'')+'">'+esc(rx)+rxInfo+'</td><td><span class="noc-chip '+cls+'">'+esc(item.reason)+'</span></td><td>'+esc(dateLabel(item.last_inform))+'</td><td><a href="'+detailLink(String(item.device_id||''))+'">Abrir <i class="bi bi-arrow-up-right"></i></a></td></tr>';
       }).join('');
     }
     setText('noc-captured','Leitura: '+dateLabel(data.captured_at));
