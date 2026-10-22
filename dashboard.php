@@ -1166,7 +1166,8 @@ include __DIR__ . '/views/layouts/header.php';
         border-bottom: 1px solid #1c1e24 !important;
     }
     .footer { display: none !important; }
-    .fb-overview{display:grid!important;grid-template-columns:minmax(0,1fr) 280px!important;gap:14px!important;align-items:start!important;color:#f3f5f7!important}
+    .fb-overview{display:block!important;color:#f3f5f7!important}
+    .fb-overview .fb-lower{display:grid!important;grid-template-columns:minmax(0,1fr) 280px!important;gap:14px!important;align-items:start!important}
     .fb-overview *{box-sizing:border-box!important}
     .fb-overview h1{margin:0!important;color:#f7f8fa!important;font-size:28px!important;font-weight:650!important;letter-spacing:-.03em!important;line-height:1.15!important}
     .fb-overview .fb-page-head p{margin:6px 0 0!important;color:#8d939c!important;font-size:14px!important}
@@ -1196,11 +1197,10 @@ include __DIR__ . '/views/layouts/header.php';
     .fb-overview .fb-side-bar.is-amber{background:#f5b942!important}
     .fb-overview .fb-side-bar.is-red{background:#ff5d5d!important}
     .fb-overview .fb-side-bar.is-muted{background:#6d727a!important}
-    @media(max-width:1100px){.fb-overview{grid-template-columns:1fr!important}.fb-overview .fb-stats{grid-template-columns:1fr 1fr!important}}
+    @media(max-width:1100px){.fb-overview .fb-lower{grid-template-columns:1fr!important}.fb-overview .fb-stats{grid-template-columns:1fr 1fr!important}}
     </style>
 
     <div class="fb-overview">
-        <div>
             <div class="fb-page-head">
                 <h1>Visão geral</h1>
                 <p>Saúde da frota de CPEs em tempo real.</p>
@@ -1227,6 +1227,7 @@ include __DIR__ . '/views/layouts/header.php';
                     <span>Sinal crítico</span>
                 </article>
             </div>
+        <div class="fb-lower">
             <section class="fb-panel">
                 <div class="fb-panel-head">
                     <h2>Equipamentos</h2>
@@ -1234,7 +1235,6 @@ include __DIR__ . '/views/layouts/header.php';
                 </div>
                 <div id="recent-devices"><div class="spinner"></div></div>
             </section>
-        </div>
         <aside class="fb-panel fb-side">
             <div class="fb-panel-head"><h2>Sinal da frota</h2></div>
             <div class="fb-side-row"><span class="fb-side-bar"></span><div><small>Online nas últimas 24 h</small></div><strong id="ref-online">-</strong></div>
@@ -1242,6 +1242,7 @@ include __DIR__ . '/views/layouts/header.php';
             <div class="fb-side-row"><span class="fb-side-bar is-red"></span><div><small>Sinal crítico</small></div><strong id="fb-critical-side">-</strong></div>
             <div class="fb-side-row"><span class="fb-side-bar is-muted"></span><div><small>Sem leitura</small></div><strong id="fb-nosignal">-</strong></div>
         </aside>
+        </div>
     </div>
 
 <?php endif; ?>
