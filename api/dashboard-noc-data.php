@@ -6,17 +6,41 @@
  */
 declare(strict_types=1);
 
-require_once __DIR__ . '/../config/config.php';
-requireLogin();
-
+// Install the JSON boundary before loading configuration/autoload/database.
+ini_set('display_errors', '0');
+ob_start();
+$nocBufferLevel = ob_get_level();
+$nocResponseSent = false;
+$nocMemoryReserve = str_repeat(' ', 64 * 1024);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: private, no-store, max-age=0');
-set_time_limit(90);
+register_shutdown_function(static function () use (&$nocMemoryReserve, &$nocResponseSent): void {
+    $nocMemoryReserve = null;
+    if (!$nocResponseSent) {
+        $error = error_get_last();
+        // Do not log exception messages, database errors or upstream bodies.
+        error_log('[JRC NOC] Request terminated; PHP error type=' . ($error['type'] ?? 0));
+        nocReply(500, ['success' => false, 'message' => 'Falha interna ao consultar o painel NOC. Consulte o log PHP.']);
+    }
+});
 
 function nocReply(int $status, array $body): void
 {
+    global $nocBufferLevel, $nocResponseSent;
+    $json = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($json === false) {
+        $status = 500;
+        $json = '{"success":false,"message":"Falha ao gerar resposta do NOC."}';
+    }
+    while (ob_get_level() >= $nocBufferLevel) {
+        ob_end_clean();
+    }
+    header_remove('Location');
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: private, no-store, max-age=0');
     http_response_code($status);
-    echo json_encode($body, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    $nocResponseSent = true;
+    echo $json;
     exit;
 }
 
@@ -42,6 +66,13 @@ function nocReadRx(array $device): ?float
 }
 
 try {
+    require_once __DIR__ . '/../config/config.php';
+    if (!isLoggedIn()) {
+        nocReply(401, ['success' => false, 'message' => 'Sessão expirada. Entre novamente para consultar o NOC.']);
+    }
+    // Release the session lock before querying GenieACS.
+    session_write_close();
+    set_time_limit(60);
     if (!isGenieACSConfigured()) {
         nocReply(503, ['success' => false, 'message' => 'GenieACS não configurado.']);
     }
@@ -56,18 +87,17 @@ try {
         nocReply(503, ['success' => false, 'message' => 'Conexão GenieACS não configurada.']);
     }
 
-    $genie = new \App\GenieACS(
+    require_once __DIR__ . '/../lib/NocGenieACS.php';
+    $genie = new \App\NocGenieACS(
         $credentials['host'],
         $credentials['port'],
         $credentials['username'],
         $credentials['password']
     );
-    $response = $genie->getDevices();
-    if (empty($response['success']) || !isset($response['data']) || !is_array($response['data'])) {
-        nocReply(502, ['success' => false, 'message' => 'Não foi possível consultar os dispositivos do GenieACS.']);
-    }
-
     $now = time();
+    $deadline = microtime(true) + 45;
+    $skip = 0;
+    $pageSize = 100;
     $summary = [
         'total' => 0,
         'online' => 0,
@@ -79,66 +109,80 @@ try {
     ];
     $issues = [];
 
-    foreach ($response['data'] as $device) {
-        if (!is_array($device)) {
-            continue;
+    do {
+        $remaining = (int) ($deadline - microtime(true));
+        if ($remaining < 1) {
+            nocReply(504, ['success' => false, 'message' => 'A consulta do NOC excedeu o tempo limite. Tente novamente.']);
         }
-        $summary['total']++;
-        $lastInform = $device['_lastInform'] ?? null;
-        $timestamp = is_string($lastInform) ? strtotime($lastInform) : false;
-        $isOnline = $timestamp !== false
-            && $timestamp !== null
-            && $timestamp <= $now
-            && ($now - $timestamp) < 300;
-
-        $summary[$isOnline ? 'online' : 'offline']++;
-        $rx = nocReadRx($device);
-        if ($rx === null) {
-            $summary['optical_unavailable']++;
-        } elseif ($rx < -28) {
-            $summary['optical_critical']++;
-        } elseif ($rx <= -25) {
-            $summary['optical_attention']++;
-        } else {
-            $summary['optical_good']++;
+        $response = $genie->getDevices($pageSize, $skip, min(15, $remaining));
+        if (empty($response['success'])) {
+            nocReply(502, ['success' => false, 'message' => 'Não foi possível consultar os dispositivos do GenieACS.']);
         }
+        $pageCount = count($response['data']);
+        foreach ($response['data'] as $device) {
+            if (!is_array($device)) {
+                continue;
+            }
+            $summary['total']++;
+            $lastInform = $device['_lastInform'] ?? null;
+            $timestamp = is_string($lastInform) ? strtotime($lastInform) : false;
+            $isOnline = $timestamp !== false
+                && $timestamp !== null
+                && $timestamp <= $now
+                && ($now - $timestamp) < 300;
 
-        // Ocorrencias atuais: nao representam alarmes persistidos nem falha massiva.
-        $priority = null;
-        $reason = '';
-        if ($isOnline && $rx !== null && $rx < -28) {
-            $priority = 0;
-            $reason = 'RX óptico crítico';
-        } elseif (!$isOnline) {
-            $priority = 1;
-            $reason = 'Sem comunicação TR-069';
-        } elseif ($rx !== null && $rx <= -25) {
-            $priority = 2;
-            $reason = 'RX óptico em atenção';
-        }
+            $summary[$isOnline ? 'online' : 'offline']++;
+            $rx = nocReadRx($device);
+            if ($rx === null) {
+                $summary['optical_unavailable']++;
+            } elseif ($rx < -28) {
+                $summary['optical_critical']++;
+            } elseif ($rx <= -25) {
+                $summary['optical_attention']++;
+            } else {
+                $summary['optical_good']++;
+            }
 
-        if ($priority !== null) {
-            $identity = $device['_deviceId'] ?? [];
-            $issues[] = [
-                'device_id' => (string) ($device['_id'] ?? ''),
-                'serial' => (string) ($identity['_SerialNumber'] ?? 'N/D'),
-                'model' => (string) ($identity['_ProductClass'] ?? 'N/D'),
-                'manufacturer' => (string) ($identity['_Manufacturer'] ?? 'N/D'),
-                'status' => $isOnline ? 'online' : 'offline',
-                'rx' => $rx,
-                'reason' => $reason,
-                'priority' => $priority,
-                'last_inform' => $timestamp ? gmdate(DATE_ATOM, $timestamp) : null,
-            ];
-            if (count($issues) > 32) {
-                usort($issues, static fn($a, $b) =>
-                    ($a['priority'] <=> $b['priority'])
-                    ?: strcmp((string) ($b['last_inform'] ?? ''), (string) ($a['last_inform'] ?? ''))
-                );
-                $issues = array_slice($issues, 0, 12);
+            // Ocorrencias atuais: nao representam alarmes persistidos nem falha massiva.
+            $priority = null;
+            $reason = '';
+            if ($isOnline && $rx !== null && $rx < -28) {
+                $priority = 0;
+                $reason = 'RX óptico crítico';
+            } elseif (!$isOnline) {
+                $priority = 1;
+                $reason = 'Sem comunicação TR-069';
+            } elseif ($rx !== null && $rx <= -25) {
+                $priority = 2;
+                $reason = 'RX óptico em atenção';
+            }
+
+            if ($priority !== null) {
+                $identity = $device['_deviceId'] ?? [];
+                $issues[] = [
+                    'device_id' => (string) ($device['_id'] ?? ''),
+                    'serial' => (string) ($identity['_SerialNumber'] ?? 'N/D'),
+                    'model' => (string) ($identity['_ProductClass'] ?? 'N/D'),
+                    'manufacturer' => (string) ($identity['_Manufacturer'] ?? 'N/D'),
+                    'status' => $isOnline ? 'online' : 'offline',
+                    'rx' => $rx,
+                    'reason' => $reason,
+                    'priority' => $priority,
+                    'last_inform' => $timestamp ? gmdate(DATE_ATOM, $timestamp) : null,
+                ];
+                if (count($issues) > 32) {
+                    usort($issues, static fn($a, $b) =>
+                        ($a['priority'] <=> $b['priority'])
+                        ?: strcmp((string) ($b['last_inform'] ?? ''), (string) ($a['last_inform'] ?? ''))
+                    );
+                    $issues = array_slice($issues, 0, 12);
+                }
             }
         }
-    }
+        $skip += $pageCount;
+        // Release each decoded page before requesting the next one.
+        unset($response, $device);
+    } while ($pageCount === $pageSize);
 
     usort($issues, static fn($a, $b) =>
         ($a['priority'] <=> $b['priority'])
@@ -162,6 +206,6 @@ try {
         ],
     ]);
 } catch (Throwable $e) {
-    error_log('[JRC NOC] Falha ao carregar snapshot: ' . $e->getMessage());
+    error_log('[JRC NOC] Falha ao carregar snapshot; ' . get_class($e) . ' em ' . basename($e->getFile()) . ':' . $e->getLine());
     nocReply(500, ['success' => false, 'message' => 'Falha interna ao consultar o painel NOC.']);
 }

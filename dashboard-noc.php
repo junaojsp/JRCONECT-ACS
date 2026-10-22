@@ -74,5 +74,5 @@ include __DIR__ . '/views/layouts/header.php';
   </article>
   <p class="noc-disclaimer">JRC-ACS NOC 2.0 · Prévia em desenvolvimento · Leitura somente · Fonte: GenieACS TR-069. O status online mede a atualização no ACS, não confirma acesso à Internet do assinante.</p>
 </section>
-<script src="/assets/js/dashboard-noc.js?v=1" defer></script>
+<script src="/assets/js/dashboard-noc.js?v=2" defer></script>
 <?php include __DIR__ . '/views/layouts/footer.php'; ?>

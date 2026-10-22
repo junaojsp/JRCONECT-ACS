@@ -70,16 +70,22 @@
     $('noc-error').hidden=true;
     try {
       const res=await fetch('/api/dashboard-noc-data.php',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
-      if(res.status===401||res.status===403){throw new Error('Sessão expirada. Entre novamente para consultar o NOC.');}
+      if(res.redirected||res.status===401||res.status===403){throw new Error('Sessão expirada. Entre novamente para consultar o NOC.');}
+      const fallback=res.ok
+        ? 'Resposta inválida do painel NOC. Tente novamente.'
+        : 'Consulta NOC indisponível (HTTP '+res.status+'). Consulte o log PHP do servidor.';
       const type=res.headers.get('content-type')||'';
-      if(!type.includes('application/json'))throw new Error('Resposta inesperada. Confirme sua sessão de acesso.');
-      const data=await res.json();
+      if(!type.includes('application/json'))throw new Error(fallback);
+      let data;
+      try { data=await res.json(); } catch { throw new Error(fallback); }
+      if(!data||typeof data!=='object'||Array.isArray(data))throw new Error(fallback);
       if(!res.ok||!data.success)throw new Error(data.message||'Consulta indisponível.');
       render(data);
     }catch(e){
       $('noc-error').textContent=e.message||'Falha ao carregar indicadores.';
       $('noc-error').hidden=false;
       status('DADOS INDISPONÍVEIS','error');
+      setText('noc-captured', $('noc-captured').textContent.replace(/^Leitura: /,'Última leitura válida: '));
       // Never reset last valid numbers to zero upon an outage.
     }finally {state.busy=false;button.disabled=false;}
   }
