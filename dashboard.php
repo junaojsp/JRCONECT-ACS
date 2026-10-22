@@ -1165,6 +1165,7 @@ include __DIR__ . '/views/layouts/header.php';
         background: #0c0d10 !important;
         border-bottom: 1px solid #1c1e24 !important;
     }
+    .footer { display: none !important; }
     .fb-overview{display:grid!important;grid-template-columns:minmax(0,1fr) 280px!important;gap:14px!important;align-items:start!important;color:#f3f5f7!important}
     .fb-overview *{box-sizing:border-box!important}
     .fb-overview h1{margin:0!important;color:#f7f8fa!important;font-size:28px!important;font-weight:650!important;letter-spacing:-.03em!important;line-height:1.15!important}
@@ -1534,6 +1535,10 @@ function updateChart(stats) {
    ========================================================== */
 
 async function loadUplinkData() {
+
+    if (!document.getElementById('uplinkChart')) {
+        return;
+    }
 
 
     if (uplinkFetchInProgress) {
