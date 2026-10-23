@@ -1,0 +1,38 @@
+
+/* JRC_DEVICE_ACTIONS_V1 */
+.jrc-actions-page{display:flex;flex-direction:column;gap:14px}
+.jrc-actions-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:14px;border-bottom:1px solid #2a3038}
+.jrc-actions-header h4{margin:4px 0 3px;color:#f4f7fa;font-size:18px}
+.jrc-actions-header p{margin:0;color:#8290a4;font-size:10px}
+.jrc-actions-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jrc-action-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:16px;border:1px solid #2c323a;border-radius:12px;background:#15181e}
+.jrc-action-card.safe{border-color:rgba(56,189,248,.20)}
+.jrc-action-card.warning{border-color:rgba(245,158,11,.24)}
+.jrc-action-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#1d232b;border:1px solid #343b46;color:#dbe7f2;font-size:18px}
+.jrc-action-copy span{display:block;color:#7e8ba0;font-size:8px;font-weight:800;letter-spacing:.08em}
+.jrc-action-copy h5{margin:3px 0 4px;color:#f3f7fb;font-size:14px}
+.jrc-action-copy p{margin:0;color:#8c98a9;font-size:9px;line-height:1.45}
+.jrc-action-card button{height:36px;padding:0 12px;border-radius:8px;border:1px solid #39414c;background:#1c2128;color:#ecf2f8;font-size:9px;font-weight:800;white-space:nowrap}
+.jrc-action-card.safe button:hover{border-color:#38bdf8}
+.jrc-action-card.warning button{color:#ffcc73;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.06)}
+.jrc-action-card button:disabled{opacity:.55;cursor:not-allowed}
+.jrc-actions-history-card{padding:16px;border:1px solid #2c323a;border-radius:12px;background:#15181e}
+.jrc-actions-history-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid #2b3038}
+.jrc-actions-history-head span{display:block;color:#7e8ba0;font-size:8px;font-weight:800;letter-spacing:.08em}
+.jrc-actions-history-head h5{margin:3px 0 0;color:#f3f7fb;font-size:14px}
+.jrc-actions-history-head button{width:32px;height:32px;border-radius:8px;border:1px solid #343b46;background:#1a1e25;color:#d8e2ee}
+.jrc-actions-history-table{margin:12px 0 0;font-size:10px}
+.jrc-actions-history-table th{color:#8290a4;font-size:8px;text-transform:uppercase;letter-spacing:.05em}
+.jrc-actions-history-table td{vertical-align:middle;color:#dbe3ec}
+.jrc-actions-history-table td strong{display:block;color:#f4f7fa}
+.jrc-actions-history-table td small{display:block;color:#7f8da0;margin-top:2px}
+.jrc-action-status{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:999px;border:1px solid #3a424e;background:#1b2027;color:#b8c2cf;font-size:8px;font-weight:800}
+.jrc-action-status.success{color:#49e49a;border-color:rgba(52,211,153,.28);background:rgba(52,211,153,.06)}
+.jrc-action-status.warning{color:#ffcb6b;border-color:rgba(245,158,11,.30);background:rgba(245,158,11,.06)}
+.jrc-action-status.danger{color:#ff7b88;border-color:rgba(239,68,68,.30);background:rgba(239,68,68,.06)}
+.jrc-actions-empty{padding:22px 0;color:#7f8da0;font-size:10px;text-align:center}
+.jrc-reboot-modal{background:#11151b;border:1px solid #343b46;color:#eef3f8}
+.jrc-reboot-modal .modal-header,.jrc-reboot-modal .modal-footer{border-color:#2b3038}
+.jrc-reboot-modal .modal-header small{display:block;color:#f59e0b;font-size:8px;font-weight:800;letter-spacing:.08em}
+.jrc-reboot-modal .form-control{background:#0f1318;border-color:#3b4450;color:#fff}
+@media(max-width:900px){.jrc-actions-grid{grid-template-columns:1fr}.jrc-action-card{grid-template-columns:auto 1fr}.jrc-action-card button{grid-column:1/-1;width:100%}}
