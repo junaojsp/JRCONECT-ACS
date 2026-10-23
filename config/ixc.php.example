@@ -1,0 +1,7 @@
+<?php
+// Save as /etc/jrconect-acs/ixc.php, readable only by root and the PHP-FPM group.
+// Replace the token locally. Never commit config/ixc.php or a real token.
+return [
+    'base_url' => 'https://cda.jrconect.com',
+    'token' => '',
+];
