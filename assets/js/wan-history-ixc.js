@@ -74,6 +74,10 @@
         const page = document.querySelector('#wan-content .acs-wan-page');
         if (!page) return null;
 
+        document.querySelectorAll('#wan-content .jrc-wan-history').forEach(function(node) {
+            if (node.id !== CARD_ID) node.remove();
+        });
+
         let card = document.getElementById(CARD_ID);
         if (!card) {
             card = buildCard();
