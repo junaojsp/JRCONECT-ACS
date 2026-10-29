@@ -4,6 +4,8 @@ import { timingSafeEqual } from 'node:crypto';
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { toNodeHandler } from '@modelcontextprotocol/node';
 import { validarToken } from './auth.js';
+import { listarAtendimentos } from './opa-api.js';
+import { z } from 'zod';
 
 const opaToken = readFileSync('/run/secrets/opa-token', 'utf8').trim();
 if (!/^[a-f0-9]{64}$/i.test(opaToken)) {
@@ -29,6 +31,19 @@ const handler = createMcpHandler(() => {
   }, async () => ({
     content: [{ type: 'text', text: 'Servidor MCP JR Conect funcionando.' }],
   }));
+  if (process.env.OPA_READ_ENABLED === 'true') {
+    mcp.registerTool('opa_listar_atendimentos', {
+      description: 'Consulta somente metadados operacionais de ate 10 atendimentos recentes no Opa Suite. Nao retorna dados pessoais nem mensagens.',
+      inputSchema: { limite: z.number().int().min(1).max(10).default(1) },
+    }, async ({ limite }) => {
+      try {
+        const items = await listarAtendimentos({ limite });
+        return { content: [{ type: 'text', text: JSON.stringify({ total: items.length, atendimentos: items }) }] };
+      } catch {
+        return { isError: true, content: [{ type: 'text', text: 'Falha ao consultar Opa Suite. Verifique a configuracao e os logs de infraestrutura.' }] };
+      }
+    });
+  }
   return mcp;
 });
 const mcpHandler = toNodeHandler(handler);
