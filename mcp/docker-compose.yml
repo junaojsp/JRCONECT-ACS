@@ -1,0 +1,27 @@
+services:
+  jrconect-mcp:
+    build: .
+    container_name: jrconect-mcp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3100"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./opa-token.secret:/run/secrets/opa-token:ro
+    environment:
+      KEYCLOAK_JWKS_URL: "http://jrconect-keycloak:8080/realms/jrconect/protocol/openid-connect/certs"
+      KEYCLOAK_ISSUER: "https://auth.jrconect.com/realms/jrconect"
+      KEYCLOAK_AUDIENCE: "jrconect-mcp"
+      KEYCLOAK_CLIENT_ID: "chatgpt-mcp"
+    networks:
+      - default
+      - keycloak-access
+
+networks:
+  keycloak-access:
+    external: true
+    name: jrconect-auth_auth-internal
