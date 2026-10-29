@@ -22,7 +22,7 @@ PANE = """            <?php include __DIR__ . '/views/partials/mcp_configuration
 
 def matching_close(source, start):
     depth = 0
-    for m in re.finditer(r"</?div\\b[^>]*>", source[start:], re.I):
+    for m in re.finditer(r"</?div\b[^>]*>", source[start:], re.I):
         depth += -1 if m.group().startswith("</") else 1
         if depth == 0:
             return start + m.start()
