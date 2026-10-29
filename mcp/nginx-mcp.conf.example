@@ -1,5 +1,10 @@
 # Exemplo de location dentro do server HTTPS existente para mcp.jrconect.com.
 # Nao substitua o vhost inteiro e nao exponha /health publicamente.
+location = /.well-known/oauth-protected-resource {
+    proxy_pass http://127.0.0.1:3100;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+}
 location = /mcp {
     proxy_pass http://127.0.0.1:3100;
     proxy_http_version 1.1;
