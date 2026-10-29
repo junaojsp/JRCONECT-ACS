@@ -43,6 +43,21 @@ Esperado para ambos: `401`. Testar o token valido de maneira que ele nao apareca
 3. Implementar ferramentas Opa Suite de forma granular, com permissoes por identidade, validacao de entradas e trilha de auditoria.
 4. Adicionar testes automatizados de autenticacao e execucao das ferramentas antes de habilitar operacoes que alterem dados.
 
+
+## Integracao Opa Suite (consulta limitada)
+
+A ferramenta opcional `opa_listar_atendimentos` utiliza `GET https://opa.jrconect.com/api/v1/atendimento` com JSON no corpo: `{"filter":{},"options":{"limit":1}}`. Essa chamada foi confirmada no ACS com HTTP 200, status `success`, e uma lista de tamanho 1.
+
+A ferramenta **permanece DESABILITADA por padrao**: `OPA_READ_ENABLED=false`. O token usado e o **token de API do Opa**, distinto do token Bearer usado pelo Opa para conectar ao MCP. No host, o arquivo `/opt/jrconect-mcp/opa-api-token.secret` deve ser protegido e legivel apenas pelo usuario do container, montado em `/run/secrets/opa-api-token:ro`. Nunca enviar o conteudo para GitHub ou chat.
+
+A resposta e limitada a 1-10 registros e expõe exclusivamente `protocolo`, `status`, `canal`, `setor`, `origem`, `data` e `fim`. Nao devolve descricao, observacoes, ID de cliente ou mensagens.
+
+**ATENCAO - permissoes:** no desenho atual, qualquer identidade autenticada no MCP pode chamar as ferramentas registradas. **Nao habilitar `OPA_READ_ENABLED=true` publicamente antes de implementar e testar autorizacao por identidade, segregacao de cliente OAuth vs Bearer Opa, auditoria e revisao de dados pessoais.** Manter false em producao ate passar revisao de seguranca.
+
+O novo modulo `opa-api.js` usa `node:https` pois a API testada aceita GET com corpo JSON, o que nao e suportado pelo `fetch` padrao do Node. Nao segue redirecionamentos. Defina limite de resposta e timeout.
+
+Depois da revisao, testar primeiro em ambiente isolado, sem expor portas publicas. Atualizar o container de producao apenas apos validar autenticacao e isolamento das identidades.
+
 ## Seguranca
 
 Nao armazenar `opa-token.secret`, `.env`, codigos de autorizacao, access tokens, refresh tokens ou senhas no GitHub. Tokens estaticos devem ser rotacionados quando houver suspeita de vazamento. O caminho `/health` so deve ser acessivel localmente. Use permissao minima e TLS; `status_servidor` e uma ferramenta sem efeitos colaterais.
