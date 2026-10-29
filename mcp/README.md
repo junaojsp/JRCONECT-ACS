@@ -52,7 +52,7 @@ A ferramenta **permanece DESABILITADA por padrao**: `OPA_READ_ENABLED=false`. O 
 
 A resposta e limitada a 1-10 registros e expõe exclusivamente `protocolo`, `status`, `canal`, `setor`, `origem`, `data` e `fim`. Nao devolve descricao, observacoes, ID de cliente ou mensagens.
 
-**ATENCAO - permissoes:** no desenho atual, qualquer identidade autenticada no MCP pode chamar as ferramentas registradas. **Nao habilitar `OPA_READ_ENABLED=true` publicamente antes de implementar e testar autorizacao por identidade, segregacao de cliente OAuth vs Bearer Opa, auditoria e revisao de dados pessoais.** Manter false em producao ate passar revisao de seguranca.
+**Permissoes:** o codigo exige `OPA_READ_ENABLED=true`, cliente JWT `chatgpt-mcp` e `sub` do Keycloak listado em `OPA_ALLOWED_SUBS` (valores separados por virgula). Uma lista vazia bloqueia todos. A identidade Bearer `opa-suite` e negada nesta ferramenta. `AsyncLocalStorage` isola a identidade por requisicao. **Nao habilitar publicamente antes de validar isolamento entre usuarios, auditoria e privacidade.** O fato de a ferramenta aparecer na descoberta MCP nao significa que a consulta seja autorizada. Nao colocar IDs de usuarios privados ou tokens no repositorio publico; configure a lista somente no ACS.
 
 O novo modulo `opa-api.js` usa `node:https` pois a API testada aceita GET com corpo JSON, o que nao e suportado pelo `fetch` padrao do Node. Nao segue redirecionamentos. Defina limite de resposta e timeout.
 
