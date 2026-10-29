@@ -10,6 +10,11 @@ if (!/^[a-f0-9]{64}$/i.test(opaToken)) {
   throw new Error('Segredo Opa ausente ou formato inesperado');
 }
 const expected = Buffer.from(opaToken, 'utf8');
+const resourceMetadataUrl = 'https://mcp.jrconect.com/.well-known/oauth-protected-resource';
+const resourceMetadata = Object.freeze({
+  resource: 'https://mcp.jrconect.com/mcp',
+  authorization_servers: ['https://auth.jrconect.com/realms/jrconect'],
+});
 function validarTokenOpa(token) {
   // Tokens arbitrariamente grandes nao devem consumir memoria sem limite.
   if (typeof token !== 'string' || token.length !== opaToken.length) return false;
@@ -32,13 +37,18 @@ function unauthorized(res, reason = 'unauthorized') {
   if (res.headersSent) return;
   res.writeHead(401, {
     'Content-Type': 'application/json',
-    'WWW-Authenticate': 'Bearer realm="jrconect-mcp"',
+    'WWW-Authenticate': `Bearer realm="jrconect-mcp", resource_metadata="${resourceMetadataUrl}"`,
     'Cache-Control': 'no-store',
   });
   res.end(JSON.stringify({ error: reason }));
 }
 
 createServer(async (req, res) => {
+  if (req.method === 'GET' && req.url?.split('?')[0] === '/.well-known/oauth-protected-resource') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' });
+    res.end(JSON.stringify(resourceMetadata));
+    return;
+  }
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok' }));
