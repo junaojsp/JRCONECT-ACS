@@ -1,0 +1,332 @@
+/* JR CONECT ACS — Dashboard Visual Reference 2026-10-29
+   Camada puramente visual. Nao altera dados, JS, APIs ou consultas. */
+
+.jrc-dashboard{
+    --jr-bg:#0b0d11;
+    --jr-panel:#14171c;
+    --jr-panel-2:#171b21;
+    --jr-line:#2b3038;
+    --jr-line-soft:#22272e;
+    --jr-text:#f3f5f7;
+    --jr-muted:#89929e;
+    --jr-muted-2:#66707c;
+    --jr-red:#ff161c;
+    --jr-green:#22d477;
+    --jr-yellow:#f7b627;
+    --jr-blue:#28a8ff;
+    --jr-radius:11px;
+    color:var(--jr-text);
+}
+
+/* Cabecalho */
+.jrc-dashboard .jrc-dashboard-title{
+    margin:0 0 14px;
+    padding:0 0 14px;
+    border-bottom:1px solid #20242a;
+}
+.jrc-dashboard .jrc-dashboard-title h2{
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:-.02em;
+    color:#f6f7f9;
+}
+.jrc-dashboard .jrc-dashboard-title p{
+    margin-top:4px;
+    color:#7f8995;
+    font-size:10px;
+}
+.jrc-dashboard .jrc-live-status{
+    border:1px solid rgba(34,212,119,.22);
+    background:rgba(34,212,119,.065);
+    color:#61e69d;
+    border-radius:7px;
+    box-shadow:none;
+    text-transform:uppercase;
+    font-size:8px;
+    padding:6px 9px;
+}
+.jrc-dashboard .jrc-live-dot{
+    width:5px;
+    height:5px;
+    box-shadow:none;
+}
+
+/* Grid principal mais compacto, proximo da referencia */
+.jrc-dashboard .jrc-dashboard-grid{
+    grid-template-columns:minmax(340px,1.15fr) minmax(290px,.9fr) minmax(290px,.9fr);
+    gap:10px;
+    margin-bottom:10px;
+}
+.jrc-dashboard .jrc-secondary-grid{
+    gap:10px;
+    margin-bottom:10px;
+}
+
+/* Paineis */
+.jrc-dashboard .jrc-panel,
+.jrc-dashboard .card{
+    background:var(--jr-panel)!important;
+    border:1px solid var(--jr-line)!important;
+    border-radius:var(--jr-radius)!important;
+    box-shadow:none!important;
+}
+.jrc-dashboard .jrc-panel::before{display:none!important;}
+.jrc-dashboard .jrc-panel-header{
+    min-height:48px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--jr-line-soft);
+    background:transparent;
+}
+.jrc-dashboard .jrc-panel-title{
+    gap:8px;
+}
+.jrc-dashboard .jrc-panel-title i{
+    color:#c7cdd4;
+    font-size:12px;
+}
+.jrc-dashboard .jrc-panel-title strong{
+    color:#f0f2f4;
+    font-size:10px;
+    font-weight:700;
+}
+.jrc-dashboard .jrc-panel-title small{
+    margin-top:2px;
+    color:#6f7985;
+    font-size:8px;
+}
+.jrc-dashboard .jrc-panel-body{
+    padding:13px;
+}
+
+/* Acoes */
+.jrc-dashboard .jrc-action{
+    min-height:28px;
+    padding:5px 8px;
+    border:1px solid #343a43;
+    border-radius:6px;
+    background:#171b21;
+    color:#cdd3da;
+    font-size:8px;
+    font-weight:600;
+}
+.jrc-dashboard .jrc-action:hover{
+    border-color:#505965;
+    color:#fff;
+    background:#1b2027;
+}
+
+/* Card disponibilidade */
+.jrc-dashboard .jrc-availability{
+    padding:0 0 12px;
+}
+.jrc-dashboard .jrc-availability-value{
+    font-size:34px;
+    color:#fff;
+}
+.jrc-dashboard .jrc-availability-label,
+.jrc-dashboard .jrc-total-mini span{
+    color:#7a8490;
+    font-size:8px;
+}
+.jrc-dashboard .jrc-total-mini strong{
+    font-size:18px;
+    color:#f2f4f6;
+}
+.jrc-dashboard .jrc-progress{
+    height:5px;
+    margin-top:12px;
+    background:#252b33;
+}
+.jrc-dashboard .jrc-progress-bar{
+    background:var(--jr-red);
+    box-shadow:none;
+}
+
+/* Cards online/offline */
+.jrc-dashboard .jrc-status-grid{
+    gap:7px;
+    margin-top:8px;
+}
+.jrc-dashboard .jrc-status-card{
+    min-height:58px;
+    padding:9px;
+    border:1px solid #292f36;
+    border-radius:8px;
+    background:#171b20;
+    transform:none!important;
+}
+.jrc-dashboard .jrc-status-card:hover{
+    border-color:#3b424c;
+    background:#1a1f25;
+}
+.jrc-dashboard .jrc-status-icon{
+    width:30px;
+    height:30px;
+    border-radius:7px;
+    font-size:13px;
+}
+.jrc-dashboard .jrc-status-card.online .jrc-status-icon{
+    color:#45de8b;
+    background:rgba(34,212,119,.10);
+}
+.jrc-dashboard .jrc-status-card.offline .jrc-status-icon{
+    color:#ff5c65;
+    background:rgba(255,22,28,.10);
+}
+.jrc-dashboard .jrc-status-value{
+    font-size:18px;
+}
+.jrc-dashboard .jrc-status-name{
+    margin-top:4px;
+    color:#737e89;
+    font-size:7px;
+}
+.jrc-dashboard .jrc-status-footer{
+    margin-top:10px;
+    padding-top:10px;
+    border-color:#252b32;
+    color:#6e7883;
+    font-size:8px;
+}
+
+/* Graficos */
+.jrc-dashboard .jrc-chart-box{
+    max-width:225px;
+}
+.jrc-dashboard canvas{
+    filter:saturate(.88);
+}
+
+/* IA / acessos rapidos */
+.jrc-dashboard .jrc-ai-panel{
+    border-color:#2d323a!important;
+}
+.jrc-dashboard .jrc-ai-icon{
+    color:#a5adb6!important;
+}
+.jrc-dashboard .jrc-ai-content{
+    min-height:210px;
+}
+.jrc-dashboard .jrc-ai-intro{
+    color:#89929d;
+    font-size:9px;
+    line-height:1.55;
+}
+.jrc-dashboard .jrc-ai-list{
+    gap:6px;
+    margin-top:10px;
+}
+.jrc-dashboard .jrc-ai-item{
+    min-height:36px;
+    padding:8px 9px;
+    border:1px solid #292f36;
+    border-radius:7px;
+    background:#171b20;
+    color:#b7bec6;
+    font-size:8px;
+}
+.jrc-dashboard .jrc-ai-item i{
+    color:#e0e3e7;
+}
+.jrc-dashboard .jrc-ai-item:hover{
+    border-color:#424a55;
+    background:#1b2026;
+    color:#fff;
+}
+.jrc-dashboard .jrc-ai-footer{
+    margin-top:10px;
+    padding-top:10px;
+    border-color:#252a31;
+    color:#69737f;
+    font-size:8px;
+}
+
+/* Atividade / tabela */
+.jrc-dashboard .jrc-recent-body{
+    padding:0 10px 10px;
+}
+.jrc-dashboard #recent-devices{
+    min-height:72px;
+}
+.jrc-dashboard #recent-devices .table-responsive{
+    border-radius:7px;
+    border:1px solid #292e35;
+    overflow:hidden;
+}
+.jrc-dashboard #recent-devices .table{
+    --bs-table-bg:transparent;
+    --bs-table-color:#d8dde3;
+    --bs-table-border-color:#292e35;
+    margin:0;
+}
+.jrc-dashboard #recent-devices .table thead th{
+    padding:8px 10px!important;
+    background:#111419!important;
+    color:#78828d!important;
+    border-bottom:1px solid #30353d!important;
+    font-size:7px!important;
+    font-weight:700!important;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+}
+.jrc-dashboard #recent-devices .table tbody td{
+    padding:8px 10px!important;
+    color:#d4d9df!important;
+    border-color:#292e35!important;
+    font-size:8px!important;
+    vertical-align:middle;
+}
+.jrc-dashboard #recent-devices .table tbody tr{
+    background:#15191e!important;
+}
+.jrc-dashboard #recent-devices .table tbody tr:nth-child(even){
+    background:#13171c!important;
+}
+.jrc-dashboard #recent-devices .table tbody tr:hover{
+    background:#1b2026!important;
+}
+
+/* Fallback para a dashboard mais nova em producao:
+   aplica o mesmo acabamento aos cards/tabelas sem depender dos nomes antigos. */
+.jrc-dashboard [class*="stat-card"],
+.jrc-dashboard [class*="metric-card"],
+.jrc-dashboard [class*="summary-card"],
+.jrc-dashboard [class*="fleet-card"],
+.jrc-dashboard [class*="health-card"]{
+    background:#15181d!important;
+    border:1px solid #2b3038!important;
+    border-radius:9px!important;
+    box-shadow:none!important;
+}
+.jrc-dashboard table{
+    border-color:#2a3037!important;
+}
+.jrc-dashboard table thead th{
+    color:#77818c!important;
+}
+.jrc-dashboard table tbody tr{
+    border-color:#292f36!important;
+}
+
+/* Acento JR CONECT: vermelho apenas em selecao/destaque */
+.jrc-dashboard a.active,
+.jrc-dashboard .active > a,
+.jrc-dashboard .nav-link.active{
+    color:#fff!important;
+    border-color:var(--jr-red)!important;
+}
+.jrc-dashboard .badge.bg-primary,
+.jrc-dashboard .btn-primary{
+    background:var(--jr-red)!important;
+    border-color:var(--jr-red)!important;
+}
+
+/* Responsivo */
+@media(max-width:1250px){
+    .jrc-dashboard .jrc-dashboard-grid{grid-template-columns:1fr 1fr;}
+    .jrc-dashboard .jrc-ai-panel{grid-column:1/-1;}
+}
+@media(max-width:850px){
+    .jrc-dashboard .jrc-dashboard-grid,
+    .jrc-dashboard .jrc-secondary-grid{grid-template-columns:1fr;}
+}
