@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.secret
+*.password
+*.pem
+*.key
+oauth-code.json
+oauth-test.json
+*.bak
+*.log
