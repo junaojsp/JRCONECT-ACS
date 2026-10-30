@@ -1329,6 +1329,9 @@
 
     function boot() {
         installCache();
+        // O cache continua disponível para as consultas feitas pela própria tela.
+        // A leitura completa da frota só é necessária nestas duas páginas.
+        if (!onReports() && !/\/dashboard\.php$/i.test(location.pathname)) return;
         primeDashboard();
         watchDashboard();
         warmExtra();
