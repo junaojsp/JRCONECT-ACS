@@ -101,7 +101,18 @@
                 </a>
 
             </li>
-<a href="/discovery.php"
+            <li>
+                <a
+                    href="/ip-addressing.php"
+                    class="<?php echo ($currentPage ?? '') === 'ip-addressing' ? 'active' : ''; ?>"
+                    data-tooltip="Endereçamento IP"
+                >
+                    <i class="bi bi-diagram-2"></i>
+                    <span>Endereçamento IP</span>
+                </a>
+            </li>
+
+            <a href="/discovery.php"
    class="<?= ($pageTitle ?? '') === 'Discovery TR-069' ? 'active' : '' ?>"
    data-tooltip="Discovery TR-069">
     <i class="bi bi-search"></i>
