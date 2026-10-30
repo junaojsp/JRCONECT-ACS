@@ -15,7 +15,7 @@ try {
     $db = getDBConnection();
 
     if (!DeviceInventoryCache::isReady($db)) {
-        require __DIR__ . '/recent-devices-live.php';
+        require __DIR__ . '/recent-devices-precache.php';
         exit;
     }
 
@@ -27,5 +27,5 @@ try {
     ]);
 } catch (Throwable $e) {
     error_log('[JRC RECENT CACHE] ' . $e->getMessage());
-    require __DIR__ . '/recent-devices-live.php';
+    require __DIR__ . '/recent-devices-precache.php';
 }
