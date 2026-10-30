@@ -4,6 +4,16 @@ require_once __DIR__ . '/../config/config.php';
 header('Content-Type: application/json');
 requireLogin();
 
+// Prefer local inventory cache when available; fall back to GenieACS otherwise.
+$cacheShim = __DIR__ . '/get-devices-cache-shim.php';
+if (is_file($cacheShim)) {
+    $cacheHandled = require $cacheShim;
+    if ($cacheHandled === true) {
+        exit;
+    }
+}
+
+
 // Set time limit for this script to handle large datasets
 set_time_limit(300); // Increased to 5 minutes for large datasets
 ini_set('max_execution_time', 300);
