@@ -34,7 +34,7 @@
 
     <link
         rel="stylesheet"
-        href="/assets/css/style.css?v=<?php echo time(); ?>"
+        href="/assets/css/style.css?v=<?php echo (int) filemtime(__DIR__ . '/../../assets/css/style.css'); ?>"
     >
 
     <link rel="stylesheet" href="/assets/css/sidebar.css?v=20261005-toggle">
@@ -46,7 +46,7 @@
 
     <!-- Logger -->
     <script
-        src="/assets/js/client-logger.js?v=<?php echo time(); ?>"
+        src="/assets/js/client-logger.js?v=<?php echo (int) filemtime(__DIR__ . '/../../assets/js/client-logger.js'); ?>"
     ></script>
 </head>
 
