@@ -1,8 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
 
-// Increase timeout for large dataset
-set_time_limit(20);
+set_time_limit(30);
 
 requireLogin();
 
@@ -12,9 +11,15 @@ use App\GenieACS_Fast;
 header('Content-Type: application/json');
 
 try {
-    // Get GenieACS credentials from database
+
     $db = getDBConnection();
-    $stmt = $db->prepare("SELECT host, port, username, password FROM genieacs_credentials LIMIT 1");
+
+    $stmt = $db->prepare(
+        "SELECT host, port, username, password
+         FROM genieacs_credentials
+         LIMIT 1"
+    );
+
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -29,7 +34,6 @@ try {
     $config = $result->fetch_assoc();
     $stmt->close();
 
-    // Initialize GenieACS client
     $genieacs = new GenieACS(
         $config['host'],
         $config['port'],
@@ -37,48 +41,84 @@ try {
         $config['password']
     );
 
-    // Get all devices
-    $result = $genieacs->getDevices();
+    /*
+     * PRIMEIRA CONSULTA
+     * Busca somente ID e último Inform.
+     */
+    $result = $genieacs->getDevices(
+        [],
+        0,
+        0,
+        ['_id', '_lastInform']
+    );
 
     if (!$result['success']) {
         jsonResponse([
             'success' => false,
-            'message' => 'Failed to fetch devices from GenieACS'
+            'message' => 'Failed to fetch device index from GenieACS'
         ]);
         exit;
     }
 
-    $devices = $result['data'];
+    $index = [];
+
+    foreach ($result['data'] as $device) {
+
+        $index[] = [
+            'id' => $device['_id'] ?? null,
+            'timestamp' => isset($device['_lastInform'])
+                ? strtotime($device['_lastInform'])
+                : 0
+        ];
+    }
+
+    usort($index, function ($a, $b) {
+        return $b['timestamp'] <=> $a['timestamp'];
+    });
+
+    /*
+     * Somente os 10 mais recentes.
+     */
+    $index = array_slice($index, 0, 10);
+
     $recentDevices = [];
 
-    // Parse and sort by last inform time (use fast parser for performance)
-    foreach ($devices as $device) {
-        $parsed = GenieACS_Fast::parseDeviceDataFast($device);
+    /*
+     * SEGUNDA CONSULTA
+     * Busca completo somente os 10 selecionados.
+     */
+    foreach ($index as $item) {
 
-        // Add last inform timestamp for sorting
-        if (isset($device['_lastInform'])) {
-            $parsed['last_inform_timestamp'] = strtotime($device['_lastInform']);
-        } else {
-            $parsed['last_inform_timestamp'] = 0;
+        if (empty($item['id'])) {
+            continue;
         }
+
+        $full = $genieacs->getDevice(
+            $item['id']
+        );
+
+        if (!$full['success']) {
+            continue;
+        }
+
+        $parsed =
+            GenieACS_Fast::parseDeviceDataFast(
+                $full['data']
+            );
+
+        $parsed['last_inform_timestamp'] =
+            $item['timestamp'];
 
         $recentDevices[] = $parsed;
     }
-
-    // Sort by last inform (most recent first)
-    usort($recentDevices, function($a, $b) {
-        return $b['last_inform_timestamp'] - $a['last_inform_timestamp'];
-    });
-
-    // Take only top 10 most recent
-    $recentDevices = array_slice($recentDevices, 0, 10);
 
     jsonResponse([
         'success' => true,
         'devices' => $recentDevices
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
+
     jsonResponse([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()

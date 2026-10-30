@@ -137,6 +137,23 @@ function jrBatchNumber(mixed $value): ?float
     return is_numeric($text) ? (float)$text : null;
 }
 
+function jrBatchDownSince(array $login, array $fiber): int
+{
+    // JRC_LOGIN_SINCE_V2
+    $online = strtolower(trim((string)($login['online'] ?? '')));
+    if (in_array($online, ['s', 'sim', '1', 'true', 'online'], true)) {
+        return 0;
+    }
+    if (!in_array($online, ['n', 'nao', 'não', 'ss', '0', 'false', 'offline'], true)) {
+        return 0;
+    }
+    $end = strtotime(trim((string)($login['ultima_conexao_final'] ?? '')));
+    if (!$end || $end < 946684800) {
+        return 0;
+    }
+    return (int)$end;
+}
+
 try {
     $raw = file_get_contents('php://input', false, null, 0, 65537);
     $body = json_decode($raw ?: '{}', true);
@@ -241,6 +258,9 @@ try {
             'voltage' => jrBatchNumber(jrBatchPick($fiber, ['voltagem'])),
             'last_signal_update' => jrBatchPick($fiber, ['data_sinal']),
             'online' => jrBatchPick($login, ['online']),
+            'last_connection_end' => jrBatchPick($login, ['ultima_conexao_final']),
+            'last_connection_start' => jrBatchPick($login, ['ultima_conexao_inicial']),
+            'disconnected_since' => jrBatchDownSince($login, $fiber),
             'last_error' => jrBatchPick($fiber, ['causa_ultima_queda', 'motivo_ultima_queda']),
             'id_login' => jrBatchPick($fiber, ['id_login']),
             'id_contrato' => jrBatchPick($fiber, ['id_contrato']),
