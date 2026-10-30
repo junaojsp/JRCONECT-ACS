@@ -246,3 +246,109 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* V3 - neutraliza o azul estrutural legado desta pagina */
+html,
+body,
+body.jrc-neutro-page,
+main,
+.main,
+.main-content,
+#main-content,
+.content,
+.content-wrapper,
+.page-wrapper,
+.page-content,
+.container,
+.container-fluid,
+.onu-shell,
+.onu-page,
+.onu-wrap,
+.onu-content {
+  background: #0b0d10 !important;
+  background-color: #0b0d10 !important;
+}
+
+.onu-shell,
+.onu-page,
+.onu-wrap,
+.onu-content {
+  color: #eef1f4 !important;
+}
+
+.onu-filters,
+.onu-panel,
+.onu-scroll,
+.onu-table-wrap,
+.onu-pagination,
+.onu-pager,
+.onu-footer,
+.onu-table-footer,
+.onu-scroll + div,
+.onu-scroll + footer {
+  background: #14161b !important;
+  background-color: #14161b !important;
+  border-color: #2a2e36 !important;
+}
+
+.onu-pagination button,
+.onu-pager button,
+.onu-footer button,
+.onu-table-footer button {
+  background: #252931 !important;
+  border-color: #343943 !important;
+  color: #f1f3f6 !important;
+}
+
+.onu-pagination button:hover,
+.onu-pager button:hover,
+.onu-footer button:hover,
+.onu-table-footer button:hover {
+  background: #30353e !important;
+}
+
+.onu-pagination .active,
+.onu-pager .active,
+.onu-footer .active,
+.onu-table-footer .active {
+  background: #231316 !important;
+  border-color: #ef111b !important;
+  color: #ff3a43 !important;
+}
+
+.onu-scroll,
+.onu-scroll table,
+.onu-scroll thead,
+.onu-scroll tbody,
+.onu-scroll tfoot,
+.onu-scroll tr,
+.onu-scroll th,
+.onu-scroll td {
+  --bs-table-bg: #15181d !important;
+  --bs-table-striped-bg: #12151a !important;
+  --bs-table-hover-bg: #1b1f25 !important;
+  --bs-table-color: #e7eaf0 !important;
+  --bs-table-border-color: #2a2e35 !important;
+}
+
+.onu-scroll thead th {
+  --bs-table-bg: #111318 !important;
+  background: #111318 !important;
+}
+
+.onu-filters input,
+.onu-filters select,
+.onu-filters .form-control,
+.onu-filters .form-select {
+  background: #0d0f12 !important;
+  background-color: #0d0f12 !important;
+  border-color: #30343c !important;
+}
+
+.onu-tabs,
+.onu-tabs + *,
+.onu-panel > .onu-note,
+.onu-panel > .onu-help {
+  background-color: transparent !important;
+}
