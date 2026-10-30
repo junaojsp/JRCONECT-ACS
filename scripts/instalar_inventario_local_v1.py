@@ -281,8 +281,8 @@ def main():
             "require '" + str(root / 'config/config.php').replace("'", "\\'") + "';"
             "require '" + str(root / 'lib/DeviceInventoryCache.php').replace("'", "\\'") + "';"
             "$db=getDBConnection();"
-            "$m=App\\\\DeviceInventoryCache::meta($db);"
-            "$s=App\\\\DeviceInventoryCache::stats($db);"
+            "$m=\\App\\DeviceInventoryCache::meta($db);"
+            "$s=\\App\\DeviceInventoryCache::stats($db);"
             "echo json_encode(['meta'=>$m,'stats'=>$s], JSON_UNESCAPED_SLASHES);"
         )
         verify = run([php, '-r', verify_code], cwd=root, capture=True)
