@@ -279,3 +279,32 @@ html.jrc-ipam-page #jrc-ipam button:focus-visible { outline: 2px solid #ef1515; 
     #jrc-ipam .jrc-ip-title { align-items: flex-start; }
     #jrc-ipam .jrc-ip-mark { width: 46px; height: 46px; font-size: 24px; }
 }
+
+/* Tabelas preenchidas também devem prevalecer sobre o tema global. */
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table thead,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table tbody,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table tr,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table th,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table td {
+    background: #131519 !important;
+    background-image: none !important;
+    border-color: #292d34 !important;
+    color: #e8ebef !important;
+}
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table thead th {
+    background: #181b20 !important;
+    color: #a8afb9 !important;
+}
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table tbody tr.is-on,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table tbody tr.is-on > td {
+    background: #202329 !important;
+}
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table tbody tr:hover,
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table tbody tr:hover > td {
+    background: #272b32 !important;
+}
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table td:not(.jrc-ip-net),
+html.jrc-ipam-page #jrc-ipam .jrc-ip-table th {
+    box-shadow: none !important;
+}
