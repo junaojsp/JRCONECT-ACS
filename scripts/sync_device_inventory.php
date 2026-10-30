@@ -148,7 +148,11 @@ try {
         'InternetGatewayDevice.ManagementServer.ConnectionRequestURL',
         'Device.ManagementServer.ConnectionRequestURL',
         'InternetGatewayDevice.DeviceInfo.UpTime',
+        'InternetGatewayDevice.DeviceInfo.HardwareVersion',
+        'InternetGatewayDevice.DeviceInfo.SoftwareVersion',
         'Device.DeviceInfo.UpTime',
+        'Device.DeviceInfo.HardwareVersion',
+        'Device.DeviceInfo.SoftwareVersion',
         'InternetGatewayDevice.DeviceInfo.Temperature',
         'InternetGatewayDevice.LANDevice.1.LANEthernetInterfaceConfig.1.MACAddress',
         'InternetGatewayDevice.LANDevice.1.WLANConfiguration',
@@ -168,10 +172,14 @@ try {
             serial_number,
             mac_address,
             manufacturer,
+            oui,
             product_class,
+            hardware_version,
+            software_version,
             ip_tr069,
             ip_address,
             wifi_ssid,
+            wifi_password,
             pppoe_username,
             rx_power,
             temperature,
@@ -181,15 +189,19 @@ try {
             tags_json,
             sync_generation,
             synced_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             serial_number = VALUES(serial_number),
             mac_address = VALUES(mac_address),
             manufacturer = VALUES(manufacturer),
+            oui = VALUES(oui),
             product_class = VALUES(product_class),
+            hardware_version = VALUES(hardware_version),
+            software_version = VALUES(software_version),
             ip_tr069 = VALUES(ip_tr069),
             ip_address = VALUES(ip_address),
             wifi_ssid = VALUES(wifi_ssid),
+            wifi_password = VALUES(wifi_password),
             pppoe_username = VALUES(pppoe_username),
             rx_power = VALUES(rx_power),
             temperature = VALUES(temperature),
@@ -230,19 +242,27 @@ try {
             $serial = (string)($device['serial_number'] ?? '');
             $mac = (string)($device['mac_address'] ?? '');
             $manufacturer = (string)($device['manufacturer'] ?? '');
+            $oui = (string)($device['oui'] ?? '');
             $productClass = (string)($device['product_class'] ?? '');
+            $hardwareVersion = (string)($device['hardware_version'] ?? '');
+            $softwareVersion = (string)($device['software_version'] ?? '');
             $ipTr069 = (string)($device['ip_tr069'] ?? '');
             $ipAddress = (string)($device['ip_address'] ?? '');
             $wifiSsid = (string)($device['wifi_ssid'] ?? '');
+            $wifiPassword = (string)($device['wifi_password'] ?? '');
             $pppoe = (string)($device['pppoe_username'] ?? '');
 
             if ($serial === 'N/A') $serial = '';
             if ($mac === 'N/A') $mac = '';
             if ($manufacturer === 'N/A') $manufacturer = '';
+            if ($oui === 'N/A') $oui = '';
             if ($productClass === 'N/A') $productClass = '';
+            if ($hardwareVersion === 'N/A') $hardwareVersion = '';
+            if ($softwareVersion === 'N/A') $softwareVersion = '';
             if ($ipTr069 === 'N/A') $ipTr069 = '';
             if ($ipAddress === 'N/A') $ipAddress = '';
             if ($wifiSsid === 'N/A') $wifiSsid = '';
+            if ($wifiPassword === 'N/A') $wifiPassword = '';
             if ($pppoe === 'N/A') $pppoe = '';
 
             $rx = $device['rx_power'] ?? null;
@@ -269,15 +289,19 @@ try {
             $syncedAt = date('Y-m-d H:i:s');
 
             $stmt->bind_param(
-                'sssssssssddiissss',
+                'sssssssssssssddiissss',
                 $deviceId,
                 $serial,
                 $mac,
                 $manufacturer,
+                $oui,
                 $productClass,
+                $hardwareVersion,
+                $softwareVersion,
                 $ipTr069,
                 $ipAddress,
                 $wifiSsid,
+                $wifiPassword,
                 $pppoe,
                 $rx,
                 $temperature,
