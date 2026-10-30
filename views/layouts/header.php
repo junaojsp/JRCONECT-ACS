@@ -43,7 +43,7 @@
     ></script>
 </head>
 
-<body>
+<body class="<?php echo ($currentPage ?? '') === 'ip-addressing' ? 'page-ip-addressing' : ''; ?>">
 
     <!-- Menu lateral -->
     <div class="sidebar" id="sidebar">
