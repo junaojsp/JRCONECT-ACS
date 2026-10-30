@@ -15,7 +15,7 @@ try {
     $db = getDBConnection();
 
     if (!DeviceInventoryCache::isReady($db)) {
-        require __DIR__ . '/get-devices-page-live.php';
+        require __DIR__ . '/get-devices-page-precache.php';
         exit;
     }
 
@@ -76,5 +76,5 @@ try {
     error_log('[JRC DEVICE PAGE CACHE] ' . $e->getMessage());
 
     // Safety fallback: keep the screen operational even if the cache is unavailable.
-    require __DIR__ . '/get-devices-page-live.php';
+    require __DIR__ . '/get-devices-page-precache.php';
 }
