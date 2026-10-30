@@ -1,39 +1,62 @@
 <?php
-require_once __DIR__ . '/../config/config.php';
+declare(strict_types=1);
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/GenieACS_DashboardLean.php';
+
+use App\GenieACS_DashboardLean;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: private, max-age=10');
+
 requireLogin();
 
-// Check if GenieACS is configured
 if (!isGenieACSConfigured()) {
-    jsonResponse(['success' => false, 'message' => 'GenieACS belum dikonfigurasi']);
+    jsonResponse(['success' => false, 'message' => 'GenieACS não configurado.'], 503);
 }
 
-// Get GenieACS credentials
 $conn = getDBConnection();
-$result = $conn->query("SELECT * FROM genieacs_credentials WHERE is_connected = 1 ORDER BY id DESC LIMIT 1");
+$result = $conn->query(
+    "SELECT host, port, username, password
+     FROM genieacs_credentials
+     WHERE is_connected = 1
+     ORDER BY id DESC
+     LIMIT 1"
+);
 $credentials = $result->fetch_assoc();
 
 if (!$credentials) {
-    jsonResponse(['success' => false, 'message' => 'GenieACS tidak terhubung']);
+    jsonResponse(['success' => false, 'message' => 'GenieACS não conectado.'], 503);
 }
 
-use App\GenieACS;
+try {
+    $genieacs = new GenieACS_DashboardLean(
+        (string)$credentials['host'],
+        (int)$credentials['port'],
+        (string)($credentials['username'] ?? ''),
+        (string)($credentials['password'] ?? '')
+    );
 
-$genieacs = new GenieACS(
-    $credentials['host'],
-    $credentials['port'],
-    $credentials['username'],
-    $credentials['password']
-);
+    // HEAD no NBI: conta os documentos sem transferir a árvore TR-069.
+    $total = $genieacs->count();
 
-$stats = $genieacs->getDeviceStats();
+    $onlineThreshold = gmdate('Y-m-d\TH:i:s.000\Z', time() - 300);
+    $online = $genieacs->count([
+        '_lastInform' => ['$gte' => $onlineThreshold],
+    ]);
 
-if ($stats['success']) {
     jsonResponse([
         'success' => true,
-        'stats' => $stats['data']
+        'stats' => [
+            'total' => $total,
+            'online' => $online,
+            'offline' => max(0, $total - $online),
+        ],
     ]);
-} else {
-    jsonResponse(['success' => false, 'message' => 'Gagal mengambil statistik']);
+} catch (Throwable $e) {
+    error_log('[JRC DASHBOARD STATS] ' . $e->getMessage());
+    jsonResponse([
+        'success' => false,
+        'message' => 'Falha ao carregar estatísticas do ACS.',
+    ], 502);
 }
