@@ -68,8 +68,7 @@ final class DeviceInventoryCache
     public static function isReady(mysqli $db): bool
     {
         try {
-            self::ensureSchema($db);
-            $row = $db->query(
+                $row = $db->query(
                 "SELECT device_count, last_success_at FROM " . self::META_TABLE . " WHERE id = 1"
             )->fetch_assoc();
 
@@ -87,7 +86,6 @@ final class DeviceInventoryCache
 
     public static function meta(mysqli $db): array
     {
-        self::ensureSchema($db);
         $row = $db->query(
             "SELECT * FROM " . self::META_TABLE . " WHERE id = 1"
         )->fetch_assoc();
@@ -142,7 +140,6 @@ final class DeviceInventoryCache
 
     public static function stats(mysqli $db): array
     {
-        self::ensureSchema($db);
         $row = $db->query("
             SELECT
                 COUNT(*) AS total,
@@ -162,7 +159,6 @@ final class DeviceInventoryCache
 
     public static function opticalStats(mysqli $db): array
     {
-        self::ensureSchema($db);
         $row = $db->query("
             SELECT
                 COUNT(*) AS total,
@@ -186,7 +182,6 @@ final class DeviceInventoryCache
 
     public static function recent(mysqli $db, int $limit = 10): array
     {
-        self::ensureSchema($db);
         $limit = max(1, min(100, $limit));
         $result = $db->query(
             "SELECT * FROM " . self::TABLE . "
@@ -271,7 +266,6 @@ final class DeviceInventoryCache
         string $term = '',
         array $serials = []
     ): array {
-        self::ensureSchema($db);
 
         $limit = in_array($limit, [20, 50, 100], true) ? $limit : 20;
         $page = max(1, $page);
@@ -328,7 +322,6 @@ final class DeviceInventoryCache
         int $limit,
         int $skip
     ): array {
-        self::ensureSchema($db);
 
         $limit = max(1, min(500, $limit));
         $skip = max(0, $skip);
