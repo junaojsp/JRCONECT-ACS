@@ -108,7 +108,7 @@
             else uso += 1;
         });
         var livres = Math.max(0, usable - uso - hold);
-        var base = livres + uso;
+        var base = usable;
         return {
             block: block,
             usable: usable,
@@ -311,11 +311,11 @@
                 '</div>'
             : '<p class="jrc-ip-empty">Essa faixa está ilegível. Edite a rede e grave o CIDR de novo.</p>';
         return '<aside class="jrc-ip-card jrc-ip-detail">' +
-            '<div class="jrc-ip-detail-top"><div><h2>' + esc(net.cidr) + ' ' + pill(net.active) + '</h2><p>' + esc(net.description) + '</p></div><button type="button" class="jrc-ip-ghost" data-act="edit-net" data-id="' + esc(net.id) + '"><i class="bi bi-pencil"></i> Editar</button></div>' +
+            '<h3 class="jrc-ip-detail-label">Detalhes da rede</h3><div class="jrc-ip-detail-top"><div><h2>' + esc(net.cidr) + ' ' + pill(net.active) + '</h2><p>' + esc(net.description) + '</p></div><button type="button" class="jrc-ip-ghost" data-act="edit-net" data-id="' + esc(net.id) + '"><i class="bi bi-pencil"></i> Editar</button></div>' +
             facts +
             '<div class="jrc-ip-meter"><span style="width:' + row.pct + '%;background:' + accent(row.pct) + '"></span></div>' +
-            '<div class="jrc-ip-split"><span>Uso dos IPs livres + em uso</span><strong>' + row.pct + '%</strong></div>' +
-            '<div class="jrc-ip-actions">' +
+            '<div class="jrc-ip-split"><span>Uso do total de IPs</span><strong>' + row.pct + '%</strong></div>' +
+            '<h3 class="jrc-ip-detail-label">Ações rápidas</h3><div class="jrc-ip-actions">' +
             '<button type="button" class="jrc-ip-ghost" data-act="see" data-id="' + esc(net.id) + '"><i class="bi bi-list-ul"></i> Ver endereços desta rede</button>' +
             '<button type="button" class="jrc-ip-ghost" data-act="add-ip" data-id="' + esc(net.id) + '"><i class="bi bi-plus-lg"></i> Adicionar novo IP</button>' +
             '<button type="button" class="jrc-ip-ghost" data-act="import" data-id="' + esc(net.id) + '"><i class="bi bi-upload"></i> Importar IPs (CSV)</button>' +
