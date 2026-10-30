@@ -15,7 +15,7 @@ try {
     $db = getDBConnection();
 
     if (!DeviceInventoryCache::isReady($db)) {
-        require __DIR__ . '/uplink-stats-live.php';
+        require __DIR__ . '/uplink-stats-precache.php';
         exit;
     }
 
@@ -27,5 +27,5 @@ try {
     ]);
 } catch (Throwable $e) {
     error_log('[JRC UPLINK CACHE] ' . $e->getMessage());
-    require __DIR__ . '/uplink-stats-live.php';
+    require __DIR__ . '/uplink-stats-precache.php';
 }
