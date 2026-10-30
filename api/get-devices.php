@@ -4,6 +4,12 @@ require_once __DIR__ . '/../config/config.php';
 header('Content-Type: application/json');
 requireLogin();
 
+// Liberar a sessão autenticada antes de consultas ou bloqueios de arquivo.
+// Os dados de $_SESSION continuam disponíveis para leitura nesta requisição.
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 // Set time limit for this script to handle large datasets
 set_time_limit(300); // Increased to 5 minutes for large datasets
 ini_set('max_execution_time', 300);
