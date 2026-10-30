@@ -1,86 +1,73 @@
 <?php
-require_once __DIR__ . '/../config/config.php';
+declare(strict_types=1);
 
-// Increase timeout for large dataset
-set_time_limit(20);
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/GenieACS_DashboardLean.php';
+
+use App\GenieACS_DashboardLean;
+use App\GenieACS_Fast;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: private, max-age=10');
 
 requireLogin();
 
-use App\GenieACS;
-use App\GenieACS_Fast;
-
-header('Content-Type: application/json');
-
 try {
-    // Get GenieACS credentials from database
     $db = getDBConnection();
-    $stmt = $db->prepare("SELECT host, port, username, password FROM genieacs_credentials LIMIT 1");
+    $stmt = $db->prepare(
+        "SELECT host, port, username, password
+         FROM genieacs_credentials
+         WHERE is_connected = 1
+         ORDER BY id DESC
+         LIMIT 1"
+    );
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows === 0) {
         jsonResponse([
             'success' => false,
-            'message' => 'GenieACS not configured'
-        ]);
-        exit;
+            'message' => 'GenieACS não configurado.',
+        ], 503);
     }
 
     $config = $result->fetch_assoc();
     $stmt->close();
 
-    // Initialize GenieACS client
-    $genieacs = new GenieACS(
-        $config['host'],
-        $config['port'],
-        $config['username'],
-        $config['password']
+    $genieacs = new GenieACS_DashboardLean(
+        (string)$config['host'],
+        (int)$config['port'],
+        (string)($config['username'] ?? ''),
+        (string)($config['password'] ?? '')
     );
 
-    // Get all devices
-    $result = $genieacs->getDevices();
+    // O GenieACS ordena no MongoDB e devolve somente os 10 mais recentes.
+    // Antes este endpoint transferia e processava o parque inteiro.
+    $rawDevices = $genieacs->devices(
+        10,
+        0,
+        [],
+        ['_lastInform' => -1, '_id' => 1]
+    );
 
-    if (!$result['success']) {
-        jsonResponse([
-            'success' => false,
-            'message' => 'Failed to fetch devices from GenieACS'
-        ]);
-        exit;
-    }
-
-    $devices = $result['data'];
     $recentDevices = [];
 
-    // Parse and sort by last inform time (use fast parser for performance)
-    foreach ($devices as $device) {
+    foreach ($rawDevices as $device) {
         $parsed = GenieACS_Fast::parseDeviceDataFast($device);
-
-        // Add last inform timestamp for sorting
-        if (isset($device['_lastInform'])) {
-            $parsed['last_inform_timestamp'] = strtotime($device['_lastInform']);
-        } else {
-            $parsed['last_inform_timestamp'] = 0;
-        }
-
+        $parsed['last_inform_timestamp'] = isset($device['_lastInform'])
+            ? (strtotime((string)$device['_lastInform']) ?: 0)
+            : 0;
         $recentDevices[] = $parsed;
     }
 
-    // Sort by last inform (most recent first)
-    usort($recentDevices, function($a, $b) {
-        return $b['last_inform_timestamp'] - $a['last_inform_timestamp'];
-    });
-
-    // Take only top 10 most recent
-    $recentDevices = array_slice($recentDevices, 0, 10);
-
     jsonResponse([
         'success' => true,
-        'devices' => $recentDevices
+        'devices' => $recentDevices,
     ]);
-
-} catch (Exception $e) {
+} catch (Throwable $e) {
+    error_log('[JRC RECENT DEVICES] ' . $e->getMessage());
     jsonResponse([
         'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
-    ]);
+        'message' => 'Falha ao carregar equipamentos recentes.',
+    ], 502);
 }
