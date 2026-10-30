@@ -1,0 +1,106 @@
+/* JRCONECT ACS - Inventario visual v1
+   Escopo: dashboard e dispositivos. Nenhum comando ou dado alterado. */
+.jrc-dashboard #recent-devices .table-responsive,
+.jrc-inventory-page #devices-table-wrap {
+  overflow-x:auto;
+  border:1px solid #292c32;
+  border-radius:14px;
+  background:#151619;
+  scrollbar-color:#42454d #151619;
+}
+.jrc-dashboard #recent-devices table,
+.jrc-inventory-page #devices-table {
+  width:100%;
+  margin:0!important;
+  border-collapse:collapse!important;
+  border-spacing:0!important;
+  --bs-table-bg:transparent;
+  --bs-table-accent-bg:transparent;
+  --bs-table-striped-bg:transparent;
+  --bs-table-hover-bg:transparent;
+  --bs-table-border-color:#2b2e34;
+  color:#e9eaed;
+}
+.jrc-dashboard #recent-devices thead th,
+.jrc-inventory-page #devices-table thead th {
+  background:#1d1e22!important;
+  color:#91949e!important;
+  font-size:10px!important;
+  font-weight:750!important;
+  text-transform:uppercase;
+  letter-spacing:.085em;
+  white-space:nowrap;
+  padding:16px 18px!important;
+  border:0!important;
+  border-bottom:1px solid #2b2e34!important;
+  box-shadow:none!important;
+}
+.jrc-dashboard #recent-devices tbody tr,
+.jrc-inventory-page #devices-table tbody tr {
+  background:#16171a!important;
+  border:0!important;
+  border-bottom:1px solid #292c32!important;
+  transition:background-color .15s ease;
+}
+.jrc-dashboard #recent-devices tbody tr:last-child,
+.jrc-inventory-page #devices-table tbody tr:last-child {border-bottom:0!important}
+.jrc-dashboard #recent-devices tbody tr:hover,
+.jrc-inventory-page #devices-table tbody tr:hover {background:#202126!important}
+.jrc-dashboard #recent-devices tbody td,
+.jrc-inventory-page #devices-table tbody td {
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  color:#e2e4e9!important;
+  box-shadow:none!important;
+  border:0!important;
+  border-bottom:0!important;
+  vertical-align:middle!important;
+  padding:16px 18px!important;
+  font-size:12px!important;
+  line-height:1.45;
+}
+.jrc-dashboard #recent-devices tbody td::before,
+.jrc-dashboard #recent-devices tbody td::after,
+.jrc-inventory-page #devices-table tbody td::before,
+.jrc-inventory-page #devices-table tbody td::after {content:none!important;display:none!important}
+.jrc-dashboard #recent-devices tbody td:first-child a,
+.jrc-inventory-page #devices-table tbody td a {
+  color:#f1f2f5;
+  font-weight:650;
+  text-decoration:none;
+}
+.jrc-dashboard #recent-devices tbody td:first-child a:hover,
+.jrc-inventory-page #devices-table tbody td a:hover {color:#ff6262;text-decoration:none}
+.jrc-dashboard #recent-devices .badge,
+.jrc-inventory-page #devices-table .badge {
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-size:11px!important;
+  font-weight:700!important;
+  box-shadow:none!important;
+}
+.jrc-dashboard #recent-devices .badge.bg-success,
+.jrc-inventory-page #devices-table .badge.bg-success,
+.jrc-dashboard #recent-devices .badge.online {background:#143927!important;color:#47df8a!important}
+.jrc-dashboard #recent-devices .badge.bg-warning,
+.jrc-inventory-page #devices-table .badge.bg-warning {background:#403015!important;color:#ffca54!important}
+.jrc-dashboard #recent-devices .badge.bg-danger,
+.jrc-inventory-page #devices-table .badge.bg-danger,
+.jrc-dashboard #recent-devices .badge.offline {background:#411d22!important;color:#ff777b!important}
+.jrc-dashboard #recent-devices tbody .btn,
+.jrc-inventory-page #devices-table tbody .btn {
+  border-radius:8px!important;
+  min-width:30px;
+  min-height:30px;
+  box-shadow:none!important;
+}
+.jrc-inventory-page .card {border-color:#2b2e34;border-radius:14px;overflow:hidden}
+.jrc-inventory-page .card-header {border-bottom-color:#2b2e34}
+.jrc-inventory-page #devices-table-wrap {border-radius:12px}
+@media(max-width:768px){
+ .jrc-dashboard #recent-devices tbody td,
+ .jrc-inventory-page #devices-table tbody td {padding:12px!important}
+ .jrc-dashboard #recent-devices thead th,
+ .jrc-inventory-page #devices-table thead th {padding:12px!important}
+}

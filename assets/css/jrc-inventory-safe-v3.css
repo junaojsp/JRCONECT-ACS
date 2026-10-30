@@ -1,0 +1,93 @@
+/* JRC inventory v3. Scoped presentation; original data and controls remain. */
+body #recent-devices .jrc-inv-scroll,
+body .jrc-inv-scroll:has(> #devices-table) {
+  overflow-x: auto; border: 1px solid #30333c; border-radius: 12px;
+  background: #14161b; scrollbar-color: #484c58 #14161b;
+}
+body #recent-devices table.jrc-inventory-v3,
+body #devices-table.jrc-inventory-v3 {
+  width: 100% !important; table-layout: auto !important;
+  margin: 0 !important; border-collapse: collapse !important; border-spacing: 0 !important;
+  --bs-table-bg: transparent; --bs-table-hover-bg: transparent;
+  --bs-table-accent-bg: transparent; --bs-table-striped-bg: transparent;
+  color: #e3e7ef;
+}
+body #recent-devices table.jrc-inventory-v3 > thead > tr > th,
+body #devices-table.jrc-inventory-v3 > thead > tr > th {
+  background: #1b1e25 !important; color: #a6aebe !important;
+  padding: 14px 16px !important; font-size: 11px !important;
+  font-weight: 600 !important; letter-spacing: .055em;
+  text-transform: uppercase; white-space: nowrap;
+  border: 0 !important; border-bottom: 1px solid #333843 !important;
+  box-shadow: none !important;
+}
+body #recent-devices table.jrc-inventory-v3 > tbody > tr,
+body #devices-table.jrc-inventory-v3 > tbody > tr {
+  background: #151820 !important; border: 0 !important;
+  border-bottom: 1px solid #2c303a !important;
+}
+body #recent-devices table.jrc-inventory-v3 > tbody > tr:hover,
+body #devices-table.jrc-inventory-v3 > tbody > tr:hover {
+  background: #202631 !important;
+}
+body #recent-devices table.jrc-inventory-v3 > tbody > tr > td,
+body #devices-table.jrc-inventory-v3 > tbody > tr > td {
+  background: transparent !important; box-shadow: none !important;
+  border: 0 !important; padding: 15px 16px !important;
+  font-size: 13px !important; line-height: 1.45 !important;
+  color: #dce2ed !important; vertical-align: middle !important;
+}
+/* The old .fb-muted rule uses display:block, including on TD elements. */
+body #recent-devices table.jrc-inventory-v3 > tbody > tr > td.fb-muted:not([hidden]):not(.tags-column):not([style*="display:none"]):not([style*="display: none"]),
+body #devices-table.jrc-inventory-v3 > tbody > tr > td.fb-muted:not([hidden]):not(.tags-column):not([style*="display:none"]):not([style*="display: none"]) {
+  display: table-cell !important;
+}
+body #recent-devices table.jrc-inventory-v3 > tbody > tr:focus-within,
+body #devices-table.jrc-inventory-v3 > tbody > tr:focus-within { background: #202631 !important; }
+body #recent-devices table.jrc-inventory-v3 a:focus-visible,
+body #devices-table.jrc-inventory-v3 a:focus-visible {
+  outline: 2px solid #ff767d; outline-offset: 4px;
+}
+body #recent-devices .jrc-inv-identity,
+body #devices-table .jrc-inv-identity {
+  display: inline-flex !important; align-items: center; gap: 12px !important;
+  min-width: 180px; text-decoration: none !important; color: #f4f6fb !important;
+}
+body #recent-devices .jrc-inv-icon,
+body #devices-table .jrc-inv-icon,
+body #recent-devices .jrc-inv-identity .fb-equip-icon,
+body #devices-table .jrc-inv-identity .fb-equip-icon,
+body #recent-devices .jrc-inv-identity .jrc-device-icon,
+body #devices-table .jrc-inv-identity .jrc-device-icon {
+  width: 38px !important; height: 38px !important; flex: 0 0 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 10px !important; background: #34222c !important; color: #ff7e88 !important;
+}
+body #recent-devices .jrc-inv-meta,
+body #devices-table .jrc-inv-meta { display: flex; flex-direction: column; gap: 3px; }
+body #recent-devices .jrc-inv-identity strong,
+body #devices-table .jrc-inv-identity strong {
+  display: block; font-size: 13px !important; font-weight: 600 !important;
+  line-height: 1.4 !important; color: #f4f6fb !important;
+}
+body #recent-devices .jrc-inv-identity small,
+body #devices-table .jrc-inv-identity small {
+  display: block; font-size: 11px !important; font-weight: 400 !important;
+  line-height: 1.5 !important; color: #9ca7b9 !important;
+}
+body #recent-devices table.jrc-inventory-v3 .badge,
+body #devices-table.jrc-inventory-v3 .badge,
+body #recent-devices table.jrc-inventory-v3 .fb-signal,
+body #devices-table.jrc-inventory-v3 .fb-signal {
+  border-radius: 999px !important; padding: 5px 9px !important;
+  font-size: 11px !important; line-height: 1.3 !important;
+}
+body #recent-devices table.jrc-inventory-v3 .btn,
+body #devices-table.jrc-inventory-v3 .btn {
+  border-radius: 8px !important; min-width: 32px; min-height: 32px;
+}
+@media (max-width: 767px) {
+  body #recent-devices table.jrc-inventory-v3 > tbody > tr > td,
+  body #devices-table.jrc-inventory-v3 > tbody > tr > td { padding: 12px !important; }
+  body #recent-devices .jrc-inv-identity, body #devices-table .jrc-inv-identity { min-width: 160px; }
+}

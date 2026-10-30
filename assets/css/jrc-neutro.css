@@ -1,0 +1,201 @@
+/* JRC_NEUTRO_V1 — Usuários e Relatórios no preto do menu, sem a faixa azul. */
+html.jrc-neutro-page,
+html.jrc-neutro-page body,
+html.jrc-neutro-page .main-content,
+html.jrc-neutro-page .content-wrapper,
+html.jrc-neutro-page .topbar,
+html.jrc-neutro-page .page-content,
+html.jrc-neutro-page .container,
+html.jrc-neutro-page .container-fluid {
+    background: #101114 !important;
+    background-image: none !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-neutro-page .footer,
+html.jrc-neutro-page .main-content > .footer,
+html.jrc-neutro-page footer {
+    display: none !important;
+}
+
+html.jrc-neutro-page .card,
+html.jrc-neutro-page .card-header,
+html.jrc-neutro-page .card-body,
+html.jrc-neutro-page .list-group-item,
+html.jrc-neutro-page .modal-content,
+html.jrc-neutro-page .modal-header,
+html.jrc-neutro-page .modal-footer,
+html.jrc-neutro-page .tab-content,
+html.jrc-neutro-page .alert-info {
+    background: #1a1c21 !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+}
+
+html.jrc-neutro-page .card {
+    box-shadow: none !important;
+}
+
+html.jrc-neutro-page .card-header {
+    border-bottom-color: #2a2d34 !important;
+}
+
+html.jrc-neutro-page .alert-info {
+    color: #c5cad3 !important;
+}
+
+html.jrc-neutro-page label,
+html.jrc-neutro-page .form-label,
+html.jrc-neutro-page .text-muted {
+    color: #c5cad3 !important;
+}
+
+html.jrc-neutro-page .nav-tabs {
+    border-bottom-color: #2a2d34 !important;
+}
+
+html.jrc-neutro-page .nav-tabs .nav-link {
+    background: transparent !important;
+    color: #8d939c !important;
+    border-color: transparent !important;
+}
+
+html.jrc-neutro-page .nav-tabs .nav-link:hover {
+    background: #17191e !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-neutro-page .nav-tabs .nav-link.active {
+    background: #1a1c21 !important;
+    color: #fff !important;
+    border-color: #2a2d34 #2a2d34 #e10600 !important;
+}
+
+html.jrc-neutro-page .form-control,
+html.jrc-neutro-page .form-select,
+html.jrc-neutro-page input:not([type="checkbox"]):not([type="radio"]),
+html.jrc-neutro-page textarea,
+html.jrc-neutro-page select,
+html.jrc-neutro-page .input-group-text {
+    background: #17191e !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+    box-shadow: none !important;
+}
+
+html.jrc-neutro-page .form-control:focus,
+html.jrc-neutro-page .form-select:focus,
+html.jrc-neutro-page input:focus,
+html.jrc-neutro-page textarea:focus,
+html.jrc-neutro-page select:focus {
+    background: #17191e !important;
+    color: #fff !important;
+    border-color: #e10600 !important;
+    box-shadow: 0 0 0 1px #e10600 !important;
+}
+
+html.jrc-neutro-page input:-webkit-autofill,
+html.jrc-neutro-page input:-webkit-autofill:hover,
+html.jrc-neutro-page input:-webkit-autofill:focus,
+html.jrc-neutro-page textarea:-webkit-autofill {
+    -webkit-text-fill-color: #f3f5f8 !important;
+    caret-color: #f3f5f8;
+    box-shadow: 0 0 0 1000px #17191e inset !important;
+    transition: background-color 99999s ease-out;
+}
+
+html.jrc-neutro-page .table,
+html.jrc-neutro-page .table thead th,
+html.jrc-neutro-page .table tbody td,
+html.jrc-neutro-page .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: #1a1c21 !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+}
+
+html.jrc-neutro-page .table thead th {
+    color: #8d939c !important;
+}
+
+html.jrc-neutro-page .table-hover tbody tr:hover td {
+    background: #22252b !important;
+}
+
+html.jrc-neutro-page .btn-primary,
+html.jrc-neutro-page .btn-info {
+    background: #e10600 !important;
+    border-color: #e10600 !important;
+    color: #fff !important;
+}
+
+html.jrc-neutro-page .btn-primary:hover,
+html.jrc-neutro-page .btn-info:hover {
+    background: #c10500 !important;
+    border-color: #c10500 !important;
+    color: #fff !important;
+}
+
+html.jrc-neutro-page .btn-outline-info,
+html.jrc-neutro-page .btn-outline-primary {
+    background: #17191e !important;
+    border-color: #3a3f48 !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-neutro-page .content-wrapper a {
+    color: #f3f5f8;
+}
+
+html.jrc-neutro-page .content-wrapper a:hover {
+    color: #fff;
+}
+
+html.jrc-neutro-page .users-card,
+html.jrc-neutro-page .users-header h1,
+html.jrc-neutro-page .users-card h3 {
+    color: #f3f5f8 !important;
+}
+
+html.jrc-neutro-page .users-card {
+    background: #1a1c21 !important;
+    border-color: #2a2d34 !important;
+}
+
+html.jrc-neutro-page .users-header,
+html.jrc-neutro-page .users-header div,
+html.jrc-neutro-page .users-table th,
+html.jrc-neutro-page .user-role,
+html.jrc-neutro-page .users-form-grid label {
+    color: #8d939c !important;
+}
+
+html.jrc-neutro-page .users-header h1,
+html.jrc-neutro-page .users-card h3,
+html.jrc-neutro-page .users-table td {
+    color: #f3f5f8 !important;
+}
+
+html.jrc-neutro-page .users-table th,
+html.jrc-neutro-page .users-table td {
+    border-bottom-color: #2a2d34 !important;
+    background: transparent !important;
+}
+
+html.jrc-neutro-page .users-form-grid input,
+html.jrc-neutro-page .users-form-grid select {
+    background: #17191e !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+}
+
+html.jrc-neutro-page .users-submit,
+html.jrc-neutro-page .btn-edit {
+    background: #e10600 !important;
+    color: #fff !important;
+}
+
+html.jrc-neutro-page #logs-container {
+    background: #17191e !important;
+    border: 1px solid #2a2d34 !important;
+    color: #d4d4d4 !important;
+}

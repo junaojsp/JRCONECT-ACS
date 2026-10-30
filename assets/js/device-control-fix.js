@@ -558,6 +558,206 @@
         const d=Math.floor(n/86400),h=Math.floor(n%86400/3600),m=Math.floor(n%3600/60);
         return [d?d+'d':'',h?h+'h':'',m+'min'].filter(Boolean).join(' ');
     }
+    /* JRC_WAN_OVERVIEW_FIX_V1 */
+    window.JRC_WAN_OVERVIEW_FIX = '20261023-1';
+    function jrcWanNodes(id) {
+        if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(id)) return [];
+        return Array.from(document.querySelectorAll('[id="' + id + '"]'));
+    }
+    function jrcWanVisible(node) {
+        return !!node && node.getClientRects().length > 0 &&
+            getComputedStyle(node).visibility !== 'hidden';
+    }
+    function jrcWanElement(id) {
+        const nodes = jrcWanNodes(id);
+        return nodes.find(jrcWanVisible) || nodes[0] || null;
+    }
+    function jrcWanActive() {
+        return !document.hidden && (monitoringActive() ||
+            jrcWanNodes('bandwidth-bars').some(jrcWanVisible));
+    }
+    /* JRC_WAN_OVERVIEW_FIX_V2 */
+    window.JRC_WAN_OVERVIEW_FIX = '20261023-2';
+    function jrcWanPaintLastSample(message) {
+        const samples = Array.isArray(traffic.samples) ? traffic.samples : [];
+        const last = samples.length ? samples[samples.length - 1] : null;
+        if (!last || !Number.isFinite(last.down) || !Number.isFinite(last.up)) return false;
+        setLiveRate('live-rx', last.down);
+        setLiveRate('live-tx', last.up);
+        jrcWanNodes('bandwidth-bars').forEach(node => { node.innerHTML = chartHtml(samples); });
+        if (message) setMonitorText('bandwidth-sample-status', message);
+        return true;
+    }
+    function jrcWanNumber(value) {
+        if (typeof value !== 'number' && typeof value !== 'string') return null;
+        if (typeof value === 'string' && value.trim() === '') return null;
+        const number = Number(value);
+        return Number.isFinite(number) && number >= 0 ? number : null;
+    }
+    /* JRC_IXC_SSE_REALTIME_V1 */
+    window.JRC_IXC_SSE_REALTIME = '20261023-1';
+
+    function jrcStopIxcSse() {
+        if (traffic.ixcSseRetryTimer) {
+            clearTimeout(traffic.ixcSseRetryTimer);
+            traffic.ixcSseRetryTimer = null;
+        }
+        if (traffic.ixcSse) {
+            try { traffic.ixcSse.close(); } catch (_) {}
+            traffic.ixcSse = null;
+        }
+        traffic.ixcSseConnected = false;
+    }
+
+    /* JRC_IXC_CURRENT_SMOOTH_V1 */
+    function jrcPaintIxcSseSample(sample) {
+        if (!sample) return false;
+        const down = jrcWanNumber(sample.download_mbps);
+        const up = jrcWanNumber(sample.upload_mbps);
+        if (down === null || up === null) return false;
+
+        const parsed = sample.sample_time ? new Date(sample.sample_time).getTime() : Date.now();
+        const at = Number.isFinite(parsed) ? parsed : Date.now();
+
+        traffic.liveAvailable = true;
+        traffic.liveReason = null;
+        traffic.liveDisabledUntil = 0;
+        traffic.liveSource = 'ixc-sse';
+        traffic.ixcSseLast = {download_mbps:down, upload_mbps:up, sample_time:new Date(at).toISOString()};
+
+        traffic.samples.push({at, down, up, source:'ixc-sse'});
+        const cutoff = Date.now() - (5 * 60 * 1000);
+        traffic.samples = traffic.samples.filter(row => Number(row.at) >= cutoff).slice(-360);
+
+        // O EventSource do IXC pode alternar amostras muito baixas/zero entre
+        // atualizacoes. Para os cards "agora", usa apenas a media das amostras
+        // reais dos ultimos 3 segundos. A curva permanece com os valores brutos.
+        /* JRC_IXC_CURRENT_SMOOTH_1S_V1 */
+        const currentCutoff = at - 1000;
+        const current = traffic.samples.filter(row =>
+            Number(row.at) >= currentCutoff &&
+            Number(row.at) <= at &&
+            Number.isFinite(row.down) &&
+            Number.isFinite(row.up)
+        );
+        const currentDown = current.length
+            ? current.reduce((sum,row)=>sum+Math.max(0,row.down),0)/current.length
+            : down;
+        const currentUp = current.length
+            ? current.reduce((sum,row)=>sum+Math.max(0,row.up),0)/current.length
+            : up;
+
+        setLiveRate('live-rx', currentDown);
+        setLiveRate('live-tx', currentUp);
+        setMonitorText('jr-monitor-source', 'IXC EventSource + IXC/RADIUS');
+        setMonitorText('jr-monitor-live-source', 'IXC EventSource');
+        setMonitorText('jr-source-live-badge', 'IXC AO VIVO');
+        setMonitorText('jr-source-live-state', 'Stream IXC conectado');
+        setMonitorText('bandwidth-sample-status', 'IXC AO VIVO • ' + new Date(at).toLocaleTimeString('pt-BR'));
+
+        jrcWanNodes('bandwidth-bars').forEach(node => {
+            node.innerHTML = chartHtml(traffic.samples);
+        });
+        return true;
+    }
+
+    function jrcScheduleIxcSse(loginId, delay = 2500) {
+        if (!loginId || !jrcWanActive()) return;
+        if (traffic.ixcSseRetryTimer) clearTimeout(traffic.ixcSseRetryTimer);
+        traffic.ixcSseRetryTimer = setTimeout(() => {
+            traffic.ixcSseRetryTimer = null;
+            jrcStartIxcSse(loginId);
+        }, delay);
+    }
+
+    function jrcStartIxcSse(loginId) {
+        const id = Number(loginId);
+        if (!Number.isInteger(id) || id < 1 || !jrcWanActive() || typeof EventSource === 'undefined') return false;
+
+        if (traffic.ixcSse && traffic.ixcSseLoginId === id &&
+            traffic.ixcSse.readyState !== EventSource.CLOSED) {
+            return true;
+        }
+
+        jrcStopIxcSse();
+        traffic.ixcSseLoginId = id;
+        setMonitorText('bandwidth-sample-status', 'Conectando ao stream ao vivo do IXC...');
+
+        const source = new EventSource('/api/stream-ixc-live-traffic.php?login_id=' + encodeURIComponent(id));
+        traffic.ixcSse = source;
+
+        source.onopen = () => {
+            if (traffic.ixcSse !== source) return;
+            traffic.ixcSseConnected = true;
+            setMonitorText('bandwidth-sample-status', 'IXC AO VIVO • conexao nativa');
+        };
+
+        /* JRC_IXC_NATIVE_SSE_PROXY_V1 */
+        source.addEventListener('trafego', event => {
+            if (traffic.ixcSse !== source) return;
+            let raw;
+            try { raw = JSON.parse(event.data); } catch (_) { return; }
+
+            const rxBps = Number(raw?.rx);
+            const txBps = Number(raw?.tx);
+            if (!Number.isFinite(rxBps) || !Number.isFinite(txBps) || rxBps < 0 || txBps < 0) return;
+
+            jrcPaintIxcSseSample({
+                download_mbps: rxBps / 1000000,
+                upload_mbps: txBps / 1000000,
+                sample_time: new Date().toISOString(),
+                transport: 'ixc-native-sse'
+            });
+        });
+
+        source.addEventListener('end', () => {
+            if (traffic.ixcSse !== source) return;
+            source.close();
+            traffic.ixcSse = null;
+            traffic.ixcSseConnected = false;
+            if (traffic.ixcSseLast) {
+                setMonitorText('bandwidth-sample-status', 'IXC AO VIVO • reconectando stream...');
+            }
+            jrcScheduleIxcSse(id, 700);
+        });
+
+        source.onerror = () => {
+            if (traffic.ixcSse !== source) return;
+            source.close();
+            traffic.ixcSse = null;
+            traffic.ixcSseConnected = false;
+            if (traffic.ixcSseLast) jrcPaintIxcSseSample(traffic.ixcSseLast);
+            setMonitorText('jr-source-live-state', 'Stream IXC indisponivel; fallback ativo');
+            setMonitorText('bandwidth-sample-status', 'Stream IXC indisponivel; usando fallback NE8000/TR-069.');
+            jrcScheduleIxcSse(id, 5000);
+        };
+        return true;
+    }
+
+    async function jrcWanJson(url) {
+        const allowed = ['/api/get-radius-session.php', '/api/get-ixc-live-traffic.php',
+            '/api/get-ne-live-traffic.php', '/api/get-tr069-live-traffic.php'];
+        const parsed = new URL(url, window.location.href);
+        if (parsed.origin !== window.location.origin || !allowed.includes(parsed.pathname)) {
+            return {success:false, available:false, message:'Endpoint WAN inesperado.'};
+        }
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        try {
+            const response = await fetch(parsed.href, {credentials:'same-origin',
+                cache:'no-store', signal:controller.signal, headers:{Accept:'application/json'}});
+            if (!response.ok) return {success:false, available:false, message:'HTTP ' + response.status};
+            const data = await response.json();
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                return {success:false, available:false, message:'Resposta WAN invalida.'};
+            }
+            return data;
+        } catch (error) {
+            return {success:false, available:false, message:error.name === 'AbortError'
+                ? 'Tempo limite de 15s.' : 'Falha de rede ou resposta nao JSON.'};
+        } finally { clearTimeout(timer); }
+    }
+
     function monitoringActive() {
         const pane=document.getElementById('monitoring');
         return !!pane && pane.classList.contains('active') && pane.classList.contains('show');
@@ -622,9 +822,11 @@
         };
     }
     function setLiveRate(prefix, valueMbps) {
-        const formatted=fmtLiveRate(valueMbps);
-        setMonitorText(prefix+'-mbps',formatted.value);
-        setMonitorText(prefix+'-unit',formatted.unit);
+        const value = jrcWanNumber(valueMbps);
+        // The overview has a static Mbps label. Never display Kbps as Mbps.
+        setMonitorText(prefix + '-mbps', value === null ? '--' :
+            value.toFixed(value > 0 && value < 0.01 ? 4 : 2));
+        setMonitorText(prefix + '-unit', 'Mbps');
     }
     function fmtAccountingAge(ms) {
         if(!Number.isFinite(ms)||ms<0)return 'N/D';
@@ -634,9 +836,22 @@
         if(minutes<60)return minutes+'min atrás';
         return Math.floor(minutes/60)+'h atrás';
     }
+    /* JRC_WAN_STATUS_BACKGROUND_ONLY_V1 */
+    function jrcHideWanTechnicalStatus() {
+        document.querySelectorAll('[id="bandwidth-sample-status"]').forEach(node => {
+            node.style.display = 'none';
+            node.setAttribute('aria-hidden','true');
+        });
+    }
+
     function setMonitorText(id,value) {
-        const el=document.getElementById(id);
-        if(el)el.textContent=value??'N/D';
+        jrcWanNodes(id).forEach(node => {
+            node.textContent = value ?? 'N/D';
+            if (id === 'bandwidth-sample-status') {
+                node.style.display = 'none';
+                node.setAttribute('aria-hidden','true');
+            }
+        });
     }
     function monitorDiagnosis() {
         const stats=monitorStats();
@@ -951,7 +1166,24 @@
         const html=renderIxcAccessSummary(traffic.report||{});
         if (summary.innerHTML!==html) summary.innerHTML=html;
     }
+    /* JRC_WAN_TAB_USAGE_V1 */
+    function jrcConsumptionVisible() {
+        return jrcWanNodes('jr-ixc-consumption').some(jrcWanVisible);
+    }
+    function jrcPaintConsumption() {
+        const data = traffic.report;
+        if (!data) return false;
+        const html = renderIxcConsumption(data);
+        jrcWanNodes('jr-ixc-consumption').forEach(node => {
+            if (node.innerHTML !== html) node.innerHTML = html;
+        });
+        const label = (data?.last_30_days?.source || 'IXC/RADIUS') + ' • ' +
+            (traffic.reportUpdatedLabel || new Date().toLocaleTimeString('pt-BR'));
+        jrcWanNodes('jr-ixc-consumption-source').forEach(node => { node.textContent = label; });
+        return true;
+    }
     async function loadIxcReplicaReport(force=false) {
+        if (!monitoringActive() && !jrcConsumptionVisible()) return;
         const loginId=traffic.ixcLoginId||null;
         const username=traffic.latestSession?.username||null;
         if((!loginId && !username) || traffic.reportLoading)return;
@@ -988,52 +1220,103 @@
                 const connectionCount=Number(data?.last_7_days?.connection_count||0);
                 eventsSource.textContent=(data?.last_7_days?.source||'IXC/RADIUS')+' • '+eventCount+' evento(s) • '+connectionCount+' conexão(ões) • '+updatedLabel;
             }
-            if(consumption)consumption.innerHTML=renderIxcConsumption(data);
-            if(consumptionSource)consumptionSource.textContent=(data?.last_30_days?.source||'IXC/RADIUS')+' • '+updatedLabel;
+            traffic.reportUpdatedLabel=updatedLabel;
+            jrcPaintConsumption();
         }catch(e){
             console.warn('[IXC MONITOR] relatório indisponível',e);
             const eventsSource=document.getElementById('jr-ixc-events-source');
             const consumptionSource=document.getElementById('jr-ixc-consumption-source');
             if(eventsSource)eventsSource.textContent='IXC/RADIUS • falha na atualização';
-            if(consumptionSource)consumptionSource.textContent='IXC/RADIUS • falha na atualização';
+            jrcWanNodes('jr-ixc-consumption-source').forEach(node => { node.textContent='IXC/RADIUS • falha na atualização'; });
         }finally{traffic.reportLoading=false;}
     }
 
     window.loadIxcReplicaReport = loadIxcReplicaReport;
 
+    /* JRC_WAN_CHART_VISIBLE_V1 */
+    /* JRC_WAN_CHART_SELFCONTAINED_V1 */
     function chartHtml(samples) {
         const cutoff=Date.now()-(5*60*1000);
-        const recent=samples.filter(s=>Number(s.at)>=cutoff && Number.isFinite(s.down)&&Number.isFinite(s.up));
-        if(recent.length<1)return '<div class="jr-monitor-wait"><i class="bi bi-activity"></i><span>Aguardando dados de tráfego via TR-069...</span></div>';
+        const recent=(Array.isArray(samples)?samples:[])
+            .filter(s=>Number(s.at)>=cutoff && Number.isFinite(s.down)&&Number.isFinite(s.up))
+            .sort((a,b)=>Number(a.at)-Number(b.at));
 
-        const rawMax=Math.max(0.000001,...recent.flatMap(s=>[s.down,s.up]));
+        if(!recent.length){
+            return '<div class="jr-monitor-wait"><i class="bi bi-activity"></i><span>Aguardando dados de trafego...</span></div>';
+        }
+
+        const rawMax=Math.max(0.000001,...recent.flatMap(s=>[Math.max(0,s.down),Math.max(0,s.up)]));
         let factor=1,unit='Mbps';
         if(rawMax<0.001){factor=1000000;unit='bps';}
         else if(rawMax<1){factor=1000;unit='Kbps';}
 
-        const displayMax=Math.max(1,rawMax*factor);
-        const pts=field=>recent.map((s,i)=>{
-            const x=recent.length===1?0:i/(recent.length-1)*100;
-            const y=94-((s[field]*factor)/displayMax)*86;
-            return x.toFixed(2)+','+Math.max(4,Math.min(94,y)).toFixed(2);
-        }).join(' ');
+        const peak=rawMax*factor;
+        const displayMax=Math.max(unit==='Mbps'?0.10:1, peak*1.20);
+        const W=760,H=230;
+        const L=62,R=738,T=18,B=188;
+        const plotW=R-L, plotH=B-T;
 
-        const area=field=>'0,94 '+pts(field)+' 100,94';
-        const first=new Date(recent[0].at).toLocaleTimeString('pt-BR');
-        const last=new Date(recent[recent.length-1].at).toLocaleTimeString('pt-BR');
+        const x=(i)=>recent.length===1 ? L+plotW/2 : L+(i/(recent.length-1))*plotW;
+        const y=(value)=>{
+            const scaled=Math.max(0,Number(value)||0)*factor;
+            return B-(scaled/displayMax)*plotH;
+        };
+        const clampY=value=>Math.max(T,Math.min(B,y(value)));
 
-        const topLabel=displayMax>=100
-            ? displayMax.toFixed(0)
-            : displayMax>=10
-                ? displayMax.toFixed(1)
-                : displayMax.toFixed(2);
-        const mid=displayMax/2;
-        const midLabel=mid>=100?mid.toFixed(0):mid>=10?mid.toFixed(1):mid.toFixed(2);
+        const fmtAxis=v=>v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2);
+        const fmtTime=t=>new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
-        return '<div class="jr-monitor-chart-inner">'+
-          '<div class="jr-monitor-scale"><span>'+topLabel+' '+unit+'</span><span>'+midLabel+' '+unit+'</span><span>0 '+unit+'</span></div>'+
-          '<div class="jr-monitor-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 8H100M0 36H100M0 64H100M0 94H100" class="grid"/><polygon points="'+area('down')+'" class="down-area"/><polygon points="'+area('up')+'" class="up-area"/><polyline points="'+pts('down')+'" class="down"/><polyline points="'+pts('up')+'" class="up"/></svg><div class="jr-monitor-times"><span>'+first+'</span><span>'+last+'</span></div></div>'+
-          '</div><div class="jr-monitor-chart-legend"><span><i class="down"></i>Download</span><span><i class="up"></i>Upload</span><span>Últimos 5 minutos</span></div>';
+        const pathFor=field=>{
+            if(recent.length===1){
+                const xx=x(0).toFixed(2), yy=clampY(recent[0][field]).toFixed(2);
+                return 'M '+xx+' '+yy+' L '+xx+' '+yy;
+            }
+            return recent.map((s,i)=>(i?'L ':'M ')+x(i).toFixed(2)+' '+clampY(s[field]).toFixed(2)).join(' ');
+        };
+
+        const dots=(field,color)=>recent.map((s,i)=>
+            '<circle cx="'+x(i).toFixed(2)+'" cy="'+clampY(s[field]).toFixed(2)+'" r="3" fill="'+color+'">'+
+            '<title>'+fmtTime(s.at)+' • '+field.toUpperCase()+' '+(Math.max(0,Number(s[field])||0)*factor).toFixed(2)+' '+unit+'</title></circle>'
+        ).join('');
+
+        const areaFor=field=>{
+            const pts=recent.map((s,i)=>x(i).toFixed(2)+','+clampY(s[field]).toFixed(2)).join(' ');
+            return L+','+B+' '+pts+' '+R+','+B;
+        };
+
+        const first=fmtTime(recent[0].at);
+        const last=fmtTime(recent[recent.length-1].at);
+        const midX=(L+R)/2;
+        const topLabel=fmtAxis(displayMax);
+        const midLabel=fmtAxis(displayMax/2);
+
+        return '<div style="width:100%;height:230px;position:relative;overflow:hidden">'+
+          '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;width:100%;height:230px;overflow:visible" role="img" aria-label="Grafico WAN em tempo real">'+
+            '<defs>'+
+              '<linearGradient id="jrcWanDownArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38bdf8" stop-opacity=".22"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/></linearGradient>'+
+              '<linearGradient id="jrcWanUpArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity=".18"/><stop offset="100%" stop-color="#34d399" stop-opacity="0"/></linearGradient>'+
+            '</defs>'+
+            '<line x1="'+L+'" y1="'+T+'" x2="'+R+'" y2="'+T+'" stroke="#334155" stroke-width="1" stroke-dasharray="4 5"/>'+
+            '<line x1="'+L+'" y1="'+((T+B)/2)+'" x2="'+R+'" y2="'+((T+B)/2)+'" stroke="#334155" stroke-width="1" stroke-dasharray="4 5"/>'+
+            '<line x1="'+L+'" y1="'+B+'" x2="'+R+'" y2="'+B+'" stroke="#475569" stroke-width="1"/>'+
+            '<text x="'+(L-10)+'" y="'+(T+4)+'" text-anchor="end" fill="#8da0b8" font-size="12">'+topLabel+' '+unit+'</text>'+
+            '<text x="'+(L-10)+'" y="'+(((T+B)/2)+4)+'" text-anchor="end" fill="#8da0b8" font-size="12">'+midLabel+' '+unit+'</text>'+
+            '<text x="'+(L-10)+'" y="'+(B+4)+'" text-anchor="end" fill="#8da0b8" font-size="12">0 '+unit+'</text>'+
+            '<polygon points="'+areaFor('down')+'" fill="url(#jrcWanDownArea)"/>'+
+            '<polygon points="'+areaFor('up')+'" fill="url(#jrcWanUpArea)"/>'+
+            '<path d="'+pathFor('down')+'" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'+
+            '<path d="'+pathFor('up')+'" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'+
+            dots('down','#38bdf8')+dots('up','#34d399')+
+            '<text x="'+L+'" y="211" text-anchor="start" fill="#8da0b8" font-size="11">'+first+'</text>'+
+            '<text x="'+midX+'" y="211" text-anchor="middle" fill="#738399" font-size="11">Ultimos 5 minutos</text>'+
+            '<text x="'+R+'" y="211" text-anchor="end" fill="#8da0b8" font-size="11">'+last+'</text>'+
+          '</svg>'+
+        '</div>'+
+        '<div class="jr-monitor-chart-legend" style="padding-top:2px">'+
+          '<span><i class="down"></i>Download</span>'+
+          '<span><i class="up"></i>Upload</span>'+
+          '<span>'+recent.length+' amostra(s)</span>'+
+        '</div>';
     }
 
     function actionFeedback(message, type='info') {
@@ -1230,23 +1513,32 @@
     };
 
     window.updateTr069LiveTraffic = async function(force=false) {
-        if(!monitoringActive() || traffic.livePolling || !window.DEVICE_ID) return;
+        if(!jrcWanActive() || traffic.livePolling || !window.DEVICE_ID) return;
+        if (traffic.ixcSse && traffic.ixcSse.readyState !== EventSource.CLOSED) return;
 
         const now=Date.now();
         // Mantém uma amostra por segundo, como o gráfico original do IXC.
         // A coleta só ocorre com a aba Monitoramento ativa.
-        if(!force && now-traffic.liveLastPoll<1000) return;
+        if(!force && now-traffic.liveLastPoll<(monitoringActive()?1000:5000)) return;
         if(!force && traffic.liveDisabledUntil>now) return;
 
         traffic.liveLastPoll=now;
         traffic.livePolling=true;
 
         try{
-            const fetchLive=async url=>{
-                const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
-                if(!response.ok)return null;
-                const payload=await response.json();
-                return payload?.success?payload:null;
+            setMonitorText('bandwidth-sample-status','Consultando trafego WAN...');
+            const reasons = [];
+            const fetchLive = async url => {
+                const payload = await jrcWanJson(url);
+                const label = new URL(url, window.location.href).pathname
+                    .replace('/api/get-', '').replace('.php', '');
+                if (!payload.success || !payload.available || !payload.live ||
+                    jrcWanNumber(payload.live.download_mbps) === null ||
+                    jrcWanNumber(payload.live.upload_mbps) === null) {
+                    reasons.push(label + ': ' + (payload.message || 'sem amostra valida'));
+                    return {...payload, available:false};
+                }
+                return payload;
             };
 
             let data=null;
@@ -1306,24 +1598,30 @@
             if(!data?.live){
                 traffic.liveAvailable=false;
                 traffic.liveDisabledUntil=Date.now()+4000;
-                setMonitorText('live-rx-mbps','--');
-                setMonitorText('live-tx-mbps','--');
-                setMonitorText('live-rx-unit','Mbps');
-                setMonitorText('live-tx-unit','Mbps');
-                setMonitorText('jr-source-live-badge','AGUARDANDO');
+                const keptLastSample = jrcWanPaintLastSample(
+                    'Sem nova amostra do IXC/BRAS; mantendo a ultima leitura valida.'
+                );
+                if(!keptLastSample){
+                    setMonitorText('live-rx-mbps','--');
+                    setMonitorText('live-tx-mbps','--');
+                    setMonitorText('live-rx-unit','Mbps');
+                    setMonitorText('live-tx-unit','Mbps');
+                }
+                setMonitorText('jr-source-live-badge',keptLastSample ? 'ULTIMA AMOSTRA' : 'AGUARDANDO');
                 setMonitorText('jr-source-live-state',
                     traffic.liveReason==='wancommon_management_only'
                         ? 'WANCommon ignorado: contador de gerência'
                         : 'localizando stream IXC/BRAS'
                 );
                 setMonitorText('jr-monitor-live-source','IXC/BRAS • aguardando');
-                const status=document.getElementById('bandwidth-sample-status');
-                if(status)status.textContent=
+                const status=jrcWanElement('bandwidth-sample-status');
+                if(status && !keptLastSample) status.textContent=
                     traffic.liveReason==='wancommon_management_only'
-                        ? 'Contador TR-069 WANCommon ignorado; aguardando tráfego real do IXC/BRAS.'
-                        : 'Aguardando amostra confiável do IXC/BRAS.';
-                const chart=document.getElementById('bandwidth-bars');
-                if(chart&&!traffic.samples.length)chart.innerHTML=chartHtml([]);
+                        ? 'Contador TR-069 WANCommon ignorado; aguardando trafego real do IXC/BRAS.'
+                        : (reasons.join(' | ') || 'Nenhuma amostra WAN valida.');
+                if(!keptLastSample){
+                    jrcWanNodes('bandwidth-bars').forEach(node => { node.innerHTML=chartHtml([]); });
+                }
                 return;
             }
 
@@ -1346,38 +1644,38 @@
             setMonitorText('jr-source-live-badge',sourceKey==='ixc'?'IXC AO VIVO':sourceKey==='ne'?'NE8000':'TR-069');
             setMonitorText('jr-source-live-state',sourceLabel+' • leitura confirmada');
 
-            const status=document.getElementById('bandwidth-sample-status');
+            const status=jrcWanElement('bandwidth-sample-status');
             if(status)status.textContent=sourceLabel.toUpperCase()+' • '+new Date(at).toLocaleTimeString('pt-BR');
 
-            const chart=document.getElementById('bandwidth-bars');
+            const chart=jrcWanElement('bandwidth-bars');
             if(chart)chart.innerHTML=chartHtml(traffic.samples);
 
         }catch(e){
             traffic.liveAvailable=false;
             traffic.liveReason='request_failed';
             traffic.liveDisabledUntil=Date.now()+5000;
-            setMonitorText('jr-source-live-state','IXC/BRAS temporariamente sem atualização');
-            setMonitorText('jr-monitor-live-source','Última amostra válida mantida');
-            const status=document.getElementById('bandwidth-sample-status');
-            if(status) status.textContent='Sem nova amostra do IXC/BRAS • mantendo a última leitura válida';
-            const chart=document.getElementById('bandwidth-bars');
-            if(chart && traffic.samples.length) chart.innerHTML=chartHtml(traffic.samples);
+            setMonitorText('jr-source-live-state','IXC/BRAS temporariamente sem atualizacao');
+            setMonitorText('jr-monitor-live-source','Ultima amostra valida mantida');
+            if(!jrcWanPaintLastSample('Sem nova amostra do IXC/BRAS; mantendo a ultima leitura valida.')){
+                setMonitorText('bandwidth-sample-status','Falha temporaria na consulta WAN; aguardando nova amostra.');
+            }
         }finally{
             traffic.livePolling=false;
         }
     };
 
     window.updateRadiusBandwidthSample = async function(force=false) {
-        if (!monitoringActive() || traffic.polling || !window.DEVICE_ID) return;
+        if (!jrcWanActive() || traffic.polling || !window.DEVICE_ID) return;
         const now=Date.now();
         if(!force && now-traffic.lastPoll<4500)return;
         traffic.lastPoll=now; traffic.polling=true;
         try{
-            const r=await fetch('/api/get-radius-session.php?device_id='+encodeURIComponent(window.DEVICE_ID),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
-            const data=await r.json();
-            const badge=document.getElementById('jr-radius-status'), status=document.getElementById('bandwidth-sample-status');
+            const data=await jrcWanJson('/api/get-radius-session.php?device_id='+encodeURIComponent(window.DEVICE_ID));
+            const badge=document.getElementById('jr-radius-status'), status=jrcWanElement('bandwidth-sample-status');
             if(!data?.success||!data?.online||!data?.session){
-                traffic.online=false; traffic.latestSession=null;
+                traffic.online=false; traffic.latestSession=null; traffic.ixcLoginId=null;
+                setMonitorText('bandwidth-sample-status','IXC/RADIUS: '+(data?.message || 'sessao online nao localizada.'));
+                setMonitorText('live-rx-mbps','--'); setMonitorText('live-tx-mbps','--');
                 if(badge){badge.textContent='SEM SESSÃO';badge.classList.remove('online');}
                 setMonitorText('live-rx-total','--');
                 setMonitorText('live-tx-total','--');
@@ -1388,8 +1686,9 @@
             const s=data.session;
             traffic.online=true; traffic.latestSession=s;
             traffic.ixcLoginId=data.ixc_login_id || traffic.ixcLoginId || null;
+            if (traffic.ixcLoginId) jrcStartIxcSse(traffic.ixcLoginId);
             refreshIxcAccessSummary();
-            if(traffic.ixcLoginId || s.username) loadIxcReplicaReport();
+            if((monitoringActive() || jrcConsumptionVisible()) && (traffic.ixcLoginId || s.username)) loadIxcReplicaReport();
             if(badge){badge.textContent='ONLINE';badge.classList.add('online');}
 
             // RADIUS: output = download do assinante; input = upload do assinante.
@@ -1433,12 +1732,35 @@
         window.loadDeviceDetail = async function(...args) {
             const result = await originalLoad.apply(this,args);
             await enhanceControls();
+            // O auto-refresh recria o card da Visao geral. Repinta imediatamente
+            // a ultima amostra valida antes da proxima consulta de rede.
+            jrcWanPaintLastSample('Ultima amostra valida; atualizando trafego...');
+            jrcPaintConsumption();
+            setTimeout(() => {
+                if (typeof window.updateRadiusBandwidthSample === 'function') {
+                    window.updateRadiusBandwidthSample(true);
+                }
+                if (typeof window.updateTr069LiveTraffic === 'function') {
+                    window.updateTr069LiveTraffic(true);
+                }
+            }, 0);
             return result;
         };
         try { loadDeviceDetail = window.loadDeviceDetail; } catch (_) {}
     }
 
+    window.addEventListener('pagehide', () => jrcStopIxcSse());
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            jrcStopIxcSse();
+        } else if (traffic.ixcLoginId) {
+            jrcStartIxcSse(traffic.ixcLoginId);
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
+        jrcHideWanTechnicalStatus();
+        setInterval(jrcHideWanTechnicalStatus, 1000);
         ensureModal();
         setTimeout(enhanceControls, 500);
         // A amostra é atualizada pela própria consulta. Não redesenhar o
@@ -1455,6 +1777,15 @@
                 window.loadIxcReplicaReport();
             }
         }, 1000);
+        /* JRC_WAN_TAB_USAGE_V1 */
+        document.getElementById('wan-tab')?.addEventListener('shown.bs.tab', () => {
+            jrcWanPaintLastSample();
+            jrcPaintConsumption();
+            if (typeof window.updateRadiusBandwidthSample === 'function') window.updateRadiusBandwidthSample(true);
+            if (typeof window.updateTr069LiveTraffic === 'function') window.updateTr069LiveTraffic(true);
+            if (typeof window.loadIxcReplicaReport === 'function') window.loadIxcReplicaReport(true);
+            if (traffic.ixcLoginId) jrcStartIxcSse(traffic.ixcLoginId);
+        });
         document.getElementById('monitoring-tab')?.addEventListener('shown.bs.tab', () => {
             traffic.last=null; traffic.sessionKey=null;
             traffic.ixcLoginId=null; traffic.liveAvailable=false; traffic.liveReason=null; traffic.liveDisabledUntil=0; traffic.liveSource=null; traffic.concentrator=null; traffic.report=null; traffic.reportLoadedFor=null; traffic.reportPollKey=null; traffic.reportLastPoll=0; traffic.pingSamples=[]; traffic.pingLastPoll=0;
@@ -1465,4 +1796,95 @@
             }
         });
     });
+})();
+
+/* JRC_ACOES_LOADER_V1 BEGIN */
+(function () {
+    if (window.__jrcAcoesLoader) return;
+    window.__jrcAcoesLoader = true;
+    var V = '0d07030ec7';
+    function go() {
+        if (!document.getElementById('acs-diagnostics-content')) return;
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = '/assets/css/jrc-acoes.css?v=' + V;
+        document.head.appendChild(l);
+        var s = document.createElement('script');
+        s.src = '/assets/js/jrc-acoes.js?v=' + V;
+        document.head.appendChild(s);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
+/* JRC_ACOES_LOADER_V1 END */
+/* JRC_ACOES_WIDTH_JS_V2 */
+(function () {
+  /* JRC_ACOES_WIDTH_JS_V2 — estica até a borda de .main-content, sem parar na margem do menu. */
+  function widen() {
+      var jra = document.querySelector('#acs-diagnostics-content .jra') || document.querySelector('.jra');
+      if (!jra) return;
+      var jb = jra.getBoundingClientRect();
+      if (jb.width < 40) return;
+      var edge = jra.closest('.main-content');
+      if (!edge) {
+          var n = jra.parentElement;
+          var bestRight = jb.right;
+          while (n && n !== document.body && n !== document.documentElement) {
+              var r = n.getBoundingClientRect();
+              if (r.width > 80 && r.right > bestRight + 30) {
+                  edge = n;
+                  bestRight = r.right;
+              }
+              n = n.parentElement;
+          }
+      }
+      if (!edge) return;
+      var nodes = [];
+      var x = jra;
+      while (x && x !== edge) {
+          nodes.push(x);
+          x = x.parentElement;
+      }
+      if (!nodes.length) return;
+      var cs = getComputedStyle(edge);
+      var right = edge.getBoundingClientRect().right - (parseFloat(cs.paddingRight) || 0) - (parseFloat(cs.borderRightWidth) || 0);
+      var left = nodes[nodes.length - 1].getBoundingClientRect().left;
+      var target = Math.floor(right - left - 8);
+      var cap = Math.floor(window.innerWidth - left - 16);
+      if (target > cap) target = cap;
+      if (target < 280) return;
+      var forced = jra.getAttribute('data-jra-widen') === '1';
+      if (!forced && target < jb.width + 48) return;
+      if (forced && Math.abs(target - jb.width) < 16) return;
+      var px = target + 'px';
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+          var y = nodes[i];
+          var rw = y.getBoundingClientRect().width;
+          if (y.getAttribute('data-jra-widen') !== '1' && rw >= target - 12) continue;
+          y.setAttribute('data-jra-widen', '1');
+          y.style.setProperty('box-sizing', 'border-box', 'important');
+          y.style.setProperty('width', px, 'important');
+          y.style.setProperty('max-width', 'none', 'important');
+          y.style.setProperty('min-width', '0', 'important');
+          y.style.setProperty('flex', '1 1 ' + px, 'important');
+          y.style.setProperty('grid-column', '1 / -1', 'important');
+          y.style.setProperty('justify-self', 'stretch', 'important');
+          y.style.setProperty('overflow', 'visible', 'important');
+      }
+      var grid = jra.querySelector('.jra-grid');
+      if (grid) {
+          grid.style.setProperty('width', '100%', 'important');
+          grid.style.setProperty('max-width', 'none', 'important');
+      }
+  }
+  var n = 0;
+  var iv = setInterval(function () {
+    widen();
+    if (++n > 40) clearInterval(iv);
+  }, 500);
+  window.addEventListener('resize', widen);
+  document.addEventListener('click', function () { setTimeout(widen, 30); });
+  document.addEventListener('shown.bs.tab', function () { setTimeout(widen, 30); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', widen);
+  else widen();
 })();

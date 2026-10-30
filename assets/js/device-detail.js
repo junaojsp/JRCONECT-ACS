@@ -1,4 +1,6 @@
+/* JRC_DEVICE_CHARTS_FIX_V1 */
 const deviceId = window.DEVICE_ID || '';
+try { if (deviceId) localStorage.setItem('jrc_last_device', deviceId); } catch (e) {}
 let savedScrollPosition = 0;
 let savedHotspotData = {}; // Store last known hotspot data
 
@@ -483,7 +485,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         const statusHeader = document.getElementById('device-status-header');
         if (statusHeader) {
             const online = String(device.status || '').toLowerCase() === 'online';
-            statusHeader.textContent = online ? 'ONLINE' : 'OFFLINE';
+            statusHeader.textContent = online ? 'Online' : 'Offline';
             statusHeader.classList.toggle('online', online);
             statusHeader.classList.toggle('offline', !online);
         }
@@ -578,6 +580,30 @@ async function loadDeviceDetail(isAutoRefresh = false) {
             `;
         };
 
+        const onuOnline = device.status === 'online';
+        const wanConnected = String(primaryWan.status || '').toLowerCase() === 'connected';
+        const profileLabel = device.cpe_profile_source === 'auto-discovery'
+            ? 'Auto Discovery'
+            : device.cpe_profile_source === 'static+auto-discovery'
+                ? 'Perfil + Auto Discovery'
+                : 'Perfil fixo';
+        const hostCount = Array.isArray(device.connected_devices)
+            ? device.connected_devices.length
+            : (device.connected_devices_count ?? '—');
+        const escOverview = (value) => String(value ?? '—').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const ssid24 = device.wifi_ssid_24ghz || device.wifi_ssid_2g || device.wifi_ssid || '—';
+        const ssid5 = device.wifi_ssid_5ghz || device.wifi_ssid_5g || device.wifi_ssid_5g_name || device.wifi_ssid || '—';
+        const discoveryChip = document.getElementById('fb-discovery-chip');
+        if (discoveryChip) {
+            const auto = /auto/i.test(String(device.cpe_profile_source || ''));
+            discoveryChip.classList.toggle('is-auto', auto);
+            discoveryChip.title = auto
+                ? 'Perfil identificado por descoberta automática neste CPE.'
+                : 'Este CPE usa o perfil já cadastrado. A descoberta não acrescentou outro modo de leitura.';
+        }
+        const seenLabel = formatOpticalDate(device.last_inform);
+        const uptimeLabel = formatUptimeValue(device.uptime);
+
         document.getElementById('overview-content').innerHTML = `
             <section class="jr-assistant-strip">
                 <div class="jr-assistant-main">
@@ -588,7 +614,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         <small id="acs-ai-compact-status">Consultando provedor...</small>
                     </div>
                 </div>
-
                 <div class="jr-assistant-ops">
                     <div id="acs-device-health" class="acs-health-pill neutral">
                         <i class="bi bi-heart-pulse"></i>
@@ -608,7 +633,6 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                         </div>
                     </div>
                 </div>
-
                 <div class="jr-assistant-actions">
                     <button type="button" class="acs-soft-btn acs-ai-summary-btn" onclick="runDeviceAISummary()">
                         <i class="bi bi-clipboard2-pulse"></i><span>Resumo técnico</span>
@@ -619,92 +643,102 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                 </div>
             </section>
 
-            <div class="acs-overview-grid acs-approved-layout acs-overview-reorganized acs-overview-with-ai-bar">
-
-                <section class="acs-overview-card acs-card-device acs-approved-device acs-fiber-card acs-device-wide">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-router"></i> Equipamento / Fibra</span><small class="ms-2 text-muted">CPE: TR-069 · Rede: IXC</small></div>
-                        <span class="acs-status-pill ${device.status === 'online' ? 'online' : 'offline'}">
-                            <span class="acs-status-dot"></span>${device.status === 'online' ? 'ONLINE' : 'OFFLINE'}
-                        </span>
+            <div class="fb-onu">
+                <section class="acs-overview-card fb-diag-card">
+                    <h2 class="fb-section-title">Diagnóstico rápido</h2>
+                    <div class="fb-diag-grid">
+                        <div class="fb-diag-item ${onuOnline ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conectividade</span><strong>${onuOnline ? 'Online' : 'Sem contato'} · ${escOverview(seenLabel)}</strong></div>
+                        <div class="fb-diag-item ${wanConnected ? '' : 'is-bad'}"><i class="bi bi-circle-fill"></i><span>Conexão WAN</span><strong>${escOverview(primaryWan.status || '—')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Sinal óptico (RX)</span><strong data-optical="rx_power">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Transmissão óptica (TX)</span><strong data-optical="tx_power">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Temperatura</span><strong data-optical="temperature">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Voltagem</span><strong data-optical="voltage">Consultando...</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Uptime</span><strong>${escOverview(uptimeLabel)}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>PPPoE</span><strong data-mirror="wan-pppoe-user">${escOverview(primaryWan.username || '—')}</strong></div>
+                        <div class="fb-diag-item"><i class="bi bi-circle-fill"></i><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></div>
                     </div>
-                    <div class="acs-fiber-summary-grid">
-                        <div class="acs-fiber-info">
-                            <div class="acs-reference-list acs-icon-info-list">
-                                <div><span><i class="bi bi-router"></i>Modelo</span><strong>${device.product_class || device.model || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-upc-scan"></i>ONU ID</span><strong>${device.serial_number || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-building"></i>Fabricante</span><strong>${device.manufacturer || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-diagram-3"></i>Perfil TR-069</span><strong>${
-                                    device.cpe_profile_source === 'auto-discovery'
-                                        ? 'Auto Discovery'
-                                        : device.cpe_profile_source === 'static+auto-discovery'
-                                            ? 'Perfil + Auto Discovery'
-                                            : 'Perfil fixo'
-                                }</strong></div>
-                                <div><span><i class="bi bi-cpu"></i>Firmware</span><strong>${device.software_version || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-box-seam"></i>Hardware</span><strong>${device.hardware_version || 'N/D'}</strong></div>
-                                <div><span><i class="bi bi-stopwatch"></i>Uptime</span><strong>${formatUptime(device.uptime)}</strong></div>
-                                <div><span><i class="bi bi-clock-history"></i>Última conexão</span><strong>${device.last_inform || 'N/D'}</strong></div>
-                            </div>
+                </section>
+
+                <div class="fb-onu-split">
+                    ${renderOpticalHistoryCard()}
+                    <section class="acs-overview-card">
+                        <div class="acs-overview-card-header">
+                            <span class="acs-kicker">Tráfego WAN</span>
+                            <span class="acs-mini-badge ${wanConnected ? 'success' : ''}">${escOverview(primaryWan.status || 'STATUS')}</span>
                         </div>
-                        <div class="acs-fiber-optical">
-                            <div class="acs-device-combined-title"><i class="bi bi-reception-4"></i> Sinal óptico / GPON</div>
-                            <div class="acs-reference-metrics acs-device-optical-metrics acs-icon-metric-list">
-                                <div><span><i class="bi bi-arrow-down-circle"></i>RX Power</span><strong id="optical-rx-power">${renderOpticalCachedValue('rx_power', 'dBm', 'rx_status')}</strong></div>
-                                <div><span><i class="bi bi-arrow-up-circle"></i>TX Power</span><strong id="optical-tx-power">${renderOpticalCachedValue('tx_power', 'dBm', 'tx_status')}</strong></div>
-                                <div><span><i class="bi bi-thermometer-half"></i>Temperatura</span><strong id="optical-temperature">${renderOpticalCachedValue('temperature', '°C', 'temperature_status')}</strong></div>
-                                <div><span><i class="bi bi-lightning-charge"></i>Voltagem</span><strong id="optical-voltage">${renderOpticalCachedValue('voltage', 'V', 'voltage_status')}</strong></div>
-                            </div>
-                            <div class="acs-reference-footer-grid acs-device-optical-footer acs-icon-footer-list">
-                                <div><span><i class="bi bi-broadcast-pin"></i>OLT / PON</span><strong id="optical-pon-id">${renderOpticalCachedPon()}</strong></div>
-                                <div><span><i class="bi bi-arrow-clockwise"></i>Atualização</span><strong id="optical-last-update">${renderOpticalLastUpdate()}</strong></div>
-                            </div>
+                        <div class="fb-traffic">
+                            <div><span>Download agora</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
+                            <div><span>Upload agora</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
                         </div>
-                    </div>
-                </section>
-
-                <div class="acs-device-info-column">
-                <section class="acs-overview-card acs-card-wan acs-approved-wan">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-globe2"></i> WAN / Internet</span><small class="ms-2 text-muted">IXC principal · TR-069 fallback</small></div>
-                        <span class="acs-mini-badge ${String(primaryWan.status || '').toLowerCase()==='connected'?'success':''}">${primaryWan.status || 'STATUS'}</span>
-                    </div>
-                    <div class="acs-reference-list acs-icon-info-list">
-                        <div><span><i class="bi bi-ethernet"></i>Interface</span><strong>${primaryWan.name || 'WAN / TR-069'}</strong></div>
-                        <div><span><i class="bi bi-globe2"></i>IP</span><strong id="wan-ip">${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
-                        <div><span><i class="bi bi-diagram-3"></i>Método</span><strong>${primaryWan.type || primaryWan.connection_type || 'PPPoE'}</strong></div>
-                        <div><span><i class="bi bi-person-circle"></i>Usuário PPPoE</span><strong id="wan-pppoe-user">${primaryWan.username || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-globe-americas"></i>IPv6</span><strong id="wan-ipv6">${primaryWan.ipv6 || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-diagram-2"></i>DNS</span><strong>${primaryWan.dns_servers || 'Não disponível'}</strong></div>
-                        <div><span><i class="bi bi-tag"></i>VLAN</span><strong id="wan-vlan">${primaryWan.vlan_id || primaryWan.vlan || '-'}</strong></div>
-                        <div><span><i class="bi bi-exclamation-triangle"></i>Último erro</span><strong id="wan-last-error">${primaryWan.last_error || '-'}</strong></div>
-                    </div>
-                </section>
-
-                <section class="acs-overview-card acs-card-lan acs-approved-lan">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-ethernet"></i> Portas LAN</span></div>
-                    </div>
-                    <div class="acs-lan-visual-grid">${renderLanVisual(lanPorts)}</div>
-                </section>
-
-
-
-
-
+                        <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
+                        <p class="fb-traffic-note" id="bandwidth-sample-status">Aguardando segunda leitura...</p>
+                        <span id="live-rx-total" hidden></span>
+                        <span id="live-tx-total" hidden></span>
+                        <span id="live-traffic-source" hidden></span>
+                    </section>
                 </div>
-                <section class="acs-overview-card acs-card-wifi acs-approved-wifi">
-                    <div class="acs-overview-card-header">
-                        <div><span class="acs-kicker"><i class="bi bi-wifi"></i> Redes Wi-Fi</span><small class="ms-2 text-muted">Leitura e gerenciamento via TR-069</small></div>
+
+                <section class="fb-indicators">
+                    <h2 class="fb-section-title">Indicadores</h2>
+                    <div class="fb-ind-grid">
+                        <article class="fb-ind"><span>Sinal RX</span><strong id="optical-rx-power">—</strong><em id="optical-rx-power-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Sinal TX</span><strong id="optical-tx-power">—</strong><em id="optical-tx-power-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Temperatura</span><strong id="optical-temperature">—</strong><em id="optical-temperature-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind"><span>Voltagem</span><strong id="optical-voltage">—</strong><em id="optical-voltage-pill" class="fb-pill">—</em></article>
+                        <article class="fb-ind fb-ind-copy"><span>Tempo ligado</span><strong>${escOverview(uptimeLabel)}</strong></article>
+                        <article class="fb-ind fb-ind-copy"><span>Última conexão</span><strong>${escOverview(seenLabel)}</strong></article>
+                        <article class="fb-ind fb-ind-copy"><span>Hosts conectados</span><strong>${escOverview(hostCount)}</strong></article>
+                        <article class="fb-ind"><span>OLT / PON</span><strong id="optical-pon-id">—</strong><small id="optical-last-update"></small><span id="optical-source" hidden></span></article>
                     </div>
-                    <div class="acs-wifi-reference-grid"></div>
                 </section>
 
-                ${renderOpticalHistoryCard()}
-                ${renderDeviceActionHistoryCard()}
+                <div class="fb-onu-split">
+                    <section class="acs-overview-card acs-card-wan acs-approved-wan">
+                        <div class="acs-overview-card-header">
+                            <span class="acs-kicker">Conexão e Wi-Fi</span>
+                            <button class="acs-toolbar-action" type="button" onclick="document.getElementById('wifi-tab')?.click()">Abrir Wi-Fi</button>
+                        </div>
+                        <div class="acs-reference-list">
+                            <div><span>Cliente</span><strong id="fb-client-name">—</strong></div>
+                            <div><span>IP WAN</span><strong id="wan-ip">${makeIPClickable(primaryWan.external_ip || extractIP(device.ip_tr069))}</strong></div>
+                            <div><span>PPPoE</span><strong id="wan-pppoe-user">${escOverview(primaryWan.username || '—')}</strong></div>
+                            <div><span>Método</span><strong>${escOverview(primaryWan.type || primaryWan.connection_type || 'PPPoE')}</strong></div>
+                            <div><span>IPv6</span><strong id="wan-ipv6">${escOverview(primaryWan.ipv6 || '—')}</strong></div>
+                            <div><span>VLAN</span><strong id="wan-vlan">${escOverview(primaryWan.vlan_id || primaryWan.vlan || '—')}</strong></div>
+                            <div><span>Wi-Fi 2,4 GHz</span><strong>${escOverview(ssid24)}</strong></div>
+                            <div><span>Wi-Fi 5 GHz</span><strong>${escOverview(ssid5)}</strong></div>
+                            <div><span>Último erro</span><strong id="wan-last-error">${escOverview(primaryWan.last_error || '—')}</strong></div>
+                        </div>
+                    </section>
+                    <section class="acs-overview-card acs-card-device acs-approved-device">
+                        <div class="acs-overview-card-header">
+                            <span class="acs-kicker">Equipamento</span>
+                            <span class="acs-status-pill ${onuOnline ? 'online' : 'offline'}">${onuOnline ? 'Online' : 'Offline'}</span>
+                        </div>
+                        <div class="acs-reference-list">
+                            <div><span>Modelo</span><strong>${escOverview(device.product_class || device.model || '—')}</strong></div>
+                            <div><span>Fabricante</span><strong>${escOverview(device.manufacturer || '—')}</strong></div>
+                            <div><span>Serial</span><strong>${escOverview(device.serial_number || '—')}</strong></div>
+                            <div><span>Firmware</span><strong>${escOverview(device.software_version || '—')}</strong></div>
+                            <div><span>Hardware</span><strong>${escOverview(device.hardware_version || '—')}</strong></div>
+                            <div><span>MAC</span><strong>${escOverview(device.mac_address || '—')}</strong></div>
+                            <div><span>Perfil TR-069</span><strong>${escOverview(profileLabel)}</strong></div>
+                        </div>
+                    </section>
+                </div>
 
+                <section class="acs-overview-card fb-alerts-card">
+                    <h2 class="fb-section-title">Alertas ativos</h2>
+                    <div id="fb-active-alerts"><p class="fb-alert-empty">Consultando alertas...</p></div>
+                </section>
             </div>
         `;
+
+        const historyMount = document.getElementById('history-content');
+        if (historyMount) historyMount.innerHTML = renderDeviceActionHistoryCard();
+        const opticalMount = document.getElementById('optical-chart-mount');
+        if (opticalMount) opticalMount.innerHTML = renderOpticalHistoryCard('tab');
+        if (typeof paintActiveAlerts === 'function') paintActiveAlerts();
 
         renderWifiHealthCard(device);
         loadOpticalHistory(device.serial_number);
@@ -759,6 +793,46 @@ async function loadDeviceDetail(isAutoRefresh = false) {
         if (!isAutoRefresh) {
             document.getElementById('deviceTabs').style.display = 'flex';
             document.getElementById('deviceTabContent').style.display = 'block';
+            /* JRC_DIAG_ACOES_V1 — Diagnóstico do menu abre a aba Ações deste equipamento. */
+            const firmwareLink = document.getElementById('nav-firmware');
+            const diagLink = document.getElementById('nav-diagnostico');
+            const devicesLink = document.querySelector('.fb-nav a[href="/devices.php"]');
+            const actionsTab = (function () {
+                var byId = document.getElementById('diagnostics-tab');
+                if (byId) return byId;
+                var pane = document.getElementById('acs-diagnostics-content');
+                pane = pane && pane.closest ? pane.closest('.tab-pane') : null;
+                if (!pane || !pane.id) return null;
+                return document.querySelector('[data-bs-target="#' + pane.id + '"]');
+            })();
+            const onActionsTab = function (btn) {
+                if (!btn) return false;
+                if (actionsTab && btn === actionsTab) return true;
+                var sel = btn.getAttribute && btn.getAttribute('data-bs-target');
+                if (!sel) return false;
+                var pane = document.querySelector(sel);
+                return !!(pane && pane.querySelector && pane.querySelector('#acs-diagnostics-content'));
+            };
+            const paintShortcut = function (btn) {
+                var onFirmware = btn && btn.id === 'firmware-tab';
+                var onActions = onActionsTab(btn);
+                if (firmwareLink) firmwareLink.classList.toggle('active', onFirmware);
+                if (diagLink) diagLink.classList.toggle('active', onActions);
+                if (devicesLink) devicesLink.classList.toggle('active', !onFirmware && !onActions);
+            };
+            document.getElementById('deviceTabs')?.addEventListener('shown.bs.tab', (event) => {
+                paintShortcut(event.target);
+            });
+            const aba = new URLSearchParams(location.search).get('aba');
+            if (aba === 'firmware') {
+                const firmwareTab = document.getElementById('firmware-tab');
+                if (firmwareTab && window.bootstrap?.Tab) {
+                    bootstrap.Tab.getOrCreateInstance(firmwareTab).show();
+                }
+            }
+            if (aba === 'acoes' && actionsTab && window.bootstrap?.Tab) {
+                bootstrap.Tab.getOrCreateInstance(actionsTab).show();
+            }
         }
 
         // Restore scroll position after refresh (if saved)
@@ -875,7 +949,7 @@ function makeIPClickable(ip) {
         return ip;
     }
 
-    return `<a href="http://${ip}" target="_blank" rel="noopener noreferrer" title="Open http://${ip}">${ip}</a>`;
+    return `<a class="fb-ip-link" href="http://${ip}" target="_blank" rel="noopener noreferrer" title="Abrir http://${ip}">${ip}</a>`;
 }
 
 function renderWANDetailsTab(wanDetails) {
@@ -1072,6 +1146,8 @@ function renderWANDetailsTab(wanDetails) {
     html += `
             </div>
 
+            ${renderWanUsageCards(wanDetails)}
+
             <div class="acs-wan-footnote">
                 <i class="bi bi-info-circle"></i>
                 <span>IPv6 será exibido aqui quando adicionarmos a coleta desses parâmetros ao backend do ACS.</span>
@@ -1080,6 +1156,42 @@ function renderWANDetailsTab(wanDetails) {
     `;
 
     return html;
+}
+
+/* JRC_WAN_TAB_USAGE_V1 */
+function renderWanUsageCards(wanDetails) {
+    const list = Array.isArray(wanDetails) ? wanDetails : [];
+    const primary = list.find(w => String(w.status || '').toLowerCase() === 'connected') || list[0] || {};
+    const connected = String(primary.status || '').toLowerCase() === 'connected';
+    const statusText = String(primary.status || 'STATUS').replace(/[&<>"']/g, ch => (
+        {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]
+    ));
+
+    return `
+        <div class="jr-wan-usage">
+            <section class="acs-wan-card jr-wan-usage-card">
+                <div class="acs-wan-card-top">
+                    <span class="acs-kicker"><i class="bi bi-activity"></i> Tráfego WAN</span>
+                    <span class="acs-mini-badge ${connected ? 'success' : ''}">${statusText}</span>
+                </div>
+                <div class="jr-wan-rates">
+                    <div><span>Download agora</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
+                    <div><span>Upload agora</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
+                </div>
+                <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
+                <p class="jr-wan-usage-note" id="bandwidth-sample-status">Aguardando segunda leitura...</p>
+            </section>
+
+            <section class="acs-wan-card jr-wan-usage-card">
+                <div class="acs-wan-card-top">
+                    <span class="acs-kicker"><i class="bi bi-bar-chart-line"></i> Histórico de uso</span>
+                    <span class="jr-wan-usage-source" id="jr-ixc-consumption-source">Carregando fonte...</span>
+                </div>
+                <div class="jr-wan-usage-title">Consumo dos últimos 30 dias</div>
+                <div id="jr-ixc-consumption"><div class="jr-ixc-empty">Carregando consumo...</div></div>
+            </section>
+        </div>
+    `;
 }
 
 function renderWANDetails(wanDetails) {
@@ -1745,6 +1857,14 @@ async function confirmSummon() {
     } else {
         showToast(result.message || 'Gagal summon device', 'danger');
     }
+}
+
+function fbOpenLegacyWifi() {
+    const device = (typeof currentDeviceData === 'object' && currentDeviceData) ? currentDeviceData : {};
+    const ssid = device.wifi_ssid_24ghz || device.wifi_ssid_2g || device.wifi_ssid || '';
+    const tab = document.getElementById('wifi-tab');
+    if (tab && !tab.classList.contains('active')) tab.click();
+    openEditWiFiModal(device.device_id || window.DEVICE_ID || '', ssid, device.wifi_password || '');
 }
 
 function openEditWiFiModal(deviceId, currentSsid, currentPassword) {
@@ -2779,24 +2899,170 @@ function applyIxcNetworkPrimary() {
 }
 
 
+function opticalPlainText(valueKey, unit) {
+    if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId) return 'Consultando...';
+    if (cachedOpticalData.error) return 'Sem leitura';
+    const raw = (cachedOpticalData.optical || {})[valueKey];
+    if (raw === null || raw === undefined || String(raw).trim() === '') return 'Sem leitura';
+    const numericValue = Number(String(raw).replace(',', '.'));
+    if (!Number.isFinite(numericValue) || (unit === 'V' && numericValue <= 0)) return 'Sem leitura';
+    return numericValue.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }) + ' ' + unit;
+}
+
+function opticalTone(valueKey, unit, statusKey) {
+    const reading = opticalPlainText(valueKey, unit);
+    if (reading === 'Consultando...' || reading === 'Sem leitura') {
+        return { label: 'Sem dado', tone: 'is-muted' };
+    }
+    if (!cachedOpticalData || cachedOpticalData.device_id !== deviceId || cachedOpticalData.error) {
+        return { label: 'Sem dado', tone: 'is-muted' };
+    }
+    const optical = cachedOpticalData.optical || {};
+    const numericValue = Number(optical[valueKey]);
+    if (!Number.isFinite(numericValue)) return { label: 'Sem dado', tone: 'is-muted' };
+    if (valueKey === 'rx_power') {
+        if (numericValue > -25) return { label: 'Bom', tone: 'is-good' };
+        if (numericValue > -27) return { label: 'Fraco', tone: 'is-warn' };
+        return { label: 'Crítico', tone: 'is-bad' };
+    }
+    const statusText = String(optical[statusKey] || '').trim();
+    const normalized = statusText.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (normalized === 'critico' || normalized === 'critical') return { label: 'Crítico', tone: 'is-bad' };
+    if (normalized && normalized !== 'normal') return { label: statusText, tone: 'is-warn' };
+    return { label: 'Bom', tone: 'is-good' };
+}
+
+function paintOpticalReadout(id, valueKey, unit, statusKey) {
+    const text = opticalPlainText(valueKey, unit);
+    const tone = opticalTone(valueKey, unit, statusKey);
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+    const pill = document.getElementById(id + '-pill');
+    if (pill) {
+        pill.textContent = tone.label;
+        pill.className = 'fb-pill ' + tone.tone;
+    }
+    document.querySelectorAll('[data-optical="' + valueKey + '"]').forEach(node => {
+        node.textContent = text;
+        if (valueKey === 'rx_power') {
+            const item = node.closest('.fb-diag-item');
+            if (item) {
+                item.classList.toggle('is-bad', tone.tone === 'is-bad');
+                item.classList.toggle('is-warn', tone.tone === 'is-warn');
+            }
+        }
+    });
+    document.querySelectorAll('[data-optical-pill="' + valueKey + '"]').forEach(node => {
+        node.textContent = tone.label;
+        node.className = 'fb-pill ' + tone.tone;
+    });
+}
+
+function opticalHtmlText(html) {
+    const holder = document.createElement('div');
+    holder.innerHTML = html;
+    return holder.textContent || '—';
+}
+
+function paintHeaderSignal() {
+    const statusHeader = document.getElementById('device-status-header');
+    if (!statusHeader || !currentDeviceData) return;
+    const online = String(currentDeviceData.status || '').toLowerCase() === 'online';
+    statusHeader.classList.remove('online', 'offline', 'warn');
+    if (!online) {
+        statusHeader.textContent = 'Offline';
+        statusHeader.classList.add('offline');
+        return;
+    }
+    const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
+    if (!Number.isFinite(rx) || (cachedOpticalData && cachedOpticalData.error)) {
+        statusHeader.textContent = 'Online';
+        statusHeader.classList.add('online');
+        return;
+    }
+    if (rx > -25) {
+        statusHeader.textContent = 'Bom';
+        statusHeader.classList.add('online');
+    } else if (rx > -27) {
+        statusHeader.textContent = 'Fraco';
+        statusHeader.classList.add('warn');
+    } else {
+        statusHeader.textContent = 'Crítico';
+        statusHeader.classList.add('offline');
+    }
+}
+
+function paintOpticalGauge() {
+    const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
+    const finite = Number.isFinite(rx);
+    const pct = finite ? Math.min(100, Math.max(0, (rx + 30) / 22 * 100)) : 0;
+    const label = finite
+        ? rx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' dBm'
+        : 'RX';
+    document.querySelectorAll('[data-gauge-mark]').forEach(mark => { mark.style.left = pct + '%'; });
+    document.querySelectorAll('[data-gauge-label]').forEach(node => { node.textContent = label; });
+}
+
+function paintActiveAlerts() {
+    const box = document.getElementById('fb-active-alerts');
+    if (!box || !currentDeviceData) return;
+    const device = currentDeviceData;
+    const online = String(device.status || '').toLowerCase() === 'online';
+    const wan = (typeof getPrimaryWAN === 'function' ? getPrimaryWAN(device) : null) || {};
+    const wanStatus = String(wan.status || '').toLowerCase();
+    const wanConnected = ['connected', 'up', 'online', 'enabled'].includes(wanStatus);
+    const rx = Number(cachedOpticalData && cachedOpticalData.optical ? cachedOpticalData.optical.rx_power : NaN);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const items = [];
+    if (!online) items.push({ tone: 'is-bad', title: 'Equipamento sem contato', detail: device.last_inform || 'Sem último inform' });
+    if (online && wanStatus && !wanConnected) items.push({ tone: 'is-bad', title: 'WAN desconectada', detail: wan.status });
+    if (Number.isFinite(rx) && rx <= -27) {
+        items.push({ tone: 'is-bad', title: 'Sinal óptico crítico', detail: rx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' dBm' });
+    } else if (Number.isFinite(rx) && rx <= -25) {
+        items.push({ tone: 'is-warn', title: 'Sinal óptico fraco', detail: rx.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' dBm' });
+    }
+    if (!items.length) {
+        box.innerHTML = '<p class="fb-alert-empty">Nenhum alerta ativo neste equipamento.</p>';
+        return;
+    }
+    box.innerHTML = items.map(item =>
+        `<article class="fb-alert ${item.tone}"><i class="bi bi-exclamation-circle"></i><div><strong>${esc(item.title)}</strong><span>${esc(item.detail)}</span></div></article>`
+    ).join('');
+}
+
 function updateOpticalDomFromCache() {
     // IMPORTANTE: busca os elementos novamente depois da resposta.
     // O auto-refresh pode ter recriado todo o HTML enquanto a API estava consultando a OLT.
-    const rxEl = document.getElementById('optical-rx-power');
-    const txEl = document.getElementById('optical-tx-power');
-    const tempEl = document.getElementById('optical-temperature');
-    const voltageEl = document.getElementById('optical-voltage');
+    paintOpticalReadout('optical-rx-power', 'rx_power', 'dBm', 'rx_status');
+    paintOpticalReadout('optical-tx-power', 'tx_power', 'dBm', 'tx_status');
+    paintOpticalReadout('optical-temperature', 'temperature', '°C', 'temperature_status');
+    paintOpticalReadout('optical-voltage', 'voltage', 'V', 'voltage_status');
     const ponEl = document.getElementById('optical-pon-id');
     const lastUpdateEl = document.getElementById('optical-last-update');
     const sourceEl = document.getElementById('optical-source');
-
-    if (rxEl) rxEl.innerHTML = renderOpticalCachedValue('rx_power', 'dBm', 'rx_status');
-    if (txEl) txEl.innerHTML = renderOpticalCachedValue('tx_power', 'dBm', 'tx_status');
-    if (tempEl) tempEl.innerHTML = renderOpticalCachedValue('temperature', '°C', 'temperature_status');
-    if (voltageEl) voltageEl.innerHTML = renderOpticalCachedValue('voltage', 'V', 'voltage_status');
-    if (ponEl) ponEl.innerHTML = renderOpticalCachedPon();
-    if (lastUpdateEl) lastUpdateEl.innerHTML = renderOpticalLastUpdate();
+    const ponText = opticalHtmlText(renderOpticalCachedPon());
+    const seenText = opticalHtmlText(renderOpticalLastUpdate());
+    if (ponEl) ponEl.textContent = ponText;
+    if (lastUpdateEl) lastUpdateEl.textContent = seenText;
+    const opticalPon = document.getElementById('fb-optical-pon');
+    const opticalSeen = document.getElementById('fb-optical-seen');
+    if (opticalPon) opticalPon.textContent = ponText;
+    if (opticalSeen) opticalSeen.textContent = seenText;
     if (sourceEl) sourceEl.innerHTML = renderOpticalSource();
+    const clientName = document.getElementById('fb-client-name');
+    if (clientName && cachedOpticalData && cachedOpticalData.device_id === deviceId && !cachedOpticalData.error) {
+        clientName.textContent = cachedOpticalData.nome || '—';
+    }
+    paintHeaderSignal();
+    paintOpticalGauge();
+    paintActiveAlerts();
+    document.querySelectorAll('[data-mirror]').forEach(node => {
+        const source = document.getElementById(node.dataset.mirror);
+        if (source) node.innerHTML = source.innerHTML;
+    });
     updateIxcOnuSummary();
     applyIxcNetworkPrimary();
     updateOverviewOperationalMeta();
@@ -3262,15 +3528,24 @@ function formatUptimeValue(value) {
 }
 
 function renderModernBandwidthChart(samples) {
-    if (!samples.length) return '<div class="acs-chart-wait">Aguardando segunda leitura do IXC/RADIUS.</div>';
-    const max = Math.max(1, ...samples.flatMap(s => [s.rxMbps, s.txMbps]));
-    const points = (field) => samples.map((s, i) => {
-        const x = samples.length === 1 ? 0 : (i / (samples.length - 1)) * 100;
-        const y = 100 - (s[field] / max) * 88 - 4;
-        return `${x.toFixed(2)},${y.toFixed(2)}`;
-    }).join(' ');
-    const labels = samples.filter((_, i) => i === 0 || i === samples.length - 1).map((s, i) => `<span class="${i ? 'end' : ''}">${new Date(s.time).toLocaleTimeString('pt-BR')}</span>`).join('');
-    return `<div class="acs-modern-chart"><div class="acs-chart-scale"><b>${max.toFixed(1)} Mbps</b><b>${(max / 2).toFixed(1)} Mbps</b><b>0 Mbps</b></div><div class="acs-chart-plot"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Tráfego em tempo real"><defs><linearGradient id="rxArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#64d9ff" stop-opacity=".32"/><stop offset="1" stop-color="#64d9ff" stop-opacity="0"/></linearGradient><linearGradient id="txArea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#55dda6" stop-opacity=".30"/><stop offset="1" stop-color="#55dda6" stop-opacity="0"/></linearGradient></defs><path class="grid" d="M0 4H100M0 48H100M0 92H100"/><polygon class="area rx" points="0,100 ${points('rxMbps')} 100,100"/><polygon class="area tx" points="0,100 ${points('txMbps')} 100,100"/><polyline class="line rx" points="${points('rxMbps')}"/><polyline class="line tx" points="${points('txMbps')}"/></svg><div class="acs-chart-times">${labels}</div></div></div><div class="acs-chart-legend"><span><i class="rx"></i>Download</span><span><i class="tx"></i>Upload</span><span>Últimos ${samples.length}s</span></div>`;
+    const valid=(Array.isArray(samples)?samples:[]).filter(s=>Number.isFinite(s.time)&&Number.isFinite(s.rxMbps)&&Number.isFinite(s.txMbps)&&s.rxMbps>=0&&s.txMbps>=0).slice(-60).sort((a,b)=>a.time-b.time);
+    if (!valid.length) return '<div class="acs-chart-wait" role="status">Ainda sem amostras validas de trafego. O motivo da consulta aparece abaixo.</div>';
+    const left=66,right=704,top=18,bottom=174;
+    const peak=Math.max(...valid.flatMap(s=>[s.rxMbps,s.txMbps]));
+    const upper=Math.max(0.1,Math.ceil(peak*1.15*10)/10);
+    const first=valid[0].time,last=valid[valid.length-1].time;
+    const x=t=>last===first ? (left+right)/2 : left+(t-first)/(last-first)*(right-left);
+    const y=v=>bottom-v/upper*(bottom-top);
+    const stamp=t=>new Date(t).toLocaleTimeString('pt-BR');
+    const line=(field,color)=>{
+        let previous=null,path='';
+        for (const s of valid){path+=(previous===null||s.time-previous>30000?'M':'L')+x(s.time).toFixed(2)+','+y(s[field]).toFixed(2)+' ';previous=s.time;}
+        const s=valid[valid.length-1];
+        return `<path d="${path}" fill="none" stroke="${color}" stroke-width="2"/><circle cx="${x(s.time)}" cy="${y(s[field])}" r="3.5" fill="${color}"><title>${stamp(s.time)} | ${s[field].toFixed(3)} Mbps</title></circle>`;
+    };
+    const grid=[0,upper/2,upper].map(v=>`<line x1="${left}" x2="${right}" y1="${y(v)}" y2="${y(v)}" stroke="#364152" stroke-dasharray="4 5"/><text x="58" y="${y(v)+4}" text-anchor="end" fill="#aeb6c4" font-size="11">${v.toFixed(2)}</text>`).join('');
+    const elapsed=Math.max(0,Math.round((last-first)/1000));
+    return `<svg data-jrc-chart-fix="wan-v1" viewBox="0 0 740 220" style="display:block;width:100%;height:220px" role="img" aria-label="Download e upload medidos"><text x="${left}" y="12" fill="#aeb6c4" font-size="11">Mbps</text>${grid}${line('rxMbps','#ff5b63')}${line('txMbps','#60a5fa')}<text x="${left}" y="202" fill="#aeb6c4" font-size="11">${stamp(first)}</text>${last!==first?`<text x="${right}" y="202" text-anchor="end" fill="#aeb6c4" font-size="11">${stamp(last)}</text>`:''}</svg><div class="small text-muted"><span style="color:#ff5b63">Download</span> / <span style="color:#60a5fa">Upload</span> | ${valid.length} amostra(s) recebida(s) em ${elapsed}s</div>`;
 }
 
 function renderMonitoringTab(device) {
@@ -3285,18 +3560,8 @@ function renderMonitoringTab(device) {
     return `
         <div class="acs-monitor-shell">
             <div class="acs-monitor-head">
-                <div><span class="acs-kicker"><i class="bi bi-activity"></i> TR-069</span><h4>Monitoramento da conexão</h4><p>Banda calculada entre as leituras recebidas do equipamento.</p></div>
+                <div><span class="acs-kicker"><i class="bi bi-activity"></i> TR-069</span><h4>Monitoramento da conexão</h4><p>O uso de banda em tempo real fica na Visão geral. Aqui continua o relatório da sessão.</p></div>
                 <span class="acs-mini-badge ${connected ? 'success' : ''}">${wan.status || 'Unknown'}</span>
-            </div>
-            <div class="acs-live-grid">
-                <div class="acs-live-card download"><span><i class="bi bi-arrow-down-circle"></i> Download em uso</span><strong id="live-rx-mbps">--</strong><small>Mbps</small></div>
-                <div class="acs-live-card upload"><span><i class="bi bi-arrow-up-circle"></i> Upload em uso</span><strong id="live-tx-mbps">--</strong><small>Mbps</small></div>
-                <div class="acs-live-card"><span><i class="bi bi-database-down"></i> Recebido</span><strong id="live-rx-total">${formatTrafficBytes(rx)}</strong><small id="live-traffic-source">${traffic.source}</small></div>
-                <div class="acs-live-card"><span><i class="bi bi-database-up"></i> Enviado</span><strong id="live-tx-total">${formatTrafficBytes(tx)}</strong><small>contador da sessão</small></div>
-            </div>
-            <div class="acs-bandwidth-chart">
-                <div class="acs-chart-title"><strong>Uso de banda</strong><span id="bandwidth-sample-status">Aguardando segunda leitura...</span></div>
-                <div id="bandwidth-bars" class="acs-bandwidth-bars"></div>
             </div>
             <div class="acs-connection-report">
                 <div class="acs-chart-title"><strong>Relatório da conexão</strong><span>Sessão atual</span></div>
@@ -3355,130 +3620,86 @@ function startBandwidthMonitoring() {
 }
 
 function renderBandwidthLiveSample(live, sourceLabel) {
-    const rxMbps = Number(live?.download_mbps);
-    const txMbps = Number(live?.upload_mbps);
-    if (!Number.isFinite(rxMbps) || !Number.isFinite(txMbps)) return false;
-
-    const now = Date.now();
-    bandwidthSamples.push({
-        time: now,
-        rx: null,
-        tx: null,
-        rxMbps: Math.max(0, rxMbps),
-        txMbps: Math.max(0, txMbps),
-        source: sourceLabel
-    });
-    if (bandwidthSamples.length > 60) bandwidthSamples.shift();
-
-    const precision = (value) => value > 0 && value < 0.01 ? 4 : 2;
-    const rxRate = document.getElementById('live-rx-mbps');
-    const txRate = document.getElementById('live-tx-mbps');
-    if (rxRate) rxRate.textContent = rxMbps.toFixed(precision(rxMbps));
-    if (txRate) txRate.textContent = txMbps.toFixed(precision(txMbps));
-
-    const status = document.getElementById('bandwidth-sample-status');
-    if (status) {
-        status.textContent = sourceLabel + ' • ' + new Date(now).toLocaleTimeString('pt-BR');
-    }
-
-    const chart = document.getElementById('bandwidth-bars');
-    if (chart) {
-        chart.innerHTML = renderModernBandwidthChart(
-            bandwidthSamples.filter(sample =>
-                Number.isFinite(sample.rxMbps) && Number.isFinite(sample.txMbps)
-            )
-        );
-    }
+    const number=v=>(typeof v==='number'||(typeof v==='string'&&v.trim()!==''))&&Number.isFinite(Number(v))&&Number(v)>=0 ? Number(v):null;
+    const rx=number(live?.download_mbps),tx=number(live?.upload_mbps);
+    if(rx===null||tx===null) return false;
+    const now=Date.now();
+    bandwidthSamples.push({time:now,rx:null,tx:null,rxMbps:rx,txMbps:tx,source:String(sourceLabel||'Fonte nao informada')});
+    if(bandwidthSamples.length>60)bandwidthSamples.splice(0,bandwidthSamples.length-60);
+    const format=v=>v.toFixed(v>0&&v<0.01?4:2);
+    const set=(id,text)=>{const node=document.getElementById(id);if(node)node.textContent=text;};
+    set('live-rx-mbps',format(rx));set('live-tx-mbps',format(tx));
+    set('bandwidth-sample-status',String(sourceLabel||'Fonte nao informada')+' | Amostra recebida: '+new Date(now).toLocaleTimeString('pt-BR'));
+    const chart=document.getElementById('bandwidth-bars');
+    if(chart)chart.innerHTML=renderModernBandwidthChart(bandwidthSamples);
     return true;
 }
 
 async function fetchBandwidthJson(url) {
-    const response = await fetch(url, {
-        credentials: 'same-origin',
-        cache: 'no-store'
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data && data.success ? data : null;
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),15000);
+    try {
+        const parsed=new URL(url,window.location.href);
+        const allowed=['/api/get-radius-session.php','/api/get-ixc-live-traffic.php','/api/get-ne-live-traffic.php','/api/get-tr069-live-traffic.php'];
+        if(parsed.origin!==window.location.origin || !allowed.includes(parsed.pathname)) return {success:false,available:false,message:'Consulta de trafego recusada: endpoint inesperado.'};
+        const response=await fetch(parsed.href,{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+        if(!response.ok)return {success:false,available:false,message:'Consulta de trafego retornou HTTP '+response.status+'.'};
+        const type=response.headers.get('content-type')||'';
+        if(!type.includes('json'))return {success:false,available:false,message:'A consulta nao retornou JSON. Verifique a sessao de acesso.'};
+        const data=await response.json();
+        if(!data||typeof data!=='object'||Array.isArray(data))return {success:false,available:false,message:'Formato de resposta de trafego invalido.'};
+        if(!data.success)return {success:false,available:false,message:typeof data.message==='string'?data.message:'Fonte de trafego indisponivel.'};
+        return data;
+    } catch(error) {
+        return {success:false,available:false,message:error?.name==='AbortError'?'Tempo limite de 15s na consulta de trafego.':'Falha de rede ou resposta invalida na consulta de trafego.'};
+    } finally {clearTimeout(timeout);}
 }
 
 async function updateRadiusBandwidthSample() {
-    if (bandwidthSampleRequestInFlight || !deviceId) return;
-    if (!document.getElementById('bandwidth-bars')) return;
-
-    bandwidthSampleRequestInFlight = true;
-    const status = document.getElementById('bandwidth-sample-status');
-
+    const setStatus=text=>{const el=document.getElementById('bandwidth-sample-status');if(el)el.textContent=text;};
+    const emptyRates=()=>{for(const id of ['live-rx-mbps','live-tx-mbps']){const el=document.getElementById(id);if(el)el.textContent='--';}};
+    const paint=()=>{const chart=document.getElementById('bandwidth-bars');if(chart)chart.innerHTML=renderModernBandwidthChart(bandwidthSamples);};
+    if(!deviceId || !document.getElementById('bandwidth-bars'))return;
+    paint();
+    if(bandwidthSampleRequestInFlight){setStatus('Consulta em andamento; aguardando resposta da fonte.');return;}
+    bandwidthSampleRequestInFlight=true;
+    const reasons=[];
     try {
-        const radius = await fetchBandwidthJson(
-            '/api/get-radius-session.php?device_id=' + encodeURIComponent(deviceId)
-        );
-        const session = radius?.session;
-
-        if (!radius?.online || !session) {
-            if (status) status.textContent = 'Sessão PPPoE online não localizada no IXC/RADIUS.';
-            return;
+        setStatus('Consultando sessao IXC/RADIUS...');
+        const radius=await fetchBandwidthJson('/api/get-radius-session.php?device_id='+encodeURIComponent(deviceId));
+        if(!radius?.success){emptyRates();setStatus('IXC/RADIUS: '+(radius?.message||'Consulta indisponivel.'));return;}
+        const session=radius.session;
+        if(!radius.online || !session){emptyRates();setStatus('A consulta nao localizou uma sessao PPPoE online no IXC/RADIUS. O estado WAN, sozinho, nao fornece uma taxa de trafego.');return;}
+        const downloadTotal=toCounter(session.download_bytes),uploadTotal=toCounter(session.upload_bytes);
+        for(const [id,value] of [['live-rx-total',downloadTotal],['live-tx-total',uploadTotal]]){const el=document.getElementById(id);if(el)el.textContent=formatTrafficBytes(value);}
+        const source=document.getElementById('live-traffic-source');
+        if(source)source.textContent='IXC/RADIUS | '+(session.interface||'sessao PPPoE');
+        const accept=(result,label)=>!!(result?.success&&result?.available&&renderBandwidthLiveSample(result.live,result.source||label));
+        const loginId=Number(radius.ixc_login_id);
+        if(Number.isInteger(loginId)&&loginId>0){
+            setStatus('Consultando trafego no IXC...');
+            const live=await fetchBandwidthJson('/api/get-ixc-live-traffic.php?login_id='+encodeURIComponent(loginId));
+            if(accept(live,'IXC'))return;
+            reasons.push('IXC: '+(live?.message||'sem amostra valida'));
         }
-
-        // No RADIUS, output é download e input é upload do assinante.
-        const downloadTotal = toCounter(session.download_bytes);
-        const uploadTotal = toCounter(session.upload_bytes);
-        const rxTotal = document.getElementById('live-rx-total');
-        const txTotal = document.getElementById('live-tx-total');
-        const source = document.getElementById('live-traffic-source');
-        if (rxTotal) rxTotal.textContent = formatTrafficBytes(downloadTotal);
-        if (txTotal) txTotal.textContent = formatTrafficBytes(uploadTotal);
-        if (source) source.textContent = 'IXC/RADIUS • ' + (session.interface || 'sessão PPPoE');
-
-        // 1) Fonte preferida: stream de tráfego do próprio IXC.
-        const loginId = Number(radius.ixc_login_id);
-        if (Number.isInteger(loginId) && loginId > 0) {
-            const ixcLive = await fetchBandwidthJson(
-                '/api/get-ixc-live-traffic.php?login_id=' + encodeURIComponent(loginId)
-            );
-            if (ixcLive?.available && renderBandwidthLiveSample(
-                ixcLive.live,
-                ixcLive.source || 'IXC em tempo real'
-            )) return;
-        }
-
-        // 2) Fallback: leitura direta e somente leitura no concentrador.
-        const neQuery = new URLSearchParams({
-            ip: session.ip || '',
-            username: session.username || '',
-            nas_ip: session.bras || '',
-            session_id: session.session_id || ''
-        });
-        const neLive = await fetchBandwidthJson('/api/get-ne-live-traffic.php?' + neQuery);
-        if (neLive?.available && renderBandwidthLiveSample(
-            neLive.live,
-            neLive.source || 'Concentrador'
-        )) return;
-
-        // 3) TR-069 somente quando o contador é da sessão PPP/IP.
-        // WANCommon mede frequentemente apenas a interface física/gerência e
-        // não deve ser exibido como consumo real do assinante.
-        const tr069Live = await fetchBandwidthJson(
-            '/api/get-tr069-live-traffic.php?device_id=' + encodeURIComponent(deviceId)
-        );
-        const trProfile = String(tr069Live?.profile || '');
-        const isManagementCounter = /WAN common/i.test(trProfile);
-        if (
-            tr069Live?.available &&
-            !isManagementCounter &&
-            renderBandwidthLiveSample(tr069Live.live, tr069Live.source || 'TR-069')
-        ) return;
-
-        if (status) {
-            status.textContent = isManagementCounter
-                ? 'Contador WANCommon ignorado: ele mede gerência, não o tráfego PPPoE.'
-                : (neLive?.message || tr069Live?.message || 'Aguardando uma fonte confiável de tráfego em tempo real.');
-        }
-    } catch (error) {
-        if (status) status.textContent = 'Falha temporária na consulta de tráfego; mantendo a última amostra.';
-        console.warn('[BANDWIDTH] Falha na amostragem:', error);
+        setStatus('Consultando trafego no concentrador...');
+        const params=new URLSearchParams({ip:session.ip||'',username:session.username||'',nas_ip:session.bras||'',session_id:session.session_id||''});
+        const ne=await fetchBandwidthJson('/api/get-ne-live-traffic.php?'+params);
+        if(accept(ne,'Concentrador'))return;
+        reasons.push('Concentrador: '+(ne?.message||'sem amostra valida'));
+        setStatus('Consultando contadores TR-069 da sessao...');
+        const tr=await fetchBandwidthJson('/api/get-tr069-live-traffic.php?device_id='+encodeURIComponent(deviceId));
+        const management=/WAN common/i.test(String(tr?.profile||''));
+        if(!management && accept(tr,'TR-069'))return;
+        reasons.push(management?'TR-069: contador WANCommon excluido, conforme politica existente.':'TR-069: '+(tr?.message||'sem segunda amostra valida'));
+        emptyRates();
+        setStatus(reasons.join(' | '));
+    } catch(error) {
+        emptyRates();setStatus('Falha ao atualizar o grafico WAN. As amostras anteriores foram preservadas.');
+        console.warn('[JRC device charts]',error);
     } finally {
-        bandwidthSampleRequestInFlight = false;
+        bandwidthSampleRequestInFlight=false;
+        paint();
     }
 }
 function buildDeviceAIContext() {
@@ -3865,5 +4086,369 @@ function renderWifiHealthCard(device) {
             <button type="button" onclick="loadDeviceDetail()" title="Atualizar dados do Wi-Fi"><i class="bi bi-arrow-clockwise"></i> Atualizar dados Wi-Fi</button>
         </footer>`;
 }
+
+const FB_ACTION_CATALOG = {
+    ping: {
+        title: 'Ping',
+        icon: 'bi-activity',
+        safe: true,
+        host: true,
+        desc: 'Testa conectividade e latência até um host. O teste precisa sair do próprio CPE.',
+        run(host) { fbWritePendingResult('ping', host); }
+    },
+    traceroute: {
+        title: 'TraceRoute',
+        icon: 'bi-signpost-split',
+        safe: true,
+        host: true,
+        desc: 'Mostra o caminho até o host. A rota precisa ser coletada pelo CPE, não pelo servidor ACS.',
+        run(host) { fbWritePendingResult('traceroute', host); }
+    },
+    nearby: {
+        title: 'Redes próximas',
+        icon: 'bi-broadcast',
+        safe: true,
+        host: false,
+        desc: 'Lista Wi-Fi, canal, sinal e interferência vistos pelo rádio do equipamento.',
+        run() { fbWritePendingResult('nearby'); }
+    },
+    speedtest: {
+        title: 'Velocidade',
+        icon: 'bi-speedometer2',
+        safe: true,
+        host: false,
+        desc: 'Mede download, upload e ping no fluxo de velocidade já usado neste equipamento.',
+        run() {
+            if (typeof startONUSpeedtest === 'function') startONUSpeedtest();
+            fbWriteActionNote('bi-speedometer2', 'Velocidade', 'O teste abre na janela de velocidade deste equipamento.');
+        }
+    },
+    'wifi-ssid': {
+        title: 'Trocar SSID',
+        icon: 'bi-wifi',
+        safe: false,
+        host: false,
+        desc: 'Abre a edição de SSID e senha. A gravação usa a mesma API de Wi-Fi deste ACS.',
+        run() {
+            if (typeof fbOpenLegacyWifi === 'function') fbOpenLegacyWifi();
+            fbWriteActionNote('bi-wifi', 'Trocar SSID', 'A edição de SSID e senha foi aberta.');
+        }
+    },
+    'wifi-pass': {
+        title: 'Trocar senha',
+        icon: 'bi-key',
+        safe: false,
+        host: false,
+        desc: 'Abre a edição de SSID e senha. A gravação usa a mesma API de Wi-Fi deste ACS.',
+        run() {
+            if (typeof fbOpenLegacyWifi === 'function') fbOpenLegacyWifi();
+            fbWriteActionNote('bi-key', 'Trocar senha', 'A edição de SSID e senha foi aberta.');
+        }
+    },
+    summon: {
+        title: 'Comunicar',
+        icon: 'bi-arrow-repeat',
+        safe: true,
+        host: false,
+        desc: 'Pede ao equipamento uma nova comunicação com o ACS.',
+        run() {
+            if (typeof summonDevice === 'function') summonDevice();
+            fbWriteActionNote('bi-arrow-repeat', 'Comunicar', 'Confirme o pedido na janela de comunicação.');
+        }
+    },
+    web: {
+        title: 'Acesso web',
+        icon: 'bi-box-arrow-up-right',
+        safe: true,
+        host: false,
+        desc: 'Abre o gerenciamento web do equipamento no endereço que ele informou.',
+        run() {
+            if (typeof openWebManagement === 'function') openWebManagement();
+            fbWriteActionNote('bi-box-arrow-up-right', 'Acesso web', 'O gerenciamento web foi solicitado.');
+        }
+    },
+    tag: {
+        title: 'Etiqueta',
+        icon: 'bi-tag',
+        safe: false,
+        host: false,
+        desc: 'Adiciona uma etiqueta a este equipamento.',
+        run() {
+            if (typeof showAddTagModal === 'function') showAddTagModal();
+            fbWriteActionNote('bi-tag', 'Etiqueta', 'A janela de etiqueta foi aberta.');
+        }
+    },
+    untag: {
+        title: 'Remover etiqueta',
+        icon: 'bi-tag-fill',
+        safe: false,
+        host: false,
+        desc: 'Remove uma etiqueta deste equipamento.',
+        run() {
+            if (typeof showRemoveTagModal === 'function') showRemoveTagModal();
+            fbWriteActionNote('bi-tag-fill', 'Remover etiqueta', 'A janela para remover etiqueta foi aberta.');
+        }
+    },
+    refresh: {
+        title: 'Atualizar coleta',
+        icon: 'bi-arrow-clockwise',
+        safe: true,
+        host: false,
+        desc: 'Solicita uma nova coleta TR-069 ao equipamento.',
+        async run() {
+            try {
+                const result = await fetchAPI('/api/device-actions.php', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        device_id: deviceId,
+                        action: 'refresh'
+                    })
+                });
+
+                if (!result || !result.success) {
+                    throw new Error(
+                        result?.message || 'Falha ao solicitar a coleta.'
+                    );
+                }
+
+                if (typeof showToast === 'function') {
+                    showToast(
+                        'Nova coleta TR-069 solicitada.',
+                        'success'
+                    );
+                }
+
+                fbWriteActionNote(
+                    'bi-arrow-clockwise',
+                    'Atualizar coleta',
+                    'Nova coleta TR-069 solicitada ao equipamento.'
+                );
+
+                setTimeout(() => {
+                    if (typeof loadDeviceDetail === 'function') {
+                        loadDeviceDetail();
+                    }
+                }, 4000);
+
+            } catch (error) {
+
+                if (typeof showToast === 'function') {
+                    showToast(
+                        error.message || 'Falha ao atualizar coleta.',
+                        'danger'
+                    );
+                }
+            }
+        }
+    },
+
+    reboot: {
+        title: 'Reiniciar equipamento',
+        icon: 'bi-power',
+        safe: false,
+        host: false,
+        desc: 'Reinicia o equipamento remotamente via TR-069.',
+        async run() {
+
+            const confirmation = window.prompt(
+                'O cliente ficará temporariamente offline.\n\nDigite REINICIAR para confirmar:'
+            );
+
+            if (
+                String(confirmation || '')
+                    .trim()
+                    .toUpperCase() !== 'REINICIAR'
+            ) {
+                return;
+            }
+
+            try {
+
+                const result = await fetchAPI(
+                    '/api/device-actions.php',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            device_id: deviceId,
+                            action: 'reboot',
+                            confirm: 'REINICIAR'
+                        })
+                    }
+                );
+
+                if (!result || !result.success) {
+                    throw new Error(
+                        result?.message ||
+                        'Falha ao enviar reinício.'
+                    );
+                }
+
+                if (typeof showToast === 'function') {
+                    showToast(
+                        'Comando de reinício enviado ao equipamento.',
+                        'success'
+                    );
+                }
+
+                fbWriteActionNote(
+                    'bi-power',
+                    'Reiniciar equipamento',
+                    'O comando de reinício foi enviado ao GenieACS.'
+                );
+
+            } catch (error) {
+
+                if (typeof showToast === 'function') {
+                    showToast(
+                        error.message ||
+                        'Falha ao reiniciar equipamento.',
+                        'danger'
+                    );
+                }
+            }
+        }
+    },
+
+    summary: {
+        title: 'Resumo',
+        icon: 'bi-clipboard2-pulse',
+        safe: true,
+        host: false,
+        desc: 'Gera o resumo técnico com os dados já coletados.',
+        run() {
+            if (typeof runDeviceAISummary === 'function') runDeviceAISummary();
+            fbWriteActionNote('bi-clipboard2-pulse', 'Resumo', 'O resumo técnico foi solicitado.');
+        }
+    },
+    assistant: {
+        title: 'Assistente',
+        icon: 'bi-stars',
+        safe: true,
+        host: false,
+        desc: 'Abre o assistente técnico deste equipamento.',
+        run() {
+            if (typeof openDeviceAIDrawer === 'function') openDeviceAIDrawer();
+            fbWriteActionNote('bi-stars', 'Assistente', 'O assistente foi aberto.');
+        }
+    }
+};
+
+function fbEscapeAction(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
+
+function fbActionHost() {
+    const input = document.getElementById('fb-action-host');
+    const value = input ? input.value.trim() : '';
+    return value || '8.8.8.8';
+}
+
+function fbWriteResultCard(icon, title, text, note) {
+    const slot = document.getElementById('fb-action-result');
+    if (!slot) return;
+    slot.innerHTML = `
+        <article class="fb-result-card">
+            <div>
+                <i class="bi ${fbEscapeAction(icon)}"></i>
+                <strong>${fbEscapeAction(title)}</strong>
+                <span>${fbEscapeAction(text)}</span>
+            </div>
+            <em class="fb-result-wait">Pendente</em>
+        </article>
+        ${note ? `<p class="fb-result-note">${fbEscapeAction(note)}</p>` : ''}`;
+}
+
+function fbWriteActionNote(icon, title, text) {
+    fbWriteResultCard(icon, title, text, '');
+}
+
+function fbWritePendingResult(tool, host) {
+    const target = host || '8.8.8.8';
+    const copy = {
+        ping: {
+            icon: 'bi-activity',
+            title: `Ping · ${target}`,
+            text: 'Aguardando o diagnóstico sair do CPE.',
+            note: 'Nenhum resultado é simulado. Quando o equipamento responder o diagnóstico TR-069, a latência até ' + target + ' aparece aqui.'
+        },
+        traceroute: {
+            icon: 'bi-signpost-split',
+            title: `TraceRoute · ${target}`,
+            text: 'Aguardando a rota ser coletada pelo CPE.',
+            note: 'Nenhum resultado é simulado. O caminho exibido precisa ser o do equipamento do cliente, não o do servidor ACS.'
+        },
+        nearby: {
+            icon: 'bi-broadcast',
+            title: 'Redes próximas',
+            text: 'Aguardando a varredura do rádio Wi-Fi do CPE.',
+            note: 'Quando o modelo informar o scan, SSID, canal, sinal e interferência aparecem aqui.'
+        }
+    }[tool];
+    if (!copy) return;
+    fbWriteResultCard(copy.icon, copy.title, copy.text, copy.note);
+}
+
+function fbSelectAction(id) {
+    const action = FB_ACTION_CATALOG[id];
+    const root = document.getElementById('acs-diagnostics-content');
+    if (!action || !root) return;
+    root.dataset.fbCurrent = id;
+    root.querySelectorAll('[data-fb-action]').forEach((button) => {
+        button.classList.toggle('is-on', button.dataset.fbAction === id);
+    });
+    const icon = document.getElementById('fb-action-icon');
+    const title = document.getElementById('fb-action-title');
+    const desc = document.getElementById('fb-action-desc');
+    const safe = document.getElementById('fb-action-safe');
+    const hostWrap = document.getElementById('fb-action-host-wrap');
+    if (icon) icon.className = `bi ${action.icon}`;
+    if (title) title.textContent = action.title;
+    if (desc) desc.textContent = action.desc;
+    if (safe) safe.classList.toggle('is-off', !action.safe);
+    if (hostWrap) hostWrap.classList.toggle('is-off', !action.host);
+}
+
+function fbFilterActions() {
+    const query = (document.getElementById('fb-action-search')?.value || '').trim().toLowerCase();
+    document.querySelectorAll('#acs-diagnostics-content .fb-action-group').forEach((group) => {
+        let visible = 0;
+        group.querySelectorAll('[data-fb-action]').forEach((button) => {
+            const show = !query || button.textContent.trim().toLowerCase().includes(query);
+            button.classList.toggle('is-hidden', !show);
+            if (show) visible += 1;
+        });
+        group.classList.toggle('is-hidden', visible === 0);
+    });
+}
+
+function fbInitActionPalette() {
+    const root = document.getElementById('acs-diagnostics-content');
+    if (!root || root.dataset.fbReady === '1') return;
+    root.dataset.fbReady = '1';
+    root.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-fb-action]');
+        if (!button || button.id === 'fb-action-run') return;
+        fbSelectAction(button.dataset.fbAction);
+    });
+    document.getElementById('fb-action-run')?.addEventListener('click', () => {
+        const current = FB_ACTION_CATALOG[root.dataset.fbCurrent || 'ping'];
+        if (current) current.run(fbActionHost());
+    });
+    document.getElementById('fb-action-host')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        document.getElementById('fb-action-run')?.click();
+    });
+    document.getElementById('fb-action-search')?.addEventListener('input', fbFilterActions);
+    fbSelectAction('ping');
+}
+
+fbInitActionPalette();
 
 

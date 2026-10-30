@@ -13,7 +13,7 @@ let savedScrollPosition = 0; // Store scroll position for auto-refresh
 
 // Pagination variables
 let currentPage = 1;
-let itemsPerPage = 20; // Default: 20 items per page
+let itemsPerPage = 0; // Inventário completo, como na referência
 let totalDevices = 0;
 
 // Auto-refresh timer ID for cleanup

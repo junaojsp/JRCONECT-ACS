@@ -1,0 +1,316 @@
+/* JRC_ALERTAS_V1 — fundo no preto do menu e lista no formato da referência. */
+html.jrc-alertas-page,
+html.jrc-alertas-page body,
+html.jrc-alertas-page .main-content,
+html.jrc-alertas-page .content-wrapper,
+html.jrc-alertas-page .topbar,
+html.jrc-alertas-page .page-content {
+    background: #101114 !important;
+    background-image: none !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-alertas-page .footer,
+html.jrc-alertas-page .main-content > .footer,
+html.jrc-alertas-page footer {
+    display: none !important;
+}
+
+.jrc-al {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 8px 8px 28px;
+    color: #f3f5f8;
+    font-family: Inter, "Segoe UI", sans-serif;
+}
+
+.jrc-al h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.jrc-al-sub {
+    margin: 6px 0 18px;
+    color: #8d939c;
+    font-size: 14px;
+}
+
+.jrc-al-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+button.jrc-al-stat {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    width: 100%;
+    min-height: 92px;
+    margin: 0;
+    padding: 16px 18px;
+    background: #1a1c21;
+    border: 1px solid #2a2d34;
+    border-radius: 16px;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    appearance: none;
+}
+
+button.jrc-al-stat.is-on {
+    border-color: #e10600;
+    box-shadow: inset 0 0 0 1px #e10600;
+}
+
+.jrc-al-ico {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    flex: 0 0 auto;
+    background: #2a2d34;
+    color: #c5cad3;
+}
+
+.jrc-al-stat.is-bad .jrc-al-ico { background: #3a2226; color: #ff5d6c; }
+.jrc-al-stat.is-warn .jrc-al-ico { background: #3a311c; color: #f0b429; }
+.jrc-al-stat.is-info .jrc-al-ico { background: #1d2c44; color: #7eb6ff; }
+.jrc-al-stat.is-ok .jrc-al-ico { background: #17352c; color: #3dd68c; }
+
+.jrc-al-stat-copy {
+    display: block;
+    min-width: 0;
+}
+
+.jrc-al-stat-copy strong {
+    display: block;
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 700;
+    color: #f3f5f8;
+}
+
+.jrc-al-stat-copy span {
+    display: block;
+    margin-top: 4px;
+    color: #8d939c;
+    font-size: 13px;
+}
+
+.jrc-al-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 14px;
+}
+
+.jrc-al-filters button {
+    border: 1px solid #2a2d34;
+    background: #17191e;
+    color: #c5cad3;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.jrc-al-filters button.is-on {
+    border-color: #e10600;
+    color: #fff;
+    box-shadow: inset 0 0 0 1px #e10600;
+}
+
+.jrc-al-filters button strong {
+    color: #f3f5f8;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.jrc-al-filters button.is-on[data-filter="parado"] {
+    border-color: #7d8cff;
+    box-shadow: inset 0 0 0 1px #7d8cff;
+}
+
+.jrc-al-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.jrc-al-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    background: #1a1c21;
+    border: 1px solid #2a2d34;
+    border-radius: 16px;
+}
+
+.jrc-al-row .mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #2a2218;
+    color: #f0b429;
+}
+
+.jrc-al-row.is-bad .mark { background: #3a2226; color: #ff5d6c; }
+.jrc-al-row.is-info .mark { background: #1d2c44; color: #7eb6ff; }
+
+.jrc-al-row h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.jrc-al-row h2 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.jrc-al-row h2 a:hover { color: #fff; }
+
+.jrc-al-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.jrc-al-pill.is-bad { background: #3a2226; color: #ff8b96; }
+.jrc-al-pill.is-warn { background: #3a311c; color: #f0b429; }
+.jrc-al-pill.is-info { background: #1d2c44; color: #9ec4ff; }
+.jrc-al-pill.is-ack { background: #17352c; color: #7dcea0; }
+
+.jrc-al-row p {
+    margin: 4px 0 0;
+    color: #b7bdc7;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.jrc-al-row small {
+    display: block;
+    margin-top: 4px;
+    color: #8d939c;
+    font-size: 12px;
+}
+
+.jrc-al-ack {
+    border: 1px solid #3a3f48;
+    background: #22252b;
+    color: #f3f5f8;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.jrc-al-ack:hover { background: #2c3038; }
+.jrc-al-ack[disabled] { opacity: 0.6; cursor: default; }
+
+.jrc-al-ackall {
+    border: 1px solid #3a3f48;
+    background: #22252b;
+    color: #f3f5f8;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.jrc-al-ackall:hover { background: #2c3038; }
+.jrc-al-ackall[disabled] { opacity: 0.6; cursor: default; }
+
+.jrc-al-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.jrc-al-pager button {
+    min-width: 36px;
+    border: 1px solid #2a2d34;
+    background: #17191e;
+    color: #c5cad3;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.jrc-al-pager button.is-on {
+    border-color: #e10600;
+    color: #fff;
+    box-shadow: inset 0 0 0 1px #e10600;
+}
+
+.jrc-al-pager button[disabled] {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.jrc-al-gap,
+.jrc-al-range {
+    color: #8d939c;
+    font-size: 13px;
+}
+
+.jrc-al-range { margin-left: 4px; }
+
+.jrc-al-empty,
+.jrc-al-wait {
+    padding: 28px 8px;
+    color: #8d939c;
+}
+
+.jrc-al-empty.is-err { color: #ff8b96; }
+
+#sidebar a[href="/alerts.php"] .jrc-al-count,
+.fb-nav a[href="/alerts.php"] .jrc-al-count {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #e10600;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-grid;
+    place-items: center;
+    line-height: 1;
+}
+
+@media (max-width: 900px) {
+    .jrc-al-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .jrc-al-row { grid-template-columns: auto minmax(0, 1fr); }
+    .jrc-al-ack { grid-column: 2; justify-self: start; }
+}
+
+@media (max-width: 560px) {
+    .jrc-al h1 { font-size: 22px; }
+    .jrc-al-stats { grid-template-columns: 1fr; }
+}

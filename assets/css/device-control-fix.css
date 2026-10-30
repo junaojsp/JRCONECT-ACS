@@ -830,3 +830,554 @@
 @media(max-width:700px){
     .jr-event-legend-title{align-items:flex-start;flex-direction:column}
 }
+
+/* JRC_OVERVIEW_EQUAL_CARDS_V1
+   Equal visual weight for Optical + WAN cards on the device overview. */
+#overview-content .jrc-optical-wan-row,
+#overview-content .acs-optical-wan-row,
+#overview-content .jr-optical-wan-row {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
+    align-items: stretch !important;
+}
+
+#overview-content .jrc-optical-wan-row > *,
+#overview-content .acs-optical-wan-row > *,
+#overview-content .jr-optical-wan-row > * {
+    min-width: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Current overview fallback: if the pair is rendered in a generic two-card grid,
+   make both children equal without touching other sections. */
+#overview-content :is(.acs-optical-history,.jr-optical-history-card),
+#overview-content :has(#bandwidth-bars) {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+@media (min-width: 900px) {
+    #overview-content .jrc-optical-wan-row,
+    #overview-content .acs-optical-wan-row,
+    #overview-content .jr-optical-wan-row {
+        display: grid !important;
+        grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+        gap: 12px !important;
+    }
+}
+
+@media (max-width: 899px) {
+    #overview-content .jrc-optical-wan-row,
+    #overview-content .acs-optical-wan-row,
+    #overview-content .jr-optical-wan-row {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* JRC_FB_ONU_SPLIT_EQUAL_V1 */
+#overview-content .fb-onu-split{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+    gap:12px !important;
+    align-items:stretch !important;
+    width:100% !important;
+}
+
+#overview-content .fb-onu-split > .fb-onu{
+    min-width:0 !important;
+    width:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+}
+
+#overview-content .fb-onu-split > .fb-onu > .acs-overview-card,
+#overview-content .fb-onu-split > .fb-onu > .acs-optical-history{
+    min-width:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    align-self:stretch !important;
+    box-sizing:border-box !important;
+}
+
+@media (max-width:899px){
+    #overview-content .fb-onu-split{
+        grid-template-columns:1fr !important;
+    }
+}
+
+/* JRC_FB_ONU_SPLIT_WAN_PRIORITY_V1 */
+#overview-content .fb-onu-split{
+    display:grid !important;
+    grid-template-columns:minmax(0,2fr) minmax(0,3fr) !important;
+    gap:12px !important;
+    align-items:stretch !important;
+    width:100% !important;
+}
+
+#overview-content .fb-onu-split > .fb-onu{
+    min-width:0 !important;
+    width:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+}
+
+#overview-content .fb-onu-split > .fb-onu > .acs-overview-card,
+#overview-content .fb-onu-split > .fb-onu > .acs-optical-history{
+    min-width:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    align-self:stretch !important;
+    box-sizing:border-box !important;
+}
+
+@media (max-width:899px){
+    #overview-content .fb-onu-split{
+        grid-template-columns:1fr !important;
+    }
+}
+
+/* JRC_FB_ONU_SWAP_WAN_LEFT_V1 */
+#overview-content .fb-onu-split{
+    display:grid !important;
+    grid-template-columns:minmax(0,3fr) minmax(0,2fr) !important;
+    gap:12px !important;
+    align-items:stretch !important;
+    width:100% !important;
+}
+
+/* Current live DOM order: optical first, WAN second.
+   Reorder visually without moving the nodes or touching JS/data flow. */
+#overview-content .fb-onu-split > .fb-onu:first-child{
+    order:2 !important;
+}
+#overview-content .fb-onu-split > .fb-onu:nth-child(2){
+    order:1 !important;
+}
+
+#overview-content .fb-onu-split > .fb-onu{
+    min-width:0 !important;
+    width:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+}
+
+#overview-content .fb-onu-split > .fb-onu > .acs-overview-card,
+#overview-content .fb-onu-split > .fb-onu > .acs-optical-history{
+    min-width:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    align-self:stretch !important;
+    box-sizing:border-box !important;
+}
+
+@media (max-width:899px){
+    #overview-content .fb-onu-split{
+        grid-template-columns:1fr !important;
+    }
+    #overview-content .fb-onu-split > .fb-onu:first-child,
+    #overview-content .fb-onu-split > .fb-onu:nth-child(2){
+        order:initial !important;
+    }
+}
+
+/* JRC_FB_ONU_SPLIT_REAL_DOM_V1 */
+#overview-content .fb-onu-split{
+    display:grid !important;
+    grid-template-columns:minmax(0,3fr) minmax(0,2fr) !important;
+    gap:12px !important;
+    align-items:stretch !important;
+    width:100% !important;
+}
+
+/* Real live DOM:
+   .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars)
+   .fb-onu-split > section.acs-overview-card.acs-optical-history */
+#overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars){
+    order:1 !important;
+    grid-column:1 !important;
+    min-width:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    align-self:stretch !important;
+    box-sizing:border-box !important;
+}
+
+#overview-content .fb-onu-split > section.acs-overview-card.acs-optical-history{
+    order:2 !important;
+    grid-column:2 !important;
+    min-width:0 !important;
+    width:100% !important;
+    height:100% !important;
+    margin:0 !important;
+    align-self:stretch !important;
+    box-sizing:border-box !important;
+}
+
+@media (max-width:899px){
+    #overview-content .fb-onu-split{
+        grid-template-columns:1fr !important;
+    }
+    #overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars),
+    #overview-content .fb-onu-split > section.acs-overview-card.acs-optical-history{
+        order:initial !important;
+        grid-column:1 !important;
+    }
+}
+
+/* JRC_WAN_CARD_FILL_HEIGHT_V1 */
+#overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars){
+    display:flex !important;
+    flex-direction:column !important;
+}
+
+#overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) #bandwidth-bars{
+    display:flex !important;
+    flex:1 1 auto !important;
+    flex-direction:column !important;
+    min-height:300px !important;
+    height:auto !important;
+    padding-bottom:0 !important;
+}
+
+#overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) #bandwidth-bars > div:first-child{
+    flex:1 1 auto !important;
+    min-height:270px !important;
+    height:auto !important;
+    overflow:visible !important;
+}
+
+#overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) #bandwidth-bars > div:first-child > svg{
+    width:100% !important;
+    height:100% !important;
+    min-height:270px !important;
+    display:block !important;
+}
+
+#overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) .jr-monitor-chart-legend{
+    display:flex !important;
+    justify-content:center !important;
+    align-items:center !important;
+    gap:14px !important;
+    width:100% !important;
+    margin-top:auto !important;
+    padding:10px 0 2px !important;
+    text-align:center !important;
+    flex-wrap:wrap !important;
+}
+
+@media (max-width:899px){
+    #overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) #bandwidth-bars{
+        min-height:260px !important;
+    }
+    #overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) #bandwidth-bars > div:first-child,
+    #overview-content .fb-onu-split > section.acs-overview-card:has(#bandwidth-bars) #bandwidth-bars > div:first-child > svg{
+        min-height:230px !important;
+    }
+}
+
+/* JRC_WAN_TAB_ALIGNED_V1 */
+#wan-content .acs-wan-page{
+    width:100% !important;
+    padding:0 !important;
+}
+
+#wan-content .acs-wan-page-header{
+    align-items:center !important;
+    margin-bottom:14px !important;
+    padding:0 0 14px !important;
+    border-bottom:1px solid #2a3038 !important;
+}
+
+#wan-content .acs-wan-page-header h4{
+    margin:3px 0 2px !important;
+    font-size:18px !important;
+    color:#f5f7fa !important;
+}
+
+#wan-content .acs-wan-page-header p{
+    color:#8995a8 !important;
+    font-size:10px !important;
+}
+
+#wan-content .acs-wan-header-actions{
+    margin-left:auto !important;
+}
+
+#wan-content .acs-wan-summary-pill{
+    min-width:72px !important;
+    height:40px !important;
+    border:1px solid #313845 !important;
+    background:#15181e !important;
+    border-radius:9px !important;
+}
+
+#wan-content .acs-wan-summary-pill strong{
+    color:#f7f9fb !important;
+    font-size:14px !important;
+}
+
+#wan-content .acs-wan-summary-pill span{
+    color:#8190a5 !important;
+    font-size:8px !important;
+}
+
+#wan-content .acs-wan-primary-btn{
+    height:40px !important;
+    padding:0 14px !important;
+    border:1px solid #37404d !important;
+    background:#181c22 !important;
+    color:#edf2f7 !important;
+    border-radius:9px !important;
+}
+
+#wan-content .acs-wan-primary-btn:hover{
+    background:#20252c !important;
+    border-color:#4b5563 !important;
+}
+
+#wan-content .acs-wan-grid{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:14px !important;
+    width:100% !important;
+}
+
+#wan-content .acs-wan-card{
+    width:100% !important;
+    min-width:0 !important;
+    padding:16px !important;
+    border:1px solid #2c323a !important;
+    border-radius:12px !important;
+    background:#15181e !important;
+    box-shadow:none !important;
+}
+
+#wan-content .acs-wan-card-top{
+    align-items:center !important;
+    padding-bottom:13px !important;
+    margin-bottom:12px !important;
+    border-bottom:1px solid #2b3038 !important;
+}
+
+#wan-content .acs-wan-card-icon{
+    width:42px !important;
+    height:42px !important;
+    flex:0 0 42px !important;
+    border:1px solid #343b46 !important;
+    background:#1c2027 !important;
+    color:#dfe7f0 !important;
+    border-radius:10px !important;
+}
+
+#wan-content .acs-wan-index{
+    color:#8592a4 !important;
+    font-size:8px !important;
+}
+
+#wan-content .acs-wan-card h5{
+    color:#f4f7fa !important;
+    font-size:15px !important;
+    line-height:1.3 !important;
+}
+
+#wan-content .acs-wan-state{
+    padding:6px 10px !important;
+    font-size:9px !important;
+}
+
+#wan-content .acs-wan-state.online{
+    color:#42e08f !important;
+    background:rgba(35,190,108,.08) !important;
+    border-color:rgba(35,190,108,.30) !important;
+}
+
+#wan-content .acs-wan-state.offline{
+    color:#ff6876 !important;
+    background:rgba(235,76,92,.08) !important;
+    border-color:rgba(235,76,92,.30) !important;
+}
+
+#wan-content .acs-wan-tags{
+    margin:0 0 12px !important;
+    gap:7px !important;
+}
+
+#wan-content .acs-wan-tags span{
+    padding:5px 8px !important;
+    border:1px solid #313845 !important;
+    background:#1a1e25 !important;
+    color:#a8b4c4 !important;
+    border-radius:6px !important;
+    font-size:8px !important;
+}
+
+#wan-content .acs-wan-tags span.danger{
+    color:#ff7b88 !important;
+    border-color:rgba(235,76,92,.28) !important;
+    background:rgba(235,76,92,.06) !important;
+}
+
+#wan-content .acs-wan-hero{
+    display:flex !important;
+    align-items:flex-end !important;
+    justify-content:space-between !important;
+    gap:16px !important;
+    padding:14px 16px !important;
+    margin-bottom:12px !important;
+    border:1px solid #303640 !important;
+    border-radius:10px !important;
+    background:#191d24 !important;
+}
+
+#wan-content .acs-wan-hero span{
+    color:#7f8da1 !important;
+    font-size:8px !important;
+    margin-bottom:4px !important;
+}
+
+#wan-content .acs-wan-hero strong,
+#wan-content .acs-wan-hero a{
+    color:#f4f8fb !important;
+    font-size:20px !important;
+    font-weight:750 !important;
+}
+
+#wan-content .acs-wan-details{
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:10px !important;
+}
+
+#wan-content .acs-wan-details>div{
+    min-height:64px !important;
+    padding:10px 12px !important;
+    border:1px solid #2c323a !important;
+    border-radius:9px !important;
+    background:#181c22 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    justify-content:center !important;
+    gap:5px !important;
+}
+
+#wan-content .acs-wan-details span{
+    color:#7f8da0 !important;
+    font-size:8px !important;
+}
+
+#wan-content .acs-wan-details span i{
+    color:#8998aa !important;
+}
+
+#wan-content .acs-wan-details strong,
+#wan-content .acs-wan-details a{
+    width:100% !important;
+    color:#f0f4f8 !important;
+    font-size:11px !important;
+    font-weight:700 !important;
+    text-align:left !important;
+    overflow-wrap:anywhere !important;
+}
+
+#wan-content .acs-wan-error-row{
+    border-color:rgba(235,76,92,.25) !important;
+    background:rgba(235,76,92,.04) !important;
+}
+
+#wan-content .acs-wan-error-row strong{
+    color:#ff7b88 !important;
+}
+
+#wan-content .acs-wan-card-actions{
+    justify-content:flex-end !important;
+    gap:8px !important;
+    padding-top:14px !important;
+    margin-top:12px !important;
+    border-top:1px solid #2a3038 !important;
+}
+
+#wan-content .acs-wan-card-actions button{
+    min-height:34px !important;
+    padding:0 12px !important;
+    border:1px solid #343b46 !important;
+    border-radius:8px !important;
+    background:#1a1e25 !important;
+    color:#e6edf5 !important;
+}
+
+#wan-content .acs-wan-card-actions button:hover{
+    background:#22272f !important;
+}
+
+#wan-content .acs-wan-card-actions button.danger{
+    color:#ff7b88 !important;
+    border-color:rgba(235,76,92,.25) !important;
+    background:rgba(235,76,92,.05) !important;
+}
+
+#wan-content .acs-wan-footnote{
+    margin-top:14px !important;
+    padding:10px 12px !important;
+    border:1px solid #2c323a !important;
+    background:#15181e !important;
+    color:#7f8da0 !important;
+}
+
+@media(max-width:1200px){
+    #wan-content .acs-wan-details{
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+}
+
+@media(max-width:760px){
+    #wan-content .acs-wan-page-header{
+        align-items:flex-start !important;
+        flex-direction:column !important;
+    }
+    #wan-content .acs-wan-header-actions{
+        width:100% !important;
+        margin-left:0 !important;
+        flex-wrap:wrap !important;
+    }
+    #wan-content .acs-wan-details{
+        grid-template-columns:1fr !important;
+    }
+    #wan-content .acs-wan-hero{
+        align-items:flex-start !important;
+        flex-direction:column !important;
+    }
+}
+
+/* JRC_WAN_TAB_USAGE_V1 */
+#wan-content .jr-wan-usage { display: grid !important; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) !important; gap: 14px !important; margin-top: 14px !important; align-items: stretch !important; }
+#wan-content .jr-wan-usage-card { display: flex !important; flex-direction: column !important; min-width: 0 !important; box-sizing: border-box !important; }
+#wan-content .jr-wan-usage-card .acs-wan-card-top { align-items: center !important; }
+#wan-content .jr-wan-usage-card .acs-kicker { color: #d7dbe2 !important; font-size: 10px !important; }
+#wan-content .jr-wan-usage-card .acs-kicker i { color: #8d939c !important; }
+#wan-content .jr-wan-rates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+#wan-content .jr-wan-rates > div { background: #1a1d24; border: 1px solid #26282f; border-radius: 10px; padding: 10px 12px; }
+#wan-content .jr-wan-rates span { display: block; color: #8d939c; font-size: 10px; margin-bottom: 4px; }
+#wan-content .jr-wan-rates strong { color: #f3f5f7; font-size: 24px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
+#wan-content .jr-wan-rates small { color: #8d939c; font-size: 10px; margin-left: 5px; }
+#wan-content .jr-wan-usage-card #bandwidth-bars { display: flex !important; flex-direction: column !important; flex: 1 1 auto !important; min-height: 250px !important; height: auto !important; padding: 0 !important; border: 0 !important; }
+#wan-content .jr-wan-usage-card #bandwidth-bars > div:first-child { flex: 1 1 auto !important; min-height: 230px !important; height: auto !important; }
+#wan-content .jr-wan-usage-card #bandwidth-bars > div:first-child > svg { width: 100% !important; height: 100% !important; min-height: 230px !important; display: block !important; }
+#wan-content .jr-wan-usage-card .jr-monitor-chart-legend { justify-content: center; margin-top: auto; }
+#wan-content .jr-wan-usage-note { display: none; }
+#wan-content .jr-wan-usage-source { color: #8d939c; font-size: 10px; text-align: right; }
+#wan-content .jr-wan-usage-title { color: #8d939c; font-size: 11px; margin-bottom: 4px; }
+#wan-content .jr-wan-usage-card .jr-ixc-consumption { padding: 8px 0 4px; }
+#wan-content .jr-wan-usage-card .jr-ixc-cons-total { color: #f3f5f7; font-size: 20px; font-weight: 650; text-align: left; margin-bottom: 10px; }
+#wan-content .jr-wan-usage-card .jr-ixc-cons-bars { height: 190px; }
+#wan-content .jr-wan-usage-card .jr-ixc-cons-axis { font-size: 10px; }
+#wan-content .jr-wan-usage-card .jr-ixc-event-legend { font-size: 10px; padding-bottom: 4px; }
+@media (max-width: 1100px) { #wan-content .jr-wan-usage { grid-template-columns: 1fr !important; } }
+
+/* JRC_WAN_TAB_AXIS_FIX_V1 */
+#wan-content .jr-wan-usage-card #bandwidth-bars { padding-left: 46px !important; }
+#wan-content .jr-wan-usage-card #bandwidth-bars > div:first-child { overflow: visible !important; }

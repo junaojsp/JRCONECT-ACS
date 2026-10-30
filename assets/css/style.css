@@ -6316,3 +6316,300 @@ section{
 #overview-content .acs-technical-summary-item.critical>i{color:#ff8591;background:rgba(240,100,114,.10)}
 @media(max-width:1100px){#overview-content .acs-technical-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){#overview-content .acs-technical-summary{grid-template-columns:1fr 1fr}#overview-content .acs-technical-summary-item{padding:10px}}
+
+/* JRC layout fix 20261022 */
+
+.fb-search, #search-input {
+  background: #12141a !important;
+  border: 1px solid #2a2d34 !important;
+  color: #e8ebf0 !important;
+  box-shadow: none !important;
+}
+.fb-search i, .fb-search svg { color: #8d939c !important; }
+#search-input::placeholder { color: #6f7580 !important; }
+#search-input:focus, .fb-search:focus-within {
+  border-color: #3a3d46 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+#devices-table tbody a, #devices-table tbody a:hover { color: #e6e9ee !important; }
+#device-count { color: #d7dbe2 !important; }
+#devices-table { table-layout: fixed !important; width: 100% !important; min-width: 1100px !important; border-collapse: collapse !important; }
+#devices-table thead th, #devices-table tbody td { padding: 14px 16px !important; vertical-align: middle !important; text-align: left !important; white-space: nowrap !important; }
+#devices-table tbody td { width: auto !important; }
+#devices-table thead th { font-size: 11px !important; letter-spacing: 0.06em !important; color: #8b919c !important; }
+#devices-table thead th:nth-child(1) { width: 28% !important; }
+#devices-table thead th:nth-child(2) { width: 16% !important; }
+#devices-table thead th:nth-child(3) { width: 16% !important; }
+#devices-table thead th:nth-child(4) { width: 16% !important; }
+#devices-table thead th:nth-child(5) { width: 12% !important; }
+#devices-table thead th:nth-child(6) { width: 12% !important; }
+.table-responsive:has(#devices-table) { max-height: none !important; overflow: visible !important; }
+#pagination-container { display: flex !important; position: static !important; justify-content: center; gap: 8px; clear: both; margin: 14px 0 0 !important; padding: 8px 0 !important; background: transparent !important; border: 0 !important; }
+.acs-history-chart { display: block; width: 100%; height: auto; max-height: 220px; }
+.jr-wifi-summary-footer { display: none !important; }
+.acs-wan-hero { background: #14161b !important; border: 1px solid #26282f !important; }
+.acs-wan-hero span { color: #8d939c !important; }
+.acs-wan-hero strong, .acs-wan-hero a { color: #f3f5f7 !important; }
+.acs-wan-tags span { background: #1c1f27 !important; border-color: #2a2d34 !important; color: #c5cad3 !important; }
+.main-content img[src*="jrconect"] { display: none !important; }
+
+.topbar input:not([type=checkbox]):not([type=radio]),
+header input:not([type=checkbox]):not([type=radio]),
+.fb-search input:not([type=checkbox]):not([type=radio]),
+#search-input {
+  background: #12141a !important;
+  border-color: #2a2d34 !important;
+  color: #e8ebf0 !important;
+  box-shadow: none !important;
+}
+.topbar input:focus,
+header input:focus,
+.fb-search input:focus,
+#search-input:focus {
+  background: #12141a !important;
+  border-color: #3a3d46 !important;
+  box-shadow: none !important;
+}
+#devices-table thead th,
+#devices-table tbody td {
+  background: #14161b !important;
+  border-color: #26282f !important;
+  color: #d7dbe2 !important;
+}
+#devices-table tbody tr:hover td { background: #1b1e25 !important; }
+.table-responsive:has(#devices-table) {
+  background: #14161b !important;
+  border: 1px solid #26282f !important;
+  border-radius: 14px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+#pagination-container .page-link,
+#pagination-container .page-item.active .page-link,
+#pagination-container .page-link:hover,
+.pagination .page-item.active .page-link {
+  background: #1a1d24 !important;
+  color: #d7dbe2 !important;
+  border-color: #2a2d34 !important;
+  box-shadow: none !important;
+}
+
+/* JRC tabela referencia */
+#devices-table { table-layout: auto !important; width: 100% !important; min-width: 0 !important; background: #14161b !important; border: 1px solid #26282f !important; border-radius: 14px !important; overflow: hidden; border-collapse: separate !important; border-spacing: 0 !important; }
+#devices-table thead th, #devices-table tbody td { width: auto !important; white-space: nowrap !important; }
+#devices-table thead th:nth-child(1) { width: 99% !important; }
+.table-responsive:has(#devices-table) { background: transparent !important; border: 0 !important; border-radius: 0 !important; overflow: visible !important; max-height: none !important; }
+
+/* JRC tabela distribuida */
+#devices-table { table-layout: fixed !important; width: 100% !important; min-width: 1100px !important; }
+#devices-table thead th, #devices-table tbody td { width: auto !important; white-space: nowrap !important; }
+#devices-table thead th:nth-child(1) { width: 30% !important; }
+#devices-table thead th:nth-child(2) { width: 15% !important; }
+#devices-table thead th:nth-child(3) { width: 15% !important; }
+#devices-table thead th:nth-child(4) { width: 16% !important; }
+#devices-table thead th:nth-child(5) { width: 12% !important; }
+#devices-table thead th:nth-child(6) { width: 12% !important; }
+
+/* JRCONECT - Alinhamento das linhas dos dispositivos */
+#devices-table.table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+}
+
+#devices-table.table tbody tr {
+    border-bottom: 1px solid #292d36 !important;
+}
+
+#devices-table.table tbody td {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+/* JRCONECT FLOWBIX TABLE V1 */
+#devices-table.table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+}
+
+#devices-table.table thead th {
+    padding: 15px 18px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: .065em !important;
+    color: #9296a3 !important;
+    border-bottom: 1px solid #2a2c35 !important;
+}
+
+#devices-table.table tbody td {
+    padding: 17px 18px !important;
+    vertical-align: middle !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+}
+
+#devices-table.table tbody tr {
+    border-bottom: 1px solid #292b34 !important;
+    transition: background-color .15s ease;
+}
+
+#devices-table.table tbody tr:last-child {
+    border-bottom: 0 !important;
+}
+
+#devices-table.table tbody tr:hover td {
+    background-color: #1a1c24 !important;
+}
+
+#devices-table .fb-equip {
+    gap: 14px !important;
+}
+
+#devices-table .fb-equip-icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
+}
+
+#devices-table .fb-equip strong {
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    line-height: 1.4 !important;
+}
+
+#devices-table .fb-equip small {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    color: #858b9b !important;
+}
+
+#devices-table .fb-signal {
+    padding: 6px 11px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+@media (max-width: 768px) {
+    #devices-table.table tbody td {
+        padding: 12px 10px !important;
+    }
+
+    #devices-table.table thead th {
+        padding: 12px 10px !important;
+    }
+}
+/* END JRCONECT FLOWBIX TABLE V1 */
+
+/* JRCONECT DASHBOARD ROWS V1 */
+
+/* Tabelas do Dashboard */
+body:has(.dashboard-grid) .table,
+body:has(.dashboard-stats) .table,
+body:has(.dashboard-container) .table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+}
+
+body:has(.dashboard-grid) .table tbody tr,
+body:has(.dashboard-stats) .table tbody tr,
+body:has(.dashboard-container) .table tbody tr {
+    border-bottom: 1px solid #292d36 !important;
+}
+
+body:has(.dashboard-grid) .table tbody td,
+body:has(.dashboard-stats) .table tbody td,
+body:has(.dashboard-container) .table tbody td {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+body:has(.dashboard-grid) .table tbody tr:last-child,
+body:has(.dashboard-stats) .table tbody tr:last-child,
+body:has(.dashboard-container) .table tbody tr:last-child {
+    border-bottom: 0 !important;
+}
+
+/* END JRCONECT DASHBOARD ROWS V1 */
+
+/* JRCONECT - Dashboard: linhas continuas */
+#recent-devices table.table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+}
+
+#recent-devices table.table > tbody > tr {
+    border-bottom: 1px solid #292d36 !important;
+}
+
+#recent-devices table.table > tbody > tr > td {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+#recent-devices table.table > tbody > tr:last-child {
+    border-bottom: 0 !important;
+}
+
+/* JRC ACS - Correção visual da tabela da Visão geral */
+#recent-devices table tbody td {
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+#recent-devices table tbody td::before,
+#recent-devices table tbody td::after {
+    content: none !important;
+    display: none !important;
+}
+
+#recent-devices table tbody td {
+    vertical-align: middle !important;
+}
+
+/* JRC ACS - Correção visual da tabela da Visão geral */
+#recent-devices table tbody td {
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+#recent-devices table tbody td::before,
+#recent-devices table tbody td::after {
+    content: none !important;
+    display: none !important;
+}
+
+#recent-devices table tbody td {
+    vertical-align: middle !important;
+}
+
+/* JR CONECT - Ajuste das abas de Configuracoes */
+#configTabs {
+    background: #17191e !important;
+    border: 1px solid #30343b !important;
+    border-radius: 8px;
+    padding: 6px !important;
+    gap: 4px;
+}
+
+#configTabs .nav-link {
+    background: transparent !important;
+    color: #d9dce2 !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px;
+    font-size: 14px !important;
+    font-weight: 500;
+    padding: 9px 12px;
+}
+
+#configTabs .nav-link:hover {
+    background: #252932 !important;
+    color: #ffffff !important;
+}
+
+#configTabs .nav-link.active {
+    background: #24272e !important;
+    color: #ffffff !important;
+    border-color: #3b404a !important;
+    box-shadow: inset 0 -2px 0 #e11919;
+}

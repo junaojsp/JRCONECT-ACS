@@ -130,7 +130,7 @@
     if (resetNote) resetNote.innerHTML = '<i class="bi bi-info-circle"></i><span>Hist\u00f3rico de resets ainda n\u00e3o dispon\u00edvel.</span>';
     const resetBars = select('.jr-ref-reset-bars');
     if (resetBars) {
-        resetBars.innerHTML = '<span>Sem registros integrados</span>';
+        // Histórico preenchido por dashboard-source-policy.js
         resetBars.classList.add('jr-fixed-no-events');
     }
     const resetDays = select('.jr-ref-reset-days');

@@ -1,0 +1,151 @@
+/* JRC_CONFIG_BG_V1 — Configurações no preto do menu, sem a faixa azul. */
+html.jrc-config-page,
+html.jrc-config-page body,
+html.jrc-config-page .main-content,
+html.jrc-config-page .content-wrapper,
+html.jrc-config-page .topbar,
+html.jrc-config-page .page-content,
+html.jrc-config-page .container,
+html.jrc-config-page .container-fluid {
+    background: #101114 !important;
+    background-image: none !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-config-page .footer,
+html.jrc-config-page .main-content > .footer,
+html.jrc-config-page footer {
+    display: none !important;
+}
+
+html.jrc-config-page .card,
+html.jrc-config-page .card-header,
+html.jrc-config-page .card-body,
+html.jrc-config-page .list-group-item,
+html.jrc-config-page .modal-content,
+html.jrc-config-page .modal-header,
+html.jrc-config-page .modal-footer,
+html.jrc-config-page .tab-content,
+html.jrc-config-page .alert-info {
+    background: #1a1c21 !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+}
+
+html.jrc-config-page .card {
+    box-shadow: none !important;
+}
+
+html.jrc-config-page .card-header {
+    border-bottom-color: #2a2d34 !important;
+}
+
+html.jrc-config-page .alert-info {
+    color: #c5cad3 !important;
+}
+
+html.jrc-config-page label,
+html.jrc-config-page .form-label,
+html.jrc-config-page .text-muted {
+    color: #c5cad3 !important;
+}
+
+html.jrc-config-page .nav-tabs {
+    border-bottom-color: #2a2d34 !important;
+}
+
+html.jrc-config-page .nav-tabs .nav-link {
+    background: transparent !important;
+    color: #8d939c !important;
+    border-color: transparent !important;
+}
+
+html.jrc-config-page .nav-tabs .nav-link:hover {
+    background: #17191e !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-config-page .nav-tabs .nav-link.active {
+    background: #1a1c21 !important;
+    color: #fff !important;
+    border-color: #2a2d34 #2a2d34 #e10600 !important;
+}
+
+html.jrc-config-page .form-control,
+html.jrc-config-page .form-select,
+html.jrc-config-page input:not([type="checkbox"]):not([type="radio"]),
+html.jrc-config-page textarea,
+html.jrc-config-page select,
+html.jrc-config-page .input-group-text {
+    background: #17191e !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+    box-shadow: none !important;
+}
+
+html.jrc-config-page .form-control:focus,
+html.jrc-config-page .form-select:focus,
+html.jrc-config-page input:focus,
+html.jrc-config-page textarea:focus,
+html.jrc-config-page select:focus {
+    background: #17191e !important;
+    color: #fff !important;
+    border-color: #e10600 !important;
+    box-shadow: 0 0 0 1px #e10600 !important;
+}
+
+html.jrc-config-page input:-webkit-autofill,
+html.jrc-config-page input:-webkit-autofill:hover,
+html.jrc-config-page input:-webkit-autofill:focus,
+html.jrc-config-page textarea:-webkit-autofill {
+    -webkit-text-fill-color: #f3f5f8 !important;
+    caret-color: #f3f5f8;
+    box-shadow: 0 0 0 1000px #17191e inset !important;
+    transition: background-color 99999s ease-out;
+}
+
+html.jrc-config-page .table,
+html.jrc-config-page .table thead th,
+html.jrc-config-page .table tbody td,
+html.jrc-config-page .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: #1a1c21 !important;
+    color: #f3f5f8 !important;
+    border-color: #2a2d34 !important;
+}
+
+html.jrc-config-page .table thead th {
+    color: #8d939c !important;
+}
+
+html.jrc-config-page .table-hover tbody tr:hover td {
+    background: #22252b !important;
+}
+
+html.jrc-config-page .btn-primary,
+html.jrc-config-page .btn-info {
+    background: #e10600 !important;
+    border-color: #e10600 !important;
+    color: #fff !important;
+}
+
+html.jrc-config-page .btn-primary:hover,
+html.jrc-config-page .btn-info:hover {
+    background: #c10500 !important;
+    border-color: #c10500 !important;
+    color: #fff !important;
+}
+
+html.jrc-config-page .btn-outline-info,
+html.jrc-config-page .btn-outline-primary {
+    background: #17191e !important;
+    border-color: #3a3f48 !important;
+    color: #f3f5f8 !important;
+}
+
+html.jrc-config-page .content-wrapper a {
+    color: #f3f5f8;
+}
+
+html.jrc-config-page .content-wrapper a:hover {
+    color: #fff;
+}
