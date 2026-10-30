@@ -236,19 +236,14 @@ try {
             $wifiSsid = (string)($device['wifi_ssid'] ?? '');
             $pppoe = (string)($device['pppoe_username'] ?? '');
 
-            foreach ([
-                'serial' => &$serial,
-                'mac' => &$mac,
-                'manufacturer' => &$manufacturer,
-                'productClass' => &$productClass,
-                'ipTr069' => &$ipTr069,
-                'ipAddress' => &$ipAddress,
-                'wifiSsid' => &$wifiSsid,
-                'pppoe' => &$pppoe,
-            ] as &$value) {
-                if ($value === 'N/A') $value = '';
-            }
-            unset($value);
+            if ($serial === 'N/A') $serial = '';
+            if ($mac === 'N/A') $mac = '';
+            if ($manufacturer === 'N/A') $manufacturer = '';
+            if ($productClass === 'N/A') $productClass = '';
+            if ($ipTr069 === 'N/A') $ipTr069 = '';
+            if ($ipAddress === 'N/A') $ipAddress = '';
+            if ($wifiSsid === 'N/A') $wifiSsid = '';
+            if ($pppoe === 'N/A') $pppoe = '';
 
             $rx = $device['rx_power'] ?? null;
             $rx = is_numeric($rx) ? (float)$rx : null;
