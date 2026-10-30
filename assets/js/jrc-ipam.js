@@ -742,7 +742,18 @@
             return;
         }
         var button = event.target.closest('[data-act]');
-        if (!button || button.disabled) return;
+        if (!button) {
+            var row = event.target.closest('[data-pick]');
+            if (row && root.contains(row)) {
+                var networkId = row.getAttribute('data-pick');
+                if (networkById(networkId)) {
+                    selected = networkId;
+                    render();
+                }
+            }
+            return;
+        }
+        if (button.disabled) return;
         var act = button.getAttribute('data-act');
         var id = button.getAttribute('data-id') || '';
         if (act === 'noop') return;
