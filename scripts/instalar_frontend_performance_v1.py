@@ -138,27 +138,90 @@ def patch_dashboard(text: str) -> tuple[str, int]:
     if "jrc.dashboard.discovery.v1" in text:
         return text, 0
 
+    original_newline = "\r\n" if "\r\n" in text else "\n"
     normalized = text.replace("\r\n", "\n")
-    if DISCOVERY_OLD not in normalized:
-        # Allow arbitrary spacing around the same three statements.
-        pattern = re.compile(
-            r"const\s+response\s*=\s*await\s+fetch\("
+
+    # Find the production function instead of relying on exact indentation.
+    fn_match = re.search(
+        r"async\s+function\s+loadFinalDiscoveryData\s*\(\s*\)\s*\{",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if not fn_match:
+        raise RuntimeError(
+            "Funcao loadFinalDiscoveryData() nao encontrada; cancelado por seguranca."
+        )
+
+    fetch_match = re.search(
+        r"(?P<indent>^[ \t]*)const\s+response\s*=\s*await\s+fetch\(\s*"
+        r"['\"]/api/discovery-ixc-tr069\.php['\"]\s*,\s*"
+        r"\{\s*cache\s*:\s*['\"]no-store['\"]\s*\}\s*\)\s*;\s*\n"
+        r"(?P=indent)const\s+data\s*=\s*await\s+response\.json\(\)\s*;\s*\n"
+        r"(?P=indent)if\s*\(\s*!response\.ok\s*\|\|\s*!data\.success\s*\)\s*"
+        r"throw\s+new\s+Error\([^;]+?\)\s*;",
+        normalized[fn_match.start():],
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+
+    if not fetch_match:
+        # Fallback: tolerate comments/blank lines between the three statements.
+        fetch_match = re.search(
+            r"(?P<indent>^[ \t]*)const\s+response\s*=\s*await\s+fetch\(\s*"
             r"['\"]/api/discovery-ixc-tr069\.php['\"]\s*,\s*"
-            r"\{\s*cache\s*:\s*['\"]no-store['\"]\s*\}\s*\)\s*;\s*"
-            r"const\s+data\s*=\s*await\s+response\.json\(\)\s*;\s*"
+            r"\{\s*cache\s*:\s*['\"]no-store['\"]\s*\}\s*\)\s*;"
+            r"[\s\S]{0,300}?"
+            r"const\s+data\s*=\s*await\s+response\.json\(\)\s*;"
+            r"[\s\S]{0,300}?"
             r"if\s*\(\s*!response\.ok\s*\|\|\s*!data\.success\s*\)\s*"
-            r"throw\s+new\s+Error\(\s*data\.message\s*\|\|\s*"
-            r"['\"]Discovery indisponivel['\"]\s*\)\s*;",
+            r"throw\s+new\s+Error\([^;]+?\)\s*;",
+            normalized[fn_match.start():],
             flags=re.IGNORECASE | re.MULTILINE,
         )
-        m = pattern.search(normalized)
-        if not m:
-            raise RuntimeError(
-                "Trecho da discovery nao encontrado na dashboard; cancelado por seguranca."
-            )
-        normalized = normalized[:m.start()] + DISCOVERY_NEW + normalized[m.end():]
-    else:
-        normalized = normalized.replace(DISCOVERY_OLD, DISCOVERY_NEW, 1)
+
+    if not fetch_match:
+        raise RuntimeError(
+            "Chamada /api/discovery-ixc-tr069.php nao encontrada em loadFinalDiscoveryData(); "
+            "cancelado por seguranca."
+        )
+
+    indent = fetch_match.group("indent")
+    block = (
+        indent + "const discoveryCacheKey = 'jrc.dashboard.discovery.v1';\n"
+        + indent + "const discoveryCacheTtlMs = 5 * 60 * 1000;\n"
+        + indent + "let data = null;\n\n"
+        + indent + "try {\n"
+        + indent + "    const cachedRaw = sessionStorage.getItem(discoveryCacheKey);\n"
+        + indent + "    if (cachedRaw) {\n"
+        + indent + "        const cached = JSON.parse(cachedRaw);\n"
+        + indent + "        if (cached && cached.savedAt &&\n"
+        + indent + "            (Date.now() - Number(cached.savedAt)) < discoveryCacheTtlMs &&\n"
+        + indent + "            cached.data && cached.data.success) {\n"
+        + indent + "            data = cached.data;\n"
+        + indent + "        }\n"
+        + indent + "    }\n"
+        + indent + "} catch (cacheError) {\n"
+        + indent + "    console.debug('[DASHBOARD] Cache discovery indisponivel:', cacheError);\n"
+        + indent + "}\n\n"
+        + indent + "if (!data) {\n"
+        + indent + "    const response = await fetch('/api/discovery-ixc-tr069.php', { cache: 'default' });\n"
+        + indent + "    data = await response.json();\n"
+        + indent + "    if (!response.ok || !data.success) {\n"
+        + indent + "        throw new Error(data.message || 'Discovery indisponivel');\n"
+        + indent + "    }\n"
+        + indent + "    try {\n"
+        + indent + "        sessionStorage.setItem(discoveryCacheKey, JSON.stringify({ savedAt: Date.now(), data }));\n"
+        + indent + "    } catch (cacheError) {\n"
+        + indent + "        console.debug('[DASHBOARD] Falha ao salvar cache discovery:', cacheError);\n"
+        + indent + "    }\n"
+        + indent + "}\n"
+    )
+
+    absolute_start = fn_match.start() + fetch_match.start()
+    absolute_end = fn_match.start() + fetch_match.end()
+    normalized = normalized[:absolute_start] + block + normalized[absolute_end:]
+
+    if original_newline == "\r\n":
+        normalized = normalized.replace("\n", "\r\n")
 
     return normalized, 1
 
