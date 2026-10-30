@@ -12,6 +12,7 @@
     var statusFilter = 'todos';
     var addrQuery = '';
     var addrNet = '';
+    var addrStatus = 'todos';
     var dnsQuery = '';
     var page = 1;
     var addrPage = 1;
@@ -253,6 +254,7 @@
     }
 
     function statusPill(status) {
+        if (status === 'livre') return '<span class="jrc-ip-pill is-off">Livre</span>';
         if (status === 'reservado') return '<span class="jrc-ip-pill is-hold">Reservado</span>';
         return '<span class="jrc-ip-pill is-use">Em uso</span>';
     }
@@ -342,18 +344,63 @@
         return html;
     }
 
+    function addressView() {
+        var net = networkById(addrNet);
+        var block = net && parseCidr(net.cidr);
+        var rows = [];
+        var needle = addrQuery.trim().toLowerCase();
+        if (block) {
+            var indexed = {};
+            addressesOf(net.id).forEach(function (row) { indexed[row.ip] = row; });
+            for (var n = block.first; n <= block.last; n++) {
+                var ip = longIp(n);
+                rows.push(indexed[ip] || {id: '', network_id: net.id, ip: ip, status: 'livre'});
+            }
+        } else {
+            rows = filteredAddresses();
+        }
+        return rows.filter(function (row) {
+            if (addrStatus !== 'todos' && row.status !== addrStatus) return false;
+            return !needle || (row.ip + ' ' + (row.hostname || '') + ' ' + (row.description || '')).toLowerCase().indexOf(needle) !== -1;
+        });
+    }
+
+    function nextFree(id) {
+        var net = networkById(id);
+        var block = net && parseCidr(net.cidr);
+        if (!block) return '';
+        var taken = {};
+        addressesOf(id).forEach(function (row) { taken[row.ip] = true; });
+        var gateway = net.gateway || block.firstIp;
+        for (var n = block.first; n <= block.last; n++) {
+            var ip = longIp(n);
+            if (!taken[ip] && ip !== gateway) return ip;
+        }
+        return '';
+    }
+
     function enderecosTab() {
-        var rows = filteredAddresses();
+        var rows = addressView();
+        var net = networkById(addrNet);
         var view = pager(rows.length, addrPage);
         addrPage = view.page;
         var slice = rows.slice((addrPage - 1) * PAGE, addrPage * PAGE);
         var body = !rows.length
-            ? '<p class="jrc-ip-empty">Nenhum IP em uso ou reservado' + (addrNet || addrQuery ? ' neste filtro' : '') + '. O que está livre não ocupa linha.</p>'
-            : '<div class="jrc-ip-scroll"><table class="jrc-ip-table"><thead><tr><th>IP</th><th>Hostname</th><th>Descrição</th><th class="jrc-ip-hide">Rede</th><th>Status</th><th></th></tr></thead><tbody>' + slice.map(function (row) {
-                var net = networkById(row.network_id);
-                return '<tr><td class="jrc-ip-net" style="--accent:' + (row.status === 'reservado' ? '#f0b429' : '#3dd68c') + '">' + esc(row.ip) + '</td><td>' + esc(row.hostname || '—') + '</td><td>' + esc(row.description || '—') + '</td><td class="jrc-ip-hide">' + esc(net ? net.cidr : '—') + '</td><td>' + statusPill(row.status) + '</td><td class="jrc-ip-actions-cell"><button type="button" class="jrc-ip-icon" data-act="edit-ip" data-id="' + esc(row.id) + '" title="Editar"><i class="bi bi-pencil"></i></button><button type="button" class="jrc-ip-icon is-danger" data-act="del-ip" data-id="' + esc(row.id) + '" title="Liberar"><i class="bi bi-trash"></i></button></td></tr>';
+            ? '<p class="jrc-ip-empty">Nenhum endereço neste filtro.</p>'
+            : '<div class="jrc-ip-scroll"><table class="jrc-ip-table"><thead><tr><th>IP</th><th>Hostname</th><th>Descrição</th><th class="jrc-ip-hide">Rede</th><th>Status</th><th>Ações</th></tr></thead><tbody>' + slice.map(function (row) {
+                var owner = networkById(row.network_id);
+                var block = owner && parseCidr(owner.cidr);
+                var gateway = owner && row.ip === (owner.gateway || (block && block.firstIp));
+                var free = row.status === 'livre';
+                var action = free ? 'pick-free' : 'edit-ip';
+                var target = free ? row.network_id : row.id;
+                var attrs = ' data-act="' + action + '" data-id="' + esc(target) + '" data-ip="' + esc(row.ip) + '"';
+                return '<tr><td class="jrc-ip-net"><button type="button" class="jrc-ip-ghost"' + attrs + '>' + esc(row.ip) + '</button>' + (gateway ? ' <span class="jrc-ip-pill is-off">Gateway</span>' : '') + '</td><td>' + esc(row.hostname || '—') + '</td><td>' + esc(row.description || '—') + '</td><td class="jrc-ip-hide">' + esc(owner ? owner.cidr : '—') + '</td><td>' + statusPill(row.status) + '</td><td class="jrc-ip-actions-cell"><button type="button" class="jrc-ip-ghost"' + attrs + '>' + (free ? 'Cadastrar' : 'Editar') + '</button>' + (free ? '' : '<button type="button" class="jrc-ip-icon is-danger" data-act="del-ip" data-id="' + esc(row.id) + '" title="Liberar IP"><i class="bi bi-trash"></i></button>') + '</td></tr>';
             }).join('') + '</tbody></table></div>' + view.html;
-        return '<section class="jrc-ip-card"><div class="jrc-ip-card-head"><h2>Endereços lançados (' + data.addresses.length + ')</h2><button type="button" class="jrc-ip-btn" data-act="add-ip">+ Novo IP</button></div><div class="jrc-ip-tools"><input id="jrc-ip-addr-q" type="search" placeholder="Buscar IP, hostname ou descrição..." value="' + esc(addrQuery) + '"><select id="jrc-ip-netf">' + netOptions(addrNet) + '</select></div>' + body + '</section>';
+        var statuses = [['todos','Todos os status'],['livre','Livres'],['uso','Em uso'],['reservado','Reservados']].map(function (item) {
+            return '<option value="' + item[0] + '"' + (addrStatus === item[0] ? ' selected' : '') + '>' + item[1] + '</option>';
+        }).join('');
+        return '<section class="jrc-ip-card"><div class="jrc-ip-card-head"><h2>' + (net ? 'Endereços de ' + esc(net.cidr) : 'Endereços cadastrados') + '</h2><div class="jrc-ip-tools">' + (net ? '<button type="button" class="jrc-ip-ghost" data-act="next-free" data-id="' + esc(net.id) + '">Próximo IP livre</button>' : '') + '<button type="button" class="jrc-ip-btn" data-act="add-ip">+ Novo IP</button></div></div><p class="jrc-ip-empty" style="padding:0 0 12px;margin:0">' + (net ? 'Clique em um IP livre para cadastrar. O gateway está identificado; a sugestão automática pula esse endereço.' : 'Selecione uma rede para visualizar também todos os IPs livres.') + '</p><div class="jrc-ip-tools"><input id="jrc-ip-addr-q" type="search" aria-label="Buscar endereços" placeholder="Buscar IP, hostname ou descrição..." value="' + esc(addrQuery) + '"><select id="jrc-ip-netf" aria-label="Rede">' + netOptions(addrNet) + '</select><select id="jrc-ip-addr-status" aria-label="Status do IP">' + statuses + '</select></div>' + body + '</section>';
     }
 
     function dnsTab() {
@@ -690,7 +737,7 @@
         render();
     }
 
-    function openIp(id, addressId) {
+    function openIp(id, addressId, suggestedIp) {
         if (!data.networks.length) {
             note = 'Cadastre uma rede antes de lançar o IP.';
             render();
@@ -708,7 +755,7 @@
             id: address ? address.id : '',
             network_id: networkId,
             lock: !!address || !!id,
-            ip: address ? address.ip : '',
+            ip: address ? address.ip : (suggestedIp || ''),
             hostname: address ? (address.hostname || '') : '',
             description: address ? (address.description || '') : '',
             status: address ? address.status : 'uso',
@@ -757,7 +804,7 @@
         var act = button.getAttribute('data-act');
         var id = button.getAttribute('data-id') || '';
         if (act === 'noop') return;
-        if (act === 'tab') { tab = button.getAttribute('data-tab') || 'redes'; render(); return; }
+        if (act === 'tab') { tab = button.getAttribute('data-tab') || 'redes'; if (tab === 'enderecos' && !addrNet) addrNet = selected; render(); return; }
         if (act === 'page') {
             var step = button.getAttribute('data-page');
             if (tab === 'enderecos') addrPage += step === 'prev' ? -1 : 1;
@@ -774,6 +821,13 @@
             return;
         }
         if (act === 'do-del-net') return removeNet(id || (form && form.id));
+        if (act === 'pick-free') return openIp(id, '', button.getAttribute('data-ip'));
+        if (act === 'next-free') {
+            var available = nextFree(id);
+            if (!available) { note = 'Nenhum IP livre disponível além do gateway nesta rede.'; render(); return; }
+            note = '';
+            return openIp(id, '', available);
+        }
         if (act === 'add-ip') return openIp(id, '');
         if (act === 'edit-ip') return openIp('', id);
         if (act === 'del-ip') {
@@ -782,7 +836,7 @@
             return;
         }
         if (act === 'do-del-ip') return removeIp(id || (form && form.id));
-        if (act === 'see') { selected = id; addrNet = id; tab = 'enderecos'; addrPage = 1; render(); return; }
+        if (act === 'see') { selected = id; addrNet = id; addrStatus = 'todos'; addrQuery = ''; tab = 'enderecos'; addrPage = 1; render(); return; }
         if (act === 'import') {
             form = { mode: 'import', network_id: id || selected, csv: '', note: '' };
             focusForm = true;
@@ -805,6 +859,7 @@
 
     function onChange(event) {
         if (event.target.id === 'jrc-ip-status') { statusFilter = event.target.value; page = 1; render(); return; }
+        if (event.target.id === 'jrc-ip-addr-status') { addrStatus = event.target.value; addrPage = 1; render(); return; }
         if (event.target.id === 'jrc-ip-netf') { addrNet = event.target.value; addrPage = 1; render(); return; }
         if (event.target.id === 'jrc-ip-csv' && event.target.files && event.target.files[0]) {
             var reader = new FileReader();
@@ -933,3 +988,4 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
 }());
+
