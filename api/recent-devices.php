@@ -5,6 +5,12 @@ set_time_limit(30);
 
 requireLogin();
 
+// Liberar a sessão autenticada antes de consultas ou bloqueios de arquivo.
+// Os dados de $_SESSION continuam disponíveis para leitura nesta requisição.
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 use App\GenieACS;
 use App\GenieACS_Fast;
 
