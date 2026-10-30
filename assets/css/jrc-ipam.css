@@ -197,3 +197,85 @@ html.jrc-ipam-page footer {
     .jrc-ip-detail-top { flex-wrap: wrap; }
     .jrc-ip-hide { display: none; }
 }
+
+/* Tema restrito ao IPAM: prevalece sobre as regras globais do ACS. */
+html.jrc-ipam-page { color-scheme: dark; }
+html.jrc-ipam-page body { border-top-color: #24272d !important; }
+html.jrc-ipam-page .topbar {
+    background: #101114 !important;
+    background-image: none !important;
+    border-color: #24272d !important;
+    box-shadow: none !important;
+}
+html.jrc-ipam-page .topbar h4,
+html.jrc-ipam-page .topbar .user-info { color: #f3f5f8 !important; }
+html.jrc-ipam-page #jrc-ipam input:not([type="checkbox"]),
+html.jrc-ipam-page #jrc-ipam select,
+html.jrc-ipam-page #jrc-ipam textarea {
+    background: #191c21 !important;
+    background-image: none !important;
+    color: #f3f5f8 !important;
+    border: 1px solid #2b2f36 !important;
+    box-shadow: none !important;
+    min-height: 40px;
+    color-scheme: dark;
+}
+html.jrc-ipam-page #jrc-ipam input::placeholder,
+html.jrc-ipam-page #jrc-ipam textarea::placeholder { color: #969da8 !important; opacity: 1; }
+html.jrc-ipam-page #jrc-ipam input:focus,
+html.jrc-ipam-page #jrc-ipam select:focus,
+html.jrc-ipam-page #jrc-ipam textarea:focus {
+    border-color: #ef1515 !important;
+    outline: 2px solid #ef151533;
+    outline-offset: 2px;
+}
+html.jrc-ipam-page #jrc-ipam button:focus-visible { outline: 2px solid #ef1515; outline-offset: 3px; }
+#jrc-ipam .jrc-ip { padding: 12px 8px 32px; font-size: 14px; }
+#jrc-ipam .jrc-ip-head { margin-bottom: 24px; }
+#jrc-ipam .jrc-ip-mark {
+    width: 60px; height: 60px; border-radius: 12px;
+    background: #17191e; border: 1px solid #292d34; color: #f3f5f8; font-size: 30px;
+}
+#jrc-ipam .jrc-ip-stat { min-height: 112px; border-radius: 12px; background: #131519; padding: 18px; }
+#jrc-ipam .jrc-ip-ico { display: grid; margin: 0; width: 58px; height: 58px; font-size: 26px; }
+#jrc-ipam .jrc-ip-stat > div { display: flex; flex-direction: column; gap: 7px; }
+#jrc-ipam .jrc-ip-stat > div > span { order: -1; margin: 0; color: #c0c6cf; font-size: 14px; }
+#jrc-ipam .jrc-ip-stat strong { font-size: 27px; }
+#jrc-ipam .jrc-ip-stat small { margin: 0; color: #969da8; }
+#jrc-ipam .jrc-ip-ring { display: grid; margin-top: 0; }
+#jrc-ipam .jrc-ip-ring b { background: #131519; color: #e8ebef; }
+#jrc-ipam .jrc-ip-tabs { gap: 24px; margin: 10px 0 18px; }
+#jrc-ipam .jrc-ip-tabs button { padding: 14px 12px; }
+#jrc-ipam .jrc-ip-tabs button.is-on { color: #ff2525; box-shadow: inset 0 -3px 0 #ef1010; }
+#jrc-ipam .jrc-ip-card { background: #131519; border-radius: 12px; padding: 18px; }
+#jrc-ipam .jrc-ip-layout { grid-template-columns: minmax(0, 1fr) 328px; gap: 22px; }
+#jrc-ipam .jrc-ip-tools { margin-bottom: 12px; }
+#jrc-ipam .jrc-ip-card-head .jrc-ip-tools { margin-bottom: 0; }
+#jrc-ipam .jrc-ip-table th { padding: 12px 10px; }
+#jrc-ipam .jrc-ip-table td { padding: 11px 10px; }
+#jrc-ipam .jrc-ip-table tr.is-on td { background: #1b1e24; }
+#jrc-ipam .jrc-ip-table tbody tr:hover td { background: #1d2026; }
+#jrc-ipam .jrc-ip-detail-label { font-size: 14px; margin: 0 0 16px; font-weight: 600; }
+#jrc-ipam .jrc-ip-detail-top { border-left: 4px solid #ed1010; padding-left: 10px; gap: 6px; }
+#jrc-ipam .jrc-ip-detail h2 { font-size: 20px; line-height: 1.5; }
+#jrc-ipam .jrc-ip-detail-top .jrc-ip-ghost { padding: 5px 8px; font-size: 12px; }
+#jrc-ipam .jrc-ip-detail .jrc-ip-facts { display: grid; grid-template-columns: 1fr; gap: 7px; }
+#jrc-ipam .jrc-ip-detail .jrc-ip-facts > div { display: grid; grid-template-columns: 100px minmax(0,1fr); gap: 10px; }
+#jrc-ipam .jrc-ip-detail .jrc-ip-facts small { color: #c0c6cf; font-size: 13px; }
+#jrc-ipam .jrc-ip-detail .jrc-ip-facts strong { margin: 0; font-weight: 400; font-size: 13px; overflow-wrap: anywhere; }
+#jrc-ipam .jrc-ip-actions { gap: 6px; }
+#jrc-ipam .jrc-ip-actions button { font-size: 13px; padding: 7px 10px; }
+#jrc-ipam .jrc-ip-danger { border-color: #612323; color: #ff5555; background: #241416; }
+#jrc-ipam .jrc-ip-modal { z-index: 2000; overflow-y: auto; }
+#jrc-ipam .jrc-ip-form { max-height: calc(100dvh - 36px); overflow-y: auto; }
+@media (max-width: 1280px) {
+    #jrc-ipam .jrc-ip-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    #jrc-ipam .jrc-ip-layout { grid-template-columns: minmax(0,1fr); }
+    #jrc-ipam .jrc-ip-detail { position: static; }
+}
+@media (max-width: 600px) {
+    #jrc-ipam .jrc-ip-stats { grid-template-columns: minmax(0,1fr); }
+    #jrc-ipam .jrc-ip-card { padding: 14px; }
+    #jrc-ipam .jrc-ip-title { align-items: flex-start; }
+    #jrc-ipam .jrc-ip-mark { width: 46px; height: 46px; font-size: 24px; }
+}
