@@ -78,6 +78,11 @@ final class DeviceInventoryCache
 
             if (!$row || empty($row['last_success_at'])) return false;
 
+            $lastSuccess = strtotime((string)$row['last_success_at']);
+            if ($lastSuccess === false || (time() - $lastSuccess) > 300) {
+                return false;
+            }
+
             $count = (int)$db->query(
                 "SELECT COUNT(*) AS c FROM " . self::TABLE
             )->fetch_assoc()['c'];
