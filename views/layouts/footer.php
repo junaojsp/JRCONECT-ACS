@@ -12,7 +12,7 @@
 <script src="/assets/js/jrc-ipam.js?v=e84f7dea0d" defer></script>
 <!-- JRC_IPAM_NAV_V1 -->
 
-<script src="/assets/js/jrc-sinal.js?v=92ec623e0e"></script>
+<script src="/assets/js/jrc-sinal.js?v=20261030-scoped"></script>
 <!-- JRC_SINAL_PREFETCH_V1 -->
 
     <?php if (($currentPage ?? '') === 'dashboard'): ?>
