@@ -352,3 +352,105 @@ main,
 .onu-panel > .onu-help {
   background-color: transparent !important;
 }
+
+
+/* V4 - remove os ultimos fundos azulados do Provisionamento */
+:root {
+  --jrc-prov-bg: #0b0d10;
+  --jrc-prov-panel: #14161b;
+  --jrc-prov-input: #0d0f12;
+  --jrc-prov-border: #2a2e36;
+}
+
+/* Barra superior / cabecalho estrutural */
+body > header,
+body > .header,
+body > .topbar,
+body > .top-bar,
+body > .page-header,
+body > .main-header,
+.main-content > header,
+.main-content > .header,
+.main-content > .topbar,
+.main-content > .top-bar,
+.main-content > .page-header,
+.main-content > .main-header,
+.content-wrapper > header,
+.content-wrapper > .header,
+.content-wrapper > .topbar,
+.content-wrapper > .page-header,
+.page-content > header,
+.page-content > .header,
+.page-content > .topbar,
+.page-content > .page-header {
+  background: var(--jrc-prov-bg) !important;
+  background-color: var(--jrc-prov-bg) !important;
+  border-color: #262a31 !important;
+  box-shadow: none !important;
+}
+
+/* Campos de filtro: elimina azul inclusive de regras antigas/Bootstrap */
+.onu-filters input,
+.onu-filters input[type="text"],
+.onu-filters input[type="search"],
+.onu-filters select,
+.onu-filters .form-control,
+.onu-filters .form-select,
+.onu-filters .input-group-text {
+  --bs-body-bg: var(--jrc-prov-input) !important;
+  --bs-form-control-bg: var(--jrc-prov-input) !important;
+  --bs-secondary-bg: var(--jrc-prov-input) !important;
+  background: var(--jrc-prov-input) !important;
+  background-color: var(--jrc-prov-input) !important;
+  background-image: none !important;
+  color: #e8ebef !important;
+  border-color: #30343c !important;
+  box-shadow: none !important;
+  color-scheme: dark !important;
+}
+
+.onu-filters input:-webkit-autofill,
+.onu-filters input:-webkit-autofill:hover,
+.onu-filters input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e8ebef !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--jrc-prov-input) inset !important;
+  box-shadow: 0 0 0 1000px var(--jrc-prov-input) inset !important;
+}
+
+/* Barra inferior / footer estrutural */
+body > footer,
+body > .footer,
+.main-content > footer,
+.main-content > .footer,
+.content-wrapper > footer,
+.content-wrapper > .footer,
+.page-content > footer,
+.page-content > .footer,
+.onu-shell ~ footer,
+.onu-page ~ footer,
+.onu-wrap ~ footer {
+  background: var(--jrc-prov-bg) !important;
+  background-color: var(--jrc-prov-bg) !important;
+  border-color: #262a31 !important;
+  box-shadow: none !important;
+}
+
+/* Neutraliza barras decorativas/containers residuais azuis */
+.main-content::before,
+.main-content::after,
+.content-wrapper::before,
+.content-wrapper::after,
+.page-content::before,
+.page-content::after,
+.onu-shell::before,
+.onu-shell::after {
+  background-color: var(--jrc-prov-bg) !important;
+  border-color: #262a31 !important;
+}
+
+/* Se o layout legado usar variaveis Bootstrap com azul */
+body {
+  --bs-body-bg: var(--jrc-prov-bg) !important;
+  --bs-tertiary-bg: var(--jrc-prov-panel) !important;
+  --bs-secondary-bg: var(--jrc-prov-panel) !important;
+}
