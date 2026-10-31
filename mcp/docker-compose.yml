@@ -12,6 +12,7 @@ services:
       - /tmp
     volumes:
       - ./opa-token.secret:/run/secrets/opa-token:ro
+      - ./runtime:/data
     environment:
       KEYCLOAK_JWKS_URL: "http://jrconect-keycloak:8080/realms/jrconect/protocol/openid-connect/certs"
       KEYCLOAK_ISSUER: "https://auth.jrconect.com/realms/jrconect"
