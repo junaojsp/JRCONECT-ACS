@@ -237,10 +237,37 @@ def patch_dockerfile(text: str) -> str:
     if 'connection-registry.js' in text:
         return text
 
-    # Produção pode usar COPY . . / COPY . ./ / COPY . /app,
-    # nesse caso o novo connection-registry.js já entra automaticamente.
-    copy_all_patterns = [
-        r'^\s*COPY\s+\.\s+\.\s*
+    # Se a imagem ja copia todo o diretorio, nenhum ajuste e necessario.
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line in ('COPY . .', 'COPY . ./', 'COPY ./ .', 'COPY ./ ./'):
+            return text
+        if line.startswith('COPY . ') and (' /app' in line or line.endswith(' /app/')):
+            return text
+
+    lines = text.splitlines()
+
+    # Formato explicito: COPY server.js auth.js ./
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('COPY ') and 'server.js' in stripped and 'auth.js' in stripped:
+            if stripped.endswith('./'):
+                prefix = line[:len(line) - len(line.lstrip())]
+                parts = stripped[:-2].rstrip()
+                lines[i] = prefix + parts + ' connection-registry.js ./'
+                return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
+
+    # Outro formato explicito contendo server.js.
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('COPY ') and 'server.js' in stripped:
+            indent = line[:len(line) - len(line.lstrip())]
+            lines.insert(i + 1, indent + 'COPY connection-registry.js ./')
+            return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
+
+    raise RuntimeError(
+        'Dockerfile sem COPY reconhecivel. Nenhum arquivo foi alterado.'
+    )
 
 def patch_configuration(text: str) -> str:
     if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
