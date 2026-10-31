@@ -1,4 +1,90 @@
-.jrc-mcp-connections {
+/* JR Conect MCPv2 - painel neutro preto/cinza */
+
+/* Neutraliza todo azul legado apenas dentro da aba MCP */
+#mcp-config,
+#mcp-config .card,
+#mcp-config .card-header,
+#mcp-config .card-body,
+#mcp-config .alert,
+#mcp-config .alert-info,
+#mcp-config .alert-secondary,
+#mcp-config .form-control,
+#mcp-config input,
+#mcp-config select,
+#mcp-config textarea {
+  --bs-body-bg: #0b0d10 !important;
+  --bs-secondary-bg: #14161b !important;
+  --bs-tertiary-bg: #14161b !important;
+  --bs-border-color: #2a2e36 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+#mcp-config {
+  background: #0b0d10 !important;
+  background-color: #0b0d10 !important;
+  color: #edf1f5 !important;
+}
+
+#mcp-config .card {
+  background: #14161b !important;
+  background-color: #14161b !important;
+  border: 1px solid #2a2e36 !important;
+}
+
+#mcp-config .card-header {
+  background: #101217 !important;
+  background-color: #101217 !important;
+  border-bottom: 1px solid #2a2e36 !important;
+  color: #edf1f5 !important;
+}
+
+#mcp-config .card-body {
+  background: #14161b !important;
+  background-color: #14161b !important;
+}
+
+#mcp-config .form-control,
+#mcp-config input,
+#mcp-config select,
+#mcp-config textarea {
+  background: #0d0f12 !important;
+  background-color: #0d0f12 !important;
+  border: 1px solid #30343c !important;
+  color: #e8ebef !important;
+  -webkit-text-fill-color: #e8ebef !important;
+}
+
+#mcp-config .form-control:focus,
+#mcp-config input:focus,
+#mcp-config select:focus,
+#mcp-config textarea:focus {
+  background: #101217 !important;
+  background-color: #101217 !important;
+  border-color: #555d69 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.035) !important;
+}
+
+#mcp-config .alert,
+#mcp-config .alert-info,
+#mcp-config .alert-secondary {
+  background: #101217 !important;
+  background-color: #101217 !important;
+  border: 1px solid #2a2e36 !important;
+  color: #b9c1cd !important;
+}
+
+#mcp-config .badge,
+#mcp-config .badge.bg-secondary,
+#mcp-config .bg-secondary {
+  background: #252931 !important;
+  background-color: #252931 !important;
+  color: #d7dde5 !important;
+}
+
+/* Hub MCP */
+.jrc-mcp-hub {
   margin-top: 16px;
   background: #14161b;
   border: 1px solid #2a2e36;
@@ -7,28 +93,29 @@
   color: #edf1f5;
 }
 
-.jrc-mcp-connections__head {
+.jrc-mcp-hub__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 15px 16px;
+  background: #101217;
   border-bottom: 1px solid #2a2e36;
 }
 
-.jrc-mcp-connections__title {
+.jrc-mcp-hub__title {
+  font-size: 15px;
   font-weight: 700;
-  font-size: 14px;
-  margin: 0;
+  color: #f5f7fa;
 }
 
-.jrc-mcp-connections__subtitle {
+.jrc-mcp-hub__subtitle {
   margin-top: 3px;
   color: #8f98a8;
   font-size: 12px;
 }
 
-.jrc-mcp-connections__refresh {
+.jrc-mcp-hub__refresh {
   background: #252931;
   border: 1px solid #343943;
   color: #eef1f5;
@@ -37,58 +124,94 @@
   cursor: pointer;
 }
 
-.jrc-mcp-connections__refresh:hover {
+.jrc-mcp-hub__refresh:hover {
   background: #30353e;
 }
 
-.jrc-mcp-connections__body {
-  padding: 0;
+.jrc-mcp-hub__section {
+  padding: 15px 16px;
+  border-top: 1px solid #242830;
+  background: #14161b;
 }
 
-.jrc-mcp-connections__table-wrap {
-  overflow-x: auto;
+.jrc-mcp-hub__section:first-of-type {
+  border-top: 0;
 }
 
-.jrc-mcp-connections table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0;
-}
-
-.jrc-mcp-connections th,
-.jrc-mcp-connections td {
-  padding: 11px 14px;
-  text-align: left;
-  border-bottom: 1px solid #272b32;
-  white-space: nowrap;
-}
-
-.jrc-mcp-connections th {
-  background: #101217;
-  color: #9ea8b8;
-  font-size: 11px;
+.jrc-mcp-hub__section-title {
+  margin-bottom: 11px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #aeb7c4;
   text-transform: uppercase;
   letter-spacing: .04em;
 }
 
-.jrc-mcp-connections td {
-  background: #15181d;
-  color: #e7ebf0;
+/* Serviços */
+.jrc-mcp-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.jrc-mcp-service-card {
+  background: #101217;
+  border: 1px solid #2a2e36;
+  border-radius: 10px;
+  padding: 13px;
+}
+
+.jrc-mcp-service-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.jrc-mcp-service-card__name {
+  color: #f2f5f8;
+  font-weight: 700;
   font-size: 13px;
 }
 
-.jrc-mcp-connections tr:last-child td {
-  border-bottom: 0;
+.jrc-mcp-service-card__type {
+  color: #808a99;
+  font-size: 11px;
+  margin-top: 2px;
 }
 
-.jrc-mcp-connections__status {
+.jrc-mcp-service-card__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.jrc-mcp-tool {
+  display: inline-flex;
+  align-items: center;
+  background: #1b1f25;
+  border: 1px solid #30343c;
+  color: #bcc4d0;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 10px;
+}
+
+.jrc-mcp-tool--muted {
+  color: #7e8794;
+}
+
+/* Status */
+.jrc-mcp-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-weight: 700;
+  font-size: 12px;
 }
 
-.jrc-mcp-connections__status::before {
+.jrc-mcp-status::before {
   content: "";
   width: 8px;
   height: 8px;
@@ -96,31 +219,84 @@
   background: #6b7280;
 }
 
-.jrc-mcp-connections__status--online {
+.jrc-mcp-status--online {
   color: #5df0a0;
 }
 
-.jrc-mcp-connections__status--online::before {
+.jrc-mcp-status--online::before {
   background: #27d17f;
   box-shadow: 0 0 0 3px rgba(39,209,127,.12);
 }
 
-.jrc-mcp-connections__status--offline {
+.jrc-mcp-status--offline {
   color: #a6aeba;
 }
 
-.jrc-mcp-connections__empty,
-.jrc-mcp-connections__error,
-.jrc-mcp-connections__loading {
-  padding: 18px 16px;
+/* Conexões */
+.jrc-mcp-connections__table-wrap {
+  overflow-x: auto;
+  border: 1px solid #2a2e36;
+  border-radius: 9px;
+}
+
+.jrc-mcp-connections__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  background: #14161b;
+}
+
+.jrc-mcp-connections__table th,
+.jrc-mcp-connections__table td {
+  padding: 11px 13px;
+  text-align: left;
+  border-bottom: 1px solid #272b32;
+  white-space: nowrap;
+}
+
+.jrc-mcp-connections__table th {
+  background: #101217;
+  color: #9ea8b8;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.jrc-mcp-connections__table td {
+  background: #15181d;
+  color: #e7ebf0;
+  font-size: 12px;
+}
+
+.jrc-mcp-connections__table tr:last-child td {
+  border-bottom: 0;
+}
+
+.jrc-mcp-client-id {
+  color: #7f8998;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.jrc-mcp-requests {
+  color: #ff343d !important;
+  font-weight: 700;
+}
+
+.jrc-mcp-hub__empty,
+.jrc-mcp-hub__error,
+.jrc-mcp-hub__loading {
+  padding: 14px 2px;
   color: #929baa;
 }
 
-.jrc-mcp-connections__error {
+.jrc-mcp-hub__error {
   color: #ff767d;
 }
 
-.jrc-mcp-connections__count {
-  color: #ff343d;
-  font-weight: 700;
+@media (max-width: 760px) {
+  .jrc-mcp-hub__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
