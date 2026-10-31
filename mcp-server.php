@@ -8,7 +8,8 @@ $currentPage = 'mcp-server';
 include __DIR__ . '/views/layouts/header.php';
 ?>
 
-<link rel="stylesheet" href="/assets/css/mcp-connections.css?v=20261031-5">
+<link rel="stylesheet" href="/assets/css/mcp-connections.css?v=20261031-6">
+<script>document.body.classList.add("jrc-mcp-standalone");</script>
 
 <div class="jrc-mcp-page">
     <div class="jrc-mcp-page__header">
@@ -43,7 +44,7 @@ include __DIR__ . '/views/layouts/header.php';
     <div id="mcp-server-hub"></div>
 </div>
 
-<script src="/assets/js/mcp-connections-panel.js?v=20261031-5" defer></script>
+<script src="/assets/js/mcp-connections-panel.js?v=20261031-6" defer></script>
 
 <?php
 include __DIR__ . '/views/layouts/footer.php';
