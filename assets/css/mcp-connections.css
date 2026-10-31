@@ -524,3 +524,136 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* MCP standalone page V6 - remove todo azul estrutural legado */
+body.jrc-mcp-standalone {
+  --jr-bg: #0b0d10 !important;
+  --jr-bg-2: #0b0d10 !important;
+  --jr-panel: #111318 !important;
+  --jr-panel-2: #14161b !important;
+  --jr-border: #2a2e36 !important;
+  --jr-primary: #ef111b !important;
+  --jr-primary-hover: #ff3038 !important;
+
+  --jrc-bg: #0b0d10 !important;
+  --jrc-bg-soft: #0b0d10 !important;
+  --jrc-panel: #111318 !important;
+  --jrc-panel-2: #14161b !important;
+  --jrc-panel-hover: #1a1e24 !important;
+  --jrc-border: rgba(255,255,255,.10) !important;
+  --jrc-border-strong: rgba(255,255,255,.16) !important;
+  --jrc-primary: #ef111b !important;
+  --jrc-primary-soft: rgba(239,17,27,.10) !important;
+
+  background: #0b0d10 !important;
+  background-image: none !important;
+}
+
+body.jrc-mcp-standalone .main-content,
+body.jrc-mcp-standalone .content-wrapper,
+body.jrc-mcp-standalone .jrc-mcp-page,
+body.jrc-mcp-standalone #mainContent {
+  background: #0b0d10 !important;
+  background-color: #0b0d10 !important;
+  background-image: none !important;
+}
+
+body.jrc-mcp-standalone .topbar {
+  background: #0b0d10 !important;
+  background-color: #0b0d10 !important;
+  background-image: none !important;
+  border-bottom: 1px solid #242830 !important;
+  box-shadow: none !important;
+}
+
+body.jrc-mcp-standalone .topbar h4,
+body.jrc-mcp-standalone .user-info,
+body.jrc-mcp-standalone .user-info span {
+  color: #eef1f5 !important;
+}
+
+body.jrc-mcp-standalone .content-wrapper {
+  color: #edf1f5 !important;
+}
+
+body.jrc-mcp-standalone .main-content::before,
+body.jrc-mcp-standalone .main-content::after,
+body.jrc-mcp-standalone .content-wrapper::before,
+body.jrc-mcp-standalone .content-wrapper::after,
+body.jrc-mcp-standalone .jrc-mcp-page::before,
+body.jrc-mcp-standalone .jrc-mcp-page::after {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: #242830 !important;
+}
+
+body.jrc-mcp-standalone footer,
+body.jrc-mcp-standalone .footer,
+body.jrc-mcp-standalone .main-content > footer {
+  background: #0b0d10 !important;
+  background-color: #0b0d10 !important;
+  background-image: none !important;
+  border-top: 1px solid #242830 !important;
+  color: #8f98a8 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-page__header,
+body.jrc-mcp-standalone .jrc-mcp-hub,
+body.jrc-mcp-standalone .jrc-mcp-hub__head,
+body.jrc-mcp-standalone .jrc-mcp-hub__section,
+body.jrc-mcp-standalone .jrc-mcp-connections__table-wrap,
+body.jrc-mcp-standalone .jrc-mcp-connections__table,
+body.jrc-mcp-standalone .jrc-mcp-connections__table thead,
+body.jrc-mcp-standalone .jrc-mcp-connections__table tbody,
+body.jrc-mcp-standalone .jrc-mcp-connections__table tr,
+body.jrc-mcp-standalone .jrc-mcp-connections__table th,
+body.jrc-mcp-standalone .jrc-mcp-connections__table td {
+  background-image: none !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-page__meta > div {
+  background: #111318 !important;
+  border-color: #2a2e36 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-hub {
+  background: #111318 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-hub__head {
+  background: #101217 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-hub__section {
+  background: #111318 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-service-card {
+  background: #13161b !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-connections__table-wrap {
+  background: #111318 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-connections__table thead th {
+  background: #101217 !important;
+  color: #c1c8d2 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-connections__table tbody td {
+  background: #13161b !important;
+  color: #e7ebf0 !important;
+}
+
+body.jrc-mcp-standalone .jrc-mcp-connections__table tbody tr:nth-child(even) td {
+  background: #111318 !important;
+}
+
+/* remove faixas/gradientes herdados do tema global */
+body.jrc-mcp-standalone,
+body.jrc-mcp-standalone .main-content,
+body.jrc-mcp-standalone .content-wrapper {
+  background-image: none !important;
+}
