@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "status": "PENDENTE_DOCUMENTACAO_OFICIAL",
+  "published": false,
+  "apiBase": "https://opa.jrconect.com/api/v1",
+  "capabilities": [
+    {
+      "name": "opa_listar_assistentes",
+      "method": null,
+      "path": null,
+      "responseSchema": null,
+      "permissions": null,
+      "enabled": false
+    },
+    {
+      "name": "opa_consultar_fluxo",
+      "method": null,
+      "path": null,
+      "responseSchema": null,
+      "permissions": null,
+      "enabled": false
+    },
+    {
+      "name": "opa_consultar_instrucoes",
+      "method": null,
+      "path": null,
+      "responseSchema": null,
+      "permissions": null,
+      "enabled": false
+    },
+    {
+      "name": "opa_consultar_base_conhecimento",
+      "method": null,
+      "path": null,
+      "responseSchema": null,
+      "permissions": null,
+      "enabled": false
+    }
+  ],
+  "rules": [
+    "Nao deduzir endpoints pelo painel web",
+    "Nao habilitar consultas sem metodo, caminho, schema e permissao verificados",
+    "Todas as consultas devem exigir usuario Keycloak explicitamente autorizado",
+    "Retornar somente campos previstos no schema revisado; excluir dados pessoais e credenciais",
+    "Somente leitura; mutacoes exigem PR e aprovacao por operacao"
+  ]
+}
