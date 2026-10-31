@@ -1,0 +1,126 @@
+.jrc-mcp-connections {
+  margin-top: 16px;
+  background: #14161b;
+  border: 1px solid #2a2e36;
+  border-radius: 12px;
+  overflow: hidden;
+  color: #edf1f5;
+}
+
+.jrc-mcp-connections__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2e36;
+}
+
+.jrc-mcp-connections__title {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0;
+}
+
+.jrc-mcp-connections__subtitle {
+  margin-top: 3px;
+  color: #8f98a8;
+  font-size: 12px;
+}
+
+.jrc-mcp-connections__refresh {
+  background: #252931;
+  border: 1px solid #343943;
+  color: #eef1f5;
+  border-radius: 8px;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+
+.jrc-mcp-connections__refresh:hover {
+  background: #30353e;
+}
+
+.jrc-mcp-connections__body {
+  padding: 0;
+}
+
+.jrc-mcp-connections__table-wrap {
+  overflow-x: auto;
+}
+
+.jrc-mcp-connections table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.jrc-mcp-connections th,
+.jrc-mcp-connections td {
+  padding: 11px 14px;
+  text-align: left;
+  border-bottom: 1px solid #272b32;
+  white-space: nowrap;
+}
+
+.jrc-mcp-connections th {
+  background: #101217;
+  color: #9ea8b8;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.jrc-mcp-connections td {
+  background: #15181d;
+  color: #e7ebf0;
+  font-size: 13px;
+}
+
+.jrc-mcp-connections tr:last-child td {
+  border-bottom: 0;
+}
+
+.jrc-mcp-connections__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.jrc-mcp-connections__status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.jrc-mcp-connections__status--online {
+  color: #5df0a0;
+}
+
+.jrc-mcp-connections__status--online::before {
+  background: #27d17f;
+  box-shadow: 0 0 0 3px rgba(39,209,127,.12);
+}
+
+.jrc-mcp-connections__status--offline {
+  color: #a6aeba;
+}
+
+.jrc-mcp-connections__empty,
+.jrc-mcp-connections__error,
+.jrc-mcp-connections__loading {
+  padding: 18px 16px;
+  color: #929baa;
+}
+
+.jrc-mcp-connections__error {
+  color: #ff767d;
+}
+
+.jrc-mcp-connections__count {
+  color: #ff343d;
+  font-weight: 700;
+}
