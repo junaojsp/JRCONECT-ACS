@@ -50,12 +50,30 @@ def node_check_text(text, label):
     docker = shutil.which("docker")
     if not docker:
         raise RuntimeError("Docker ausente para validar " + label)
-    p = subprocess.run(
-        [docker, "run", "--rm", "-i", "node:24-alpine", "node", "--check", "-"],
-        input=text, capture_output=True, text=True
-    )
-    if p.returncode != 0:
-        raise RuntimeError("JavaScript invalido em " + label + ": " + (p.stderr or p.stdout)[:2500])
+
+    # O MCP usa ES Modules. Validar via arquivo .mjs evita o Node tratar stdin como CommonJS.
+    with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False, encoding="utf-8") as f:
+        f.write(text)
+        tmp = f.name
+
+    try:
+        p = subprocess.run(
+            [
+                docker, "run", "--rm",
+                "-v", tmp + ":/tmp/check.mjs:ro",
+                "node:24-alpine",
+                "node", "--check", "/tmp/check.mjs"
+            ],
+            capture_output=True,
+            text=True
+        )
+        if p.returncode != 0:
+            raise RuntimeError(
+                "JavaScript invalido em " + label + ": " +
+                (p.stderr or p.stdout or "")[:2500]
+            )
+    finally:
+        os.unlink(tmp)
 
 def php_check_text(text, label):
     php = shutil.which("php")
