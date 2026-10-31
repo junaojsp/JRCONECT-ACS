@@ -237,7 +237,1027 @@ def patch_dockerfile(text: str) -> str:
     if 'connection-registry.js' in text:
         return text
 
+    # Produção pode usar COPY . . / COPY . ./ / COPY . /app,
+    # nesse caso o novo connection-registry.js já entra automaticamente.
+    copy_all_patterns = [
+        r'^\s*COPY\s+\.\s+\.\s*
+
+def patch_configuration(text: str) -> str:
+    if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
+        return text
+
+    anchor = '<!-- Carregar JavaScript externo -->'
+    if anchor not in text:
+        raise RuntimeError('Ancora de scripts da configuration.php nao encontrada')
+
+    block = CSS_TAG + '\n' + JS_TAG + '\n\n'
+    return text.replace(anchor, block + anchor, 1)
+
+def backup_file(src: Path, dst_root: Path, rel: str):
+    if not src.exists():
+        return
+    dst = dst_root / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+
+def detect_node_ids():
+    docker = shutil.which('docker')
+    if not docker:
+        return 1000, 1000
+
+    uid = run([docker, 'exec', 'jrconect-mcp', 'id', '-u', 'node'], check=False)
+    gid = run([docker, 'exec', 'jrconect-mcp', 'id', '-g', 'node'], check=False)
+
+    try:
+        u = int((uid.stdout or '').strip())
+        g = int((gid.stdout or '').strip())
+        return u, g
+    except Exception:
+        return 1000, 1000
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--acs-root', default=ACS_ROOT_DEFAULT)
+    ap.add_argument('--mcp-root', default=MCP_ROOT_DEFAULT)
+    ap.add_argument('--backup-dir', default='/root')
+    ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args()
+
+    acs_root = Path(args.acs_root).resolve()
+    mcp_root = Path(args.mcp_root).resolve()
+    backup_parent = Path(args.backup_dir).resolve()
+
+    server = mcp_root / 'server.js'
+    compose = mcp_root / 'docker-compose.yml'
+    dockerfile = mcp_root / 'Dockerfile'
+    configuration = acs_root / 'configuration.php'
+
+    for p in [server, compose, dockerfile, configuration]:
+        if not p.is_file() or p.is_symlink():
+            raise RuntimeError('Arquivo invalido ou ausente: ' + str(p))
+
+    lock_path = backup_parent / '.jrc-mcp-connections-install.lock'
+    with lock_path.open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        payload = {}
+        for rel in GIT_FILES:
+            payload[rel] = git_show(acs_root, rel)
+
+        server_before = server.read_text(encoding='utf-8')
+        compose_before = compose.read_text(encoding='utf-8')
+        dockerfile_before = dockerfile.read_text(encoding='utf-8')
+        configuration_before = configuration.read_text(encoding='utf-8')
+
+        server_after = patch_server(server_before)
+        compose_after = patch_compose(compose_before)
+        dockerfile_after = patch_dockerfile(dockerfile_before)
+        configuration_after = patch_configuration(configuration_before)
+
+        node_check(server_after, 'server.js')
+        node_check(payload['mcp/connection-registry.js'].decode('utf-8'), 'connection-registry.js')
+        node_check(payload['assets/js/mcp-connections-panel.js'].decode('utf-8'), 'mcp-connections-panel.js')
+        php_check(payload['api/mcp-connections.php'].decode('utf-8'), 'api/mcp-connections.php')
+        php_check(configuration_after, 'configuration.php')
+
+        print('VALIDADO: conexoes autenticadas do JR Conect MCPv2.')
+        print('server.js sera patchado sem substituir wiki-tools.js ou outros imports locais.')
+        print('docker-compose recebera somente o volume ./runtime:/data.')
+        print('Dockerfile passara a copiar connection-registry.js sem remover wiki-tools.js.')
+        print('ACS recebera painel Servidores conectados ao MCP.')
+        print('Nenhum token, segredo ou identificador pessoal sera exibido.')
+        print('Ferramenta MCP nova: listar_servidores.')
+
+        if args.dry_run:
+            print('SIMULACAO OK: nenhum arquivo alterado e nenhum container reiniciado.')
+            return
+
+        backup = Path(tempfile.mkdtemp(
+            prefix='jrc-mcp-connections-' +
+                   datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-',
+            dir=str(backup_parent),
+        ))
+        os.chmod(backup, 0o700)
+
+        backup_file(server, backup, 'opt/jrconect-mcp/server.js')
+        backup_file(compose, backup, 'opt/jrconect-mcp/docker-compose.yml')
+        backup_file(dockerfile, backup, 'opt/jrconect-mcp/Dockerfile')
+        backup_file(mcp_root / 'connection-registry.js', backup, 'opt/jrconect-mcp/connection-registry.js')
+        backup_file(configuration, backup, 'var/www/gacs/configuration.php')
+        backup_file(acs_root / 'api/mcp-connections.php', backup, 'var/www/gacs/api/mcp-connections.php')
+        backup_file(acs_root / 'assets/css/mcp-connections.css', backup, 'var/www/gacs/assets/css/mcp-connections.css')
+        backup_file(acs_root / 'assets/js/mcp-connections-panel.js', backup, 'var/www/gacs/assets/js/mcp-connections-panel.js')
+        shutil.copy2(Path(__file__), backup / 'install.py')
+
+        if server.read_text(encoding='utf-8') != server_before:
+            raise RuntimeError('server.js mudou durante a instalacao')
+        if compose.read_text(encoding='utf-8') != compose_before:
+            raise RuntimeError('docker-compose.yml mudou durante a instalacao')
+        if dockerfile.read_text(encoding='utf-8') != dockerfile_before:
+            raise RuntimeError('Dockerfile mudou durante a instalacao')
+        if configuration.read_text(encoding='utf-8') != configuration_before:
+            raise RuntimeError('configuration.php mudou durante a instalacao')
+
+        # MCP files
+        atomic_write(server, server_after.encode('utf-8'), server.stat())
+        atomic_write(compose, compose_after.encode('utf-8'), compose.stat())
+        atomic_write(dockerfile, dockerfile_after.encode('utf-8'), dockerfile.stat())
+        registry_path = mcp_root / 'connection-registry.js'
+        atomic_write(
+            registry_path,
+            payload['mcp/connection-registry.js'],
+            registry_path.stat() if registry_path.exists() else None,
+        )
+
+        runtime = mcp_root / 'runtime'
+        runtime.mkdir(mode=0o755, exist_ok=True)
+        uid, gid = detect_node_ids()
+        if os.geteuid() == 0:
+            os.chown(runtime, uid, gid)
+        os.chmod(runtime, 0o755)
+
+        # ACS files
+        api_path = acs_root / 'api/mcp-connections.php'
+        css_path = acs_root / 'assets/css/mcp-connections.css'
+        js_path = acs_root / 'assets/js/mcp-connections-panel.js'
+
+        atomic_write(
+            api_path,
+            payload['api/mcp-connections.php'],
+            api_path.stat() if api_path.exists() else None,
+        )
+        atomic_write(
+            css_path,
+            payload['assets/css/mcp-connections.css'],
+            css_path.stat() if css_path.exists() else None,
+        )
+        atomic_write(
+            js_path,
+            payload['assets/js/mcp-connections-panel.js'],
+            js_path.stat() if js_path.exists() else None,
+        )
+        atomic_write(configuration, configuration_after.encode('utf-8'), configuration.stat())
+
+        # Revalidate on disk
+        node_check(server.read_text(encoding='utf-8'), 'server.js')
+        node_check(registry_path.read_text(encoding='utf-8'), 'connection-registry.js')
+        php_check(api_path.read_text(encoding='utf-8'), 'api/mcp-connections.php')
+        php_check(configuration.read_text(encoding='utf-8'), 'configuration.php')
+
+        docker = shutil.which('docker')
+        if not docker:
+            raise RuntimeError('Docker nao encontrado apos gravacao; use o backup para rollback')
+
+        run([docker, 'compose', 'config', '--quiet'], cwd=mcp_root)
+        run([docker, 'compose', 'up', '-d', '--build'], cwd=mcp_root)
+
+        health = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/health'],
+            check=False,
+        )
+        if health.returncode != 0 or '"ok"' not in health.stdout:
+            raise RuntimeError(
+                'Container subiu, mas /health falhou. Backup: ' + str(backup)
+            )
+
+        connections = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/connections'],
+            check=False,
+        )
+        if connections.returncode != 0 or '"success":true' not in connections.stdout:
+            raise RuntimeError(
+                'Rota local /connections nao respondeu como esperado. Backup: ' + str(backup)
+            )
+
+        print('INSTALADO: registro de conexoes MCP ativo.')
+        print('Health: ' + health.stdout.strip())
+        print('Connections: ' + connections.stdout.strip()[:500])
+        print('Backup: ' + str(backup))
+        print('Clientes ja conectados aparecerao apos a proxima requisicao autenticada.')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as exc:
+        print('CANCELADO: ' + str(exc), file=sys.stderr)
+        sys.exit(1)
+,
+        r'^\s*COPY\s+\.\s+\./\s*
+
+def patch_configuration(text: str) -> str:
+    if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
+        return text
+
+    anchor = '<!-- Carregar JavaScript externo -->'
+    if anchor not in text:
+        raise RuntimeError('Ancora de scripts da configuration.php nao encontrada')
+
+    block = CSS_TAG + '\n' + JS_TAG + '\n\n'
+    return text.replace(anchor, block + anchor, 1)
+
+def backup_file(src: Path, dst_root: Path, rel: str):
+    if not src.exists():
+        return
+    dst = dst_root / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+
+def detect_node_ids():
+    docker = shutil.which('docker')
+    if not docker:
+        return 1000, 1000
+
+    uid = run([docker, 'exec', 'jrconect-mcp', 'id', '-u', 'node'], check=False)
+    gid = run([docker, 'exec', 'jrconect-mcp', 'id', '-g', 'node'], check=False)
+
+    try:
+        u = int((uid.stdout or '').strip())
+        g = int((gid.stdout or '').strip())
+        return u, g
+    except Exception:
+        return 1000, 1000
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--acs-root', default=ACS_ROOT_DEFAULT)
+    ap.add_argument('--mcp-root', default=MCP_ROOT_DEFAULT)
+    ap.add_argument('--backup-dir', default='/root')
+    ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args()
+
+    acs_root = Path(args.acs_root).resolve()
+    mcp_root = Path(args.mcp_root).resolve()
+    backup_parent = Path(args.backup_dir).resolve()
+
+    server = mcp_root / 'server.js'
+    compose = mcp_root / 'docker-compose.yml'
+    dockerfile = mcp_root / 'Dockerfile'
+    configuration = acs_root / 'configuration.php'
+
+    for p in [server, compose, dockerfile, configuration]:
+        if not p.is_file() or p.is_symlink():
+            raise RuntimeError('Arquivo invalido ou ausente: ' + str(p))
+
+    lock_path = backup_parent / '.jrc-mcp-connections-install.lock'
+    with lock_path.open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        payload = {}
+        for rel in GIT_FILES:
+            payload[rel] = git_show(acs_root, rel)
+
+        server_before = server.read_text(encoding='utf-8')
+        compose_before = compose.read_text(encoding='utf-8')
+        dockerfile_before = dockerfile.read_text(encoding='utf-8')
+        configuration_before = configuration.read_text(encoding='utf-8')
+
+        server_after = patch_server(server_before)
+        compose_after = patch_compose(compose_before)
+        dockerfile_after = patch_dockerfile(dockerfile_before)
+        configuration_after = patch_configuration(configuration_before)
+
+        node_check(server_after, 'server.js')
+        node_check(payload['mcp/connection-registry.js'].decode('utf-8'), 'connection-registry.js')
+        node_check(payload['assets/js/mcp-connections-panel.js'].decode('utf-8'), 'mcp-connections-panel.js')
+        php_check(payload['api/mcp-connections.php'].decode('utf-8'), 'api/mcp-connections.php')
+        php_check(configuration_after, 'configuration.php')
+
+        print('VALIDADO: conexoes autenticadas do JR Conect MCPv2.')
+        print('server.js sera patchado sem substituir wiki-tools.js ou outros imports locais.')
+        print('docker-compose recebera somente o volume ./runtime:/data.')
+        print('Dockerfile passara a copiar connection-registry.js sem remover wiki-tools.js.')
+        print('ACS recebera painel Servidores conectados ao MCP.')
+        print('Nenhum token, segredo ou identificador pessoal sera exibido.')
+        print('Ferramenta MCP nova: listar_servidores.')
+
+        if args.dry_run:
+            print('SIMULACAO OK: nenhum arquivo alterado e nenhum container reiniciado.')
+            return
+
+        backup = Path(tempfile.mkdtemp(
+            prefix='jrc-mcp-connections-' +
+                   datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-',
+            dir=str(backup_parent),
+        ))
+        os.chmod(backup, 0o700)
+
+        backup_file(server, backup, 'opt/jrconect-mcp/server.js')
+        backup_file(compose, backup, 'opt/jrconect-mcp/docker-compose.yml')
+        backup_file(dockerfile, backup, 'opt/jrconect-mcp/Dockerfile')
+        backup_file(mcp_root / 'connection-registry.js', backup, 'opt/jrconect-mcp/connection-registry.js')
+        backup_file(configuration, backup, 'var/www/gacs/configuration.php')
+        backup_file(acs_root / 'api/mcp-connections.php', backup, 'var/www/gacs/api/mcp-connections.php')
+        backup_file(acs_root / 'assets/css/mcp-connections.css', backup, 'var/www/gacs/assets/css/mcp-connections.css')
+        backup_file(acs_root / 'assets/js/mcp-connections-panel.js', backup, 'var/www/gacs/assets/js/mcp-connections-panel.js')
+        shutil.copy2(Path(__file__), backup / 'install.py')
+
+        if server.read_text(encoding='utf-8') != server_before:
+            raise RuntimeError('server.js mudou durante a instalacao')
+        if compose.read_text(encoding='utf-8') != compose_before:
+            raise RuntimeError('docker-compose.yml mudou durante a instalacao')
+        if dockerfile.read_text(encoding='utf-8') != dockerfile_before:
+            raise RuntimeError('Dockerfile mudou durante a instalacao')
+        if configuration.read_text(encoding='utf-8') != configuration_before:
+            raise RuntimeError('configuration.php mudou durante a instalacao')
+
+        # MCP files
+        atomic_write(server, server_after.encode('utf-8'), server.stat())
+        atomic_write(compose, compose_after.encode('utf-8'), compose.stat())
+        atomic_write(dockerfile, dockerfile_after.encode('utf-8'), dockerfile.stat())
+        registry_path = mcp_root / 'connection-registry.js'
+        atomic_write(
+            registry_path,
+            payload['mcp/connection-registry.js'],
+            registry_path.stat() if registry_path.exists() else None,
+        )
+
+        runtime = mcp_root / 'runtime'
+        runtime.mkdir(mode=0o755, exist_ok=True)
+        uid, gid = detect_node_ids()
+        if os.geteuid() == 0:
+            os.chown(runtime, uid, gid)
+        os.chmod(runtime, 0o755)
+
+        # ACS files
+        api_path = acs_root / 'api/mcp-connections.php'
+        css_path = acs_root / 'assets/css/mcp-connections.css'
+        js_path = acs_root / 'assets/js/mcp-connections-panel.js'
+
+        atomic_write(
+            api_path,
+            payload['api/mcp-connections.php'],
+            api_path.stat() if api_path.exists() else None,
+        )
+        atomic_write(
+            css_path,
+            payload['assets/css/mcp-connections.css'],
+            css_path.stat() if css_path.exists() else None,
+        )
+        atomic_write(
+            js_path,
+            payload['assets/js/mcp-connections-panel.js'],
+            js_path.stat() if js_path.exists() else None,
+        )
+        atomic_write(configuration, configuration_after.encode('utf-8'), configuration.stat())
+
+        # Revalidate on disk
+        node_check(server.read_text(encoding='utf-8'), 'server.js')
+        node_check(registry_path.read_text(encoding='utf-8'), 'connection-registry.js')
+        php_check(api_path.read_text(encoding='utf-8'), 'api/mcp-connections.php')
+        php_check(configuration.read_text(encoding='utf-8'), 'configuration.php')
+
+        docker = shutil.which('docker')
+        if not docker:
+            raise RuntimeError('Docker nao encontrado apos gravacao; use o backup para rollback')
+
+        run([docker, 'compose', 'config', '--quiet'], cwd=mcp_root)
+        run([docker, 'compose', 'up', '-d', '--build'], cwd=mcp_root)
+
+        health = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/health'],
+            check=False,
+        )
+        if health.returncode != 0 or '"ok"' not in health.stdout:
+            raise RuntimeError(
+                'Container subiu, mas /health falhou. Backup: ' + str(backup)
+            )
+
+        connections = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/connections'],
+            check=False,
+        )
+        if connections.returncode != 0 or '"success":true' not in connections.stdout:
+            raise RuntimeError(
+                'Rota local /connections nao respondeu como esperado. Backup: ' + str(backup)
+            )
+
+        print('INSTALADO: registro de conexoes MCP ativo.')
+        print('Health: ' + health.stdout.strip())
+        print('Connections: ' + connections.stdout.strip()[:500])
+        print('Backup: ' + str(backup))
+        print('Clientes ja conectados aparecerao apos a proxima requisicao autenticada.')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as exc:
+        print('CANCELADO: ' + str(exc), file=sys.stderr)
+        sys.exit(1)
+,
+        r'^\s*COPY\s+\.\s+/app/?\s*
+
+def patch_configuration(text: str) -> str:
+    if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
+        return text
+
+    anchor = '<!-- Carregar JavaScript externo -->'
+    if anchor not in text:
+        raise RuntimeError('Ancora de scripts da configuration.php nao encontrada')
+
+    block = CSS_TAG + '\n' + JS_TAG + '\n\n'
+    return text.replace(anchor, block + anchor, 1)
+
+def backup_file(src: Path, dst_root: Path, rel: str):
+    if not src.exists():
+        return
+    dst = dst_root / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+
+def detect_node_ids():
+    docker = shutil.which('docker')
+    if not docker:
+        return 1000, 1000
+
+    uid = run([docker, 'exec', 'jrconect-mcp', 'id', '-u', 'node'], check=False)
+    gid = run([docker, 'exec', 'jrconect-mcp', 'id', '-g', 'node'], check=False)
+
+    try:
+        u = int((uid.stdout or '').strip())
+        g = int((gid.stdout or '').strip())
+        return u, g
+    except Exception:
+        return 1000, 1000
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--acs-root', default=ACS_ROOT_DEFAULT)
+    ap.add_argument('--mcp-root', default=MCP_ROOT_DEFAULT)
+    ap.add_argument('--backup-dir', default='/root')
+    ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args()
+
+    acs_root = Path(args.acs_root).resolve()
+    mcp_root = Path(args.mcp_root).resolve()
+    backup_parent = Path(args.backup_dir).resolve()
+
+    server = mcp_root / 'server.js'
+    compose = mcp_root / 'docker-compose.yml'
+    dockerfile = mcp_root / 'Dockerfile'
+    configuration = acs_root / 'configuration.php'
+
+    for p in [server, compose, dockerfile, configuration]:
+        if not p.is_file() or p.is_symlink():
+            raise RuntimeError('Arquivo invalido ou ausente: ' + str(p))
+
+    lock_path = backup_parent / '.jrc-mcp-connections-install.lock'
+    with lock_path.open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        payload = {}
+        for rel in GIT_FILES:
+            payload[rel] = git_show(acs_root, rel)
+
+        server_before = server.read_text(encoding='utf-8')
+        compose_before = compose.read_text(encoding='utf-8')
+        dockerfile_before = dockerfile.read_text(encoding='utf-8')
+        configuration_before = configuration.read_text(encoding='utf-8')
+
+        server_after = patch_server(server_before)
+        compose_after = patch_compose(compose_before)
+        dockerfile_after = patch_dockerfile(dockerfile_before)
+        configuration_after = patch_configuration(configuration_before)
+
+        node_check(server_after, 'server.js')
+        node_check(payload['mcp/connection-registry.js'].decode('utf-8'), 'connection-registry.js')
+        node_check(payload['assets/js/mcp-connections-panel.js'].decode('utf-8'), 'mcp-connections-panel.js')
+        php_check(payload['api/mcp-connections.php'].decode('utf-8'), 'api/mcp-connections.php')
+        php_check(configuration_after, 'configuration.php')
+
+        print('VALIDADO: conexoes autenticadas do JR Conect MCPv2.')
+        print('server.js sera patchado sem substituir wiki-tools.js ou outros imports locais.')
+        print('docker-compose recebera somente o volume ./runtime:/data.')
+        print('Dockerfile passara a copiar connection-registry.js sem remover wiki-tools.js.')
+        print('ACS recebera painel Servidores conectados ao MCP.')
+        print('Nenhum token, segredo ou identificador pessoal sera exibido.')
+        print('Ferramenta MCP nova: listar_servidores.')
+
+        if args.dry_run:
+            print('SIMULACAO OK: nenhum arquivo alterado e nenhum container reiniciado.')
+            return
+
+        backup = Path(tempfile.mkdtemp(
+            prefix='jrc-mcp-connections-' +
+                   datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-',
+            dir=str(backup_parent),
+        ))
+        os.chmod(backup, 0o700)
+
+        backup_file(server, backup, 'opt/jrconect-mcp/server.js')
+        backup_file(compose, backup, 'opt/jrconect-mcp/docker-compose.yml')
+        backup_file(dockerfile, backup, 'opt/jrconect-mcp/Dockerfile')
+        backup_file(mcp_root / 'connection-registry.js', backup, 'opt/jrconect-mcp/connection-registry.js')
+        backup_file(configuration, backup, 'var/www/gacs/configuration.php')
+        backup_file(acs_root / 'api/mcp-connections.php', backup, 'var/www/gacs/api/mcp-connections.php')
+        backup_file(acs_root / 'assets/css/mcp-connections.css', backup, 'var/www/gacs/assets/css/mcp-connections.css')
+        backup_file(acs_root / 'assets/js/mcp-connections-panel.js', backup, 'var/www/gacs/assets/js/mcp-connections-panel.js')
+        shutil.copy2(Path(__file__), backup / 'install.py')
+
+        if server.read_text(encoding='utf-8') != server_before:
+            raise RuntimeError('server.js mudou durante a instalacao')
+        if compose.read_text(encoding='utf-8') != compose_before:
+            raise RuntimeError('docker-compose.yml mudou durante a instalacao')
+        if dockerfile.read_text(encoding='utf-8') != dockerfile_before:
+            raise RuntimeError('Dockerfile mudou durante a instalacao')
+        if configuration.read_text(encoding='utf-8') != configuration_before:
+            raise RuntimeError('configuration.php mudou durante a instalacao')
+
+        # MCP files
+        atomic_write(server, server_after.encode('utf-8'), server.stat())
+        atomic_write(compose, compose_after.encode('utf-8'), compose.stat())
+        atomic_write(dockerfile, dockerfile_after.encode('utf-8'), dockerfile.stat())
+        registry_path = mcp_root / 'connection-registry.js'
+        atomic_write(
+            registry_path,
+            payload['mcp/connection-registry.js'],
+            registry_path.stat() if registry_path.exists() else None,
+        )
+
+        runtime = mcp_root / 'runtime'
+        runtime.mkdir(mode=0o755, exist_ok=True)
+        uid, gid = detect_node_ids()
+        if os.geteuid() == 0:
+            os.chown(runtime, uid, gid)
+        os.chmod(runtime, 0o755)
+
+        # ACS files
+        api_path = acs_root / 'api/mcp-connections.php'
+        css_path = acs_root / 'assets/css/mcp-connections.css'
+        js_path = acs_root / 'assets/js/mcp-connections-panel.js'
+
+        atomic_write(
+            api_path,
+            payload['api/mcp-connections.php'],
+            api_path.stat() if api_path.exists() else None,
+        )
+        atomic_write(
+            css_path,
+            payload['assets/css/mcp-connections.css'],
+            css_path.stat() if css_path.exists() else None,
+        )
+        atomic_write(
+            js_path,
+            payload['assets/js/mcp-connections-panel.js'],
+            js_path.stat() if js_path.exists() else None,
+        )
+        atomic_write(configuration, configuration_after.encode('utf-8'), configuration.stat())
+
+        # Revalidate on disk
+        node_check(server.read_text(encoding='utf-8'), 'server.js')
+        node_check(registry_path.read_text(encoding='utf-8'), 'connection-registry.js')
+        php_check(api_path.read_text(encoding='utf-8'), 'api/mcp-connections.php')
+        php_check(configuration.read_text(encoding='utf-8'), 'configuration.php')
+
+        docker = shutil.which('docker')
+        if not docker:
+            raise RuntimeError('Docker nao encontrado apos gravacao; use o backup para rollback')
+
+        run([docker, 'compose', 'config', '--quiet'], cwd=mcp_root)
+        run([docker, 'compose', 'up', '-d', '--build'], cwd=mcp_root)
+
+        health = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/health'],
+            check=False,
+        )
+        if health.returncode != 0 or '"ok"' not in health.stdout:
+            raise RuntimeError(
+                'Container subiu, mas /health falhou. Backup: ' + str(backup)
+            )
+
+        connections = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/connections'],
+            check=False,
+        )
+        if connections.returncode != 0 or '"success":true' not in connections.stdout:
+            raise RuntimeError(
+                'Rota local /connections nao respondeu como esperado. Backup: ' + str(backup)
+            )
+
+        print('INSTALADO: registro de conexoes MCP ativo.')
+        print('Health: ' + health.stdout.strip())
+        print('Connections: ' + connections.stdout.strip()[:500])
+        print('Backup: ' + str(backup))
+        print('Clientes ja conectados aparecerao apos a proxima requisicao autenticada.')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as exc:
+        print('CANCELADO: ' + str(exc), file=sys.stderr)
+        sys.exit(1)
+,
+        r'^\s*COPY\s+\./\s+\.\s*
+
+def patch_configuration(text: str) -> str:
+    if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
+        return text
+
+    anchor = '<!-- Carregar JavaScript externo -->'
+    if anchor not in text:
+        raise RuntimeError('Ancora de scripts da configuration.php nao encontrada')
+
+    block = CSS_TAG + '\n' + JS_TAG + '\n\n'
+    return text.replace(anchor, block + anchor, 1)
+
+def backup_file(src: Path, dst_root: Path, rel: str):
+    if not src.exists():
+        return
+    dst = dst_root / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+
+def detect_node_ids():
+    docker = shutil.which('docker')
+    if not docker:
+        return 1000, 1000
+
+    uid = run([docker, 'exec', 'jrconect-mcp', 'id', '-u', 'node'], check=False)
+    gid = run([docker, 'exec', 'jrconect-mcp', 'id', '-g', 'node'], check=False)
+
+    try:
+        u = int((uid.stdout or '').strip())
+        g = int((gid.stdout or '').strip())
+        return u, g
+    except Exception:
+        return 1000, 1000
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--acs-root', default=ACS_ROOT_DEFAULT)
+    ap.add_argument('--mcp-root', default=MCP_ROOT_DEFAULT)
+    ap.add_argument('--backup-dir', default='/root')
+    ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args()
+
+    acs_root = Path(args.acs_root).resolve()
+    mcp_root = Path(args.mcp_root).resolve()
+    backup_parent = Path(args.backup_dir).resolve()
+
+    server = mcp_root / 'server.js'
+    compose = mcp_root / 'docker-compose.yml'
+    dockerfile = mcp_root / 'Dockerfile'
+    configuration = acs_root / 'configuration.php'
+
+    for p in [server, compose, dockerfile, configuration]:
+        if not p.is_file() or p.is_symlink():
+            raise RuntimeError('Arquivo invalido ou ausente: ' + str(p))
+
+    lock_path = backup_parent / '.jrc-mcp-connections-install.lock'
+    with lock_path.open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        payload = {}
+        for rel in GIT_FILES:
+            payload[rel] = git_show(acs_root, rel)
+
+        server_before = server.read_text(encoding='utf-8')
+        compose_before = compose.read_text(encoding='utf-8')
+        dockerfile_before = dockerfile.read_text(encoding='utf-8')
+        configuration_before = configuration.read_text(encoding='utf-8')
+
+        server_after = patch_server(server_before)
+        compose_after = patch_compose(compose_before)
+        dockerfile_after = patch_dockerfile(dockerfile_before)
+        configuration_after = patch_configuration(configuration_before)
+
+        node_check(server_after, 'server.js')
+        node_check(payload['mcp/connection-registry.js'].decode('utf-8'), 'connection-registry.js')
+        node_check(payload['assets/js/mcp-connections-panel.js'].decode('utf-8'), 'mcp-connections-panel.js')
+        php_check(payload['api/mcp-connections.php'].decode('utf-8'), 'api/mcp-connections.php')
+        php_check(configuration_after, 'configuration.php')
+
+        print('VALIDADO: conexoes autenticadas do JR Conect MCPv2.')
+        print('server.js sera patchado sem substituir wiki-tools.js ou outros imports locais.')
+        print('docker-compose recebera somente o volume ./runtime:/data.')
+        print('Dockerfile passara a copiar connection-registry.js sem remover wiki-tools.js.')
+        print('ACS recebera painel Servidores conectados ao MCP.')
+        print('Nenhum token, segredo ou identificador pessoal sera exibido.')
+        print('Ferramenta MCP nova: listar_servidores.')
+
+        if args.dry_run:
+            print('SIMULACAO OK: nenhum arquivo alterado e nenhum container reiniciado.')
+            return
+
+        backup = Path(tempfile.mkdtemp(
+            prefix='jrc-mcp-connections-' +
+                   datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-',
+            dir=str(backup_parent),
+        ))
+        os.chmod(backup, 0o700)
+
+        backup_file(server, backup, 'opt/jrconect-mcp/server.js')
+        backup_file(compose, backup, 'opt/jrconect-mcp/docker-compose.yml')
+        backup_file(dockerfile, backup, 'opt/jrconect-mcp/Dockerfile')
+        backup_file(mcp_root / 'connection-registry.js', backup, 'opt/jrconect-mcp/connection-registry.js')
+        backup_file(configuration, backup, 'var/www/gacs/configuration.php')
+        backup_file(acs_root / 'api/mcp-connections.php', backup, 'var/www/gacs/api/mcp-connections.php')
+        backup_file(acs_root / 'assets/css/mcp-connections.css', backup, 'var/www/gacs/assets/css/mcp-connections.css')
+        backup_file(acs_root / 'assets/js/mcp-connections-panel.js', backup, 'var/www/gacs/assets/js/mcp-connections-panel.js')
+        shutil.copy2(Path(__file__), backup / 'install.py')
+
+        if server.read_text(encoding='utf-8') != server_before:
+            raise RuntimeError('server.js mudou durante a instalacao')
+        if compose.read_text(encoding='utf-8') != compose_before:
+            raise RuntimeError('docker-compose.yml mudou durante a instalacao')
+        if dockerfile.read_text(encoding='utf-8') != dockerfile_before:
+            raise RuntimeError('Dockerfile mudou durante a instalacao')
+        if configuration.read_text(encoding='utf-8') != configuration_before:
+            raise RuntimeError('configuration.php mudou durante a instalacao')
+
+        # MCP files
+        atomic_write(server, server_after.encode('utf-8'), server.stat())
+        atomic_write(compose, compose_after.encode('utf-8'), compose.stat())
+        atomic_write(dockerfile, dockerfile_after.encode('utf-8'), dockerfile.stat())
+        registry_path = mcp_root / 'connection-registry.js'
+        atomic_write(
+            registry_path,
+            payload['mcp/connection-registry.js'],
+            registry_path.stat() if registry_path.exists() else None,
+        )
+
+        runtime = mcp_root / 'runtime'
+        runtime.mkdir(mode=0o755, exist_ok=True)
+        uid, gid = detect_node_ids()
+        if os.geteuid() == 0:
+            os.chown(runtime, uid, gid)
+        os.chmod(runtime, 0o755)
+
+        # ACS files
+        api_path = acs_root / 'api/mcp-connections.php'
+        css_path = acs_root / 'assets/css/mcp-connections.css'
+        js_path = acs_root / 'assets/js/mcp-connections-panel.js'
+
+        atomic_write(
+            api_path,
+            payload['api/mcp-connections.php'],
+            api_path.stat() if api_path.exists() else None,
+        )
+        atomic_write(
+            css_path,
+            payload['assets/css/mcp-connections.css'],
+            css_path.stat() if css_path.exists() else None,
+        )
+        atomic_write(
+            js_path,
+            payload['assets/js/mcp-connections-panel.js'],
+            js_path.stat() if js_path.exists() else None,
+        )
+        atomic_write(configuration, configuration_after.encode('utf-8'), configuration.stat())
+
+        # Revalidate on disk
+        node_check(server.read_text(encoding='utf-8'), 'server.js')
+        node_check(registry_path.read_text(encoding='utf-8'), 'connection-registry.js')
+        php_check(api_path.read_text(encoding='utf-8'), 'api/mcp-connections.php')
+        php_check(configuration.read_text(encoding='utf-8'), 'configuration.php')
+
+        docker = shutil.which('docker')
+        if not docker:
+            raise RuntimeError('Docker nao encontrado apos gravacao; use o backup para rollback')
+
+        run([docker, 'compose', 'config', '--quiet'], cwd=mcp_root)
+        run([docker, 'compose', 'up', '-d', '--build'], cwd=mcp_root)
+
+        health = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/health'],
+            check=False,
+        )
+        if health.returncode != 0 or '"ok"' not in health.stdout:
+            raise RuntimeError(
+                'Container subiu, mas /health falhou. Backup: ' + str(backup)
+            )
+
+        connections = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/connections'],
+            check=False,
+        )
+        if connections.returncode != 0 or '"success":true' not in connections.stdout:
+            raise RuntimeError(
+                'Rota local /connections nao respondeu como esperado. Backup: ' + str(backup)
+            )
+
+        print('INSTALADO: registro de conexoes MCP ativo.')
+        print('Health: ' + health.stdout.strip())
+        print('Connections: ' + connections.stdout.strip()[:500])
+        print('Backup: ' + str(backup))
+        print('Clientes ja conectados aparecerao apos a proxima requisicao autenticada.')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as exc:
+        print('CANCELADO: ' + str(exc), file=sys.stderr)
+        sys.exit(1)
+,
+        r'^\s*COPY\s+\./\s+\./\s*
+
+def patch_configuration(text: str) -> str:
+    if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
+        return text
+
+    anchor = '<!-- Carregar JavaScript externo -->'
+    if anchor not in text:
+        raise RuntimeError('Ancora de scripts da configuration.php nao encontrada')
+
+    block = CSS_TAG + '\n' + JS_TAG + '\n\n'
+    return text.replace(anchor, block + anchor, 1)
+
+def backup_file(src: Path, dst_root: Path, rel: str):
+    if not src.exists():
+        return
+    dst = dst_root / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+
+def detect_node_ids():
+    docker = shutil.which('docker')
+    if not docker:
+        return 1000, 1000
+
+    uid = run([docker, 'exec', 'jrconect-mcp', 'id', '-u', 'node'], check=False)
+    gid = run([docker, 'exec', 'jrconect-mcp', 'id', '-g', 'node'], check=False)
+
+    try:
+        u = int((uid.stdout or '').strip())
+        g = int((gid.stdout or '').strip())
+        return u, g
+    except Exception:
+        return 1000, 1000
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--acs-root', default=ACS_ROOT_DEFAULT)
+    ap.add_argument('--mcp-root', default=MCP_ROOT_DEFAULT)
+    ap.add_argument('--backup-dir', default='/root')
+    ap.add_argument('--dry-run', action='store_true')
+    args = ap.parse_args()
+
+    acs_root = Path(args.acs_root).resolve()
+    mcp_root = Path(args.mcp_root).resolve()
+    backup_parent = Path(args.backup_dir).resolve()
+
+    server = mcp_root / 'server.js'
+    compose = mcp_root / 'docker-compose.yml'
+    dockerfile = mcp_root / 'Dockerfile'
+    configuration = acs_root / 'configuration.php'
+
+    for p in [server, compose, dockerfile, configuration]:
+        if not p.is_file() or p.is_symlink():
+            raise RuntimeError('Arquivo invalido ou ausente: ' + str(p))
+
+    lock_path = backup_parent / '.jrc-mcp-connections-install.lock'
+    with lock_path.open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        payload = {}
+        for rel in GIT_FILES:
+            payload[rel] = git_show(acs_root, rel)
+
+        server_before = server.read_text(encoding='utf-8')
+        compose_before = compose.read_text(encoding='utf-8')
+        dockerfile_before = dockerfile.read_text(encoding='utf-8')
+        configuration_before = configuration.read_text(encoding='utf-8')
+
+        server_after = patch_server(server_before)
+        compose_after = patch_compose(compose_before)
+        dockerfile_after = patch_dockerfile(dockerfile_before)
+        configuration_after = patch_configuration(configuration_before)
+
+        node_check(server_after, 'server.js')
+        node_check(payload['mcp/connection-registry.js'].decode('utf-8'), 'connection-registry.js')
+        node_check(payload['assets/js/mcp-connections-panel.js'].decode('utf-8'), 'mcp-connections-panel.js')
+        php_check(payload['api/mcp-connections.php'].decode('utf-8'), 'api/mcp-connections.php')
+        php_check(configuration_after, 'configuration.php')
+
+        print('VALIDADO: conexoes autenticadas do JR Conect MCPv2.')
+        print('server.js sera patchado sem substituir wiki-tools.js ou outros imports locais.')
+        print('docker-compose recebera somente o volume ./runtime:/data.')
+        print('Dockerfile passara a copiar connection-registry.js sem remover wiki-tools.js.')
+        print('ACS recebera painel Servidores conectados ao MCP.')
+        print('Nenhum token, segredo ou identificador pessoal sera exibido.')
+        print('Ferramenta MCP nova: listar_servidores.')
+
+        if args.dry_run:
+            print('SIMULACAO OK: nenhum arquivo alterado e nenhum container reiniciado.')
+            return
+
+        backup = Path(tempfile.mkdtemp(
+            prefix='jrc-mcp-connections-' +
+                   datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + '-',
+            dir=str(backup_parent),
+        ))
+        os.chmod(backup, 0o700)
+
+        backup_file(server, backup, 'opt/jrconect-mcp/server.js')
+        backup_file(compose, backup, 'opt/jrconect-mcp/docker-compose.yml')
+        backup_file(dockerfile, backup, 'opt/jrconect-mcp/Dockerfile')
+        backup_file(mcp_root / 'connection-registry.js', backup, 'opt/jrconect-mcp/connection-registry.js')
+        backup_file(configuration, backup, 'var/www/gacs/configuration.php')
+        backup_file(acs_root / 'api/mcp-connections.php', backup, 'var/www/gacs/api/mcp-connections.php')
+        backup_file(acs_root / 'assets/css/mcp-connections.css', backup, 'var/www/gacs/assets/css/mcp-connections.css')
+        backup_file(acs_root / 'assets/js/mcp-connections-panel.js', backup, 'var/www/gacs/assets/js/mcp-connections-panel.js')
+        shutil.copy2(Path(__file__), backup / 'install.py')
+
+        if server.read_text(encoding='utf-8') != server_before:
+            raise RuntimeError('server.js mudou durante a instalacao')
+        if compose.read_text(encoding='utf-8') != compose_before:
+            raise RuntimeError('docker-compose.yml mudou durante a instalacao')
+        if dockerfile.read_text(encoding='utf-8') != dockerfile_before:
+            raise RuntimeError('Dockerfile mudou durante a instalacao')
+        if configuration.read_text(encoding='utf-8') != configuration_before:
+            raise RuntimeError('configuration.php mudou durante a instalacao')
+
+        # MCP files
+        atomic_write(server, server_after.encode('utf-8'), server.stat())
+        atomic_write(compose, compose_after.encode('utf-8'), compose.stat())
+        atomic_write(dockerfile, dockerfile_after.encode('utf-8'), dockerfile.stat())
+        registry_path = mcp_root / 'connection-registry.js'
+        atomic_write(
+            registry_path,
+            payload['mcp/connection-registry.js'],
+            registry_path.stat() if registry_path.exists() else None,
+        )
+
+        runtime = mcp_root / 'runtime'
+        runtime.mkdir(mode=0o755, exist_ok=True)
+        uid, gid = detect_node_ids()
+        if os.geteuid() == 0:
+            os.chown(runtime, uid, gid)
+        os.chmod(runtime, 0o755)
+
+        # ACS files
+        api_path = acs_root / 'api/mcp-connections.php'
+        css_path = acs_root / 'assets/css/mcp-connections.css'
+        js_path = acs_root / 'assets/js/mcp-connections-panel.js'
+
+        atomic_write(
+            api_path,
+            payload['api/mcp-connections.php'],
+            api_path.stat() if api_path.exists() else None,
+        )
+        atomic_write(
+            css_path,
+            payload['assets/css/mcp-connections.css'],
+            css_path.stat() if css_path.exists() else None,
+        )
+        atomic_write(
+            js_path,
+            payload['assets/js/mcp-connections-panel.js'],
+            js_path.stat() if js_path.exists() else None,
+        )
+        atomic_write(configuration, configuration_after.encode('utf-8'), configuration.stat())
+
+        # Revalidate on disk
+        node_check(server.read_text(encoding='utf-8'), 'server.js')
+        node_check(registry_path.read_text(encoding='utf-8'), 'connection-registry.js')
+        php_check(api_path.read_text(encoding='utf-8'), 'api/mcp-connections.php')
+        php_check(configuration.read_text(encoding='utf-8'), 'configuration.php')
+
+        docker = shutil.which('docker')
+        if not docker:
+            raise RuntimeError('Docker nao encontrado apos gravacao; use o backup para rollback')
+
+        run([docker, 'compose', 'config', '--quiet'], cwd=mcp_root)
+        run([docker, 'compose', 'up', '-d', '--build'], cwd=mcp_root)
+
+        health = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/health'],
+            check=False,
+        )
+        if health.returncode != 0 or '"ok"' not in health.stdout:
+            raise RuntimeError(
+                'Container subiu, mas /health falhou. Backup: ' + str(backup)
+            )
+
+        connections = run(
+            ['curl', '-fsS', 'http://127.0.0.1:3100/connections'],
+            check=False,
+        )
+        if connections.returncode != 0 or '"success":true' not in connections.stdout:
+            raise RuntimeError(
+                'Rota local /connections nao respondeu como esperado. Backup: ' + str(backup)
+            )
+
+        print('INSTALADO: registro de conexoes MCP ativo.')
+        print('Health: ' + health.stdout.strip())
+        print('Connections: ' + connections.stdout.strip()[:500])
+        print('Backup: ' + str(backup))
+        print('Clientes ja conectados aparecerao apos a proxima requisicao autenticada.')
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as exc:
+        print('CANCELADO: ' + str(exc), file=sys.stderr)
+        sys.exit(1)
+,
+    ]
+    for pattern in copy_all_patterns:
+        if re.search(pattern, text, flags=re.MULTILINE | re.IGNORECASE):
+            return text
+
     lines = text.splitlines()
+
+    # Formato do repositório: COPY server.js auth.js ./
     for i, line in enumerate(lines):
         if line.strip().startswith('COPY ') and 'server.js' in line and 'auth.js' in line:
             stripped = line.rstrip()
@@ -246,13 +1266,16 @@ def patch_dockerfile(text: str) -> str:
                 lines[i] = prefix + ' connection-registry.js ./'
                 return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
 
-    # Fallback seguro: copia o modulo em uma instrucao separada.
+    # Outro formato explícito de server.js.
     for i, line in enumerate(lines):
         if line.strip().startswith('COPY ') and 'server.js' in line:
             lines.insert(i + 1, 'COPY connection-registry.js ./')
             return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
 
-    raise RuntimeError('Instrucao COPY do server.js nao encontrada no Dockerfile')
+    # Se o Dockerfile não possui COPY reconhecível, cancela por segurança.
+    raise RuntimeError(
+        'Dockerfile sem COPY reconhecivel. Nenhum arquivo foi alterado.'
+    )
 
 
 def patch_configuration(text: str) -> str:
