@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  if (window.__JRC_MCP_CONNECTIONS_PANEL__) return;
-  window.__JRC_MCP_CONNECTIONS_PANEL__ = true;
+  if (window.__JRC_MCP_CONNECTIONS_PANEL_V2__) return;
+  window.__JRC_MCP_CONNECTIONS_PANEL_V2__ = true;
 
   function esc(value) {
     return String(value ?? '')
@@ -16,7 +16,6 @@
   function timeAgo(value) {
     const ts = Date.parse(value || '');
     if (!Number.isFinite(ts)) return '—';
-
     const diff = Math.max(0, Date.now() - ts);
     const sec = Math.floor(diff / 1000);
     if (sec < 10) return 'agora';
@@ -25,77 +24,97 @@
     if (min < 60) return min + ' min';
     const h = Math.floor(min / 60);
     if (h < 24) return h + ' h';
-    const d = Math.floor(h / 24);
-    return d + ' d';
+    return Math.floor(h / 24) + ' d';
   }
 
   function findTarget() {
-    const selectors = [
-      '.card-header',
-      '.section-title',
-      '.config-title',
-      'h1', 'h2', 'h3', 'h4', 'h5'
-    ];
-
-    const nodes = [...document.querySelectorAll(selectors.join(','))];
-    const anchor = nodes.find(el => /\bMCP\b/i.test((el.textContent || '').trim()));
-
-    if (anchor) {
-      const tab = anchor.closest('.tab-pane');
-      if (tab) return { mode: 'append', node: tab };
-
-      const card = anchor.closest('.card');
-      if (card) return { mode: 'after', node: card };
-
-      if (anchor.parentElement) return { mode: 'after', node: anchor.parentElement };
-    }
-
-    const fallback =
+    return document.querySelector('#mcp-config') ||
       document.querySelector('.tab-content') ||
-      document.querySelector('.content-wrapper') ||
       document.querySelector('main') ||
       document.body;
-
-    return { mode: 'append', node: fallback };
   }
 
   function buildPanel() {
     const panel = document.createElement('section');
     panel.id = 'jrc-mcp-connections-panel';
-    panel.className = 'jrc-mcp-connections';
+    panel.className = 'jrc-mcp-hub';
     panel.innerHTML = `
-      <div class="jrc-mcp-connections__head">
+      <div class="jrc-mcp-hub__head">
         <div>
-          <div class="jrc-mcp-connections__title">Servidores conectados ao MCP</div>
-          <div class="jrc-mcp-connections__subtitle">
-            Clientes autenticados que já se comunicaram com o JR Conect MCPv2.
+          <div class="jrc-mcp-hub__title">JR Conect MCPv2</div>
+          <div class="jrc-mcp-hub__subtitle">
+            Serviços disponíveis e clientes autenticados no servidor MCP.
           </div>
         </div>
-        <button type="button" class="jrc-mcp-connections__refresh" data-jrc-mcp-refresh>
+        <button type="button" class="jrc-mcp-hub__refresh" data-jrc-mcp-refresh>
           Atualizar
         </button>
       </div>
-      <div class="jrc-mcp-connections__body">
-        <div class="jrc-mcp-connections__loading">Carregando conexões...</div>
+
+      <div class="jrc-mcp-hub__section">
+        <div class="jrc-mcp-hub__section-title">Serviços e ferramentas MCP</div>
+        <div class="jrc-mcp-services" data-jrc-mcp-services>
+          <div class="jrc-mcp-hub__loading">Carregando serviços...</div>
+        </div>
+      </div>
+
+      <div class="jrc-mcp-hub__section">
+        <div class="jrc-mcp-hub__section-title">Conexões autenticadas</div>
+        <div data-jrc-mcp-connections>
+          <div class="jrc-mcp-hub__loading">Carregando conexões...</div>
+        </div>
       </div>
     `;
     return panel;
   }
 
-  function render(panel, data) {
-    const body = panel.querySelector('.jrc-mcp-connections__body');
-    const rows = Array.isArray(data?.connections) ? data.connections : [];
+  function renderServices(panel, data) {
+    const root = panel.querySelector('[data-jrc-mcp-services]');
+    const rows = Array.isArray(data?.services) ? data.services : [];
 
     if (!rows.length) {
-      body.innerHTML =
-        '<div class="jrc-mcp-connections__empty">Nenhuma conexão registrada ainda. ' +
-        'Os clientes aparecerão aqui na próxima comunicação com o MCP.</div>';
+      root.innerHTML = '<div class="jrc-mcp-hub__empty">Nenhum serviço MCP informado.</div>';
       return;
     }
 
-    body.innerHTML = `
+    root.innerHTML = rows.map(service => {
+      const status = service.status === 'online' ? 'online' : 'offline';
+      const tools = Array.isArray(service.tools) ? service.tools : [];
+      return `
+        <article class="jrc-mcp-service-card">
+          <div class="jrc-mcp-service-card__top">
+            <div>
+              <div class="jrc-mcp-service-card__name">${esc(service.name || service.id)}</div>
+              <div class="jrc-mcp-service-card__type">${esc(service.type || 'Serviço MCP')}</div>
+            </div>
+            <span class="jrc-mcp-status jrc-mcp-status--${status}">
+              ${status === 'online' ? 'Online' : 'Offline'}
+            </span>
+          </div>
+          <div class="jrc-mcp-service-card__tools">
+            ${tools.length
+              ? tools.map(tool => '<span class="jrc-mcp-tool">' + esc(tool) + '</span>').join('')
+              : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem ferramentas listadas</span>'}
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderConnections(panel, data) {
+    const root = panel.querySelector('[data-jrc-mcp-connections]');
+    const rows = Array.isArray(data?.connections) ? data.connections : [];
+
+    if (!rows.length) {
+      root.innerHTML =
+        '<div class="jrc-mcp-hub__empty">Nenhuma conexão registrada ainda. ' +
+        'Os clientes aparecerão aqui na próxima comunicação autenticada.</div>';
+      return;
+    }
+
+    root.innerHTML = `
       <div class="jrc-mcp-connections__table-wrap">
-        <table>
+        <table class="jrc-mcp-connections__table">
           <thead>
             <tr>
               <th>Conexão</th>
@@ -110,23 +129,20 @@
               const status = row.status === 'online' ? 'online' : 'offline';
               const auth = row.auth_type === 'oauth' ? 'OAuth / Keycloak' :
                 row.auth_type === 'token' ? 'Token MCP' : (row.auth_type || '—');
-
               return `
                 <tr>
                   <td>
                     <strong>${esc(row.name || row.client_id || row.id)}</strong>
-                    <div style="color:#7f8998;font-size:11px;margin-top:2px;">
-                      ${esc(row.client_id || row.id || '')}
-                    </div>
+                    <div class="jrc-mcp-client-id">${esc(row.client_id || row.id || '')}</div>
                   </td>
                   <td>${esc(auth)}</td>
                   <td>
-                    <span class="jrc-mcp-connections__status jrc-mcp-connections__status--${status}">
+                    <span class="jrc-mcp-status jrc-mcp-status--${status}">
                       ${status === 'online' ? 'Online' : 'Offline'}
                     </span>
                   </td>
                   <td title="${esc(row.last_seen || '')}">${esc(timeAgo(row.last_seen))}</td>
-                  <td class="jrc-mcp-connections__count">${Number(row.requests || 0).toLocaleString('pt-BR')}</td>
+                  <td class="jrc-mcp-requests">${Number(row.requests || 0).toLocaleString('pt-BR')}</td>
                 </tr>
               `;
             }).join('')}
@@ -137,39 +153,34 @@
   }
 
   async function load(panel) {
-    const body = panel.querySelector('.jrc-mcp-connections__body');
     try {
       const response = await fetch('/api/mcp-connections.php', {
         credentials: 'same-origin',
         cache: 'no-store',
         headers: { Accept: 'application/json' }
       });
-
       const data = await response.json();
       if (!response.ok || !data?.success) {
         throw new Error(data?.message || 'Não foi possível consultar o MCP.');
       }
-
-      render(panel, data);
+      renderServices(panel, data);
+      renderConnections(panel, data);
     } catch (error) {
-      body.innerHTML =
-        '<div class="jrc-mcp-connections__error">' +
-        esc(error.message || 'Falha ao consultar conexões MCP.') +
-        '</div>';
+      const message = esc(error.message || 'Falha ao consultar o MCP.');
+      panel.querySelector('[data-jrc-mcp-services]').innerHTML =
+        '<div class="jrc-mcp-hub__error">' + message + '</div>';
+      panel.querySelector('[data-jrc-mcp-connections]').innerHTML =
+        '<div class="jrc-mcp-hub__error">' + message + '</div>';
     }
   }
 
   function boot() {
-    if (document.getElementById('jrc-mcp-connections-panel')) return;
+    const old = document.getElementById('jrc-mcp-connections-panel');
+    if (old) old.remove();
 
     const target = findTarget();
     const panel = buildPanel();
-
-    if (target.mode === 'after') {
-      target.node.insertAdjacentElement('afterend', panel);
-    } else {
-      target.node.appendChild(panel);
-    }
+    target.appendChild(panel);
 
     panel.querySelector('[data-jrc-mcp-refresh]')?.addEventListener('click', () => load(panel));
     load(panel);
