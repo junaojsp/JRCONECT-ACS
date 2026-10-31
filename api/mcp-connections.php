@@ -41,5 +41,6 @@ if (!is_array($data) || !($data['success'] ?? false) || !is_array($data['connect
 jsonResponse([
     'success' => true,
     'connections' => array_values($data['connections']),
+    'services' => is_array($data['services'] ?? null) ? array_values($data['services']) : [],
     'count' => count($data['connections']),
 ]);
