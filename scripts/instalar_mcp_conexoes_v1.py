@@ -73,15 +73,28 @@ def atomic_write(path: Path, data: bytes, meta=None):
 
 def node_check(text: str, label: str):
     node = shutil.which('node')
-    if not node:
-        raise RuntimeError('Node.js ausente para validar ' + label)
-    with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
-        f.write(text)
-        tmp = f.name
-    try:
-        run([node, '--check', tmp])
-    finally:
-        os.unlink(tmp)
+    if node:
+        with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
+            f.write(text)
+            tmp = f.name
+        try:
+            run([node, '--check', tmp])
+        finally:
+            os.unlink(tmp)
+        return
+
+    docker = shutil.which('docker')
+    if not docker:
+        raise RuntimeError('Node.js/Docker ausentes para validar ' + label)
+
+    p = subprocess.run(
+        [docker, 'run', '--rm', '-i', 'node:24-alpine', 'node', '--check', '-'],
+        input=text,
+        capture_output=True,
+        text=True,
+    )
+    if p.returncode != 0:
+        raise RuntimeError('JavaScript invalido em ' + label + ': ' + (p.stderr or p.stdout or '')[:2500])
 
 def php_check(text: str, label: str):
     php = shutil.which('php')
@@ -220,6 +233,28 @@ def patch_compose(text: str) -> str:
     lines.insert(secret_idx + 1, indent + '- ./runtime:/data')
     return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
 
+def patch_dockerfile(text: str) -> str:
+    if 'connection-registry.js' in text:
+        return text
+
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.strip().startswith('COPY ') and 'server.js' in line and 'auth.js' in line:
+            stripped = line.rstrip()
+            if stripped.endswith('./'):
+                prefix = stripped[:-2].rstrip()
+                lines[i] = prefix + ' connection-registry.js ./'
+                return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
+
+    # Fallback seguro: copia o modulo em uma instrucao separada.
+    for i, line in enumerate(lines):
+        if line.strip().startswith('COPY ') and 'server.js' in line:
+            lines.insert(i + 1, 'COPY connection-registry.js ./')
+            return '\n'.join(lines) + ('\n' if text.endswith('\n') else '')
+
+    raise RuntimeError('Instrucao COPY do server.js nao encontrada no Dockerfile')
+
+
 def patch_configuration(text: str) -> str:
     if 'mcp-connections-panel.js' in text and 'mcp-connections.css' in text:
         return text
@@ -267,9 +302,10 @@ def main():
 
     server = mcp_root / 'server.js'
     compose = mcp_root / 'docker-compose.yml'
+    dockerfile = mcp_root / 'Dockerfile'
     configuration = acs_root / 'configuration.php'
 
-    for p in [server, compose, configuration]:
+    for p in [server, compose, dockerfile, configuration]:
         if not p.is_file() or p.is_symlink():
             raise RuntimeError('Arquivo invalido ou ausente: ' + str(p))
 
@@ -283,10 +319,12 @@ def main():
 
         server_before = server.read_text(encoding='utf-8')
         compose_before = compose.read_text(encoding='utf-8')
+        dockerfile_before = dockerfile.read_text(encoding='utf-8')
         configuration_before = configuration.read_text(encoding='utf-8')
 
         server_after = patch_server(server_before)
         compose_after = patch_compose(compose_before)
+        dockerfile_after = patch_dockerfile(dockerfile_before)
         configuration_after = patch_configuration(configuration_before)
 
         node_check(server_after, 'server.js')
@@ -298,6 +336,7 @@ def main():
         print('VALIDADO: conexoes autenticadas do JR Conect MCPv2.')
         print('server.js sera patchado sem substituir wiki-tools.js ou outros imports locais.')
         print('docker-compose recebera somente o volume ./runtime:/data.')
+        print('Dockerfile passara a copiar connection-registry.js sem remover wiki-tools.js.')
         print('ACS recebera painel Servidores conectados ao MCP.')
         print('Nenhum token, segredo ou identificador pessoal sera exibido.')
         print('Ferramenta MCP nova: listar_servidores.')
@@ -315,6 +354,7 @@ def main():
 
         backup_file(server, backup, 'opt/jrconect-mcp/server.js')
         backup_file(compose, backup, 'opt/jrconect-mcp/docker-compose.yml')
+        backup_file(dockerfile, backup, 'opt/jrconect-mcp/Dockerfile')
         backup_file(mcp_root / 'connection-registry.js', backup, 'opt/jrconect-mcp/connection-registry.js')
         backup_file(configuration, backup, 'var/www/gacs/configuration.php')
         backup_file(acs_root / 'api/mcp-connections.php', backup, 'var/www/gacs/api/mcp-connections.php')
@@ -326,12 +366,15 @@ def main():
             raise RuntimeError('server.js mudou durante a instalacao')
         if compose.read_text(encoding='utf-8') != compose_before:
             raise RuntimeError('docker-compose.yml mudou durante a instalacao')
+        if dockerfile.read_text(encoding='utf-8') != dockerfile_before:
+            raise RuntimeError('Dockerfile mudou durante a instalacao')
         if configuration.read_text(encoding='utf-8') != configuration_before:
             raise RuntimeError('configuration.php mudou durante a instalacao')
 
         # MCP files
         atomic_write(server, server_after.encode('utf-8'), server.stat())
         atomic_write(compose, compose_after.encode('utf-8'), compose.stat())
+        atomic_write(dockerfile, dockerfile_after.encode('utf-8'), dockerfile.stat())
         registry_path = mcp_root / 'connection-registry.js'
         atomic_write(
             registry_path,
