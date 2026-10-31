@@ -46,7 +46,8 @@
   }
 
   function findTarget() {
-    return document.querySelector('#mcp-config') ||
+    return document.querySelector('#mcp-server-hub') ||
+      document.querySelector('#mcp-config') ||
       document.querySelector('.tab-content') ||
       document.querySelector('main') ||
       document.body;
@@ -160,14 +161,18 @@
             <tr>
               <th><i class="bi bi-link-45deg"></i> Conexão</th>
               <th><i class="bi bi-shield-lock"></i> Autenticação</th>
-              <th><i class="bi bi-activity"></i> Status</th>
+              <th><i class="bi bi-activity"></i> Atividade</th>
               <th><i class="bi bi-clock"></i> Última comunicação</th>
               <th><i class="bi bi-stack"></i> Requisições</th>
             </tr>
           </thead>
           <tbody>
             ${rows.map(row => {
-              const status = row.status === 'online' ? 'online' : 'offline';
+              const lastSeen = Date.parse(row.last_seen || '');
+              const isActive = Number.isFinite(lastSeen) &&
+                (Date.now() - lastSeen) <= (15 * 60 * 1000);
+              const status = isActive ? 'online' : 'offline';
+              const statusLabel = isActive ? 'Ativo' : 'Inativo';
               const auth = row.auth_type === 'oauth' ? 'OAuth / Keycloak' :
                 row.auth_type === 'token' ? 'Token MCP' : (row.auth_type || '—');
               return `
@@ -182,7 +187,7 @@
                   <td>${esc(auth)}</td>
                   <td>
                     <span class="jrc-mcp-status jrc-mcp-status--${status}">
-                      ${status === 'online' ? 'Online' : 'Offline'}
+                      ${statusLabel}
                     </span>
                   </td>
                   <td title="${esc(row.last_seen || '')}">${esc(timeAgo(row.last_seen))}</td>
