@@ -1,6 +1,6 @@
-/* JR Conect MCPv2 - painel neutro preto/cinza */
+/* JR Conect MCPv2 - layout V4 aprovado */
 
-/* Neutraliza todo azul legado apenas dentro da aba MCP */
+/* Neutraliza azul legado apenas dentro da aba MCP */
 #mcp-config,
 #mcp-config .card,
 #mcp-config .card-header,
@@ -16,6 +16,11 @@
   --bs-secondary-bg: #14161b !important;
   --bs-tertiary-bg: #14161b !important;
   --bs-border-color: #2a2e36 !important;
+  --bs-table-bg: #15181d !important;
+  --bs-table-color: #e7ebf0 !important;
+  --bs-table-border-color: #2a2e36 !important;
+  --bs-table-striped-bg: #13161a !important;
+  --bs-table-hover-bg: #1b1f25 !important;
   background-image: none !important;
   box-shadow: none !important;
 }
@@ -83,11 +88,11 @@
   color: #d7dde5 !important;
 }
 
-/* Hub MCP */
+/* Hub */
 .jrc-mcp-hub {
-  margin-top: 16px;
-  background: #14161b;
-  border: 1px solid #2a2e36;
+  margin-top: 18px;
+  background: #111318 !important;
+  border: 1px solid #2b2f36 !important;
   border-radius: 12px;
   overflow: hidden;
   color: #edf1f5;
@@ -97,10 +102,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #101217 !important;
+  border-bottom: 1px solid #2b2f36;
+}
+
+.jrc-mcp-hub__brand {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 15px 16px;
-  background: #101217;
-  border-bottom: 1px solid #2a2e36;
+}
+
+.jrc-mcp-hub__brand-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: #ff1d27;
+  font-size: 22px;
 }
 
 .jrc-mcp-hub__title {
@@ -110,12 +130,15 @@
 }
 
 .jrc-mcp-hub__subtitle {
-  margin-top: 3px;
+  margin-top: 2px;
   color: #8f98a8;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .jrc-mcp-hub__refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   background: #252931;
   border: 1px solid #343943;
   color: #eef1f5;
@@ -129,9 +152,9 @@
 }
 
 .jrc-mcp-hub__section {
-  padding: 15px 16px;
+  padding: 14px 16px;
   border-top: 1px solid #242830;
-  background: #14161b;
+  background: #111318 !important;
 }
 
 .jrc-mcp-hub__section:first-of-type {
@@ -139,32 +162,65 @@
 }
 
 .jrc-mcp-hub__section-title {
-  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
   font-size: 12px;
   font-weight: 700;
-  color: #aeb7c4;
+  color: #d4d9e0;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .035em;
+}
+
+.jrc-mcp-hub__section-title > span {
+  width: 4px;
+  height: 18px;
+  border-radius: 3px;
+  background: #ef111b;
+  flex: 0 0 auto;
 }
 
 /* Serviços */
 .jrc-mcp-services {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .jrc-mcp-service-card {
-  background: #101217;
-  border: 1px solid #2a2e36;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  min-height: 92px;
+  background: #13161b !important;
+  border: 1px solid #30343c !important;
+  border-left: 4px solid #ef111b !important;
   border-radius: 10px;
-  padding: 13px;
+  padding: 12px;
+}
+
+.jrc-mcp-service-card__icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  border: 1px solid #333943;
+  border-radius: 9px;
+  color: #ff2832;
+  font-size: 25px;
+  background: #101217;
+}
+
+.jrc-mcp-service-card__content {
+  min-width: 0;
 }
 
 .jrc-mcp-service-card__top {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
 }
 
@@ -175,8 +231,8 @@
 }
 
 .jrc-mcp-service-card__type {
-  color: #808a99;
-  font-size: 11px;
+  color: #8a94a2;
+  font-size: 10px;
   margin-top: 2px;
 }
 
@@ -184,18 +240,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 11px;
 }
 
 .jrc-mcp-tool {
   display: inline-flex;
   align-items: center;
-  background: #1b1f25;
-  border: 1px solid #30343c;
-  color: #bcc4d0;
+  background: #20242a;
+  border: 1px solid #353a43;
+  color: #c7ced7;
   border-radius: 6px;
   padding: 4px 7px;
-  font-size: 10px;
+  font-size: 9px;
+  line-height: 1.1;
 }
 
 .jrc-mcp-tool--muted {
@@ -208,13 +265,14 @@
   align-items: center;
   gap: 6px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .jrc-mcp-status::before {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #6b7280;
 }
@@ -229,47 +287,99 @@
 }
 
 .jrc-mcp-status--offline {
-  color: #a6aeba;
+  color: #b0b7c0;
 }
 
-/* Conexões */
+/* Conexões - força neutro e remove azul */
 .jrc-mcp-connections__table-wrap {
   overflow-x: auto;
-  border: 1px solid #2a2e36;
+  border: 1px solid #30343c;
   border-radius: 9px;
+  background: #111318 !important;
+}
+
+.jrc-mcp-connections__table,
+.jrc-mcp-connections__table thead,
+.jrc-mcp-connections__table tbody,
+.jrc-mcp-connections__table tr,
+.jrc-mcp-connections__table th,
+.jrc-mcp-connections__table td {
+  --bs-table-bg: #13161b !important;
+  --bs-table-color: #e7ebf0 !important;
+  --bs-table-border-color: #2b2f36 !important;
+  --bs-table-striped-bg: #111318 !important;
+  --bs-table-hover-bg: #1b1f25 !important;
+  background-image: none !important;
 }
 
 .jrc-mcp-connections__table {
   width: 100%;
-  border-collapse: collapse;
-  margin: 0;
-  background: #14161b;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+  background: #13161b !important;
+  color: #e7ebf0 !important;
+}
+
+.jrc-mcp-connections__table thead,
+.jrc-mcp-connections__table thead tr,
+.jrc-mcp-connections__table thead th {
+  background: #101217 !important;
+  background-color: #101217 !important;
+  color: #c1c8d2 !important;
+}
+
+.jrc-mcp-connections__table tbody,
+.jrc-mcp-connections__table tbody tr,
+.jrc-mcp-connections__table tbody td {
+  background: #13161b !important;
+  background-color: #13161b !important;
+  color: #e7ebf0 !important;
+}
+
+.jrc-mcp-connections__table tbody tr:nth-child(even) td {
+  background: #111318 !important;
+}
+
+.jrc-mcp-connections__table tbody tr:hover td {
+  background: #1a1e24 !important;
 }
 
 .jrc-mcp-connections__table th,
 .jrc-mcp-connections__table td {
-  padding: 11px 13px;
+  padding: 11px 12px;
   text-align: left;
-  border-bottom: 1px solid #272b32;
+  border-bottom: 1px solid #2b2f36 !important;
   white-space: nowrap;
 }
 
 .jrc-mcp-connections__table th {
-  background: #101217;
-  color: #9ea8b8;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .035em;
+  font-weight: 700;
 }
 
-.jrc-mcp-connections__table td {
-  background: #15181d;
-  color: #e7ebf0;
-  font-size: 12px;
+.jrc-mcp-connections__table th i {
+  margin-right: 5px;
+  color: #d9dee5;
 }
 
 .jrc-mcp-connections__table tr:last-child td {
-  border-bottom: 0;
+  border-bottom: 0 !important;
+}
+
+.jrc-mcp-connection-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jrc-mcp-row-accent {
+  width: 3px;
+  height: 32px;
+  border-radius: 3px;
+  background: #ef111b;
+  flex: 0 0 auto;
 }
 
 .jrc-mcp-client-id {
@@ -294,9 +404,25 @@
   color: #ff767d;
 }
 
+@media (max-width: 900px) {
+  .jrc-mcp-services {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .jrc-mcp-hub__head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .jrc-mcp-service-card {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .jrc-mcp-service-card__icon {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
   }
 }
