@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  if (window.__JRC_MCP_CONNECTIONS_PANEL_V2__) return;
-  window.__JRC_MCP_CONNECTIONS_PANEL_V2__ = true;
+  if (window.__JRC_MCP_CONNECTIONS_PANEL_V4__) return;
+  window.__JRC_MCP_CONNECTIONS_PANEL_V4__ = true;
 
   function esc(value) {
     return String(value ?? '')
@@ -27,11 +27,35 @@
     return Math.floor(h / 24) + ' d';
   }
 
+  function openMcpTabFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') !== 'mcp') return;
+
+    const trigger = document.querySelector('[data-bs-target="#mcp-config"], #mcp-tab');
+    if (!trigger) return;
+
+    try {
+      if (window.bootstrap?.Tab) {
+        window.bootstrap.Tab.getOrCreateInstance(trigger).show();
+      } else {
+        trigger.click();
+      }
+    } catch (_) {
+      trigger.click();
+    }
+  }
+
   function findTarget() {
     return document.querySelector('#mcp-config') ||
       document.querySelector('.tab-content') ||
       document.querySelector('main') ||
       document.body;
+  }
+
+  function serviceIcon(service) {
+    const id = String(service?.id || '').toLowerCase();
+    if (id.includes('wiki')) return 'bi-book';
+    return 'bi-hdd-stack';
   }
 
   function buildPanel() {
@@ -40,26 +64,36 @@
     panel.className = 'jrc-mcp-hub';
     panel.innerHTML = `
       <div class="jrc-mcp-hub__head">
-        <div>
-          <div class="jrc-mcp-hub__title">JR Conect MCPv2</div>
-          <div class="jrc-mcp-hub__subtitle">
-            Serviços disponíveis e clientes autenticados no servidor MCP.
+        <div class="jrc-mcp-hub__brand">
+          <div class="jrc-mcp-hub__brand-icon"><i class="bi bi-layers"></i></div>
+          <div>
+            <div class="jrc-mcp-hub__title">JR Conect MCPv2</div>
+            <div class="jrc-mcp-hub__subtitle">
+              Serviços disponíveis e clientes autenticados no servidor MCP.
+            </div>
           </div>
         </div>
         <button type="button" class="jrc-mcp-hub__refresh" data-jrc-mcp-refresh>
-          Atualizar
+          <i class="bi bi-arrow-repeat"></i>
+          <span>Atualizar</span>
         </button>
       </div>
 
       <div class="jrc-mcp-hub__section">
-        <div class="jrc-mcp-hub__section-title">Serviços e ferramentas MCP</div>
+        <div class="jrc-mcp-hub__section-title">
+          <span></span>
+          Serviços e ferramentas MCP
+        </div>
         <div class="jrc-mcp-services" data-jrc-mcp-services>
           <div class="jrc-mcp-hub__loading">Carregando serviços...</div>
         </div>
       </div>
 
       <div class="jrc-mcp-hub__section">
-        <div class="jrc-mcp-hub__section-title">Conexões autenticadas</div>
+        <div class="jrc-mcp-hub__section-title">
+          <span></span>
+          Conexões autenticadas
+        </div>
         <div data-jrc-mcp-connections>
           <div class="jrc-mcp-hub__loading">Carregando conexões...</div>
         </div>
@@ -82,19 +116,26 @@
       const tools = Array.isArray(service.tools) ? service.tools : [];
       return `
         <article class="jrc-mcp-service-card">
-          <div class="jrc-mcp-service-card__top">
-            <div>
-              <div class="jrc-mcp-service-card__name">${esc(service.name || service.id)}</div>
-              <div class="jrc-mcp-service-card__type">${esc(service.type || 'Serviço MCP')}</div>
-            </div>
-            <span class="jrc-mcp-status jrc-mcp-status--${status}">
-              ${status === 'online' ? 'Online' : 'Offline'}
-            </span>
+          <div class="jrc-mcp-service-card__icon">
+            <i class="bi ${serviceIcon(service)}"></i>
           </div>
-          <div class="jrc-mcp-service-card__tools">
-            ${tools.length
-              ? tools.map(tool => '<span class="jrc-mcp-tool">' + esc(tool) + '</span>').join('')
-              : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem ferramentas listadas</span>'}
+
+          <div class="jrc-mcp-service-card__content">
+            <div class="jrc-mcp-service-card__top">
+              <div>
+                <div class="jrc-mcp-service-card__name">${esc(service.name || service.id)}</div>
+                <div class="jrc-mcp-service-card__type">${esc(service.type || 'Serviço MCP')}</div>
+              </div>
+              <span class="jrc-mcp-status jrc-mcp-status--${status}">
+                ${status === 'online' ? 'Online' : 'Offline'}
+              </span>
+            </div>
+
+            <div class="jrc-mcp-service-card__tools">
+              ${tools.length
+                ? tools.map(tool => '<span class="jrc-mcp-tool">' + esc(tool) + '</span>').join('')
+                : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem ferramentas listadas</span>'}
+            </div>
           </div>
         </article>
       `;
@@ -117,11 +158,11 @@
         <table class="jrc-mcp-connections__table">
           <thead>
             <tr>
-              <th>Conexão</th>
-              <th>Autenticação</th>
-              <th>Status</th>
-              <th>Última comunicação</th>
-              <th>Requisições</th>
+              <th><i class="bi bi-link-45deg"></i> Conexão</th>
+              <th><i class="bi bi-shield-lock"></i> Autenticação</th>
+              <th><i class="bi bi-activity"></i> Status</th>
+              <th><i class="bi bi-clock"></i> Última comunicação</th>
+              <th><i class="bi bi-stack"></i> Requisições</th>
             </tr>
           </thead>
           <tbody>
@@ -131,9 +172,12 @@
                 row.auth_type === 'token' ? 'Token MCP' : (row.auth_type || '—');
               return `
                 <tr>
-                  <td>
-                    <strong>${esc(row.name || row.client_id || row.id)}</strong>
-                    <div class="jrc-mcp-client-id">${esc(row.client_id || row.id || '')}</div>
+                  <td class="jrc-mcp-connection-name">
+                    <span class="jrc-mcp-row-accent"></span>
+                    <div>
+                      <strong>${esc(row.name || row.client_id || row.id)}</strong>
+                      <div class="jrc-mcp-client-id">${esc(row.client_id || row.id || '')}</div>
+                    </div>
                   </td>
                   <td>${esc(auth)}</td>
                   <td>
@@ -163,6 +207,7 @@
       if (!response.ok || !data?.success) {
         throw new Error(data?.message || 'Não foi possível consultar o MCP.');
       }
+
       renderServices(panel, data);
       renderConnections(panel, data);
     } catch (error) {
@@ -175,6 +220,8 @@
   }
 
   function boot() {
+    openMcpTabFromUrl();
+
     const old = document.getElementById('jrc-mcp-connections-panel');
     if (old) old.remove();
 
