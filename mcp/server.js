@@ -4,6 +4,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { toNodeHandler } from '@modelcontextprotocol/node';
 import { validarToken } from './auth.js';
+import { ConnectionRegistry } from './connection-registry.js';
 
 const opaToken = readFileSync('/run/secrets/opa-token', 'utf8').trim();
 if (!/^[a-f0-9]{64}$/i.test(opaToken)) {
@@ -22,12 +23,22 @@ function validarTokenOpa(token) {
   return received.length === expected.length && timingSafeEqual(received, expected);
 }
 
+const connections = new ConnectionRegistry();
+
 const handler = createMcpHandler(() => {
-  const mcp = new McpServer({ name: 'jrconect-opa-mcp', version: '1.0.0' });
+  const mcp = new McpServer({ name: 'jrconect-opa-mcp', version: '1.1.0' });
   mcp.registerTool('status_servidor', {
     description: 'Verifica o funcionamento do MCP JR Conect',
   }, async () => ({
     content: [{ type: 'text', text: 'Servidor MCP JR Conect funcionando.' }],
+  }));
+  mcp.registerTool('listar_servidores', {
+    description: 'Lista clientes e sistemas que ja autenticaram no MCP JR Conect, com status e ultima comunicacao',
+  }, async () => ({
+    content: [{
+      type: 'text',
+      text: JSON.stringify({ connections: connections.list() }, null, 2),
+    }],
   }));
   return mcp;
 });
@@ -49,6 +60,11 @@ createServer(async (req, res) => {
     res.end(JSON.stringify(resourceMetadata));
     return;
   }
+  if (req.method === 'GET' && req.url === '/connections') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ success: true, connections: connections.list() }));
+    return;
+  }
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok' }));
@@ -61,11 +77,24 @@ createServer(async (req, res) => {
   if (!match) return unauthorized(res);
   if (validarTokenOpa(match[1])) {
     req.mcpUser = { sub: 'opa-suite', client: 'opa-suite' };
+    connections.touch({
+      id: 'opa-suite',
+      name: 'Opa Suite',
+      clientId: 'opa-suite',
+      authType: 'token',
+    });
     return mcpHandler(req, res);
   }
   try {
     const payload = await validarToken(match[1]);
     req.mcpUser = { sub: payload.sub, client: payload.azp };
+    const clientId = String(payload.azp || 'oauth-client');
+    connections.touch({
+      id: clientId,
+      name: clientId === 'chatgpt-mcp' ? 'ChatGPT' : clientId,
+      clientId,
+      authType: 'oauth',
+    });
     return mcpHandler(req, res);
   } catch {
     return unauthorized(res, 'invalid_token');
