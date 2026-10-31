@@ -83,7 +83,7 @@
       <div class="jrc-mcp-hub__section">
         <div class="jrc-mcp-hub__section-title">
           <span></span>
-          Serviços e ferramentas MCP
+          Componentes e integrações MCP
         </div>
         <div class="jrc-mcp-services" data-jrc-mcp-services>
           <div class="jrc-mcp-hub__loading">Carregando serviços...</div>
@@ -93,7 +93,7 @@
       <div class="jrc-mcp-hub__section">
         <div class="jrc-mcp-hub__section-title">
           <span></span>
-          Conexões autenticadas
+          Clientes externos autenticados
         </div>
         <div data-jrc-mcp-connections>
           <div class="jrc-mcp-hub__loading">Carregando conexões...</div>
@@ -125,7 +125,7 @@
             <div class="jrc-mcp-service-card__top">
               <div>
                 <div class="jrc-mcp-service-card__name">${esc(service.name || service.id)}</div>
-                <div class="jrc-mcp-service-card__type">${esc(service.type || 'Serviço MCP')}</div>
+                <div class="jrc-mcp-service-card__type">${esc(String(service?.id || '').toLowerCase().includes('wiki') ? 'Integração interna' : (service.type || 'Serviço MCP'))}</div>
               </div>
               <span class="jrc-mcp-status jrc-mcp-status--${status}">
                 ${status === 'online' ? 'Online' : 'Offline'}
@@ -149,8 +149,8 @@
 
     if (!rows.length) {
       root.innerHTML =
-        '<div class="jrc-mcp-hub__empty">Nenhuma conexão registrada ainda. ' +
-        'Os clientes aparecerão aqui na próxima comunicação autenticada.</div>';
+        '<div class="jrc-mcp-hub__empty">Nenhum cliente externo autenticado registrado ainda. ' +
+        'ChatGPT, Opa Suite e outros clientes aparecerão aqui após a próxima comunicação autenticada.</div>';
       return;
     }
 
