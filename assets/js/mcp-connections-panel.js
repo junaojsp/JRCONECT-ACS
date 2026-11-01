@@ -161,18 +161,17 @@
             <tr>
               <th><i class="bi bi-link-45deg"></i> Conexão</th>
               <th><i class="bi bi-shield-lock"></i> Autenticação</th>
-              <th><i class="bi bi-activity"></i> Atividade</th>
+              <th><i class="bi bi-plug"></i> Estado</th>
               <th><i class="bi bi-clock"></i> Última comunicação</th>
               <th><i class="bi bi-stack"></i> Requisições</th>
             </tr>
           </thead>
           <tbody>
             ${rows.map(row => {
-              const lastSeen = Date.parse(row.last_seen || '');
-              const isActive = Number.isFinite(lastSeen) &&
-                (Date.now() - lastSeen) <= (15 * 60 * 1000);
-              const status = isActive ? 'online' : 'offline';
-              const statusLabel = isActive ? 'Ativo' : 'Inativo';
+              // A presença nesta lista significa que o cliente já autenticou com sucesso.
+              // HTTP/token não mantém sessão persistente; ausência de tráfego recente não é "offline".
+              const status = 'online';
+              const statusLabel = 'Conectado';
               const auth = row.auth_type === 'oauth' ? 'OAuth / Keycloak' :
                 row.auth_type === 'token' ? 'Token MCP' : (row.auth_type || '—');
               return `
