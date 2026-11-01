@@ -7,7 +7,7 @@
     // Enquanto estiver carregado, ele e o unico responsavel por desenhar a area Wi-Fi.
     window.JRC_WIFI_RENDER_OWNER = 'device-control';
 
-    const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
+    const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, clientsRefreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
     const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0 };
     let dialog = null;
     const secretTimers = new Map();
@@ -61,6 +61,99 @@
     }
 
     const wifiBandNames = {'2.4':'2,4 GHz','5':'5 GHz (5,8)','6':'6 GHz','unknown':'Banda não informada'};
+    // JRC_CONNECTED_CLIENTS_UI_READONLY_V3
+    function connectedClientsSnapshot() {
+        try {
+            const device = typeof currentDeviceData !== 'undefined' ? currentDeviceData : null;
+            return device && Array.isArray(device.connected_devices) ? device.connected_devices : null;
+        } catch (_) {
+            return null;
+        }
+    }
+    function clientIsActive(client) {
+        if (!client) return false;
+        const active = client.active;
+        return ![false, 0, '0', 'false', 'False', 'FALSE'].includes(active);
+    }
+    function wifiClientsForBand(band) {
+        const clients = connectedClientsSnapshot();
+        if (clients === null) return null;
+        const interfaceIds = new Set(wifiRows(band).map(row => String(row.id || '').replace(/\.$/, '')));
+        return clients.filter(client => {
+            if (!clientIsActive(client)) return false;
+            if (String(client.interface_type || '').toLowerCase() !== 'wifi') return false;
+            if (String(client.wifi_band || '') === band) return true;
+            const path = String(client.interface_path || '').replace(/\.$/, '');
+            return path !== '' && interfaceIds.has(path);
+        });
+    }
+    function clientCountLabel(clients) {
+        if (clients === null) return 'Não informado';
+        return clients.length === 1 ? '1 conectado' : String(clients.length) + ' conectados';
+    }
+    function clientConnectionLabel(client) {
+        const type=String(client?.interface_type || '').toLowerCase();
+        if(type==='wifi') {
+            if(String(client.wifi_band || '')==='5') return 'Wi-Fi 5 GHz';
+            if(String(client.wifi_band || '')==='2.4') return 'Wi-Fi 2,4 GHz';
+            return 'Wi-Fi';
+        }
+        if(type==='ethernet') {
+            const port=Number(client?.lan_port || 0);
+            return port>0 ? 'Cabo · LAN '+port : 'Cabo';
+        }
+        return val(client?.interface_type);
+    }
+    window.jrOpenConnectedWifiClients=(band,label) => {
+        const clients=wifiClientsForBand(band) || [];
+        let modal=document.getElementById('jrConnectedWifiClientsModal');
+        if(!modal) {
+            modal=document.createElement('div');
+            modal.className='modal fade';
+            modal.id='jrConnectedWifiClientsModal';
+            modal.tabIndex=-1;
+            modal.innerHTML='<div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">' +
+                '<div class="modal-header"><div><small class="text-danger fw-bold">JR CONECT · CLIENTES</small><h5 class="modal-title mt-1" id="jrConnectedWifiClientsTitle">Clientes conectados</h5></div>' +
+                '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button></div>' +
+                '<div class="modal-body" id="jrConnectedWifiClientsBody"></div></div></div>';
+            document.body.appendChild(modal);
+        }
+        const title=modal.querySelector('#jrConnectedWifiClientsTitle');
+        const body=modal.querySelector('#jrConnectedWifiClientsBody');
+        if(title) title.textContent='Clientes conectados · '+label;
+        if(body) {
+            if(!clients.length) {
+                body.innerHTML='<div class="jr-empty-control">Nenhum cliente ativo identificado nesta banda.</div>';
+            } else {
+                body.innerHTML='<div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead><tr><th>Dispositivo</th><th>IP</th><th>MAC</th><th>Conexão</th></tr></thead><tbody>' +
+                    clients.map(client => '<tr><td><strong>'+esc(client.hostname || client.vendor || 'Dispositivo')+'</strong>' +
+                        ((client.vendor && client.vendor!==client.hostname)?'<br><small>'+esc(client.vendor)+'</small>':'') +
+                        '</td><td>'+esc(client.ip_address || '-')+'</td><td><code>'+esc(client.mac_address || '-')+'</code></td><td>'+esc(clientConnectionLabel(client))+'</td></tr>').join('') +
+                    '</tbody></table></div>';
+            }
+        }
+        if(window.bootstrap?.Modal) bootstrap.Modal.getOrCreateInstance(modal).show();
+    };
+    window.jrRefreshConnectedClients=async () => {
+        if(state.clientsRefreshBusy) return;
+        state.clientsRefreshBusy=true;
+        renderWifi();
+        try {
+            const result=await request({action:'refresh_clients'});
+            toast(result.message,result.partial?'warning':'info');
+            if(typeof loadDeviceDetail==='function') await loadDeviceDetail();
+            if(result.queued && typeof loadDeviceDetail==='function') {
+                setTimeout(()=>loadDeviceDetail(),3000);
+                setTimeout(()=>loadDeviceDetail(),8000);
+            }
+        } catch(e) {
+            toast(e.message,'danger');
+        } finally {
+            state.clientsRefreshBusy=false;
+            renderWifi();
+        }
+    };
+
     const bandOf = item => ['2.4','5','6'].includes(item.band) ? item.band : 'unknown';
     function wifiRows(band) { return state.wifi.filter(row => bandOf(row) === band); }
     function syncWifiSelection() {
@@ -146,7 +239,11 @@
 
         const active=item.enabled===true;
         const channel=item.auto_channel===true?'Automático':val(item.channel);
-        const clients=val(item.clients ?? item.associated_devices ?? item.total_associations ?? 'Não informado');
+        const bandClients=wifiClientsForBand(band);
+        const clientsLabel=clientCountLabel(bandClients);
+        const clientsHtml=bandClients && bandClients.length
+            ? '<button type="button" class="jr-client-count-link" onclick="jrOpenConnectedWifiClients(\''+band+'\',\''+esc(label)+'\')" title="Ver clientes desta banda">'+esc(clientsLabel)+'</button>'
+            : esc(clientsLabel);
 
         return `<article class="jr-wifi-summary-row">
             <div class="jr-wifi-row-main">
@@ -162,7 +259,7 @@
                     <div><span>SSID</span><strong>${esc(val(item.ssid))}</strong></div>
                     <div><span>Canal</span><strong>${esc(channel)}</strong></div>
                     <div><span>Segurança</span><strong>${esc(securityLabel(item.security))}</strong></div>
-                    <div><span>Clientes</span><strong>${esc(clients)}</strong></div>
+                    <div><span>Clientes</span><strong>${clientsHtml}</strong></div>
                 </div>
             </div>
 
@@ -237,6 +334,9 @@
                 <div>
                     <button type="button" class="acs-soft-btn" id="jr-detect-wifi" onclick="jrRefreshControl('wifi',true)" ${state.refreshBusy || !permitted('wifi')?'disabled':''}>
                         <i class="bi bi-arrow-repeat"></i> ${state.refreshBusy?'Consultando...':'Detectar redes do modem'}
+                    </button>
+                    <button type="button" class="acs-soft-btn" onclick="jrRefreshConnectedClients()" ${state.clientsRefreshBusy?'disabled':''}>
+                        <i class="bi bi-people"></i> ${state.clientsRefreshBusy?'Consultando clientes...':'Atualizar clientes'}
                     </button>
                     <button type="button" id="jr-wifi-diagnostic" class="acs-soft-btn" onclick="jrDownloadWifiDiagnostic()" ${!permitted('wifi')?'disabled':''}>
                         <i class="bi bi-download"></i> Diagnóstico Wi-Fi
