@@ -37,7 +37,7 @@ window.JRC_MCP_INSTANCE_CSRF = <?php echo json_encode($_SESSION['mcp_instance_cs
     <div id="mcp-server-hub"></div>
 </div>
 
-<script src="/assets/js/mcp-connections-panel.js?v=20261101-11" defer></script>
+<script src="/assets/js/mcp-connections-panel.js?v=20261101-12" defer></script>
 
 <?php
 include __DIR__ . '/views/layouts/footer.php';
