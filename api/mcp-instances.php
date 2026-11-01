@@ -8,8 +8,8 @@ header('Cache-Control: no-store, private');
 
 requireLogin();
 
-$storeDir = __DIR__ . '/../storage';
-$storeFile = $storeDir . '/mcp-instances.json';
+$storeDir = __DIR__ . '/../storage/mcp';
+$storeFile = $storeDir . '/instances.json';
 
 function jrcMcpReadInstances(string $file): array
 {
