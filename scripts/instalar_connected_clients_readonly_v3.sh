@@ -1,6 +1,12 @@
 #!/bin/sh
 set -eu
 
+MODE="install"
+if [ "${1:-}" = "--check" ]; then
+    MODE="check"
+    shift
+fi
+
 ROOT="${1:-/var/www/gacs}"
 BASE_COMMIT="8de39b1d4fb9058a51dc61faaa7019a6f117f71d"
 TARGET_COMMIT="32ce8c682a92332f27052496c2095601df52d805"
@@ -53,6 +59,13 @@ node --check "$TMPDIR/assets/js/device-detail.js"
 grep -q "JRC_CONNECTED_CLIENTS_REFRESH_READONLY_V3" "$TMPDIR/api/device-control.php" || fail "marcador da consulta read-only ausente"
 grep -q "JRC_CONNECTED_CLIENTS_READONLY_V3" "$TMPDIR/lib/GenieACS.php" || fail "marcador do classificador ausente"
 grep -q "JRC_CONNECTED_CLIENTS_UI_READONLY_V3" "$TMPDIR/assets/js/device-control-fix.js" || fail "marcador da interface ausente"
+
+if [ "$MODE" = "check" ]; then
+    echo
+    echo "VALIDADO: a correcao pode ser aplicada com seguranca."
+    echo "Nenhum arquivo foi alterado."
+    exit 0
+fi
 
 BACKUP="/root/gacs-connected-clients-readonly-v3-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP"
