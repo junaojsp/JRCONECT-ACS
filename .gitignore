@@ -72,3 +72,6 @@ secrets*
 # Scripts de teste/integracao que podem conter token IXC
 /api/test-ixc-onu.php
 /api/discovery-ixc-tr069.php
+
+# MCP local instance registry
+/storage/mcp-instances.json
