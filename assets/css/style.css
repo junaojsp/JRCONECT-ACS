@@ -6226,3 +6226,175 @@ section{
         margin-left: 0;
     }
 }
+
+
+/* JRC_DARK_RED_FINAL_V2_START */
+/* Normalizacao final: preto/cinza + vermelho. Remove azul/ciano legado da interface. */
+:root{
+    --primary-color:#ef171f !important;
+    --primary-dark:#c91118 !important;
+    --primary-light:#ff6b70 !important;
+    --info-color:#ef171f !important;
+    --sidebar-bg:#0c0f13 !important;
+    --sidebar-hover:#15191f !important;
+    --topbar-bg:#0c0f13 !important;
+    --jr-bg:#090b0f !important;
+    --jr-bg-2:#0d1014 !important;
+    --jr-panel:#111419 !important;
+    --jr-panel-2:#15191f !important;
+    --jr-border:#2a3039 !important;
+    --jr-primary:#ef171f !important;
+    --jr-primary-hover:#ff2a31 !important;
+    --acs-ref-bg:#0d1014 !important;
+    --acs-ref-bg-deep:#090b0f !important;
+    --acs-ref-panel:#111419 !important;
+    --acs-ref-panel-2:#15191f !important;
+    --acs-ref-panel-soft:#191d23 !important;
+    --acs-ref-border:#2a3039 !important;
+    --acs-ref-border-soft:#22272f !important;
+    --acs-ref-cyan:#ef171f !important;
+    --acs-ref-cyan-soft:#ff6b70 !important;
+}
+
+html,body,.main-content,.content-wrapper,
+.sidebar,.topbar,.page-header,
+.acs-device-shell,.acs-approved-layout{
+    background-color:#090b0f !important;
+}
+
+.sidebar{
+    background:#0c0f13 !important;
+    border-right:1px solid #22272f !important;
+}
+.sidebar-menu li a{
+    color:#a7afb9 !important;
+    background:transparent !important;
+}
+.sidebar-menu li a:hover{
+    background:#15191f !important;
+    color:#fff !important;
+}
+.sidebar-menu li a.active{
+    background:#181c22 !important;
+    color:#fff !important;
+    border-left-color:#ef171f !important;
+    box-shadow:inset 3px 0 0 #ef171f !important;
+}
+.sidebar-menu li a.active::before{
+    background:#ef171f !important;
+    box-shadow:none !important;
+}
+.sidebar.collapsed .sidebar-menu li a.active{
+    border-bottom-color:#ef171f !important;
+}
+
+.topbar{
+    background:#0c0f13 !important;
+    border-bottom:1px solid #22272f !important;
+    box-shadow:none !important;
+}
+
+.nav-tabs .nav-link:hover,
+#deviceTabs .nav-link:hover{
+    background:#15191f !important;
+    color:#fff !important;
+}
+.nav-tabs .nav-link.active,
+#deviceTabs .nav-link.active,
+.device-tabs .nav-link.active,
+.acs-device-tabs-wrap #deviceTabs .nav-link.active{
+    background:#15191f !important;
+    color:#fff !important;
+    border-color:#303640 !important;
+    border-bottom-color:#ef171f !important;
+    box-shadow:inset 0 -2px 0 #ef171f !important;
+}
+
+.btn-primary,
+.acs-soft-btn.primary,
+.acs-wifi-edit-btn{
+    background:#ef171f !important;
+    border-color:#ef171f !important;
+    color:#fff !important;
+}
+.btn-primary:hover,
+.acs-soft-btn.primary:hover,
+.acs-wifi-edit-btn:hover{
+    background:#ff2a31 !important;
+    border-color:#ff2a31 !important;
+}
+
+/* Wi-Fi: superficies neutras; vermelho apenas em acoes/destaques. */
+.acs-approved-wifi,
+.acs-approved-wifi .acs-wifi-reference-grid,
+.acs-approved-wifi .jr-wifi-summary-shell,
+.acs-approved-wifi .jr-wifi-summary-row,
+.acs-approved-wifi .acs-wifi-health-list,
+.acs-approved-wifi .acs-wifi-health-row{
+    background:#111419 !important;
+    border-color:#2a3039 !important;
+    color:#eef1f5 !important;
+}
+.acs-approved-wifi .jr-wifi-row-title>i,
+.acs-approved-wifi .acs-wifi-health-state>i,
+.acs-approved-wifi .jr-wifi-summary-footer i,
+.acs-approved-wifi .acs-wifi-health-footer i{
+    color:#cbd2dc !important;
+    background:#171b21 !important;
+    border-color:#303640 !important;
+}
+.acs-approved-wifi .jr-wifi-row-data span,
+.acs-approved-wifi .acs-wifi-health-detail small,
+.acs-approved-wifi .jr-wifi-summary-footer small,
+.acs-approved-wifi .acs-wifi-health-footer{
+    color:#929ca9 !important;
+}
+.acs-approved-wifi .jr-wifi-row-data strong,
+.acs-approved-wifi .acs-wifi-health-detail strong{
+    color:#f0f3f6 !important;
+}
+.acs-approved-wifi .jr-wifi-row-title .on,
+.acs-approved-wifi .acs-wifi-health-state span{
+    color:#47dda1 !important;
+}
+
+/* Placeholder usado apenas durante a consulta, evitando o "bloco preto" vazio. */
+.jr-wifi-refresh-placeholder{
+    min-height:126px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    background:#111419 !important;
+    color:#aab2bd !important;
+    border:1px solid #2a3039 !important;
+    border-radius:12px;
+    font-size:.9rem;
+}
+.jr-wifi-refresh-placeholder i{
+    color:#ef171f !important;
+    animation:spin 1s linear infinite;
+}
+
+/* Neutraliza classes Bootstrap azuis que ainda escapavam. */
+.badge.bg-primary,.badge.bg-info,.text-bg-primary,.text-bg-info{
+    background:#1b2026 !important;
+    color:#e5e9ef !important;
+    border:1px solid #343b45 !important;
+}
+.alert-info{
+    background:#15191f !important;
+    color:#dce1e8 !important;
+    border-color:#303640 !important;
+}
+.btn-outline-primary,.btn-outline-info{
+    background:#15191f !important;
+    color:#e5e9ef !important;
+    border-color:#39404a !important;
+}
+.btn-outline-primary:hover,.btn-outline-info:hover{
+    background:#1b2027 !important;
+    color:#fff !important;
+    border-color:#ef171f !important;
+}
+/* JRC_DARK_RED_FINAL_V2_END */
