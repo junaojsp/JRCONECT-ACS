@@ -293,10 +293,15 @@ function dcRun(): never {
     // Nao chama setParameterValues e nao altera nenhum parametro do modem.
     if($action==='refresh_clients') {
         $roots=[];
-        foreach(['InternetGatewayDevice.LANDevice.1.Hosts','Device.Hosts'] as $path) {
-            if(isset($nodes[$path])) $roots[]=$path;
+        // Mesmo se Hosts ainda nao estiver no cache, tente a raiz padrao quando
+        // o modelo de dados correspondente ja estiver presente no equipamento.
+        if(isset($nodes['InternetGatewayDevice.LANDevice.1'])) {
+            $roots[]='InternetGatewayDevice.LANDevice.1.Hosts';
         }
-        if(!$roots) dcFail('Este equipamento ainda nao reportou uma tabela de clientes compativel.',409);
+        if(isset($nodes['Device'])) {
+            $roots[]='Device.Hosts';
+        }
+        if(!$roots) dcFail('Este equipamento nao apresentou um modelo de hosts compativel para consulta.',409);
 
         $completed=0; $queued=0; $failed=0;
         foreach(array_values(array_unique($roots)) as $path) {
