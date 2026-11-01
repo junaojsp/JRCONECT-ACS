@@ -6398,3 +6398,26 @@ html,body,.main-content,.content-wrapper,
     border-color:#ef171f !important;
 }
 /* JRC_DARK_RED_FINAL_V2_END */
+
+
+/* JRC_CONNECTED_CLIENTS_STYLE_V3 */
+.jr-client-count-link{
+    appearance:none;
+    background:transparent !important;
+    border:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+    color:inherit !important;
+    font:inherit !important;
+    font-weight:700 !important;
+    cursor:pointer;
+    text-decoration:underline;
+    text-decoration-color:#ef171f;
+    text-underline-offset:3px;
+}
+.jr-client-count-link:hover,
+.jr-client-count-link:focus{
+    color:#fff !important;
+    text-decoration-color:#ff2a31;
+    outline:none;
+}
