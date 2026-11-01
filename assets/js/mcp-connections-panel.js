@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  if (window.__JRC_MCP_CONNECTIONS_PANEL_V4__) return;
-  window.__JRC_MCP_CONNECTIONS_PANEL_V4__ = true;
+  if (window.__JRC_MCP_UNIFIED_CARDS_V9__) return;
+  window.__JRC_MCP_UNIFIED_CARDS_V9__ = true;
 
   function esc(value) {
     return String(value ?? '')
@@ -27,24 +27,6 @@
     return Math.floor(h / 24) + ' d';
   }
 
-  function openMcpTabFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('tab') !== 'mcp') return;
-
-    const trigger = document.querySelector('[data-bs-target="#mcp-config"], #mcp-tab');
-    if (!trigger) return;
-
-    try {
-      if (window.bootstrap?.Tab) {
-        window.bootstrap.Tab.getOrCreateInstance(trigger).show();
-      } else {
-        trigger.click();
-      }
-    } catch (_) {
-      trigger.click();
-    }
-  }
-
   function findTarget() {
     return document.querySelector('#mcp-server-hub') ||
       document.querySelector('#mcp-config') ||
@@ -53,9 +35,11 @@
       document.body;
   }
 
-  function serviceIcon(service) {
-    const id = String(service?.id || '').toLowerCase();
+  function itemIcon(item) {
+    const id = String(item?.id || item?.client_id || '').toLowerCase();
     if (id.includes('wiki')) return 'bi-book';
+    if (id.includes('opa')) return 'bi-chat-dots';
+    if (id.includes('chatgpt')) return 'bi-robot';
     return 'bi-hdd-stack';
   }
 
@@ -70,7 +54,7 @@
           <div>
             <div class="jrc-mcp-hub__title">JR Conect MCPv2</div>
             <div class="jrc-mcp-hub__subtitle">
-              Serviços disponíveis e clientes autenticados no servidor MCP.
+              Visão consolidada dos MCPs, integrações e clientes conectados.
             </div>
           </div>
         </div>
@@ -83,121 +67,113 @@
       <div class="jrc-mcp-hub__section">
         <div class="jrc-mcp-hub__section-title">
           <span></span>
-          Componentes e integrações MCP
+          MCPs e integrações conectadas
         </div>
-        <div class="jrc-mcp-services" data-jrc-mcp-services>
-          <div class="jrc-mcp-hub__loading">Carregando serviços...</div>
-        </div>
-      </div>
-
-      <div class="jrc-mcp-hub__section">
-        <div class="jrc-mcp-hub__section-title">
-          <span></span>
-          Clientes externos autenticados
-        </div>
-        <div data-jrc-mcp-connections>
-          <div class="jrc-mcp-hub__loading">Carregando conexões...</div>
+        <div class="jrc-mcp-services jrc-mcp-unified-grid" data-jrc-mcp-unified>
+          <div class="jrc-mcp-hub__loading">Carregando MCPs e integrações...</div>
         </div>
       </div>
     `;
     return panel;
   }
 
-  function renderServices(panel, data) {
-    const root = panel.querySelector('[data-jrc-mcp-services]');
-    const rows = Array.isArray(data?.services) ? data.services : [];
+  function renderUnified(panel, data) {
+    const root = panel.querySelector('[data-jrc-mcp-unified]');
+    const services = Array.isArray(data?.services) ? data.services : [];
+    const connections = Array.isArray(data?.connections) ? data.connections : [];
 
-    if (!rows.length) {
-      root.innerHTML = '<div class="jrc-mcp-hub__empty">Nenhum serviço MCP informado.</div>';
+    const items = [];
+
+    services.forEach(service => {
+      items.push({
+        kind: 'service',
+        id: service.id,
+        name: service.name || service.id,
+        type: String(service?.id || '').toLowerCase().includes('wiki')
+          ? 'Integração interna'
+          : (service.type || 'Servidor MCP'),
+        status: service.status === 'online' ? 'online' : 'offline',
+        statusLabel: service.status === 'online' ? 'Online' : 'Offline',
+        tools: Array.isArray(service.tools) ? service.tools : [],
+      });
+    });
+
+    const orderedConnections = [...connections].sort((a, b) => {
+      const aId = String(a?.id || a?.client_id || '').toLowerCase();
+      const bId = String(b?.id || b?.client_id || '').toLowerCase();
+      const weight = id => id.includes('opa') ? 0 : id.includes('chatgpt') ? 1 : 2;
+      return weight(aId) - weight(bId);
+    });
+
+    orderedConnections.forEach(row => {
+      const auth = row.auth_type === 'oauth'
+        ? 'OAuth / Keycloak'
+        : row.auth_type === 'token'
+          ? 'Token MCP'
+          : (row.auth_type || 'Autenticação MCP');
+
+      items.push({
+        kind: 'client',
+        id: row.id || row.client_id,
+        client_id: row.client_id || row.id,
+        name: row.name || row.client_id || row.id,
+        type: 'Cliente MCP externo',
+        status: 'online',
+        statusLabel: 'Conectado',
+        auth,
+        lastSeen: row.last_seen,
+        requests: Number(row.requests || 0),
+      });
+    });
+
+    if (!items.length) {
+      root.innerHTML = '<div class="jrc-mcp-hub__empty">Nenhum MCP ou integração registrada.</div>';
       return;
     }
 
-    root.innerHTML = rows.map(service => {
-      const status = service.status === 'online' ? 'online' : 'offline';
-      const tools = Array.isArray(service.tools) ? service.tools : [];
+    root.innerHTML = items.map(item => {
+      const isClient = item.kind === 'client';
+
+      const detailChips = isClient
+        ? [
+            '<span class="jrc-mcp-tool"><i class="bi bi-shield-lock"></i> ' + esc(item.auth) + '</span>',
+            '<span class="jrc-mcp-tool"><i class="bi bi-clock"></i> ' + esc(timeAgo(item.lastSeen)) + '</span>',
+            '<span class="jrc-mcp-tool"><i class="bi bi-stack"></i> ' + esc(item.requests.toLocaleString('pt-BR')) + ' req.</span>'
+          ].join('')
+        : item.tools.length
+          ? item.tools.map(tool => '<span class="jrc-mcp-tool">' + esc(tool) + '</span>').join('')
+          : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem ferramentas listadas</span>';
+
+      const clientId = isClient && item.client_id
+        ? '<div class="jrc-mcp-service-card__client-id">' + esc(item.client_id) + '</div>'
+        : '';
+
       return `
-        <article class="jrc-mcp-service-card">
+        <article class="jrc-mcp-service-card ${isClient ? 'jrc-mcp-service-card--client' : ''}">
           <div class="jrc-mcp-service-card__icon">
-            <i class="bi ${serviceIcon(service)}"></i>
+            <i class="bi ${itemIcon(item)}"></i>
           </div>
 
           <div class="jrc-mcp-service-card__content">
             <div class="jrc-mcp-service-card__top">
               <div>
-                <div class="jrc-mcp-service-card__name">${esc(service.name || service.id)}</div>
-                <div class="jrc-mcp-service-card__type">${esc(String(service?.id || '').toLowerCase().includes('wiki') ? 'Integração interna' : (service.type || 'Serviço MCP'))}</div>
+                <div class="jrc-mcp-service-card__name">${esc(item.name)}</div>
+                <div class="jrc-mcp-service-card__type">${esc(item.type)}</div>
+                ${clientId}
               </div>
-              <span class="jrc-mcp-status jrc-mcp-status--${status}">
-                ${status === 'online' ? 'Online' : 'Offline'}
+
+              <span class="jrc-mcp-status jrc-mcp-status--${item.status}">
+                ${esc(item.statusLabel)}
               </span>
             </div>
 
             <div class="jrc-mcp-service-card__tools">
-              ${tools.length
-                ? tools.map(tool => '<span class="jrc-mcp-tool">' + esc(tool) + '</span>').join('')
-                : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem ferramentas listadas</span>'}
+              ${detailChips}
             </div>
           </div>
         </article>
       `;
     }).join('');
-  }
-
-  function renderConnections(panel, data) {
-    const root = panel.querySelector('[data-jrc-mcp-connections]');
-    const rows = Array.isArray(data?.connections) ? data.connections : [];
-
-    if (!rows.length) {
-      root.innerHTML =
-        '<div class="jrc-mcp-hub__empty">Nenhum cliente externo autenticado registrado ainda. ' +
-        'ChatGPT, Opa Suite e outros clientes aparecerão aqui após a próxima comunicação autenticada.</div>';
-      return;
-    }
-
-    root.innerHTML = `
-      <div class="jrc-mcp-connections__table-wrap">
-        <table class="jrc-mcp-connections__table">
-          <thead>
-            <tr>
-              <th><i class="bi bi-link-45deg"></i> Conexão</th>
-              <th><i class="bi bi-shield-lock"></i> Autenticação</th>
-              <th><i class="bi bi-plug"></i> Estado</th>
-              <th><i class="bi bi-clock"></i> Última comunicação</th>
-              <th><i class="bi bi-stack"></i> Requisições</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(row => {
-              // A presença nesta lista significa que o cliente já autenticou com sucesso.
-              // HTTP/token não mantém sessão persistente; ausência de tráfego recente não é "offline".
-              const status = 'online';
-              const statusLabel = 'Conectado';
-              const auth = row.auth_type === 'oauth' ? 'OAuth / Keycloak' :
-                row.auth_type === 'token' ? 'Token MCP' : (row.auth_type || '—');
-              return `
-                <tr>
-                  <td class="jrc-mcp-connection-name">
-                    <span class="jrc-mcp-row-accent"></span>
-                    <div>
-                      <strong>${esc(row.name || row.client_id || row.id)}</strong>
-                      <div class="jrc-mcp-client-id">${esc(row.client_id || row.id || '')}</div>
-                    </div>
-                  </td>
-                  <td>${esc(auth)}</td>
-                  <td>
-                    <span class="jrc-mcp-status jrc-mcp-status--${status}">
-                      ${statusLabel}
-                    </span>
-                  </td>
-                  <td title="${esc(row.last_seen || '')}">${esc(timeAgo(row.last_seen))}</td>
-                  <td class="jrc-mcp-requests">${Number(row.requests || 0).toLocaleString('pt-BR')}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
   }
 
   async function load(panel) {
@@ -208,24 +184,22 @@
         headers: { Accept: 'application/json' }
       });
       const data = await response.json();
+
       if (!response.ok || !data?.success) {
         throw new Error(data?.message || 'Não foi possível consultar o MCP.');
       }
 
-      renderServices(panel, data);
-      renderConnections(panel, data);
+      renderUnified(panel, data);
     } catch (error) {
-      const message = esc(error.message || 'Falha ao consultar o MCP.');
-      panel.querySelector('[data-jrc-mcp-services]').innerHTML =
-        '<div class="jrc-mcp-hub__error">' + message + '</div>';
-      panel.querySelector('[data-jrc-mcp-connections]').innerHTML =
-        '<div class="jrc-mcp-hub__error">' + message + '</div>';
+      const root = panel.querySelector('[data-jrc-mcp-unified]');
+      root.innerHTML =
+        '<div class="jrc-mcp-hub__error">' +
+        esc(error.message || 'Falha ao consultar MCPs e integrações.') +
+        '</div>';
     }
   }
 
   function boot() {
-    openMcpTabFromUrl();
-
     const old = document.getElementById('jrc-mcp-connections-panel');
     if (old) old.remove();
 
