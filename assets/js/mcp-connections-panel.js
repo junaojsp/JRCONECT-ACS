@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  if (window.__JRC_MCP_UNIFIED_CARDS_V9__) return;
-  window.__JRC_MCP_UNIFIED_CARDS_V9__ = true;
+  if (window.__JRC_MCP_ADD_SERVER_V10__) return;
+  window.__JRC_MCP_ADD_SERVER_V10__ = true;
 
   function esc(value) {
     return String(value ?? '')
@@ -40,6 +40,7 @@
     if (id.includes('wiki')) return 'bi-book';
     if (id.includes('opa')) return 'bi-chat-dots';
     if (id.includes('chatgpt')) return 'bi-robot';
+    if (item?.kind === 'manual-server') return 'bi-server';
     return 'bi-hdd-stack';
   }
 
@@ -54,14 +55,21 @@
           <div>
             <div class="jrc-mcp-hub__title">JR Conect MCPv2</div>
             <div class="jrc-mcp-hub__subtitle">
-              Visão consolidada dos MCPs, integrações e clientes conectados.
+              Visão consolidada dos servidores MCP, integrações e clientes conectados.
             </div>
           </div>
         </div>
-        <button type="button" class="jrc-mcp-hub__refresh" data-jrc-mcp-refresh>
-          <i class="bi bi-arrow-repeat"></i>
-          <span>Atualizar</span>
-        </button>
+
+        <div class="jrc-mcp-hub__actions">
+          <button type="button" class="jrc-mcp-hub__add" data-jrc-mcp-add>
+            <i class="bi bi-plus-lg"></i>
+            <span>Adicionar servidor</span>
+          </button>
+          <button type="button" class="jrc-mcp-hub__refresh" data-jrc-mcp-refresh>
+            <i class="bi bi-arrow-repeat"></i>
+            <span>Atualizar</span>
+          </button>
+        </div>
       </div>
 
       <div class="jrc-mcp-hub__section">
@@ -73,14 +81,57 @@
           <div class="jrc-mcp-hub__loading">Carregando MCPs e integrações...</div>
         </div>
       </div>
+
+      <div class="jrc-mcp-modal" data-jrc-mcp-modal hidden>
+        <div class="jrc-mcp-modal__backdrop" data-jrc-mcp-close></div>
+        <div class="jrc-mcp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="jrc-mcp-modal-title">
+          <div class="jrc-mcp-modal__head">
+            <div>
+              <div id="jrc-mcp-modal-title" class="jrc-mcp-modal__title">Adicionar servidor MCP</div>
+              <div class="jrc-mcp-modal__subtitle">Cadastre outro servidor para aparecer nesta central.</div>
+            </div>
+            <button type="button" class="jrc-mcp-modal__close" data-jrc-mcp-close aria-label="Fechar">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <form class="jrc-mcp-modal__form" data-jrc-mcp-form>
+            <label>
+              <span>Nome do servidor</span>
+              <input name="name" type="text" maxlength="100" required placeholder="Ex.: MCP Financeiro">
+            </label>
+
+            <label>
+              <span>Endpoint MCP</span>
+              <input name="endpoint" type="url" maxlength="500" required placeholder="https://mcp.exemplo.com/mcp">
+            </label>
+
+            <label>
+              <span>Descrição</span>
+              <textarea name="description" maxlength="240" rows="3" placeholder="Opcional"></textarea>
+            </label>
+
+            <div class="jrc-mcp-modal__message" data-jrc-mcp-form-message></div>
+
+            <div class="jrc-mcp-modal__footer">
+              <button type="button" class="jrc-mcp-modal__cancel" data-jrc-mcp-close>Cancelar</button>
+              <button type="submit" class="jrc-mcp-modal__save">
+                <i class="bi bi-check-lg"></i>
+                Salvar servidor
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
     return panel;
   }
 
-  function renderUnified(panel, data) {
+  function renderUnified(panel, data, manualServers) {
     const root = panel.querySelector('[data-jrc-mcp-unified]');
     const services = Array.isArray(data?.services) ? data.services : [];
     const connections = Array.isArray(data?.connections) ? data.connections : [];
+    const registered = Array.isArray(manualServers) ? manualServers : [];
 
     const items = [];
 
@@ -95,6 +146,18 @@
         status: service.status === 'online' ? 'online' : 'offline',
         statusLabel: service.status === 'online' ? 'Online' : 'Offline',
         tools: Array.isArray(service.tools) ? service.tools : [],
+      });
+    });
+
+    registered.forEach(server => {
+      items.push({
+        kind: 'manual-server',
+        id: server.id,
+        name: server.name || server.endpoint || 'Servidor MCP',
+        type: server.description || server.type || 'Servidor MCP cadastrado',
+        status: 'registered',
+        statusLabel: 'Cadastrado',
+        endpoint: server.endpoint || '',
       });
     });
 
@@ -117,7 +180,7 @@
         id: row.id || row.client_id,
         client_id: row.client_id || row.id,
         name: row.name || row.client_id || row.id,
-        type: 'Cliente MCP externo',
+        type: 'Cliente externo do JR Conect MCPv2',
         status: 'online',
         statusLabel: 'Conectado',
         auth,
@@ -133,23 +196,33 @@
 
     root.innerHTML = items.map(item => {
       const isClient = item.kind === 'client';
+      const isManual = item.kind === 'manual-server';
 
-      const detailChips = isClient
-        ? [
-            '<span class="jrc-mcp-tool"><i class="bi bi-shield-lock"></i> ' + esc(item.auth) + '</span>',
-            '<span class="jrc-mcp-tool"><i class="bi bi-clock"></i> ' + esc(timeAgo(item.lastSeen)) + '</span>',
-            '<span class="jrc-mcp-tool"><i class="bi bi-stack"></i> ' + esc(item.requests.toLocaleString('pt-BR')) + ' req.</span>'
-          ].join('')
-        : item.tools.length
+      let detailChips = '';
+
+      if (isClient) {
+        detailChips = [
+          '<span class="jrc-mcp-tool"><i class="bi bi-diagram-3"></i> via JR Conect MCPv2</span>',
+          '<span class="jrc-mcp-tool"><i class="bi bi-shield-lock"></i> ' + esc(item.auth) + '</span>',
+          '<span class="jrc-mcp-tool"><i class="bi bi-clock"></i> ' + esc(timeAgo(item.lastSeen)) + '</span>',
+          '<span class="jrc-mcp-tool"><i class="bi bi-stack"></i> ' + esc(item.requests.toLocaleString('pt-BR')) + ' req.</span>'
+        ].join('');
+      } else if (isManual) {
+        detailChips = item.endpoint
+          ? '<span class="jrc-mcp-tool"><i class="bi bi-link-45deg"></i> ' + esc(item.endpoint) + '</span>'
+          : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Endpoint não informado</span>';
+      } else {
+        detailChips = item.tools.length
           ? item.tools.map(tool => '<span class="jrc-mcp-tool">' + esc(tool) + '</span>').join('')
           : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem ferramentas listadas</span>';
+      }
 
       const clientId = isClient && item.client_id
         ? '<div class="jrc-mcp-service-card__client-id">' + esc(item.client_id) + '</div>'
         : '';
 
       return `
-        <article class="jrc-mcp-service-card ${isClient ? 'jrc-mcp-service-card--client' : ''}">
+        <article class="jrc-mcp-service-card ${isClient ? 'jrc-mcp-service-card--client' : ''} ${isManual ? 'jrc-mcp-service-card--manual' : ''}">
           <div class="jrc-mcp-service-card__icon">
             <i class="bi ${itemIcon(item)}"></i>
           </div>
@@ -177,25 +250,109 @@
   }
 
   async function load(panel) {
-    try {
-      const response = await fetch('/api/mcp-connections.php', {
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: { Accept: 'application/json' }
-      });
-      const data = await response.json();
+    const root = panel.querySelector('[data-jrc-mcp-unified]');
 
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.message || 'Não foi possível consultar o MCP.');
+    try {
+      const [statusResponse, serversResponse] = await Promise.all([
+        fetch('/api/mcp-connections.php', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' }
+        }),
+        fetch('/api/mcp-servers.php', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' }
+        })
+      ]);
+
+      const statusData = await statusResponse.json();
+      const serversData = await serversResponse.json();
+
+      if (!statusResponse.ok || !statusData?.success) {
+        throw new Error(statusData?.message || 'Não foi possível consultar o MCP.');
       }
 
-      renderUnified(panel, data);
+      if (!serversResponse.ok || !serversData?.success) {
+        throw new Error(serversData?.message || 'Não foi possível consultar servidores cadastrados.');
+      }
+
+      renderUnified(panel, statusData, serversData.servers);
     } catch (error) {
-      const root = panel.querySelector('[data-jrc-mcp-unified]');
       root.innerHTML =
         '<div class="jrc-mcp-hub__error">' +
         esc(error.message || 'Falha ao consultar MCPs e integrações.') +
         '</div>';
+    }
+  }
+
+  function openModal(panel) {
+    const modal = panel.querySelector('[data-jrc-mcp-modal]');
+    const form = panel.querySelector('[data-jrc-mcp-form]');
+    const message = panel.querySelector('[data-jrc-mcp-form-message]');
+    if (!modal || !form) return;
+
+    form.reset();
+    if (message) message.textContent = '';
+    modal.hidden = false;
+    document.body.classList.add('jrc-mcp-modal-open');
+
+    setTimeout(() => {
+      form.querySelector('input[name="name"]')?.focus();
+    }, 0);
+  }
+
+  function closeModal(panel) {
+    const modal = panel.querySelector('[data-jrc-mcp-modal]');
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.classList.remove('jrc-mcp-modal-open');
+  }
+
+  async function saveServer(panel, form) {
+    const message = panel.querySelector('[data-jrc-mcp-form-message]');
+    const submit = form.querySelector('button[type="submit"]');
+    const formData = new FormData(form);
+
+    const payload = {
+      name: String(formData.get('name') || '').trim(),
+      endpoint: String(formData.get('endpoint') || '').trim(),
+      description: String(formData.get('description') || '').trim(),
+    };
+
+    if (message) {
+      message.className = 'jrc-mcp-modal__message';
+      message.textContent = 'Salvando...';
+    }
+    if (submit) submit.disabled = true;
+
+    try {
+      const response = await fetch('/api/mcp-servers.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': String(window.JRC_MCP_SERVER_CSRF || '')
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || 'Não foi possível salvar o servidor.');
+      }
+
+      closeModal(panel);
+      await load(panel);
+    } catch (error) {
+      if (message) {
+        message.className = 'jrc-mcp-modal__message jrc-mcp-modal__message--error';
+        message.textContent = error.message || 'Falha ao salvar servidor.';
+      }
+    } finally {
+      if (submit) submit.disabled = false;
     }
   }
 
@@ -208,6 +365,20 @@
     target.appendChild(panel);
 
     panel.querySelector('[data-jrc-mcp-refresh]')?.addEventListener('click', () => load(panel));
+    panel.querySelector('[data-jrc-mcp-add]')?.addEventListener('click', () => openModal(panel));
+    panel.querySelectorAll('[data-jrc-mcp-close]').forEach(el => {
+      el.addEventListener('click', () => closeModal(panel));
+    });
+
+    panel.querySelector('[data-jrc-mcp-form]')?.addEventListener('submit', event => {
+      event.preventDefault();
+      saveServer(panel, event.currentTarget);
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeModal(panel);
+    });
+
     load(panel);
 
     window.setInterval(() => {
