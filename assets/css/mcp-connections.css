@@ -698,3 +698,473 @@ body.jrc-mcp-standalone .content-wrapper {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* MCP local instances V11 */
+.jrc-mcp-hub__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jrc-mcp-hub__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ef111b;
+  border: 1px solid #ef111b;
+  color: #fff;
+  border-radius: 8px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.jrc-mcp-hub__add:hover {
+  background: #ff3038;
+  border-color: #ff3038;
+}
+
+.jrc-mcp-primary-card {
+  background: #13161b;
+  border: 1px solid #30343c;
+  border-left: 4px solid #ef111b;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.jrc-mcp-primary-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 16px 12px;
+  border-bottom: 1px solid #292d34;
+}
+
+.jrc-mcp-primary-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jrc-mcp-primary-card__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #343943;
+  border-radius: 10px;
+  background: #101217;
+  color: #ff2832;
+  font-size: 24px;
+}
+
+.jrc-mcp-primary-card__name {
+  color: #f5f7fa;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.jrc-mcp-primary-card__subtitle {
+  margin-top: 2px;
+  color: #8f98a8;
+  font-size: 11px;
+}
+
+.jrc-mcp-primary-card__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+
+.jrc-mcp-primary-card__meta > div {
+  background: #101217;
+  border: 1px solid #2b3038;
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+
+.jrc-mcp-primary-card__meta span {
+  display: block;
+  color: #737d8a;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.jrc-mcp-primary-card__meta strong {
+  display: block;
+  margin-top: 3px;
+  color: #eef1f5;
+  font-size: 11px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.jrc-mcp-primary-card__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px 0;
+}
+
+.jrc-mcp-primary-card__integrations-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 11px 16px;
+  border-top: 1px solid #292d34;
+  border-bottom: 1px solid #292d34;
+  background: #101217;
+}
+
+.jrc-mcp-primary-card__integrations-head span {
+  color: #d4d9e0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+.jrc-mcp-primary-card__integrations-head small {
+  color: #7e8794;
+  font-size: 10px;
+}
+
+.jrc-mcp-integrations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.jrc-mcp-integration-card {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 10px;
+  background: #111318;
+  border: 1px solid #2b3038;
+  border-radius: 9px;
+  padding: 10px;
+}
+
+.jrc-mcp-integration-card__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #343943;
+  border-radius: 8px;
+  background: #0f1115;
+  color: #ff2832;
+  font-size: 19px;
+}
+
+.jrc-mcp-integration-card__body {
+  min-width: 0;
+}
+
+.jrc-mcp-integration-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.jrc-mcp-integration-card__name {
+  color: #f0f3f6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jrc-mcp-integration-card__subtitle {
+  margin-top: 2px;
+  color: #7f8998;
+  font-size: 9px;
+}
+
+.jrc-mcp-integration-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.jrc-mcp-instances-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.jrc-mcp-instance-card {
+  background: #13161b;
+  border: 1px solid #30343c;
+  border-left: 4px solid #ef111b;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.jrc-mcp-instance-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jrc-mcp-instance-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jrc-mcp-instance-card__icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #343943;
+  border-radius: 9px;
+  background: #101217;
+  color: #ff2832;
+  font-size: 20px;
+}
+
+.jrc-mcp-instance-card__name {
+  color: #f2f5f8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.jrc-mcp-instance-card__subtitle {
+  margin-top: 2px;
+  color: #7f8998;
+  font-size: 9px;
+}
+
+.jrc-mcp-instance-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.jrc-mcp-instance-card__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #20242a;
+  border: 1px solid #353a43;
+  color: #c7ced7;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 9px;
+}
+
+.jrc-mcp-status--registered {
+  color: #f0c45a;
+}
+
+.jrc-mcp-status--registered::before {
+  background: #d8a52f;
+  box-shadow: 0 0 0 3px rgba(216,165,47,.10);
+}
+
+.jrc-mcp-modal[hidden] {
+  display: none !important;
+}
+
+.jrc-mcp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.jrc-mcp-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(2px);
+}
+
+.jrc-mcp-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(680px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  background: #111318;
+  border: 1px solid #323740;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+}
+
+.jrc-mcp-modal__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #292d34;
+}
+
+.jrc-mcp-modal__title {
+  color: #f5f7fa;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.jrc-mcp-modal__subtitle {
+  margin-top: 2px;
+  color: #8a94a2;
+  font-size: 10px;
+}
+
+.jrc-mcp-modal__close {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: #20242a;
+  border: 1px solid #353a43;
+  color: #d7dde5;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.jrc-mcp-modal__form {
+  padding: 15px 16px 16px;
+}
+
+.jrc-mcp-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.jrc-mcp-modal__form label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.jrc-mcp-modal__form label > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #b8c0ca;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.jrc-mcp-modal__form input,
+.jrc-mcp-modal__form textarea {
+  width: 100%;
+  background: #0d0f12;
+  border: 1px solid #30343c;
+  color: #eef1f5;
+  border-radius: 8px;
+  padding: 9px 10px;
+  outline: none;
+}
+
+.jrc-mcp-modal__form input:focus,
+.jrc-mcp-modal__form textarea:focus {
+  border-color: #555d69;
+}
+
+.jrc-mcp-modal__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 9px 10px;
+  background: #101217;
+  border: 1px solid #2a2e36;
+  border-radius: 8px;
+  color: #9aa3af;
+  font-size: 10px;
+}
+
+.jrc-mcp-modal__message {
+  min-height: 18px;
+  margin-top: 8px;
+  color: #9aa3af;
+  font-size: 10px;
+}
+
+.jrc-mcp-modal__message--error {
+  color: #ff767d;
+}
+
+.jrc-mcp-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.jrc-mcp-modal__cancel,
+.jrc-mcp-modal__save {
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.jrc-mcp-modal__cancel {
+  background: #252931;
+  border: 1px solid #343943;
+  color: #eef1f5;
+}
+
+.jrc-mcp-modal__save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ef111b;
+  border: 1px solid #ef111b;
+  color: #fff;
+}
+
+.jrc-mcp-modal__save:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+body.jrc-mcp-modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  .jrc-mcp-integrations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jrc-mcp-instances-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .jrc-mcp-hub__actions {
+    width: 100%;
+  }
+
+  .jrc-mcp-hub__add,
+  .jrc-mcp-hub__refresh {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .jrc-mcp-primary-card__meta,
+  .jrc-mcp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jrc-mcp-primary-card__header {
+    align-items: flex-start;
+  }
+}
