@@ -981,6 +981,78 @@ class GenieACS {
             $deviceLastInformTime = strtotime($lastInform);
         }
 
+        // JRC_CONNECTED_CLIENTS_READONLY_V3
+        // Classificacao somente leitura dos clientes ja reportados ao GenieACS.
+        // Nao cria task, nao altera parametros e nao faz setParameterValues.
+        $detectWifiBandFromHost = static function (?string $interfacePath) use ($device): ?string {
+            if (!$interfacePath) return null;
+
+            if (preg_match('/InternetGatewayDevice\\.LANDevice\\.(\\d+)\\.WLANConfiguration\\.(\\d+)/i', $interfacePath, $m)) {
+                $lanIndex = (string)$m[1];
+                $wlanIndex = (string)$m[2];
+                $wlan = $device['InternetGatewayDevice']['LANDevice'][$lanIndex]['WLANConfiguration'][$wlanIndex] ?? [];
+                if (!is_array($wlan)) return null;
+
+                $read = static function (array $node, string $field) {
+                    return isset($node[$field]) && is_array($node[$field]) && array_key_exists('_value', $node[$field])
+                        ? $node[$field]['_value']
+                        : null;
+                };
+
+                foreach (['OperatingFrequencyBand','FrequencyBand','Band','X_FH_OperatingFrequencyBand','X_HW_FrequencyBand'] as $field) {
+                    $raw = strtolower(trim((string)($read($wlan, $field) ?? '')));
+                    if ($raw === '') continue;
+                    if (str_contains($raw, '2.4')) return '2.4';
+                    if (preg_match('/(^|[^0-9])5(?:\\.8)?(?:\\s*g(?:hz)?)?([^0-9]|$)/i', $raw)) return '5';
+                }
+
+                $supported = trim((string)($read($wlan, 'SupportedFrequencyBands') ?? ''));
+                if ($supported !== '' && !str_contains($supported, ',')) {
+                    $lower = strtolower($supported);
+                    if (str_contains($lower, '2.4')) return '2.4';
+                    if (preg_match('/(^|[^0-9])5(?:\\.8)?(?:\\s*g(?:hz)?)?([^0-9]|$)/i', $lower)) return '5';
+                }
+
+                $channel = $read($wlan, 'Channel');
+                if (is_numeric($channel)) {
+                    $channel = (int)$channel;
+                    if ($channel >= 1 && $channel <= 14) return '2.4';
+                    if ($channel >= 36 && $channel <= 196) return '5';
+                }
+
+                $possible = (string)($read($wlan, 'PossibleChannels') ?? '');
+                if ($possible !== '') {
+                    preg_match_all('/\\d+/', $possible, $matches);
+                    $channels = array_values(array_filter(array_map('intval', $matches[0] ?? [])));
+                    if ($channels) {
+                        $has24 = false;
+                        $has5 = false;
+                        foreach ($channels as $candidate) {
+                            if ($candidate >= 1 && $candidate <= 14) $has24 = true;
+                            if ($candidate >= 36 && $candidate <= 196) $has5 = true;
+                        }
+                        if ($has24 && !$has5) return '2.4';
+                        if ($has5 && !$has24) return '5';
+                    }
+                }
+
+                $standards = strtolower(trim((string)(
+                    $read($wlan, 'OperatingStandards')
+                    ?? $read($wlan, 'Standard')
+                    ?? $read($wlan, 'SupportedStandards')
+                    ?? ''
+                )));
+                if ($standards !== '') {
+                    $has24 = preg_match('/(^|[^a-z0-9])(b|g|802\\.11b|802\\.11g)([^a-z0-9]|$)/i', $standards) === 1;
+                    $has5 = preg_match('/(^|[^a-z0-9])(a|ac|802\\.11a|802\\.11ac)([^a-z0-9]|$)/i', $standards) === 1;
+                    if ($has24 && !$has5) return '2.4';
+                    if ($has5 && !$has24) return '5';
+                }
+            }
+
+            return null;
+        };
+
         // Try to get hosts object
         if (isset($device['InternetGatewayDevice']['LANDevice']['1']['Hosts']['Host'])) {
             $hosts = $device['InternetGatewayDevice']['LANDevice']['1']['Hosts']['Host'];
@@ -1031,6 +1103,8 @@ class GenieACS {
                     }
                 }
 
+                $wifiBand = $detectWifiBandFromHost($hostInterfacePath);
+
                 // Only add devices with valid IP and MAC
                 if ($ipAddress && $macAddress) {
                     // Filter strategy: Only count hosts that were updated recently relative to device last inform
@@ -1057,9 +1131,22 @@ class GenieACS {
 
                     // Determine interface type (WiFi/LAN)
                     $connectionType = 'LAN';
-                    if ($interfaceType === '802.11') {
+                    $interfacePathLower = strtolower((string)($hostInterfacePath ?? ''));
+                    $interfaceTypeLower = strtolower(trim((string)$interfaceType));
+
+                    if (
+                        $interfaceTypeLower === '802.11' ||
+                        $interfaceTypeLower === 'wifi' ||
+                        $wifiBand !== null ||
+                        str_contains($interfacePathLower, 'wlanconfiguration') ||
+                        str_contains($interfacePathLower, 'device.wifi.')
+                    ) {
                         $connectionType = 'WiFi';
-                    } elseif ($interfaceType === 'Ethernet') {
+                    } elseif (
+                        $interfaceTypeLower === 'ethernet' ||
+                        str_contains($interfacePathLower, 'lanethernetinterfaceconfig') ||
+                        str_contains($interfacePathLower, 'ethernet.interface')
+                    ) {
                         $connectionType = 'Ethernet';
                     }
 
@@ -1080,6 +1167,7 @@ class GenieACS {
                         'interface_type' => $connectionType,
                         'interface_path' => $hostInterfacePath,
                         'lan_port' => $lanPortNumber,
+                        'wifi_band' => $wifiBand,
                         'active' => $active ?? true, // Default to active if not specified
                     ];
                 }
