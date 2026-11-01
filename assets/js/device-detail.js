@@ -522,7 +522,7 @@ async function loadDeviceDetail(isAutoRefresh = false) {
                     speed = Number.isFinite(n) ? (n >= 1000 ? (n / 1000) + ' Gbps' : n + ' Mbps') : String(speedRaw);
                 }
                 const portNumber = Number(port.port || (idx + 1));
-                const ethernetDevices = connectedDevices.filter(d => String(d.interface_type || '').toLowerCase() === 'ethernet');
+                const ethernetDevices = connectedDevices.filter(d => String(d.interface_type || '').toLowerCase() === 'ethernet' && ![false,0,'0','false','False','FALSE'].includes(d.active));
                 const linkedCandidate = ethernetDevices.find(d => Number(d.lan_port) === portNumber) || null;
                 const linked = isUp ? linkedCandidate : null;
                 const linkedName = linked
@@ -1712,6 +1712,21 @@ function renderDHCPServer(dhcpServer) {
     return html;
 }
 
+// JRC_CONNECTED_CLIENT_LABELS_V3
+function jrcConnectedClientLabel(device) {
+    const type = String(device?.interface_type || '').toLowerCase();
+    if (type === 'wifi') {
+        if (String(device?.wifi_band || '') === '5') return 'Wi-Fi · 5 GHz';
+        if (String(device?.wifi_band || '') === '2.4') return 'Wi-Fi · 2,4 GHz';
+        return 'Wi-Fi';
+    }
+    if (type === 'ethernet') {
+        const port = Number(device?.lan_port || 0);
+        return port > 0 ? 'Cabo · LAN ' + port : 'Cabo';
+    }
+    return device?.interface_type || 'Rede';
+}
+
 function renderConnectedDevicesTab(connectedDevices) {
     if (!connectedDevices || connectedDevices.length === 0) {
         return `
@@ -1748,10 +1763,10 @@ function renderConnectedDevicesTab(connectedDevices) {
         // Determine connection type icon
         let connectionIcon = 'bi-ethernet';
         let connectionBadge = 'bg-secondary';
-        if (device.interface_type === 'WiFi') {
+        if (String(device.interface_type || '').toLowerCase() === 'wifi') {
             connectionIcon = 'bi-wifi';
             connectionBadge = 'bg-info';
-        } else if (device.interface_type === 'Ethernet') {
+        } else if (String(device.interface_type || '').toLowerCase() === 'ethernet') {
             connectionIcon = 'bi-ethernet';
             connectionBadge = 'bg-success';
         }
@@ -1775,7 +1790,7 @@ function renderConnectedDevicesTab(connectedDevices) {
                 <td><code>${device.mac_address}</code></td>
                 <td class="text-center">
                     <span class="badge ${connectionBadge}">
-                        <i class="${connectionIcon}"></i> ${device.interface_type}
+                        <i class="${connectionIcon}"></i> ${jrcConnectedClientLabel(device)}
                     </span>
                 </td>
                 <td class="text-center">${statusBadge}</td>
@@ -1837,10 +1852,10 @@ function renderConnectedDevices(connectedDevices) {
         // Determine connection type icon
         let connectionIcon = 'bi-ethernet';
         let connectionBadge = 'bg-secondary';
-        if (device.interface_type === 'WiFi') {
+        if (String(device.interface_type || '').toLowerCase() === 'wifi') {
             connectionIcon = 'bi-wifi';
             connectionBadge = 'bg-info';
-        } else if (device.interface_type === 'Ethernet') {
+        } else if (String(device.interface_type || '').toLowerCase() === 'ethernet') {
             connectionIcon = 'bi-ethernet';
             connectionBadge = 'bg-success';
         }
@@ -1864,7 +1879,7 @@ function renderConnectedDevices(connectedDevices) {
                 <td><code>${device.mac_address}</code></td>
                 <td class="text-center">
                     <span class="badge ${connectionBadge}">
-                        <i class="${connectionIcon}"></i> ${device.interface_type}
+                        <i class="${connectionIcon}"></i> ${jrcConnectedClientLabel(device)}
                     </span>
                 </td>
                 <td class="text-center">${statusBadge}</td>
