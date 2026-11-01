@@ -75,3 +75,6 @@ secrets*
 
 # MCP local instance registry
 /storage/mcp-instances.json
+
+# MCP local instance registry
+/storage/mcp/
