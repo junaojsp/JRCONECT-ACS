@@ -32,20 +32,6 @@ window.JRC_MCP_INSTANCE_CSRF = <?php echo json_encode($_SESSION['mcp_instance_cs
             </p>
         </div>
 
-        <div class="jrc-mcp-page__meta">
-            <div>
-                <span>Container</span>
-                <strong>jrconect-mcp</strong>
-            </div>
-            <div>
-                <span>Porta local</span>
-                <strong>127.0.0.1:3100</strong>
-            </div>
-            <div>
-                <span>Endpoint</span>
-                <strong>mcp.jrconect.com/mcp</strong>
-            </div>
-        </div>
     </div>
 
     <div id="mcp-server-hub"></div>
