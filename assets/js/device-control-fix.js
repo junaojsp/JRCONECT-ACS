@@ -2,6 +2,11 @@
 (() => {
     'use strict';
 
+    // JRC_WIFI_RICH_RENDER_OWNER_V2
+    // Este modulo possui a leitura Wi-Fi mais completa (canal, seguranca e interfaces).
+    // Enquanto estiver carregado, ele e o unico responsavel por desenhar a area Wi-Fi.
+    window.JRC_WIFI_RENDER_OWNER = 'device-control';
+
     const state = { csrf: '', wifi: [], accounts: [], permissions: {}, loading: null, wifiId: '', accountId: '', refreshBusy: false, wifiBand: '', wifiByBand: {}, scanMessage: '' };
     const traffic = { sessionKey: null, last: null, samples: [], polling: false, lastPoll: 0 };
     let dialog = null;
@@ -220,6 +225,7 @@
     function renderWifi() {
         const box=document.querySelector('.acs-approved-wifi .acs-wifi-reference-grid');
         if(!box)return;
+        box.dataset.jrcWifiRenderOwner='device-control';
         syncWifiSelection();
         box.innerHTML=`<div class="jr-wifi-summary-shell">
             <div class="jr-wifi-summary-list">
