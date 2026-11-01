@@ -657,3 +657,44 @@ body.jrc-mcp-standalone .main-content,
 body.jrc-mcp-standalone .content-wrapper {
   background-image: none !important;
 }
+
+
+/* MCP unified cards V9 */
+.jrc-mcp-unified-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.jrc-mcp-service-card--client {
+  border-left-color: #ef111b !important;
+}
+
+.jrc-mcp-service-card--client .jrc-mcp-service-card__icon {
+  background: #101217 !important;
+  color: #ff2832 !important;
+}
+
+.jrc-mcp-service-card__client-id {
+  margin-top: 3px;
+  color: #707a87;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.jrc-mcp-service-card--client .jrc-mcp-service-card__tools {
+  margin-top: 10px;
+}
+
+.jrc-mcp-service-card--client .jrc-mcp-tool {
+  gap: 5px;
+}
+
+.jrc-mcp-service-card--client .jrc-mcp-tool i {
+  color: #9ca5b1;
+  font-size: 9px;
+}
+
+@media (max-width: 980px) {
+  .jrc-mcp-unified-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
