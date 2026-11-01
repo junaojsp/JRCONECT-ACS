@@ -3871,6 +3871,16 @@ function renderWifiHealthCard(device) {
     const container = document.querySelector('.acs-wifi-reference-grid');
     if (!container) return;
 
+    // JRC_WIFI_FALLBACK_GUARD_V2
+    // O device-control-fix.js possui a leitura real de canal/interface.
+    // Nao permitir que este fallback (que usa valores genericos) apague esses dados.
+    if (window.JRC_WIFI_RENDER_OWNER === 'device-control') {
+        if (!container.firstElementChild) {
+            container.innerHTML = '<div class="jr-wifi-refresh-placeholder"><i class="bi bi-arrow-repeat"></i><span>Atualizando leitura Wi-Fi...</span></div>';
+        }
+        return;
+    }
+
     const escapeHtml = (value) => String(value ?? 'Não disponível')
         .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;').replaceAll('"', '&quot;')
