@@ -33,6 +33,35 @@
       document.body;
   }
 
+  async function parseApiResponse(response, fallbackMessage) {
+    const raw = await response.text();
+    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+    const trimmed = raw.trim().toLowerCase();
+
+    const looksLikeHtml =
+      contentType.includes('text/html') ||
+      trimmed.startsWith('<!doctype html') ||
+      trimmed.startsWith('<html');
+
+    if (response.status === 401 || response.status === 403 || looksLikeHtml) {
+      throw new Error('Sessão expirada. Atualize a página e faça login novamente.');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (_) {
+      throw new Error(fallbackMessage || 'Resposta inválida do servidor.');
+    }
+
+    if (!response.ok || !data?.success) {
+      throw new Error(data?.message || fallbackMessage || 'Falha na comunicação com o servidor.');
+    }
+
+    return data;
+  }
+
+
   function integrationIcon(id) {
     const key = String(id || '').toLowerCase();
     if (key.includes('wiki')) return 'bi-book';
@@ -345,16 +374,15 @@
         })
       ]);
 
-      const statusData = await statusResponse.json();
-      const instancesData = await instancesResponse.json();
+      const statusData = await parseApiResponse(
+        statusResponse,
+        'Não foi possível consultar o JR Conect MCPv2.'
+      );
 
-      if (!statusResponse.ok || !statusData?.success) {
-        throw new Error(statusData?.message || 'Não foi possível consultar o JR Conect MCPv2.');
-      }
-
-      if (!instancesResponse.ok || !instancesData?.success) {
-        throw new Error(instancesData?.message || 'Não foi possível consultar instâncias MCP adicionais.');
-      }
+      const instancesData = await parseApiResponse(
+        instancesResponse,
+        'Não foi possível consultar instâncias MCP adicionais.'
+      );
 
       renderPrimary(panel, statusData);
       renderAdditional(panel, instancesData.instances);
@@ -424,11 +452,10 @@
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.message || 'Não foi possível cadastrar a instância MCP.');
-      }
+      const data = await parseApiResponse(
+        response,
+        'Não foi possível cadastrar a instância MCP.'
+      );
 
       closeModal(panel);
       await load(panel);
