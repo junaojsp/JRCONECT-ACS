@@ -272,7 +272,7 @@ function dcRun(): never {
     }
     $deviceId=dcString($method==='GET'?$_GET:$body,'device_id');
     $action=$method==='GET'?'read':dcString($body,'action',32);
-    if(!in_array($action,['read','refresh','wifi_diagnostics','reveal_secret','update_wifi','update_account'],true)) dcFail('Ação inválida.',400);
+    if(!in_array($action,['read','refresh','refresh_clients','wifi_diagnostics','reveal_secret','update_wifi','update_account'],true)) dcFail('Ação inválida.',400);
     $kind=$action==='update_account'?'account':($action==='update_wifi'?'wifi':($body['kind']??'wifi'));
     if($kind==='admin') $kind='account';
     if(!in_array($kind,['wifi','account'],true)) dcFail('Tipo de controle inválido.',400);
@@ -287,6 +287,34 @@ function dcRun(): never {
     $r=$g->getDevice($deviceId);
     if(empty($r['success'])||!is_array($r['data']??null)) dcFail('Não foi possível consultar o equipamento.',502);
     $nodes=dcFlatten($r['data']); $wifi=dcWifi($nodes);
+
+    // JRC_CONNECTED_CLIENTS_REFRESH_READONLY_V3
+    // Consulta somente leitura: solicita ao CPE uma nova leitura da tabela de hosts.
+    // Nao chama setParameterValues e nao altera nenhum parametro do modem.
+    if($action==='refresh_clients') {
+        $roots=[];
+        foreach(['InternetGatewayDevice.LANDevice.1.Hosts','Device.Hosts'] as $path) {
+            if(isset($nodes[$path])) $roots[]=$path;
+        }
+        if(!$roots) dcFail('Este equipamento ainda nao reportou uma tabela de clientes compativel.',409);
+
+        $completed=0; $queued=0; $failed=0;
+        foreach(array_values(array_unique($roots)) as $path) {
+            $task=$g->addRefreshTask($deviceId,$path);
+            if(empty($task['success'])) $failed++;
+            elseif(($task['http_code']??0)===200) $completed++;
+            else $queued++;
+        }
+
+        dcReply([
+            'success'=>($completed+$queued)>0,
+            'queued'=>$queued>0,
+            'partial'=>$failed>0,
+            'message'=>$queued
+                ? 'Consulta de clientes enfileirada; os dados serao atualizados na proxima comunicacao do modem.'
+                : ($failed ? 'Consulta de clientes parcialmente concluida.' : 'Clientes atualizados pelo ACS.')
+        ]);
+    }
     if($action==='wifi_diagnostics') dcReply(['success'=>true,'diagnostic'=>dcWifiDiagnostic($nodes,$wifi)]);
     $accounts=$permissions['admin']?dcAccounts($nodes):[];
     if($action==='read') dcReply(['success'=>true,'csrf'=>$token,'permissions'=>$permissions,'wifi'=>dcPublic($wifi),'accounts'=>dcPublic($accounts)]);
