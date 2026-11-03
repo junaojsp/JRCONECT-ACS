@@ -102,6 +102,55 @@ if (!is_array($body)) {
     jsonResponse(['success' => false, 'message' => 'JSON inválido.'], 400);
 }
 
+$type = (string)($body['type'] ?? 'local');
+if (!in_array($type, ['local', 'external'], true)) {
+    jsonResponse(['success' => false, 'message' => 'Tipo MCP inválido.'], 422);
+}
+
+if ($type === 'external') {
+    $name = trim((string)($body['name'] ?? ''));
+    $endpoint = trim((string)($body['endpoint'] ?? ''));
+    $description = trim((string)($body['description'] ?? ''));
+    $authType = (string)($body['auth_type'] ?? 'oauth2');
+
+    if (mb_strlen($name) < 2 || mb_strlen($name) > 100 || mb_strlen($description) > 240) {
+        jsonResponse(['success' => false, 'message' => 'Nome ou descrição inválidos.'], 422);
+    }
+    // Registration only: this endpoint never makes outbound requests or stores credentials.
+    if ($authType !== 'oauth2' || mb_strlen($endpoint) > 500 || !filter_var($endpoint, FILTER_VALIDATE_URL)) {
+        jsonResponse(['success' => false, 'message' => 'Informe uma URL HTTPS válida e OAuth2.'], 422);
+    }
+    $parts = parse_url($endpoint);
+    if (!is_array($parts) || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+        || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])
+        || isset($parts['fragment']) || isset($parts['query'])) {
+        jsonResponse(['success' => false, 'message' => 'O endpoint externo deve ser HTTPS, sem credenciais ou parâmetros.'], 422);
+    }
+    $instances = jrcMcpReadInstances($storeFile);
+    foreach ($instances as $instance) {
+        if (strcasecmp((string)($instance['endpoint'] ?? ''), $endpoint) === 0) {
+            jsonResponse(['success' => false, 'message' => 'Esse endpoint já está cadastrado.'], 409);
+        }
+    }
+    $newInstance = [
+        'id' => 'mcp-' . bin2hex(random_bytes(6)),
+        'type' => 'external',
+        'name' => $name,
+        'endpoint' => $endpoint,
+        'description' => $description,
+        'auth_type' => 'oauth2',
+        'status' => 'registered',
+        'created_at' => gmdate('c'),
+    ];
+    $instances[] = $newInstance;
+    try {
+        jrcMcpWriteInstances($storeDir, $storeFile, $instances);
+    } catch (Throwable $e) {
+        jsonResponse(['success' => false, 'message' => 'Falha ao registrar MCP externo.'], 500);
+    }
+    jsonResponse(['success' => true, 'instance' => $newInstance], 201);
+}
+
 $name = trim((string)($body['name'] ?? ''));
 $container = trim((string)($body['container'] ?? ''));
 $port = trim((string)($body['port'] ?? ''));
