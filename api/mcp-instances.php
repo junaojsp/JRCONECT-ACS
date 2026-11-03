@@ -85,7 +85,15 @@ if ($method === 'GET') {
     jsonResponse([
         'success' => true,
         'instances' => array_map(static function (array $row): array {
-            if (($row['type'] ?? '') === 'external') {
+            $endpoint = rtrim((string)($row['endpoint'] ?? ''), '/');
+            $type = (string)($row['type'] ?? '');
+            if ($type === '' && $endpoint === 'https://cda.jrconect.com/services/mcp') {
+                // Normalize the legacy IXC row for the UI without rewriting instances.json.
+                $row['type'] = 'external';
+                $row['auth_type'] = 'oauth2';
+                $type = 'external';
+            }
+            if ($type === 'external') {
                 $id = (string)($row['id'] ?? '');
                 $row['credentials_saved'] = preg_match('/^mcp-[a-f0-9]{12}$/', $id)
                     && is_file('/var/lib/jrconect-mcp-secrets/' . $id . '.json');
@@ -123,7 +131,10 @@ if (($body['action'] ?? '') === 'set_external_credentials') {
     $instances = jrcMcpReadInstances($storeFile);
     $found = false;
     foreach ($instances as $instance) {
-        if (($instance['id'] ?? '') === $id && ($instance['type'] ?? '') === 'external') {
+        $endpoint = rtrim((string)($instance['endpoint'] ?? ''), '/');
+        $type = (string)($instance['type'] ?? '');
+        $isLegacyIxc = $type === '' && $endpoint === 'https://cda.jrconect.com/services/mcp';
+        if (($instance['id'] ?? '') === $id && ($type === 'external' || $isLegacyIxc)) {
             $found = true;
             break;
         }
