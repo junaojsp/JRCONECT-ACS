@@ -132,7 +132,14 @@
           </div>
 
           <form class="jrc-mcp-modal__form" data-jrc-mcp-form>
-            <div class="jrc-mcp-form-grid">
+            <label>
+              <span>Tipo de conexão</span>
+              <select name="type" data-jrc-mcp-type>
+                <option value="local">Servidor MCP local</option>
+                <option value="external">Conectar MCP externo (OAuth2)</option>
+              </select>
+            </label>
+            <div class="jrc-mcp-form-grid" data-jrc-mcp-local-fields>
               <label>
                 <span>Nome da instância</span>
                 <input name="name" type="text" maxlength="100" required placeholder="Ex.: MCP Financeiro">
@@ -153,6 +160,13 @@
                 <input name="endpoint" type="url" maxlength="500" required placeholder="https://mcp-financeiro.jrconect.com/mcp">
               </label>
             </div>
+            <div data-jrc-mcp-external-fields hidden>
+              <label>
+                <span>Endpoint HTTPS do MCP externo</span>
+                <input name="external_endpoint" type="url" maxlength="500" placeholder="https://cda.jrconect.com/services/mcp">
+              </label>
+              <p>Autenticação OAuth2. Este cadastro não solicita nem armazena Client ID, Client Secret ou tokens; a conexão será configurada separadamente.</p>
+            </div>
 
             <label>
               <span>Descrição</span>
@@ -161,7 +175,7 @@
 
             <div class="jrc-mcp-modal__note">
               <i class="bi bi-info-circle"></i>
-              O cadastro não cria nem inicia o container automaticamente. A instância ficará como
+              O cadastro não inicia conexões nem cria containers automaticamente. A instância ficará como
               <strong>Cadastrada</strong> até ser implantada.
             </div>
 
@@ -345,12 +359,12 @@
               <div class="jrc-mcp-instance-card__subtitle">${esc(instance.description || 'Instância MCP local planejada')}</div>
             </div>
           </div>
-          <span class="jrc-mcp-status jrc-mcp-status--registered">Cadastrado</span>
+          <span class="jrc-mcp-status jrc-mcp-status--registered">${instance.type === 'external' ? 'Externo cadastrado' : 'Cadastrado'}</span>
         </div>
 
         <div class="jrc-mcp-instance-card__meta">
-          <span><i class="bi bi-box"></i> ${esc(instance.container || '—')}</span>
-          <span><i class="bi bi-ethernet"></i> ${esc(instance.local_address || ('127.0.0.1:' + (instance.port || '—')))}</span>
+          <span><i class="bi bi-box"></i> ${esc(instance.type === 'external' ? 'OAuth2' : (instance.container || '—'))}</span>
+          <span><i class="bi bi-ethernet"></i> ${esc(instance.type === 'external' ? 'Sem conexão ativa' : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
           <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
         </div>
       </article>
@@ -402,6 +416,7 @@
     if (!modal || !form) return;
 
     form.reset();
+    form.querySelector('[data-jrc-mcp-type]')?.dispatchEvent(new Event('change'));
     if (message) {
       message.textContent = '';
       message.className = 'jrc-mcp-modal__message';
@@ -425,11 +440,14 @@
     const submit = form.querySelector('button[type="submit"]');
     const formData = new FormData(form);
 
+    const isExternal = formData.get('type') === 'external';
     const payload = {
+      type: isExternal ? 'external' : 'local',
       name: String(formData.get('name') || '').trim(),
       container: String(formData.get('container') || '').trim(),
       port: String(formData.get('port') || '').trim(),
-      endpoint: String(formData.get('endpoint') || '').trim(),
+      endpoint: String(formData.get(isExternal ? 'external_endpoint' : 'endpoint') || '').trim(),
+      ...(isExternal ? { auth_type: 'oauth2' } : {}),
       description: String(formData.get('description') || '').trim(),
     };
 
@@ -477,6 +495,22 @@
     const panel = buildPanel();
     target.appendChild(panel);
 
+    const typeSelect = panel.querySelector('[data-jrc-mcp-type]');
+    function syncType() {
+      const isExternal = typeSelect?.value === 'external';
+      const local = panel.querySelector('[data-jrc-mcp-local-fields]');
+      const external = panel.querySelector('[data-jrc-mcp-external-fields]');
+      if (local) {
+        local.hidden = isExternal;
+        local.querySelectorAll('input').forEach(input => { input.disabled = isExternal; });
+      }
+      if (external) {
+        external.hidden = !isExternal;
+        external.querySelectorAll('input').forEach(input => { input.disabled = !isExternal; });
+      }
+    }
+    typeSelect?.addEventListener('change', syncType);
+    syncType();
     panel.querySelector('[data-jrc-mcp-refresh]')?.addEventListener('click', () => load(panel));
     panel.querySelector('[data-jrc-mcp-add]')?.addEventListener('click', () => openModal(panel));
 
