@@ -391,7 +391,12 @@
           <span><i class="bi bi-ethernet"></i> ${esc(instance.type === 'external' ? 'Sem conexão ativa' : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
           <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
         </div>
-        ${instance.type === 'external' ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;margin-right:8px;vertical-align:middle;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button><small>${instance.credentials_saved ? 'Credenciais armazenadas; autorização pendente' : 'Credenciais ainda não configuradas'}</small>` : ''}
+        ${instance.type === 'external' ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-authorize="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Autorizar IXC</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-test="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Testar conexão</button>
+          <small>${instance.credentials_saved ? 'Credenciais salvas — autorização a confirmar' : 'Credenciais pendentes'}</small>
+        </div>` : ''}
       </article>
     `).join('');
   }
@@ -580,7 +585,35 @@
     }
     typeSelect?.addEventListener('change', syncType);
     syncType();
-    panel.addEventListener('click', event => {
+    panel.addEventListener('click', async event => {
+      const authorize = event.target.closest('[data-jrc-mcp-authorize]');
+      if (authorize) {
+        const id = authorize.getAttribute('data-jrc-mcp-authorize');
+        try {
+          const resp = await fetch('/api/mcp-ixc-oauth.php?action=status&id=' + encodeURIComponent(id), {credentials:'same-origin'});
+          const status = await parseApiResponse(resp, 'Falha ao consultar OAuth2.');
+          const message = 'Cadastre esta Redirect URI EXATA no OAuth Server do IXC antes de continuar:\\n\\n' + status.redirect_uri + '\\n\\nDeseja abrir a autorização agora?';
+          if (window.confirm(message)) {
+            window.location.assign('/api/mcp-ixc-oauth.php?action=start&id=' + encodeURIComponent(id) + '&return=' + encodeURIComponent(window.location.pathname));
+          }
+        } catch (err) {
+          window.alert(err.message || 'Falha na autorização.');
+        }
+      }
+      const test = event.target.closest('[data-jrc-mcp-test]');
+      if (test) {
+        test.disabled = true;
+        try {
+          const id = test.getAttribute('data-jrc-mcp-test');
+          const response = await fetch('/api/mcp-ixc-oauth.php?action=test&id=' + encodeURIComponent(id), {
+            method:'POST',credentials:'same-origin',headers:{'X-CSRF-Token':String(window.JRC_MCP_INSTANCE_CSRF || ''),'Accept':'application/json'}
+          });
+          const result = await parseApiResponse(response, 'Não foi possível testar o MCP do IXC.');
+          window.alert('IXC conectado. Ferramentas encontradas: ' + result.tool_count + '\\n' + (result.tools || []).join(', '));
+        } catch(err) {
+          window.alert(err.message || 'Falha no teste.');
+        } finally { test.disabled = false; }
+      }
       const target = event.target.closest('[data-jrc-mcp-credentials]');
       if (target) credentialsModal(panel, target.getAttribute('data-jrc-mcp-credentials'));
       if (event.target.closest('[data-jrc-mcp-credentials-close]')) {
