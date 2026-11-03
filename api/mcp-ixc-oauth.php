@@ -117,31 +117,80 @@ function ixcToken(string $id, array $creds): string {
 function ixcRpcPayload(string $method, int $id, array $params = []): string {
     return json_encode(['jsonrpc'=>'2.0','id'=>$id,'method'=>$method,'params'=>(object)$params],JSON_THROW_ON_ERROR);
 }
-function ixcMcpRequest(string $token, string $method, int $id, ?string $sessionId = null): array {
+function ixcMcpRequest(
+    string $token,
+    string $method,
+    int $id,
+    ?string $sessionId = null,
+    array $params = [],
+    ?string $protocolVersion = null
+): array {
     $headers = [
         'Authorization: Bearer '.$token,
         'Content-Type: application/json',
-        'Accept: application/json, text/event-stream',
-        'MCP-Protocol-Version: 2025-03-26'
+        'Accept: application/json, text/event-stream'
     ];
+    if ($protocolVersion !== null && $protocolVersion !== '') {
+        $headers[] = 'MCP-Protocol-Version: '.$protocolVersion;
+    }
     if ($sessionId !== null) $headers[] = 'Mcp-Session-Id: '.$sessionId;
-    [$status,$raw,$responseHeaders] = ixcHttp(IXC_MCP_URL,$headers,ixcRpcPayload($method,$id,
-        $method === 'initialize' ? ['protocolVersion'=>'2025-03-26',
-            'capabilities'=>new stdClass(),'clientInfo'=>['name'=>'JR Conect ACS','version'=>'1.0.0']] : []));
-    if ($status < 200 || $status >= 300) throw new RuntimeException('MCP IXC retornou HTTP '.$status.'.');
-    $json = json_decode($raw,true);
-    if (!is_array($json)) {
-        foreach (preg_split('/\\r?\\n/',$raw) as $line) {
-            if (str_starts_with($line,'data: ')) {
-                $event = json_decode(substr($line,6),true);
-                if (is_array($event) && isset($event['result'])) { $json = $event; break; }
+    if ($method === 'initialize') {
+        $params = [
+            'protocolVersion'=>'2025-03-26',
+            'capabilities'=>new stdClass(),
+            'clientInfo'=>['name'=>'JR Conect ACS','version'=>'1.0.0']
+        ];
+    }
+    [$status,$raw,$responseHeaders] = ixcHttp(
+        IXC_MCP_URL,
+        $headers,
+        ixcRpcPayload($method,$id,$params)
+    );
+    if ($status < 200 || $status >= 300) {
+        throw new RuntimeException('MCP IXC retornou HTTP '.$status.'.');
+    }
+
+    $messages = [];
+    $direct = json_decode($raw,true);
+    if (is_array($direct)) {
+        $messages = isset($direct[0]) ? $direct : [$direct];
+    } else {
+        // Streamable HTTP may return one or more JSON-RPC messages as SSE data fields.
+        $dataLines = [];
+        foreach (preg_split('/\r?\n/',$raw) as $line) {
+            if (str_starts_with($line,'data:')) {
+                $dataLines[] = ltrim(substr($line,5));
+            } elseif ($line === '' && $dataLines !== []) {
+                $event = json_decode(implode("\n",$dataLines),true);
+                if (is_array($event)) {
+                    $messages = array_merge($messages,isset($event[0]) ? $event : [$event]);
+                }
+                $dataLines = [];
+            }
+        }
+        if ($dataLines !== []) {
+            $event = json_decode(implode("\n",$dataLines),true);
+            if (is_array($event)) {
+                $messages = array_merge($messages,isset($event[0]) ? $event : [$event]);
             }
         }
     }
-    if (!is_array($json)) throw new RuntimeException('Resposta MCP inválida.');
+
+    $json = null;
+    foreach ($messages as $message) {
+        if (!is_array($message)) continue;
+        if (isset($message['id']) && (string)$message['id'] === (string)$id) {
+            $json = $message;
+            break;
+        }
+    }
+    if (!is_array($json)) throw new RuntimeException('Resposta MCP sem resposta JSON-RPC correspondente.');
     if (isset($json['error'])) {
         $m = is_array($json['error']) ? (string)($json['error']['message'] ?? 'Erro MCP') : 'Erro MCP';
         throw new RuntimeException('MCP IXC: '.substr($m,0,160));
+    }
+    if (!array_key_exists('result',$json) || !is_array($json['result'])) {
+        throw new RuntimeException('Resposta MCP sem objeto result válido.');
     }
     return [$json,$responseHeaders];
 }
@@ -218,32 +267,70 @@ try {
     $token = ixcToken($id,$creds);
     [$hello,$headers] = ixcMcpRequest($token,'initialize',1);
     $sid = $headers['mcp-session-id'] ?? null;
-    if (!isset($hello['result']['protocolVersion'])) {
+    $protocolVersion = (string)($hello['result']['protocolVersion'] ?? '');
+    if ($protocolVersion === '') {
         throw new RuntimeException('Resposta initialize sem protocolVersion. Verifique a compatibilidade MCP.');
     }
-    // MCP requires notifications/initialized after initialize, before tools/list.
+    // MCP requires notifications/initialized after initialize and before tools/list.
     $initHeaders = [
         'Authorization: Bearer '.$token,
         'Content-Type: application/json',
         'Accept: application/json, text/event-stream',
-        'MCP-Protocol-Version: '.(string)$hello['result']['protocolVersion']
+        'MCP-Protocol-Version: '.$protocolVersion
     ];
     if ($sid !== null) $initHeaders[] = 'Mcp-Session-Id: '.$sid;
     $notice = json_encode(['jsonrpc'=>'2.0','method'=>'notifications/initialized'], JSON_THROW_ON_ERROR);
     [$noticeStatus] = ixcHttp(IXC_MCP_URL,$initHeaders,$notice);
-    if ($noticeStatus < 200 || $noticeStatus >= 300) {
+    if ($noticeStatus !== 202 && ($noticeStatus < 200 || $noticeStatus >= 300)) {
         throw new RuntimeException('MCP IXC não confirmou initialized (HTTP '.$noticeStatus.').');
     }
-    [$tools] = ixcMcpRequest($token,'tools/list',2,$sid);
-    if (!array_key_exists('result',$tools) || !isset($tools['result']['tools']) || !is_array($tools['result']['tools'])) {
-        throw new RuntimeException('tools/list não retornou uma lista válida de ferramentas.');
-    }
+
+    $serverCapabilities = $hello['result']['capabilities'] ?? [];
+    $advertisesTools = is_array($serverCapabilities) && array_key_exists('tools',$serverCapabilities);
     $names = [];
-    foreach ($tools['result']['tools'] as $tool) {
-        if (is_array($tool) && isset($tool['name'])) $names[] = (string)$tool['name'];
-    }
-    ixcReply(['success'=>true,'connected'=>true,'tool_count'=>count($names),'tools'=>array_slice($names,0,50),
-        'message'=>count($names) === 0 ? 'IXC respondeu com lista vazia de ferramentas. Verifique permissões no IXC.' : 'Ferramentas consultadas.']);
+    $cursor = null;
+    $seenCursors = [];
+    $pageCount = 0;
+    do {
+        if (++$pageCount > 50) {
+            throw new RuntimeException('tools/list excedeu o limite seguro de 50 páginas.');
+        }
+        $params = $cursor === null ? [] : ['cursor'=>$cursor];
+        [$tools] = ixcMcpRequest($token,'tools/list',$pageCount + 1,$sid,$params,$protocolVersion);
+        $page = $tools['result']['tools'] ?? null;
+        if (!is_array($page)) {
+            throw new RuntimeException('tools/list não retornou uma lista válida de ferramentas.');
+        }
+        foreach ($page as $tool) {
+            if (is_array($tool) && isset($tool['name']) && is_string($tool['name'])) {
+                $names[] = $tool['name'];
+            }
+        }
+        $next = $tools['result']['nextCursor'] ?? null;
+        if ($next !== null && (!is_string($next) || $next === '')) {
+            throw new RuntimeException('tools/list retornou um cursor inválido.');
+        }
+        if ($next !== null) {
+            if (isset($seenCursors[$next])) {
+                throw new RuntimeException('tools/list repetiu um cursor; paginação interrompida.');
+            }
+            $seenCursors[$next] = true;
+        }
+        $cursor = $next;
+    } while ($cursor !== null);
+
+    $emptyMessage = !$advertisesTools
+        ? 'IXC respondeu sem anunciar a capacidade tools e sem ferramentas listadas.'
+        : 'IXC anunciou tools, mas a lista retornada está vazia. Confira permissões, módulos e escopos no IXC.';
+    ixcReply([
+        'success'=>true,
+        'connected'=>true,
+        'server_tools_capability'=>$advertisesTools,
+        'tool_count'=>count($names),
+        'tool_pages'=>$pageCount,
+        'tools'=>array_slice($names,0,50),
+        'message'=>count($names) === 0 ? $emptyMessage : 'Ferramentas consultadas.'
+    ]);
 } catch (Throwable $e) {
     ixcReply(['success'=>false,'message'=>$e->getMessage()],502);
 }
