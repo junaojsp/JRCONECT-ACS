@@ -84,7 +84,14 @@ $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 if ($method === 'GET') {
     jsonResponse([
         'success' => true,
-        'instances' => jrcMcpReadInstances($storeFile),
+        'instances' => array_map(static function (array $row): array {
+            if (($row['type'] ?? '') === 'external') {
+                $id = (string)($row['id'] ?? '');
+                $row['credentials_saved'] = preg_match('/^mcp-[a-f0-9]{12}$/', $id)
+                    && is_file('/var/lib/jrconect-mcp-secrets/' . $id . '.json');
+            }
+            return $row;
+        }, jrcMcpReadInstances($storeFile)),
     ]);
 }
 
@@ -100,6 +107,57 @@ $body = json_decode((string)$raw, true);
 
 if (!is_array($body)) {
     jsonResponse(['success' => false, 'message' => 'JSON inválido.'], 400);
+}
+
+// Existing external connections: credentials are stored OUTSIDE the web root.
+// Provision the directory for the PHP worker before using this operation.
+if (($body['action'] ?? '') === 'set_external_credentials') {
+    $id = (string)($body['id'] ?? '');
+    $clientId = trim((string)($body['client_id'] ?? ''));
+    $secret = (string)($body['client_secret'] ?? '');
+    if (!preg_match('/^mcp-[a-f0-9]{12}$/', $id)
+        || $clientId === '' || strlen($clientId) > 512
+        || $secret === '' || strlen($secret) > 2048) {
+        jsonResponse(['success' => false, 'message' => 'Credenciais inválidas.'], 422);
+    }
+    $instances = jrcMcpReadInstances($storeFile);
+    $found = false;
+    foreach ($instances as $instance) {
+        if (($instance['id'] ?? '') === $id && ($instance['type'] ?? '') === 'external') {
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        jsonResponse(['success' => false, 'message' => 'MCP externo não encontrado.'], 404);
+    }
+    $secretDir = '/var/lib/jrconect-mcp-secrets';
+    if (!is_dir($secretDir) || !is_writable($secretDir)
+        || is_link($secretDir)
+        || (fileperms($secretDir) & 0077) !== 0) {
+        jsonResponse(['success' => false, 'message' => 'Diretório protegido de credenciais não configurado.'], 503);
+    }
+    $target = $secretDir . '/' . $id . '.json';
+    if (is_link($target)) {
+        jsonResponse(['success' => false, 'message' => 'Destino de credenciais inválido.'], 500);
+    }
+    $encoded = json_encode(['client_id' => $clientId, 'client_secret' => $secret],
+        JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    $tmp = tempnam($secretDir, '.ixc-');
+    if ($tmp === false) {
+        jsonResponse(['success' => false, 'message' => 'Falha ao preparar arquivo protegido.'], 500);
+    }
+    chmod($tmp, 0600);
+    try {
+        if (file_put_contents($tmp, $encoded, LOCK_EX) === false || !rename($tmp, $target)) {
+            throw new RuntimeException('Falha ao salvar credenciais.');
+        }
+        chmod($target, 0600);
+    } catch (Throwable $e) {
+        @unlink($tmp);
+        jsonResponse(['success' => false, 'message' => 'Falha ao salvar credenciais.'], 500);
+    }
+    jsonResponse(['success' => true, 'credentials_saved' => true]);
 }
 
 $type = (string)($body['type'] ?? 'local');
