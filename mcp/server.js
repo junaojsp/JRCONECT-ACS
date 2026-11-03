@@ -4,6 +4,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { toNodeHandler } from '@modelcontextprotocol/node';
 import { validarToken } from './auth.js';
+import { registerPabxTools } from './pabx.js';
 
 const opaToken = readFileSync('/run/secrets/opa-token', 'utf8').trim();
 if (!/^[a-f0-9]{64}$/i.test(opaToken)) {
@@ -29,6 +30,7 @@ const handler = createMcpHandler(() => {
   }, async () => ({
     content: [{ type: 'text', text: 'Servidor MCP JR Conect funcionando.' }],
   }));
+  registerPabxTools(mcp);
   return mcp;
 });
 const mcpHandler = toNodeHandler(handler);
