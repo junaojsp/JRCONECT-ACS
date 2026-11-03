@@ -95,8 +95,24 @@ if ($method === 'GET') {
             }
             if ($type === 'external') {
                 $id = (string)($row['id'] ?? '');
-                $row['credentials_saved'] = preg_match('/^mcp-[a-f0-9]{12}$/', $id)
+                $validId = preg_match('/^mcp-[a-f0-9]{12}$/', $id) === 1;
+                $row['credentials_saved'] = $validId
                     && is_file('/var/lib/jrconect-mcp-secrets/' . $id . '.json');
+                $statusPath = '/var/lib/jrconect-mcp-secrets/' . $id . '-status.json';
+                $status = $validId && !is_link($statusPath) && is_file($statusPath)
+                    ? json_decode((string)@file_get_contents($statusPath), true) : null;
+                if (is_array($status)) {
+                    $row['connection_status'] = ($status['connection_status'] ?? '') === 'connected'
+                        ? 'connected' : 'error';
+                    $row['last_test_at'] = (string)($status['last_test_at'] ?? '');
+                    $row['tool_count'] = max(0, (int)($status['tool_count'] ?? 0));
+                    $row['server_tools_capability'] = (bool)($status['server_tools_capability'] ?? false);
+                } else {
+                    $row['connection_status'] = 'untested';
+                    $row['last_test_at'] = '';
+                    $row['tool_count'] = null;
+                    $row['server_tools_capability'] = null;
+                }
             }
             return $row;
         }, jrcMcpReadInstances($storeFile)),
