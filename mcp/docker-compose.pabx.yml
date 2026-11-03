@@ -1,0 +1,13 @@
+# Ativar SOMENTE apos instalar e validar a ponte SSH no Issabel.
+# Use: docker compose -f docker-compose.yml -f docker-compose.pabx.yml config
+# Arquivos secretos devem estar fora do Git; certifique-se de que o usuario node (UID 1000)
+# no container consegue ler a chave privada com permissoes minimas.
+services:
+  jrconect-mcp:
+    environment:
+      PABX_ENABLED: "true"
+      PABX_SSH_HOST: "138.204.112.27"
+      PABX_SSH_PORT: "22"
+    volumes:
+      - ${PABX_SSH_PRIVATE_KEY_PATH:?Defina PABX_SSH_PRIVATE_KEY_PATH}:/run/secrets/pabx-ssh-key:ro
+      - ${PABX_SSH_KNOWN_HOSTS_PATH:?Defina PABX_SSH_KNOWN_HOSTS_PATH}:/run/secrets/pabx-known-hosts:ro

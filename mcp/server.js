@@ -4,6 +4,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { toNodeHandler } from '@modelcontextprotocol/node';
 import { validarToken } from './auth.js';
+import { consultarPabx, pabxConfigurado } from './pabx.js';
 
 const opaToken = readFileSync('/run/secrets/opa-token', 'utf8').trim();
 if (!/^[a-f0-9]{64}$/i.test(opaToken)) {
@@ -29,6 +30,22 @@ const handler = createMcpHandler(() => {
   }, async () => ({
     content: [{ type: 'text', text: 'Servidor MCP JR Conect funcionando.' }],
   }));
+  if (pabxConfigurado()) {
+    mcp.registerTool('pabx_status', {
+      description: 'Consulta somente leitura: versao, uptime e total de canais ativos do Asterisk no PABX JR Conect.',
+    }, async () => {
+      try {
+        const status = await consultarPabx();
+        return { content: [{ type: 'text', text: status }] };
+      } catch {
+        // Nao exibir detalhes internos de SSH ou do sistema ao cliente MCP.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: 'Nao foi possivel consultar o PABX. Verifique a conexao SSH e os logs internos do MCP.' }],
+        };
+      }
+    });
+  }
   return mcp;
 });
 const mcpHandler = toNodeHandler(handler);
