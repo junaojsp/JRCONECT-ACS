@@ -361,6 +361,12 @@
     `;
   }
 
+  function isExternalMcpInstance(instance) {
+    const endpoint = String(instance?.endpoint || '').replace(/\/+$/, '').toLowerCase();
+    return instance?.type === 'external' ||
+      endpoint === 'https://cda.jrconect.com/services/mcp';
+  }
+
   function renderAdditional(panel, instances) {
     const section = panel.querySelector('[data-jrc-mcp-additional-section]');
     const root = panel.querySelector('[data-jrc-mcp-additional]');
@@ -383,15 +389,15 @@
               <div class="jrc-mcp-instance-card__subtitle">${esc(instance.description || 'Instância MCP local planejada')}</div>
             </div>
           </div>
-          <span class="jrc-mcp-status jrc-mcp-status--registered">${instance.type === 'external' ? 'Externo cadastrado' : 'Cadastrado'}</span>
+          <span class="jrc-mcp-status jrc-mcp-status--registered">${isExternalMcpInstance(instance) ? 'IXC externo' : 'Cadastrado'}</span>
         </div>
 
         <div class="jrc-mcp-instance-card__meta">
-          <span><i class="bi bi-box"></i> ${esc(instance.type === 'external' ? 'OAuth2' : (instance.container || '—'))}</span>
-          <span><i class="bi bi-ethernet"></i> ${esc(instance.type === 'external' ? 'Sem conexão ativa' : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
+          <span><i class="bi bi-box"></i> ${esc(isExternalMcpInstance(instance) ? 'OAuth2' : (instance.container || '—'))}</span>
+          <span><i class="bi bi-ethernet"></i> ${esc(isExternalMcpInstance(instance) ? 'Sem conexão ativa' : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
           <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
         </div>
-        ${instance.type === 'external' ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        ${isExternalMcpInstance(instance) ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button>
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-authorize="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Autorizar IXC</button>
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-test="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Testar conexão</button>
