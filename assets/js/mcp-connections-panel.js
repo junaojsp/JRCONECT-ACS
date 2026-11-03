@@ -371,8 +371,8 @@
     if (instance?.connection_status === 'connected') {
       const count = Math.max(0, Number(instance.tool_count) || 0);
       return {
-        css: 'connected',
-        label: 'MCP acessível',
+        css: 'online',
+        label: 'Conectado',
         detail: 'Último teste OK ' + timeAgo(instance.last_test_at) + ' · ' +
           count + (count === 1 ? ' ferramenta' : ' ferramentas')
       };
