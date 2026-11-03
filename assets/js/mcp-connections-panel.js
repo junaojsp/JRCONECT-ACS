@@ -116,6 +116,26 @@
         <div class="jrc-mcp-instances-grid" data-jrc-mcp-additional></div>
       </div>
 
+      <div class="jrc-mcp-modal" data-jrc-mcp-credentials-modal hidden>
+        <div class="jrc-mcp-modal__backdrop" data-jrc-mcp-credentials-close></div>
+        <div class="jrc-mcp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="jrc-mcp-credentials-title">
+          <div class="jrc-mcp-modal__head">
+            <div id="jrc-mcp-credentials-title" class="jrc-mcp-modal__title">Configurar credenciais OAuth2</div>
+            <button type="button" class="jrc-mcp-modal__close" data-jrc-mcp-credentials-close aria-label="Fechar"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <form class="jrc-mcp-modal__form" data-jrc-mcp-credentials-form autocomplete="off">
+            <input name="id" type="hidden">
+            <label><span>Client ID do IXC</span><input name="client_id" type="text" autocomplete="off" maxlength="512" required></label>
+            <label><span>Client Secret do IXC</span><input name="client_secret" type="password" autocomplete="new-password" maxlength="2048" required></label>
+            <p>Os dados são enviados pelo painel autenticado e armazenados fora da pasta pública. Salvar não inicia a autorização OAuth2.</p>
+            <div class="jrc-mcp-modal__message" data-jrc-mcp-credentials-message></div>
+            <div class="jrc-mcp-modal__footer">
+              <button type="button" data-jrc-mcp-credentials-close>Cancelar</button>
+              <button type="submit" class="jrc-mcp-modal__save">Salvar credenciais</button>
+            </div>
+          </form>
+        </div>
+      </div>
       <div class="jrc-mcp-modal" data-jrc-mcp-modal hidden>
         <div class="jrc-mcp-modal__backdrop" data-jrc-mcp-close></div>
         <div class="jrc-mcp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="jrc-mcp-modal-title">
@@ -371,6 +391,7 @@
           <span><i class="bi bi-ethernet"></i> ${esc(instance.type === 'external' ? 'Sem conexão ativa' : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
           <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
         </div>
+        ${instance.type === 'external' ? `<button type="button" class="jrc-mcp-hub__refresh" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button><small>${instance.credentials_saved ? 'Credenciais armazenadas; autorização pendente' : 'Credenciais ainda não configuradas'}</small>` : ''}
       </article>
     `).join('');
   }
@@ -491,6 +512,50 @@
     }
   }
 
+  function credentialsModal(panel, id) {
+    const modal = panel.querySelector('[data-jrc-mcp-credentials-modal]');
+    const form = modal.querySelector('form');
+    form.reset();
+    form.elements.id.value = id;
+    modal.querySelector('[data-jrc-mcp-credentials-message]').textContent = '';
+    modal.hidden = false;
+    document.body.classList.add('jrc-mcp-modal-open');
+  }
+
+  async function saveCredentials(panel, form) {
+    const message = panel.querySelector('[data-jrc-mcp-credentials-message]');
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    message.textContent = 'Salvando...';
+    try {
+      const response = await fetch('/api/mcp-instances.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': String(window.JRC_MCP_INSTANCE_CSRF || '')
+        },
+        body: JSON.stringify({
+          action: 'set_external_credentials',
+          id: form.elements.id.value,
+          client_id: form.elements.client_id.value,
+          client_secret: form.elements.client_secret.value
+        })
+      });
+      await parseApiResponse(response, 'Não foi possível salvar as credenciais.');
+      form.reset();
+      panel.querySelector('[data-jrc-mcp-credentials-modal]').hidden = true;
+      document.body.classList.remove('jrc-mcp-modal-open');
+      await load(panel);
+    } catch (error) {
+      message.textContent = error.message || 'Falha ao salvar.';
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
   function boot() {
     const old = document.getElementById('jrc-mcp-connections-panel');
     if (old) old.remove();
@@ -515,6 +580,20 @@
     }
     typeSelect?.addEventListener('change', syncType);
     syncType();
+    panel.addEventListener('click', event => {
+      const target = event.target.closest('[data-jrc-mcp-credentials]');
+      if (target) credentialsModal(panel, target.getAttribute('data-jrc-mcp-credentials'));
+      if (event.target.closest('[data-jrc-mcp-credentials-close]')) {
+        const form = panel.querySelector('[data-jrc-mcp-credentials-form]');
+        form.reset();
+        panel.querySelector('[data-jrc-mcp-credentials-modal]').hidden = true;
+        document.body.classList.remove('jrc-mcp-modal-open');
+      }
+    });
+    panel.querySelector('[data-jrc-mcp-credentials-form]')?.addEventListener('submit', event => {
+      event.preventDefault();
+      saveCredentials(panel, event.currentTarget);
+    });
     panel.querySelector('[data-jrc-mcp-refresh]')?.addEventListener('click', () => load(panel));
     panel.querySelector('[data-jrc-mcp-add]')?.addEventListener('click', () => openModal(panel));
 
