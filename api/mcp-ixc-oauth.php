@@ -21,8 +21,15 @@ function ixcInstance(string $id): array {
     if (!preg_match('/^mcp-[a-f0-9]{12}$/', $id)) ixcReply(['success'=>false,'message'=>'ID inválido.'],422);
     $data = json_decode((string)@file_get_contents(IXC_INSTANCES), true);
     foreach (($data['instances'] ?? []) as $item) {
-        if (($item['id'] ?? '') === $id && ($item['type'] ?? '') === 'external'
-          && ($item['endpoint'] ?? '') === IXC_MCP_URL) return $item;
+        $endpoint = rtrim((string)($item['endpoint'] ?? ''), '/');
+        $type = (string)($item['type'] ?? '');
+        $isLegacyIxc = $type === '' && $endpoint === IXC_MCP_URL;
+        if (($item['id'] ?? '') === $id && ($type === 'external' || $isLegacyIxc)
+          && $endpoint === IXC_MCP_URL) {
+            $item['type'] = 'external';
+            $item['auth_type'] = 'oauth2';
+            return $item;
+        }
     }
     ixcReply(['success'=>false,'message'=>'Integração IXC não encontrada.'],404);
 }
