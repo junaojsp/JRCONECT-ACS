@@ -391,7 +391,7 @@
           <span><i class="bi bi-ethernet"></i> ${esc(instance.type === 'external' ? 'Sem conexão ativa' : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
           <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
         </div>
-        ${instance.type === 'external' ? `<button type="button" class="jrc-mcp-hub__refresh" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button><small>${instance.credentials_saved ? 'Credenciais armazenadas; autorização pendente' : 'Credenciais ainda não configuradas'}</small>` : ''}
+        ${instance.type === 'external' ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;margin-right:8px;vertical-align:middle;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button><small>${instance.credentials_saved ? 'Credenciais armazenadas; autorização pendente' : 'Credenciais ainda não configuradas'}</small>` : ''}
       </article>
     `).join('');
   }
