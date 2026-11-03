@@ -609,7 +609,13 @@
             method:'POST',credentials:'same-origin',headers:{'X-CSRF-Token':String(window.JRC_MCP_INSTANCE_CSRF || ''),'Accept':'application/json'}
           });
           const result = await parseApiResponse(response, 'Não foi possível testar o MCP do IXC.');
-          window.alert('IXC conectado. Ferramentas encontradas: ' + result.tool_count + '\\n' + (result.tools || []).join(', '));
+          const lines = [
+            'IXC conectado. Ferramentas encontradas: ' + result.tool_count,
+            'Capacidade tools: ' + (result.server_tools_capability ? 'anunciada' : 'não anunciada'),
+            'Páginas consultadas: ' + (result.tool_pages ?? '—'),
+            ...(result.tools || [])
+          ];
+          window.alert(lines.join('\n'));
         } catch(err) {
           window.alert(err.message || 'Falha no teste.');
         } finally { test.disabled = false; }
