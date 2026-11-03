@@ -162,6 +162,10 @@
             </div>
             <div data-jrc-mcp-external-fields hidden>
               <label>
+                <span>Nome da conexão</span>
+                <input name="external_name" type="text" maxlength="100" placeholder="IXC Provedor JR CONECT">
+              </label>
+              <label>
                 <span>Endpoint HTTPS do MCP externo</span>
                 <input name="external_endpoint" type="url" maxlength="500" placeholder="https://cda.jrconect.com/services/mcp">
               </label>
@@ -443,7 +447,7 @@
     const isExternal = formData.get('type') === 'external';
     const payload = {
       type: isExternal ? 'external' : 'local',
-      name: String(formData.get('name') || '').trim(),
+      name: String(formData.get(isExternal ? 'external_name' : 'name') || '').trim(),
       container: String(formData.get('container') || '').trim(),
       port: String(formData.get('port') || '').trim(),
       endpoint: String(formData.get(isExternal ? 'external_endpoint' : 'endpoint') || '').trim(),
