@@ -269,6 +269,12 @@ $received = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 if (!is_string($expected) || $expected === '' || !is_string($received)
   || !hash_equals($expected,$received)) ixcReply(['success'=>false,'message'=>'CSRF inválido.'],403);
 ixcInstance($id);
+ixcStoreFile(ixcSecretFile($id,'-status'),[
+    'connection_status'=>'checking',
+    'last_test_at'=>gmdate('c'),
+    'tool_count'=>0,
+    'server_tools_capability'=>false
+]);
 try {
     $creds = ixcReadFile(ixcSecretFile($id));
     $token = ixcToken($id,$creds);
@@ -329,6 +335,12 @@ try {
     $emptyMessage = !$advertisesTools
         ? 'IXC respondeu sem anunciar a capacidade tools e sem ferramentas listadas.'
         : 'IXC anunciou tools, mas a lista retornada está vazia. Confira permissões, módulos e escopos no IXC.';
+    ixcStoreFile(ixcSecretFile($id,'-status'),[
+        'connection_status'=>'connected',
+        'last_test_at'=>gmdate('c'),
+        'tool_count'=>count($names),
+        'server_tools_capability'=>$advertisesTools
+    ]);
     ixcReply([
         'success'=>true,
         'connected'=>true,
@@ -339,5 +351,15 @@ try {
         'message'=>count($names) === 0 ? $emptyMessage : 'Ferramentas consultadas.'
     ]);
 } catch (Throwable $e) {
+    try {
+        ixcStoreFile(ixcSecretFile($id,'-status'),[
+            'connection_status'=>'error',
+            'last_test_at'=>gmdate('c'),
+            'tool_count'=>0,
+            'server_tools_capability'=>false
+        ]);
+    } catch (Throwable $ignored) {
+        // Keep the original MCP error as the API response.
+    }
     ixcReply(['success'=>false,'message'=>$e->getMessage()],502);
 }
