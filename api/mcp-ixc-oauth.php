@@ -138,7 +138,11 @@ function ixcMcpRequest(string $token, string $method, int $id, ?string $sessionI
             }
         }
     }
-    if (!is_array($json) || isset($json['error'])) throw new RuntimeException('Resposta MCP inválida ou com erro.');
+    if (!is_array($json)) throw new RuntimeException('Resposta MCP inválida.');
+    if (isset($json['error'])) {
+        $m = is_array($json['error']) ? (string)($json['error']['message'] ?? 'Erro MCP') : 'Erro MCP';
+        throw new RuntimeException('MCP IXC: '.substr($m,0,160));
+    }
     return [$json,$responseHeaders];
 }
 
@@ -214,12 +218,32 @@ try {
     $token = ixcToken($id,$creds);
     [$hello,$headers] = ixcMcpRequest($token,'initialize',1);
     $sid = $headers['mcp-session-id'] ?? null;
-    [$tools] = ixcMcpRequest($token,'tools/list',2,$sid);
-    $names = [];
-    foreach (($tools['result']['tools'] ?? []) as $tool) {
-        if (isset($tool['name'])) $names[] = (string)$tool['name'];
+    if (!isset($hello['result']['protocolVersion'])) {
+        throw new RuntimeException('Resposta initialize sem protocolVersion. Verifique a compatibilidade MCP.');
     }
-    ixcReply(['success'=>true,'connected'=>true,'tool_count'=>count($names),'tools'=>array_slice($names,0,50)]);
+    // MCP requires notifications/initialized after initialize, before tools/list.
+    $initHeaders = [
+        'Authorization: Bearer '.$token,
+        'Content-Type: application/json',
+        'Accept: application/json, text/event-stream',
+        'MCP-Protocol-Version: '.(string)$hello['result']['protocolVersion']
+    ];
+    if ($sid !== null) $initHeaders[] = 'Mcp-Session-Id: '.$sid;
+    $notice = json_encode(['jsonrpc'=>'2.0','method'=>'notifications/initialized'], JSON_THROW_ON_ERROR);
+    [$noticeStatus] = ixcHttp(IXC_MCP_URL,$initHeaders,$notice);
+    if ($noticeStatus < 200 || $noticeStatus >= 300) {
+        throw new RuntimeException('MCP IXC não confirmou initialized (HTTP '.$noticeStatus.').');
+    }
+    [$tools] = ixcMcpRequest($token,'tools/list',2,$sid);
+    if (!array_key_exists('result',$tools) || !isset($tools['result']['tools']) || !is_array($tools['result']['tools'])) {
+        throw new RuntimeException('tools/list não retornou uma lista válida de ferramentas.');
+    }
+    $names = [];
+    foreach ($tools['result']['tools'] as $tool) {
+        if (is_array($tool) && isset($tool['name'])) $names[] = (string)$tool['name'];
+    }
+    ixcReply(['success'=>true,'connected'=>true,'tool_count'=>count($names),'tools'=>array_slice($names,0,50),
+        'message'=>count($names) === 0 ? 'IXC respondeu com lista vazia de ferramentas. Verifique permissões no IXC.' : 'Ferramentas consultadas.']);
 } catch (Throwable $e) {
     ixcReply(['success'=>false,'message'=>$e->getMessage()],502);
 }
