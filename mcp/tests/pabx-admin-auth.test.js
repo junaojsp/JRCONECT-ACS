@@ -18,9 +18,10 @@ const base = {
 assert.equal(pabxAdminAuthorized(base), true);
 assert.equal(pabxAdminAuthorized({ ...base, realm_access: { roles: [] } }), false);
 
-// Modo single-subject depende de configuracao explicita.
+// Modo single-subject exige configuracao explicita e tambem a role.
 process.env.PABX_ADMIN_AUTH_MODE = 'single-subject';
-assert.equal(pabxAdminAuthorized({ ...base, realm_access: { roles: [] } }), true);
+assert.equal(pabxAdminAuthorized(base), true);
+assert.equal(pabxAdminAuthorized({ ...base, realm_access: { roles: [] } }), false);
 assert.equal(pabxAdminAuthorized({ ...base, azp: 'opa-suite' }), false);
 assert.equal(pabxAdminAuthorized({ ...base, sub: 'outro' }), false);
 assert.equal(pabxAdminAuthorized({ ...base, sub: null }), false);
@@ -45,12 +46,12 @@ assert.equal(pabxAdminAuthorized({ ...base, realm_access: { roles: 'jrconect-pab
 assert.equal(pabxAdminAuthorized({ ...base, azp: 'jrconect-mcp' }), false);
 assert.equal(pabxAdminAuthorized({ ...base, sub: 'ffffffff-ffff-4fff-8fff-ffffffffffff' }), false);
 
-// No modo de um usuario, a lista deve conter exatamente um UUID.
+// No modo de um usuario, a lista deve conter exatamente um UUID e a role continua obrigatoria.
 process.env.PABX_ADMIN_AUTH_MODE = 'single-subject';
 process.env.PABX_ADMIN_ALLOWED_SUB = id + ',' + id;
 assert.equal(pabxAdminAuthorized(base), false);
 process.env.PABX_ADMIN_ALLOWED_SUB = id;
-assert.equal(pabxAdminAuthorized({ ...base, realm_access: undefined }), true);
+assert.equal(pabxAdminAuthorized({ ...base, realm_access: undefined }), false);
 assert.equal(pabxAdminAuthorized({ ...base, azp: 'opa-suite' }), false);
 process.env.PABX_ADMIN_MCP_ENABLED = 'false';
 assert.equal(pabxAdminAuthorized(base), false);
