@@ -83,9 +83,20 @@ async function queryPabx(action) {
 
 
 async function queryIxcFileInfo(area, file) {
-  if (!['webservice_ixcsoft', 'agi_ixcsoft', 'dialplan_ixcsoft'].includes(area) ||
-      typeof file !== 'string' || !/^[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+){0,2}$/.test(file) ||
-      file.includes('..')) {
+  // Separar os segmentos evita escapes incorretos em expressoes regulares.
+  // O PHP do PABX valida os mesmos limites de area e caminho relativo.
+  const allowedAreas = ['webservice_ixcsoft', 'agi_ixcsoft', 'dialplan_ixcsoft'];
+  if (!allowedAreas.includes(area) || typeof file !== 'string' ||
+      file.length === 0 || file.length > 220) {
+    throw new Error('invalid_file_id');
+  }
+  const segments = file.split('/');
+  if (segments.length > 3 || segments.some(segment =>
+      !/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,100}$/.test(segment) ||
+      segment === '.' || segment === '..')) {
+    throw new Error('invalid_file_id');
+  }
+  if (!/\.(php|agi|conf|inc)$/i.test(segments[segments.length - 1])) {
     throw new Error('invalid_file_id');
   }
   const url = new URL(PABX_URL);
