@@ -1,5 +1,29 @@
 # JR Conect — MCP administrativo PABX (instalacao controlada)
 
+## Alternativa sem console administrativo do Keycloak (2026-11-04)
+
+Caso o painel /admin esteja bloqueado pelo Nginx e a senha master nao seja conhecida, **nao tente novos logins ou altere a protecao Nginx**. A branch agora oferece o modo opcional `PABX_ADMIN_AUTH_MODE=single-subject`.
+
+Neste modo, a autorizacao do endpoint /mcp-admin exige cumulativamente:
+- JWT Keycloak assinado, issuer e audience verificados pela funcao `validarToken` existente;
+- `azp=chatgpt-mcp`;
+- um **unico UUID `sub` exatamente autorizado** em `PABX_ADMIN_ALLOWED_SUB`;
+- feature flag `PABX_ADMIN_MCP_ENABLED=true`.
+
+A role de realm adicional nao e exigida somente nesse modo; os demais usuarios, Opa, tokens sem JWT ou sem subject correspondente continuam negados. Essa opcao tem uma camada de controle a menos que role+subject e exige lista de **um unico usuario**. Ela NAO libera o painel admin e NAO modifica usuarios no Keycloak.
+
+Para identificar o usuario sem senha administrativa Keycloak, no ACS:
+
+~~~sh
+cd /opt/jrconect-acs-git
+git pull --ff-only origin feat/pabx-admin-gateway
+sh scripts/list-keycloak-sub-readonly.sh
+~~~
+
+A consulta executa SELECT no banco local `jrconect-auth-db`. Nao imprime tokens ou hashes de senha. Identifique a linha do usuario que autentica a conexao ChatGPT; use somente o UUID da coluna `sub` no ambiente `PABX_ADMIN_ALLOWED_SUB`. Evite divulgar lista completa de usuarios.
+
+O arquivo `mcp/pabx-admin.js` no checkout e o override administrativo foram atualizados, mas os **arquivos de producao nao mudam ate serem copiados para /opt/jrconect-mcp**. Testar role/subject antes de reiniciar. **Manter o MCP publico /mcp intocado** e o PABX fora de mudancas durante esta etapa.
+
 ## Arquitetura
 
 A producao MCP ja tem 6 ferramentas PABX de consulta. Esta branch adiciona **/mcp-admin** no MESMO container para revisao administrativa de arquivos, sem disponibilizar o admin_token ao Opa Suite ou ao MCP publico /mcp.
