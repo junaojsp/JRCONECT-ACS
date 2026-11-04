@@ -14,6 +14,7 @@ jobs:
           node-version: "24"
       - name: Syntax checks
         run: |
+          sh -n scripts/list-keycloak-sub-readonly.sh
           node --check mcp/pabx-admin.js
           node --check mcp/pabx.js
           python3 -m py_compile scripts/prepare-pabx-admin-mcp.py
