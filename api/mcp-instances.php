@@ -174,17 +174,42 @@ if (($body['action'] ?? '') === 'test_managed') {
         }
     }
     if (!$found) jsonResponse(['success' => false, 'message' => 'Integração PABX não encontrada.'], 404);
-    $ch = curl_init('http://127.0.0.1:3100/health');
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 2,
-        CURLOPT_TIMEOUT => 4, CURLOPT_FOLLOWLOCATION => false]);
+    // The credential is owned by the MCP service; never return or log its contents.
+    $tokenPath = '/run/secrets/pabx-read-token';
+    if (!is_file($tokenPath) || !is_readable($tokenPath)) {
+        jsonResponse(['success' => false, 'pabx_verified' => false,
+            'message' => 'O processo PHP do ACS não possui acesso ao token do PABX. Configure um gateway interno autenticado; não copie o segredo para o diretório web.'], 503);
+    }
+    $token = trim((string)file_get_contents($tokenPath));
+    if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+        jsonResponse(['success' => false, 'pabx_verified' => false,
+            'message' => 'Credencial PABX indisponível ou inválida.'], 503);
+    }
+    $ch = curl_init('https://pabx.jrconect.com/api/mcp/index.php?action=status');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 10,
+        CURLOPT_FOLLOWLOCATION => false, CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token, 'Accept: application/json'],
+        CURLOPT_MAXREDIRS => 0,
+    ]);
     $response = curl_exec($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     curl_close($ch);
-    if ($response === false || $code < 200 || $code >= 300) {
-        jsonResponse(['success' => false, 'message' => 'MCP principal indisponível no endpoint local. O Issabel não foi testado.'], 503);
+    unset($token);
+    $data = is_string($response) && strlen($response) <= 262144
+        && $code === 200 && stripos($contentType, 'application/json') !== false
+        ? json_decode($response, true) : null;
+    if (!is_array($data) || ($data['ok'] ?? null) !== true || ($data['action'] ?? null) !== 'status'
+        || !is_array($data['result'] ?? null)) {
+        jsonResponse(['success' => false, 'pabx_verified' => false,
+            'message' => 'O Issabel não retornou um status autenticado válido.'], 503);
     }
-    jsonResponse(['success' => true, 'mcp_reachable' => true, 'pabx_verified' => false,
-        'message' => 'MCP principal respondeu. A comunicação autenticada com o Issabel ainda não foi verificada por este teste.']);
+    jsonResponse(['success' => true, 'pabx_verified' => true,
+        'checked_at' => gmdate('c'),
+        'message' => 'Issabel 5 respondeu à consulta autenticada de status.']);
+
 }
 
 // Read-only local MCP connectivity check (does not validate Issabel itself).
