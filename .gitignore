@@ -72,3 +72,10 @@ secrets*
 # Scripts de teste/integracao que podem conter token IXC
 /api/test-ixc-onu.php
 /api/discovery-ixc-tr069.php
+
+# Configuração privada IXC (somente exemplo no Git)
+/config/ixc.php
+
+# Python tooling caches
+__pycache__/
+*.pyc

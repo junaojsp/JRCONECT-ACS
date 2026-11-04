@@ -65,7 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="pt-BR">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JRC-ACS • Acesso</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
-<link rel="stylesheet" href="/assets/css/login-acs.css?v=20261008"></head>
+<link rel="stylesheet" href="/assets/css/login-acs.css?v=20261008"><!-- JRC NOC SHARED THEME -->
+<link rel="stylesheet" href="/assets/css/jrc-theme.css?v=1">
+<script src="/assets/js/jrc-theme.js?v=1" defer></script>
+<!-- /JRC NOC SHARED THEME -->
+</head>
 <body><main class="login" id="login">
 <section class="visual" aria-label="JRC-ACS, plataforma de gestão de equipamentos">
 <img class="art" src="/assets/img/acs-login-hero.webp" alt="Roteador com globo holográfico ciano e conexões digitais">

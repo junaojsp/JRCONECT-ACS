@@ -54,26 +54,7 @@ header('Content-Type: application/json; charset=utf-8');
    CONFIGURAÇÃO IXC
    ========================================================= */
 
-$ixcBaseUrl =
-    'https://cda.jrconect.com';
-
-
-/*
- * COLE AQUI O TOKEN BRUTO DO IXC.
- *
- * Exemplo:
- *
- * 37:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- *
- * NÃO coloque "Basic ".
- *
- * O próprio código faz:
- *
- * base64_encode($ixcToken)
- */
-
-$ixcToken =
-    '37:052335621c659145292a29b3d08c39318380211e2a9b5cd1ad621f1cefc6bd6e';
+require_once __DIR__ . '/../lib/IXCConfig.php';
 
 
 /* =========================================================
@@ -613,18 +594,9 @@ try {
        VALIDAR CONFIG IXC
        ===================================================== */
 
-    if (
-        $ixcToken === '' ||
-        str_contains(
-            $ixcToken,
-            'COLE_AQUI'
-        )
-    ) {
-
-        throw new RuntimeException(
-            'Configure $ixcToken com o token bruto do IXC.'
-        );
-    }
+    $ixcConfig = getIxcConfig();
+    $ixcBaseUrl = $ixcConfig['base_url'];
+    $ixcToken = $ixcConfig['token'];
 
 
     /* =====================================================
