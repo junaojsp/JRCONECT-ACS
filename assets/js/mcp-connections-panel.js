@@ -292,9 +292,9 @@
               : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem detalhes adicionais</span>'}
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;">
-          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;width:auto;min-height:26px;padding:4px 9px;font-size:11px" data-jrc-mcp-check-service="${esc(id)}">Verificar status</button>
-          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;width:auto;min-height:26px;padding:4px 9px;font-size:11px" data-jrc-mcp-details="${esc(id)}">Detalhes</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;">
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-check-service="${esc(id)}">Verificar status</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-details="${esc(id)}">Detalhes</button>
         </div>
       </article>
     `;
@@ -446,13 +446,13 @@
           <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
-          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;" data-jrc-mcp-edit="${esc(instance.id)}">Editar</button>
-          ${!isExternalMcpInstance(instance) ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;" data-jrc-mcp-test-local="${esc(instance.id)}">Testar MCP principal</button>` : ''}
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-edit="${esc(instance.id)}">Editar</button>
+          ${!isExternalMcpInstance(instance) ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-test-local="${esc(instance.id)}">Testar MCP principal</button>` : ''}
         </div>
         ${isExternalMcpInstance(instance) ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
-          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button>
-          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-authorize="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Autorizar IXC</button>
-          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;width:auto;min-height:26px;padding:4px 9px;font-size:11px;line-height:1.2;" data-jrc-mcp-test="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Testar conexão</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;line-height:1.2;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;line-height:1.2;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-authorize="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Autorizar IXC</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;line-height:1.2;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-test="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Testar conexão</button>
           <small>${instance.credentials_saved ? (instance.connection_status === 'connected' ? 'Credenciais e conexão validadas no último teste.' : 'Credenciais salvas — autorização a confirmar') : 'Credenciais pendentes'}</small>
         </div>` : ''}
       </article>
