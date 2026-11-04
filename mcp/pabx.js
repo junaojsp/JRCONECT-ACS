@@ -1,72 +1,92 @@
-import { existsSync } from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+// JR Conect PABX - Bridge REST HTTPS de somente leitura.
+import { existsSync, readFileSync } from 'node:fs';
 
-const execFileAsync = promisify(execFile);
-const timeoutMs = 10000;
-const maxOutputBytes = 16 * 1024;
+const PABX_URL = 'https://pabx.jrconect.com/api/mcp/index.php';
+const TOKEN_PATH = '/run/secrets/pabx-read-token';
+const MAX_RESPONSE_BYTES = 256 * 1024;
 
-function pabxConfig() {
-  const host = process.env.PABX_SSH_HOST || '';
-  const user = process.env.PABX_SSH_USER || '';
-  const keyPath = process.env.PABX_SSH_KEY_PATH || '';
-  const knownHostsPath = process.env.PABX_SSH_KNOWN_HOSTS || '';
+const READ_TOOLS = Object.freeze([
+  ['pabx_status', 'status', 'Consulta a versao, uptime e canais ativos do PABX Issabel 5.'],
+  ['pabx_filas', 'queues', 'Consulta o estado das filas de atendimento do Asterisk.'],
+  ['pabx_ramais', 'extensions', 'Consulta os endpoints PJSIP no PABX.'],
+  ['pabx_troncos', 'trunks', 'Consulta os registros de troncos PJSIP.'],
+]);
 
-  if (!/^(?:[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?)$/.test(host)) return null;
-  if (!/^[a-z_][a-z0-9_-]{0,31}$/.test(user)) return null;
-  if (!keyPath.startsWith('/run/secrets/')) return null;
-  if (!knownHostsPath.startsWith('/run/secrets/')) return null;
-  if (!existsSync(keyPath) || !existsSync(knownHostsPath)) return null;
+function configured() {
+  return process.env.PABX_API_ENABLED === 'true' && existsSync(TOKEN_PATH);
+}
 
-  return { host, user, keyPath, knownHostsPath };
+function readBearer() {
+  const token = readFileSync(TOKEN_PATH, 'utf8').trim();
+  if (!/^[a-f0-9]{64}$/.test(token)) {
+    throw new Error('token_invalido');
+  }
+  return token;
+}
+
+async function readLimited(response) {
+  if (!response.body) throw new Error('resposta_vazia');
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error('resposta_grande');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const buffer = Buffer.concat(chunks, size);
+  return buffer.toString('utf8');
+}
+
+async function queryPabx(action) {
+  // A URL e as acoes sao fixas no backend. O cliente MCP nao define host nem comando.
+  const token = readBearer();
+  const url = new URL(PABX_URL);
+  url.searchParams.set('action', action);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    redirect: 'error',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10000),
+  });
+  if (response.status !== 200 || !String(response.headers.get('content-type') || '').includes('application/json')) {
+    throw new Error('pabx_http_indisponivel');
+  }
+  const data = JSON.parse(await readLimited(response));
+  if (data?.ok !== true || data.action !== action ||
+      !Array.isArray(data.result) || data.result.some(x => typeof x !== 'string')) {
+    throw new Error('resposta_invalida');
+  }
+  return data.result;
 }
 
 export function registerPabxTools(mcp) {
-  const config = pabxConfig();
-  if (!config) return false;
-
-  mcp.registerTool('pabx_status', {
-    description: 'Consulta somente leitura a versão, uptime e quantidade de canais ativos do PABX JR CONECT.',
-  }, async () => {
-    try {
-      const { stdout } = await execFileAsync('/usr/bin/ssh', [
-        '-F', '/dev/null',
-        '-T',
-        '-i', config.keyPath,
-        '-o', 'BatchMode=yes',
-        '-o', 'IdentitiesOnly=yes',
-        '-o', 'StrictHostKeyChecking=yes',
-        '-o', `UserKnownHostsFile=${config.knownHostsPath}`,
-        '-o', 'GlobalKnownHostsFile=/dev/null',
-        '-o', 'PasswordAuthentication=no',
-        '-o', 'KbdInteractiveAuthentication=no',
-        '-o', 'GSSAPIAuthentication=no',
-        '-o', 'ClearAllForwardings=yes',
-        '-o', 'ConnectTimeout=5',
-        '-o', 'ConnectionAttempts=1',
-        `${config.user}@${config.host}`,
-        'status',
-      ], {
-        timeout: timeoutMs,
-        maxBuffer: maxOutputBytes,
-        encoding: 'utf8',
-        windowsHide: true,
-      });
-
-      const text = String(stdout || '').trim();
-      if (!text || Buffer.byteLength(text, 'utf8') > maxOutputBytes) {
-        throw new Error('Resposta vazia ou acima do limite');
+  if (!configured()) return false;
+  for (const [name, action, description] of READ_TOOLS) {
+    mcp.registerTool(name, { description }, async () => {
+      try {
+        const results = await queryPabx(action);
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ origem: 'PABX JR Conect', acao: action, resultado: results }) }],
+        };
+      } catch {
+        // Mensagem sem credenciais, IP interno, pilha de erro ou dados de rede.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: 'Falha ao consultar a API HTTPS do PABX. Confirme a configuracao e o acesso no servidor MCP.' }],
+        };
       }
-      return { content: [{ type: 'text', text }] };
-    } catch {
-      return {
-        isError: true,
-        content: [{
-          type: 'text',
-          text: 'Não foi possível consultar o PABX pelo canal SSH restrito. Verifique o acesso configurado no ACS.',
-        }],
-      };
-    }
-  });
+    });
+  }
   return true;
 }
