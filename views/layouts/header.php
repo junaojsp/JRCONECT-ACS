@@ -119,6 +119,17 @@
     <span>Discovery TR-069</span>
 </a>
 
+            <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
+            <li>
+                <a href="/rest-integrations.php"
+                   class="<?php echo ($currentPage ?? '') === 'rest-integrations' ? 'active' : ''; ?>"
+                   data-tooltip="Integrações REST">
+                    <i class="bi bi-plug"></i>
+                    <span>Integrações REST</span>
+                </a>
+            </li>
+            <?php endif; ?>
+
             <li>
 
                 <a
