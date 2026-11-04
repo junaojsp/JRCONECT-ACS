@@ -240,8 +240,41 @@ if (($body['action'] ?? '') === 'set_external_credentials') {
 }
 
 $type = (string)($body['type'] ?? 'local');
-if (!in_array($type, ['local', 'external'], true)) {
+if (!in_array($type, ['local', 'external', 'managed', 'stdio'], true)) {
     jsonResponse(['success' => false, 'message' => 'Tipo MCP inválido.'], 422);
+}
+
+if ($type === 'managed' || $type === 'stdio') {
+    $name = trim((string)($body['name'] ?? ''));
+    $description = trim((string)($body['description'] ?? ''));
+    $service = trim((string)($body['service'] ?? ''));
+    $command = trim((string)($body['command'] ?? ''));
+    if (mb_strlen($name) < 2 || mb_strlen($name) > 100 || mb_strlen($description) > 240) {
+        jsonResponse(['success' => false, 'message' => 'Nome ou descrição inválidos.'], 422);
+    }
+    if ($type === 'managed' && $service !== 'pabx') {
+        jsonResponse(['success' => false, 'message' => 'Integração gerenciada não suportada.'], 422);
+    }
+    if ($type === 'stdio' && (!preg_match('/^[a-zA-Z0-9_.\\/-]{2,200}$/', $command) || str_contains($command, '..'))) {
+        jsonResponse(['success' => false, 'message' => 'Informe um executável STDIO válido, sem argumentos.'], 422);
+    }
+    $instances = jrcMcpReadInstances($storeFile);
+    foreach ($instances as $row) {
+        if ($type === 'managed' && ($row['type'] ?? '') === 'managed' && ($row['service'] ?? '') === $service) {
+            jsonResponse(['success' => false, 'message' => 'Integração já cadastrada.'], 409);
+        }
+    }
+    $instance = [
+        'id' => 'mcp-' . bin2hex(random_bytes(6)),
+        'type' => $type, 'name' => $name, 'description' => $description,
+        'status' => 'registered', 'created_at' => gmdate('c')
+    ];
+    if ($type === 'managed') $instance['service'] = $service;
+    else $instance['command'] = $command;
+    $instances[] = $instance;
+    try { jrcMcpWriteInstances($storeDir, $storeFile, $instances); }
+    catch (Throwable $e) { jsonResponse(['success' => false, 'message' => 'Falha ao cadastrar instância.'], 500); }
+    jsonResponse(['success' => true, 'instance' => $instance], 201);
 }
 
 if ($type === 'external') {
@@ -254,7 +287,7 @@ if ($type === 'external') {
         jsonResponse(['success' => false, 'message' => 'Nome ou descrição inválidos.'], 422);
     }
     // Registration only: this endpoint never makes outbound requests or stores credentials.
-    if ($authType !== 'oauth2' || mb_strlen($endpoint) > 500 || !filter_var($endpoint, FILTER_VALIDATE_URL)) {
+    if (!in_array($authType, ['oauth2', 'none', 'bearer', 'api_key'], true) || mb_strlen($endpoint) > 500 || !filter_var($endpoint, FILTER_VALIDATE_URL)) {
         jsonResponse(['success' => false, 'message' => 'Informe uma URL HTTPS válida e OAuth2.'], 422);
     }
     $parts = parse_url($endpoint);
@@ -275,7 +308,8 @@ if ($type === 'external') {
         'name' => $name,
         'endpoint' => $endpoint,
         'description' => $description,
-        'auth_type' => 'oauth2',
+        'auth_type' => $authType,
+        'transport' => in_array(($body['transport'] ?? ''), ['streamable_http', 'sse'], true) ? $body['transport'] : 'streamable_http',
         'status' => 'registered',
         'created_at' => gmdate('c'),
     ];
