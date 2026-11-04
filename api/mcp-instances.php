@@ -163,6 +163,30 @@ if (($body['action'] ?? '') === 'update_instance') {
     jsonResponse(['success' => true, 'instance' => $instances[$index]]);
 }
 
+// Read-only reachability check for a managed integration. This never claims that Issabel was authenticated.
+if (($body['action'] ?? '') === 'test_managed') {
+    $id = (string)($body['id'] ?? '');
+    $found = false;
+    foreach (jrcMcpReadInstances($storeFile) as $row) {
+        if (($row['id'] ?? '') === $id && ($row['type'] ?? '') === 'managed' && ($row['service'] ?? '') === 'pabx') {
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) jsonResponse(['success' => false, 'message' => 'Integração PABX não encontrada.'], 404);
+    $ch = curl_init('http://127.0.0.1:3100/health');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 2,
+        CURLOPT_TIMEOUT => 4, CURLOPT_FOLLOWLOCATION => false]);
+    $response = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($response === false || $code < 200 || $code >= 300) {
+        jsonResponse(['success' => false, 'message' => 'MCP principal indisponível no endpoint local. O Issabel não foi testado.'], 503);
+    }
+    jsonResponse(['success' => true, 'mcp_reachable' => true, 'pabx_verified' => false,
+        'message' => 'MCP principal respondeu. A comunicação autenticada com o Issabel ainda não foi verificada por este teste.']);
+}
+
 // Read-only local MCP connectivity check (does not validate Issabel itself).
 if (($body['action'] ?? '') === 'test_local') {
     $id = (string)($body['id'] ?? '');
