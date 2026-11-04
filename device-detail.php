@@ -29,84 +29,79 @@ include __DIR__ . '/views/layouts/header.php';
 <?php else: ?>
 
     <!-- =====================================================
-         BOTOES SUPERIORES
+         CABECALHO OPERACIONAL DO EQUIPAMENTO
          ===================================================== -->
 
-    <div class="mb-3">
+    <div class="acs-device-shell">
 
-        <a href="/devices.php" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Voltar para Equipamentos
-        </a>
+        <div class="acs-device-toolbar">
 
-        <button
-            class="btn btn-primary"
-            onclick="summonDevice()"
-        >
-            <i class="bi bi-lightning-charge"></i>
-            Solicitar Comunicação
-        </button>
+            <div class="acs-device-toolbar-left">
+                <a href="/devices.php" class="acs-back-btn" title="Voltar para equipamentos">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
 
-        <button
-            class="btn btn-danger"
-            onclick="startONUSpeedtest()"
-            id="onu-speedtest-btn"
-        >
-            <i class="bi bi-speedometer2"></i>
-            Teste de Velocidade
-        </button>
+                <div class="acs-device-avatar">
+                    <i class="bi bi-router"></i>
+                </div>
 
-        <button
-            class="btn btn-success"
-            onclick="showAddTagModal()"
-        >
-            <i class="bi bi-tag"></i>
-            Adicionar Etiqueta
-        </button>
+                <div class="acs-device-heading">
+                    <div class="acs-device-title-row">
+                        <h3 id="device-model-title">Carregando...</h3>
+                        <span id="device-status-header" class="acs-header-status">...</span>
+                    </div>
 
-        <button
-            class="btn btn-warning"
-            onclick="showRemoveTagModal()"
-        >
-            <i class="bi bi-tag-fill"></i>
-            Remover Etiqueta
-        </button>
+                    <div class="acs-device-subtitle">
+                        <span id="device-id-badge">Carregando...</span>
+                        <span class="acs-separator">•</span>
+                        <span id="device-ip-header">IP não disponível</span>
+                        <span id="device-tags-badge"></span>
+                    </div>
+                </div>
+            </div>
 
-        <button
-            class="btn btn-info"
-            onclick="loadDeviceDetail()"
-        >
-            <i class="bi bi-arrow-clockwise"></i>
-            Atualizar
-        </button>
+            <div class="acs-device-toolbar-actions">
+                <button class="acs-toolbar-action" type="button" onclick="summonDevice()" title="Solicitar comunicação">
+                    <i class="bi bi-lightning-charge"></i>
+                    <span>Comunicar</span>
+                </button>
 
-    </div>
+                <button class="acs-toolbar-action" type="button" onclick="startONUSpeedtest()" id="onu-speedtest-btn" title="Teste de velocidade">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Speedtest</span>
+                </button>
 
+                <button class="acs-toolbar-action" type="button" onclick="showAddTagModal()" title="Adicionar etiqueta">
+                    <i class="bi bi-tag"></i>
+                    <span>Etiqueta</span>
+                </button>
 
-    <!-- =====================================================
-         CARD PRINCIPAL
-         ===================================================== -->
+                <button class="acs-toolbar-action" type="button" onclick="openWebManagement()" title="Abrir gerenciamento web do equipamento">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                    <span>Web</span>
+                </button>
 
-    <div class="card">
+                <button class="acs-toolbar-action acs-toolbar-icon" type="button" onclick="loadDeviceDetail()" title="Atualizar">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
 
-        <div class="card-header">
-
-            <i class="bi bi-router"></i>
-            Detalhes do Equipamento
-
-            <span
-                id="device-id-badge"
-                class="badge bg-secondary ms-2"
-            >
-                Carregando...
-            </span>
-
-            <span id="device-tags-badge"></span>
+                <div class="dropdown">
+                    <button class="acs-toolbar-action acs-toolbar-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Mais ações">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" type="button" onclick="showRemoveTagModal()">
+                                <i class="bi bi-tag-fill me-2"></i>Remover etiqueta
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
 
         </div>
 
-
-        <div class="card-body">
+        <div class="acs-device-tabs-wrap">
 
             <div
                 id="loading-spinner"
@@ -114,11 +109,6 @@ include __DIR__ . '/views/layouts/header.php';
             >
                 <div class="spinner"></div>
             </div>
-
-
-            <!-- =================================================
-                 ABAS
-                 ================================================= -->
 
             <ul
                 class="nav nav-tabs"
@@ -206,6 +196,37 @@ include __DIR__ . '/views/layouts/header.php';
 
                     <button
                         class="nav-link"
+                        id="firmware-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#firmware"
+                        type="button"
+                        role="tab"
+                    >
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        Firmware
+                    </button>
+
+                </li>
+
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Monitoramento
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-assistant" type="button" role="tab">
+                        <i class="bi bi-stars"></i>
+                        IA
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+
+                    <button
+                        class="nav-link"
                         id="devices-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#devices"
@@ -276,10 +297,27 @@ include __DIR__ . '/views/layouts/header.php';
 
                 <div
                     class="tab-pane fade"
+                    id="firmware"
+                    role="tabpanel"
+                >
+                    <div id="firmware-content"></div>
+                </div>
+
+
+                <div
+                    class="tab-pane fade"
                     id="devices"
                     role="tabpanel"
                 >
                     <div id="devices-content"></div>
+                </div>
+
+                <div class="tab-pane fade" id="monitoring" role="tabpanel">
+                    <div id="monitoring-content"></div>
+                </div>
+
+                <div class="tab-pane fade" id="ai-assistant" role="tabpanel">
+                    <div id="ai-content"></div>
                 </div>
 
             </div>

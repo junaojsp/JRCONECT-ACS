@@ -37,11 +37,12 @@ $genieacs = new GenieACS(
     $credentials['password']
 );
 
-// Use the new method that summons device AND fetches admin credentials
+// Request counters/ports for both TR-098 and TR-181 CPE data models.
+$diagnostics = $genieacs->refreshDeviceDiagnostics($deviceId);
 $result = $genieacs->summonAndFetchAdminCredentials($deviceId);
 
-if ($result['success']) {
-    jsonResponse(['success' => true, 'message' => 'Device summon berhasil dan admin credentials sedang diambil...']);
+if ($result['success'] || $diagnostics['success']) {
+    jsonResponse(['success' => true, 'message' => 'Solicitação enviada. Portas e contadores serão atualizados na próxima comunicação TR-069.']);
 } else {
     $errorMsg = 'Gagal summon device';
     if (isset($result['error'])) {

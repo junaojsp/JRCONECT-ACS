@@ -246,8 +246,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const toggleIcon = sidebarToggle.querySelector('i');
 
-    // Check localStorage for saved state
-    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    // Check localStorage for saved state.
+    // First visit defaults to compact icon-only sidebar, like the ACS reference.
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed');
+    const sidebarCollapsed = savedSidebarState === null ? true : savedSidebarState === 'true';
+
+    if (savedSidebarState === null) {
+        localStorage.setItem('sidebarCollapsed', 'true');
+    }
 
     if (sidebarCollapsed) {
         sidebar.classList.add('collapsed');
