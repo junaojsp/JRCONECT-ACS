@@ -97,3 +97,16 @@ Voltar os arquivos alterados dos backups gerados no Passo 1 e remover o override
 ## Painel ACS
 
 O painel visual `assets/js/mcp-connections-panel.js` continua com os tipos local e external OAuth2 na branch-base. Cadastrar API REST no mesmo modal exige alteracao complementar do JS e de `api/mcp-instances.php`. O modulo aqui **faz o MCP consumir a API**, mas nao muda automaticamente as opcoes do modal.
+
+
+## Arquivos da integracao IXCsoft (fase de preparo para edicao)
+
+Na API do PABX, o PR #5 de `JRC-PABX` inclui `ixc_files` e `ixc_file_info` (somente leitura) e `ixc_file_read` (requer token ADMIN de operador).
+
+O MCP principal usa somente `read_token` e oferece:
+- `pabx_ixc_arquivos`: lista arquivos e seus metadados.
+- `pabx_ixc_arquivo_info(area, arquivo)`: consulta hash SHA256/tamanho para controle de versao e comparacao de alteracoes.
+
+O MCP atual atende a multiplos clientes OAuth/Opa. **Nao montar `admin_token` no container compartilhado** nem registrar uma ferramenta de leitura bruta/edicao sem primeiro implementar autorizacao por cliente/papel, mascara de segredos e aprovacao individual.
+
+A futura edicao deve exigir SHA esperado, diff, backup, validacao, aprovacao humana e rollback antes de gravar no Issabel. Nada nesta entrega altera os arquivos IXCsoft ou o dialplan.
