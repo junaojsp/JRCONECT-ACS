@@ -78,6 +78,55 @@
     panel.id = 'jrc-mcp-connections-panel';
     panel.className = 'jrc-mcp-hub';
     panel.innerHTML = `
+      <style>
+        /* JRC MCP: neutral dark inputs in all management dialogs. */
+        #jrc-mcp-connections-panel .jrc-mcp-modal input:not([type="hidden"]),
+        #jrc-mcp-connections-panel .jrc-mcp-modal select,
+        #jrc-mcp-connections-panel .jrc-mcp-modal textarea {
+          background: #101318 !important;
+          background-color: #101318 !important;
+          color: #e5e7eb !important;
+          border: 1px solid #343c48 !important;
+          box-shadow: none !important;
+          color-scheme: dark;
+        }
+        #jrc-mcp-connections-panel .jrc-mcp-modal input:focus,
+        #jrc-mcp-connections-panel .jrc-mcp-modal select:focus,
+        #jrc-mcp-connections-panel .jrc-mcp-modal textarea:focus {
+          border-color: #737d8b !important;
+          outline: none !important;
+          box-shadow: 0 0 0 1px #737d8b !important;
+        }
+        #jrc-mcp-connections-panel .jrc-mcp-modal input:invalid:not(:placeholder-shown) {
+          border-color: #ef4444 !important;
+        }
+        #jrc-mcp-connections-panel .jrc-mcp-modal input::placeholder,
+        #jrc-mcp-connections-panel .jrc-mcp-modal textarea::placeholder {
+          color: #7d8795 !important;
+          opacity: 1;
+        }
+        #jrc-mcp-connections-panel .jrc-mcp-integration-card {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: stretch !important;
+        }
+        #jrc-mcp-connections-panel .jrc-mcp-integration-card .jrc-mcp-integration-actions {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          flex-wrap: wrap !important;
+          gap: 8px !important;
+          width: 100% !important;
+          margin-top: 9px !important;
+        }
+        #jrc-mcp-connections-panel .jrc-mcp-integration-actions button {
+          flex: 0 0 auto !important;
+          width: auto !important;
+          max-width: none !important;
+          white-space: nowrap !important;
+        }
+      </style>
       <div class="jrc-mcp-hub__head">
         <div class="jrc-mcp-hub__brand">
           <div class="jrc-mcp-hub__brand-icon"><i class="bi bi-hdd-stack"></i></div>
@@ -292,7 +341,7 @@
               : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem detalhes adicionais</span>'}
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;">
+        <div class="jrc-mcp-integration-actions">
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-check-service="${esc(id)}">Verificar status</button>
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-details="${esc(id)}">Detalhes</button>
         </div>
