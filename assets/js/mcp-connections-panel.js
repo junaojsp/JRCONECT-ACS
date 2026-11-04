@@ -71,6 +71,7 @@
   }
 
   let cachedInstances = [];
+  let cachedStatus = { services: [], connections: [] };
 
   function buildPanel() {
     const panel = document.createElement('section');
@@ -291,12 +292,17 @@
               : '<span class="jrc-mcp-tool jrc-mcp-tool--muted">Sem detalhes adicionais</span>'}
           </div>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;">
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;width:auto;min-height:26px;padding:4px 9px;font-size:11px" data-jrc-mcp-check-service="${esc(id)}">Verificar status</button>
+          <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;width:auto;min-height:26px;padding:4px 9px;font-size:11px" data-jrc-mcp-details="${esc(id)}">Detalhes</button>
+        </div>
       </article>
     `;
   }
 
   function renderPrimary(panel, statusData) {
     const root = panel.querySelector('[data-jrc-mcp-primary]');
+    cachedStatus = statusData || { services: [], connections: [] };
     const services = Array.isArray(statusData?.services) ? statusData.services : [];
     const connections = Array.isArray(statusData?.connections) ? statusData.connections : [];
 
@@ -672,6 +678,40 @@
     typeSelect?.addEventListener('change', syncType);
     syncType();
     panel.addEventListener('click', async event => {
+      const checkService = event.target.closest('[data-jrc-mcp-check-service]');
+      if (checkService) {
+        const id = checkService.getAttribute('data-jrc-mcp-check-service');
+        checkService.disabled = true;
+        try {
+          const response = await fetch('/api/mcp-connections.php', {
+            credentials: 'same-origin', cache: 'no-store',
+            headers: { Accept: 'application/json' }
+          });
+          const data = await parseApiResponse(response, 'Não foi possível consultar o MCP.');
+          renderPrimary(panel, data);
+          const service = (data.services || []).find(item => item.id === id);
+          const connection = (data.connections || []).find(item => (item.id || item.client_id) === id);
+          if (service) {
+            window.alert(service.name + ': ' + (service.status === 'online' ? 'módulo anunciado como online pelo MCP.' : 'módulo indisponível no status MCP.') + '\\nEste teste não executa ferramentas do módulo.');
+          } else if (connection) {
+            window.alert((connection.name || id) + ': último contato ' + timeAgo(connection.last_seen) + '.\\nEsta consulta não testa autenticação nem estabelece nova sessão.');
+          } else {
+            window.alert('Integração não encontrada no status atual do MCP.');
+          }
+        } catch (error) { window.alert(error.message || 'Falha ao consultar status.'); }
+        finally { checkService.disabled = false; }
+      }
+      const details = event.target.closest('[data-jrc-mcp-details]');
+      if (details) {
+        const id = details.getAttribute('data-jrc-mcp-details');
+        const service = (cachedStatus.services || []).find(item => item.id === id);
+        const connection = (cachedStatus.connections || []).find(item => (item.id || item.client_id) === id);
+        if (service) {
+          window.alert('Integração: ' + service.name + '\\nTipo: ' + (service.type || 'Módulo interno') + '\\nFerramentas anunciadas: ' + (service.tools || []).join(', ') + '\\nConfiguração administrada no servidor MCP.');
+        } else if (connection) {
+          window.alert('Cliente: ' + (connection.name || id) + '\\nAutenticação: ' + (connection.auth_type || 'não informada') + '\\nÚltimo contato: ' + timeAgo(connection.last_seen) + '\\nCadastro e credenciais administrados no MCP/Keycloak.');
+        }
+      }
       const edit = event.target.closest('[data-jrc-mcp-edit]');
       if (edit) editModal(panel, edit.getAttribute('data-jrc-mcp-edit'));
       if (event.target.closest('[data-jrc-mcp-edit-close]')) {
