@@ -223,7 +223,7 @@
               <span>Tipo de conexão</span>
               <select name="type" data-jrc-mcp-type>
                 <option value="local">Servidor MCP local</option>
-                <option value="external">Conectar MCP externo (OAuth2)</option>
+                <option value="external">Servidor MCP remoto (HTTP / SSE)</option><option value="stdio">Servidor MCP STDIO (cadastro)</option><option value="managed">PABX Issabel 5 (integração existente)</option>
               </select>
             </label>
             <div class="jrc-mcp-form-grid" data-jrc-mcp-local-fields>
@@ -256,10 +256,10 @@
                 <span>Endpoint HTTPS do MCP externo</span>
                 <input name="external_endpoint" type="url" maxlength="500" placeholder="https://cda.jrconect.com/services/mcp">
               </label>
-              <p>Autenticação OAuth2. Este cadastro não solicita nem armazena Client ID, Client Secret ou tokens; a conexão será configurada separadamente.</p>
+              <label><span>Transporte</span><select name="transport"><option value="streamable_http">Streamable HTTP</option><option value="sse">SSE legado</option></select></label><label><span>Autenticação</span><select name="auth_type"><option value="oauth2">OAuth2</option><option value="bearer">Bearer Token (configuração posterior)</option><option value="api_key">API Key (configuração posterior)</option><option value="none">Sem autenticação</option></select></label><p>Credenciais e tokens não são armazenados neste formulário. OAuth2 do IXC é configurado separadamente.</p>
             </div>
 
-            <label>
+            <div data-jrc-mcp-stdio-fields hidden><label><span>Nome</span><input name="stdio_name" maxlength="100"></label><label><span>Executável STDIO (sem argumentos)</span><input name="command" maxlength="200" placeholder="/usr/bin/node"></label><p>Cadastro informativo; não executa comandos.</p></div><div data-jrc-mcp-managed-fields hidden><label><span>Nome da integração</span><input name="managed_name" maxlength="100" value="JR Conect — PABX Issabel 5"></label><p>Vincula a integração existente. Não cria outro servidor nem altera o Issabel.</p></div><label>
               <span>Descrição</span>
               <textarea name="description" maxlength="240" rows="3" placeholder="Finalidade dessa instância MCP"></textarea>
             </label>
@@ -490,15 +490,15 @@
         </div>
 
         <div class="jrc-mcp-instance-card__meta">
-          <span><i class="bi bi-box"></i> ${esc(isExternalMcpInstance(instance) ? 'OAuth2' : (instance.container || '—'))}</span>
+          <span><i class="bi bi-box"></i> ${esc(isExternalMcpInstance(instance) ? (instance.auth_type || 'OAuth2') : instance.type === 'managed' ? 'Integração MCP existente' : instance.type === 'stdio' ? 'STDIO (não iniciado)' : (instance.container || '—'))}</span>
           <span><i class="bi bi-ethernet"></i> ${esc(isExternalMcpInstance(instance) ? externalTestState(instance).detail : (instance.local_address || ('127.0.0.1:' + (instance.port || '—'))))}</span>
-          <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || '—')}</span>
+          <span><i class="bi bi-link-45deg"></i> ${esc(instance.endpoint || (instance.type === 'managed' ? 'Ferramentas pabx_* existentes' : instance.command || '—'))}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-edit="${esc(instance.id)}">Editar</button>
-          ${!isExternalMcpInstance(instance) ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-test-local="${esc(instance.id)}">Testar MCP principal</button>` : ''}
+          ${(instance.type === 'local' || !instance.type) ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-test-local="${esc(instance.id)}">Testar MCP principal</button>` : ''}
         </div>
-        ${isExternalMcpInstance(instance) ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        ${isExternalMcpInstance(instance) && (instance.auth_type === 'oauth2' || !instance.auth_type) ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;line-height:1.2;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-credentials="${esc(instance.id)}">Configurar OAuth2</button>
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;line-height:1.2;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-authorize="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Autorizar IXC</button>
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;line-height:1.2;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-test="${esc(instance.id)}" ${instance.credentials_saved ? '' : 'disabled'}>Testar conexão</button>
@@ -577,14 +577,18 @@
     const submit = form.querySelector('button[type="submit"]');
     const formData = new FormData(form);
 
-    const isExternal = formData.get('type') === 'external';
+    const type = String(formData.get('type') || 'local');
+    const isExternal = type === 'external';
     const payload = {
-      type: isExternal ? 'external' : 'local',
-      name: String(formData.get(isExternal ? 'external_name' : 'name') || '').trim(),
+      type,
+      name: String(formData.get(type === 'managed' ? 'managed_name' : type === 'stdio' ? 'stdio_name' : isExternal ? 'external_name' : 'name') || '').trim(),
       container: String(formData.get('container') || '').trim(),
       port: String(formData.get('port') || '').trim(),
       endpoint: String(formData.get(isExternal ? 'external_endpoint' : 'endpoint') || '').trim(),
-      ...(isExternal ? { auth_type: 'oauth2' } : {}),
+      auth_type: String(formData.get('auth_type') || 'oauth2'),
+      transport: String(formData.get('transport') || 'streamable_http'),
+      command: String(formData.get('command') || '').trim(),
+      service: type === 'managed' ? 'pabx' : '',
       description: String(formData.get('description') || '').trim(),
     };
 
@@ -712,16 +716,17 @@
 
     const typeSelect = panel.querySelector('[data-jrc-mcp-type]');
     function syncType() {
-      const isExternal = typeSelect?.value === 'external';
-      const local = panel.querySelector('[data-jrc-mcp-local-fields]');
-      const external = panel.querySelector('[data-jrc-mcp-external-fields]');
-      if (local) {
-        local.hidden = isExternal;
-        local.querySelectorAll('input').forEach(input => { input.disabled = isExternal; });
-      }
-      if (external) {
-        external.hidden = !isExternal;
-        external.querySelectorAll('input').forEach(input => { input.disabled = !isExternal; });
+      const type = typeSelect?.value || 'local';
+      for (const [selector, visible] of [
+        ['[data-jrc-mcp-local-fields]', type === 'local'],
+        ['[data-jrc-mcp-external-fields]', type === 'external'],
+        ['[data-jrc-mcp-stdio-fields]', type === 'stdio'],
+        ['[data-jrc-mcp-managed-fields]', type === 'managed']
+      ]) {
+        const group = panel.querySelector(selector);
+        if (!group) continue;
+        group.hidden = !visible;
+        group.querySelectorAll('input,select').forEach(input => { input.disabled = !visible; });
       }
     }
     typeSelect?.addEventListener('change', syncType);
