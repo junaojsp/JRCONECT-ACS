@@ -785,6 +785,7 @@
           });
           const data = await parseApiResponse(response, 'Falha ao verificar MCP.');
           window.alert(data.message);
+          await load(panel);
         } catch (error) { window.alert(error.message || 'Falha na verificação.'); }
         finally { testManaged.disabled = false; }
       }
