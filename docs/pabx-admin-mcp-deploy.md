@@ -56,8 +56,12 @@ install -d -o root -g root -m 0700 /var/lib/jrc-pabx-mcp
 install -o 1000 -g 1000 -m 0600 /dev/null /var/lib/jrc-pabx-mcp/admin.token
 read -r -s -p "Cole o admin_token PABX: " PABX_ADMIN
 echo
-test "$(printf %s "$PABX_ADMIN" | wc -c)" -eq 64 || echo "Token invalido"
-printf '%s' "$PABX_ADMIN" > /var/lib/jrc-pabx-mcp/admin.token
+if [ "$(printf %s "$PABX_ADMIN" | wc -c)" -eq 64 ]; then
+  printf '%s' "$PABX_ADMIN" > /var/lib/jrc-pabx-mcp/admin.token
+  echo "Token administrativo armazenado."
+else
+  echo "TOKEN_INVALIDO: repita a leitura antes de continuar."
+fi
 unset PABX_ADMIN
 chmod 600 /var/lib/jrc-pabx-mcp/admin.token
 ~~~
