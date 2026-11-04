@@ -65,11 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="pt-BR">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JRC-ACS • Acesso</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260921">
-<link rel="stylesheet" href="/assets/css/login-acs.css?v=20261008"></head>
+<link rel="stylesheet" href="/assets/css/login-acs.css?v=20261008b"></head>
 <body><main class="login" id="login">
 <section class="visual" aria-label="JRC-ACS, plataforma de gestão de equipamentos">
 <img class="art" src="/assets/img/acs-login-hero.webp" alt="Roteador com globo holográfico ciano e conexões digitais">
-<div class="specks" aria-hidden="true"></div><div class="scan" aria-hidden="true"></div><div class="signal" aria-hidden="true"></div><div class="signal second" aria-hidden="true"></div><div class="shade"></div>
+<div class="fiber-flow" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="specks" aria-hidden="true"></div><div class="scan" aria-hidden="true"></div><div class="signal" aria-hidden="true"></div><div class="signal second" aria-hidden="true"></div><div class="shade"></div>
 <div class="brand"><img src="/assets/img/jrconect-logo.svg?v=20260921" alt="JR CONECT Telecom"><div>JR CONECT<span>.</span><small>TELECOM</small></div></div>
 <div class="hero"><div class="eyebrow">GESTÃO CENTRALIZADA DE EQUIPAMENTOS</div><h1>JRC-ACS</h1><h2>Sua rede conectada.<br>Seu controle centralizado.</h2><p>Provisionamento, diagnóstico e gestão de dispositivos em um único ambiente.</p></div>
 <button class="pause" type="button" aria-pressed="false">Pausar animação</button>
