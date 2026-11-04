@@ -1,0 +1,8 @@
+# Override OPCIONAL para o MCP principal, ativar somente apos homologar.
+# Nao cria segundo container nem expõe portas.
+services:
+  jrconect-mcp:
+    environment:
+      PABX_API_ENABLED: "true"
+    volumes:
+      - ${PABX_READ_TOKEN_PATH:?Defina PABX_READ_TOKEN_PATH no host ACS}:/run/secrets/pabx-read-token:ro
