@@ -10,7 +10,7 @@ O container MCP **ainda nao foi homologado nem implantado com este modulo**. A A
 
 Base: `feature/pabx-mcp-bridge`. Troca `mcp/pabx.js` do modo SSH para API REST, e fornece:
 
-- `registerPabxTools(mcp)`: `pabx_status`, `pabx_filas`, `pabx_ramais`, `pabx_troncos`, todas somente leitura.
+- `registerPabxTools(mcp)`: `pabx_status`, `pabx_filas`, `pabx_ramais`, `pabx_troncos` e `pabx_ixc_arquivos`, todas somente leitura.
 - Somente endpoint HTTPS fixo do PABX, Bearer Token de arquivo Docker privado, timeout, sem redirects, limite de resposta e validacao JSON.
 - `mcp/docker-compose.pabx-rest.yml` override opcional, sem mexer no Compose atual.
 - `.dockerignore` reforcado para segredos de outros servicos e chaves SSH.
@@ -85,7 +85,7 @@ curl -fsS http://127.0.0.1:3100/health
 
 - `status_servidor` continua operacional.
 - Ferramentas Wiki, Opa, ChatGPT e autenticacao Keycloak permanecem.
-- Ferramentas novas `pabx_status`, `pabx_filas`, `pabx_ramais` e `pabx_troncos` aparecem na listagem MCP autenticada.
+- Ferramentas novas `pabx_status`, `pabx_filas`, `pabx_ramais`, `pabx_troncos` e `pabx_ixc_arquivos` aparecem na listagem MCP autenticada.\n- `pabx_ixc_arquivos` exige que o endpoint `ixc_files` esteja instalado na API Issabel, conforme PR #5 do `JRC-PABX`. O resultado lista somente metadados, nunca o conteudo dos scripts.
 - Consultar `pabx_status` via ChatGPT/MCP e comparar com resultado do `curl` direto.
 - Confirmar que nenhum segredo e retornado ou registrado em logs.
 - Se nao aparecer no catalogo ChatGPT, atualizar/reconectar a integracao para redescoberta de ferramentas.
