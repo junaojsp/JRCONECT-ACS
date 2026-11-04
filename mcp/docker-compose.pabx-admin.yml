@@ -1,0 +1,10 @@
+# Override opcional: usar SOMENTE apos criar role + allowlist no Keycloak.
+# Mesmo container jrconect-mcp, sem nova porta; /mcp-admin e um endpoint separado.
+services:
+  jrconect-mcp:
+    environment:
+      PABX_ADMIN_MCP_ENABLED: "true"
+      PABX_ADMIN_ALLOWED_SUB: "${PABX_ADMIN_ALLOWED_SUB:?Defina o subject exato do administrador}"
+      PABX_ADMIN_ROLE: "jrconect-pabx-admin"
+    volumes:
+      - "${PABX_ADMIN_TOKEN_PATH:?Defina caminho absoluto do segredo admin}:/run/secrets/pabx-admin-token:ro"
