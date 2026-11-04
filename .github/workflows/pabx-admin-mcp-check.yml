@@ -17,6 +17,11 @@ jobs:
           node --check mcp/pabx-admin.js
           node --check mcp/pabx.js
           python3 -m py_compile scripts/prepare-pabx-admin-mcp.py
+      - name: Simulate production server injection against repository fixture
+        run: |
+          mkdir -p /tmp/pabx-mcp-fixture
+          cp mcp/server.js mcp/Dockerfile /tmp/pabx-mcp-fixture/
+          python3 scripts/prepare-pabx-admin-mcp.py --prod /tmp/pabx-mcp-fixture
       - name: Install dependencies and run authorization tests
         working-directory: mcp
         run: |
