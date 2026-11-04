@@ -1,70 +1,159 @@
-import { existsSync } from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+// JR Conect PABX - Bridge REST HTTPS de somente leitura.
+import { existsSync, readFileSync } from 'node:fs';
+import { z } from 'zod';
 
-const execFileAsync = promisify(execFile);
-const timeoutMs = 10000;
-const maxOutputBytes = 16 * 1024;
+const PABX_URL = 'https://pabx.jrconect.com/api/mcp/index.php';
+const TOKEN_PATH = '/run/secrets/pabx-read-token';
+const MAX_RESPONSE_BYTES = 256 * 1024;
 
-function pabxConfig() {
-  const host = process.env.PABX_SSH_HOST || '';
-  const user = process.env.PABX_SSH_USER || '';
-  const keyPath = process.env.PABX_SSH_KEY_PATH || '';
-  const knownHostsPath = process.env.PABX_SSH_KNOWN_HOSTS || '';
+const READ_TOOLS = Object.freeze([
+  ['pabx_status', 'status', 'Consulta a versao, uptime e canais ativos do PABX Issabel 5.'],
+  ['pabx_filas', 'queues', 'Consulta o estado das filas de atendimento do Asterisk.'],
+  ['pabx_ramais', 'extensions', 'Consulta os endpoints PJSIP no PABX.'],
+  ['pabx_troncos', 'trunks', 'Consulta os registros de troncos PJSIP.'],
+  ['pabx_ixc_arquivos', 'ixc_files', 'Lista os metadados dos arquivos da integracao IXCsoft/Phonevox, sem divulgar codigo, dados pessoais ou credenciais.'],
+]);
 
-  if (!/^(?:[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?)$/.test(host)) return null;
-  if (!/^[a-z_][a-z0-9_-]{0,31}$/.test(user)) return null;
-  if (!keyPath.startsWith('/run/secrets/')) return null;
-  if (!knownHostsPath.startsWith('/run/secrets/')) return null;
-  if (!existsSync(keyPath) || !existsSync(knownHostsPath)) return null;
+function configured() {
+  return process.env.PABX_API_ENABLED === 'true' && existsSync(TOKEN_PATH);
+}
 
-  return { host, user, keyPath, knownHostsPath };
+function readBearer() {
+  const token = readFileSync(TOKEN_PATH, 'utf8').trim();
+  if (!/^[a-f0-9]{64}$/.test(token)) {
+    throw new Error('token_invalido');
+  }
+  return token;
+}
+
+async function readLimited(response) {
+  if (!response.body) throw new Error('resposta_vazia');
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error('resposta_grande');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const buffer = Buffer.concat(chunks, size);
+  return buffer.toString('utf8');
+}
+
+async function queryPabx(action) {
+  // A URL e as acoes sao fixas no backend. O cliente MCP nao define host nem comando.
+  const token = readBearer();
+  const url = new URL(PABX_URL);
+  url.searchParams.set('action', action);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    redirect: 'error',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10000),
+  });
+  if (response.status !== 200 || !String(response.headers.get('content-type') || '').includes('application/json')) {
+    throw new Error('pabx_http_indisponivel');
+  }
+  const data = JSON.parse(await readLimited(response));
+  if (data?.ok !== true || data.action !== action) {
+    throw new Error('resposta_invalida');
+  }
+  if (action === 'ixc_files') {
+    if (!data.result || typeof data.result !== 'object' ||
+        !data.result.componentes || typeof data.result.componentes !== 'object') {
+      throw new Error('inventario_ixc_invalido');
+    }
+    return data.result;
+  }
+  if (!Array.isArray(data.result) || data.result.some(x => typeof x !== 'string')) {
+    throw new Error('resposta_invalida');
+  }
+  return data.result;
+}
+
+
+async function queryIxcFileInfo(area, file) {
+  // Separar os segmentos evita escapes incorretos em expressoes regulares.
+  // O PHP do PABX valida os mesmos limites de area e caminho relativo.
+  const allowedAreas = ['webservice_ixcsoft', 'agi_ixcsoft', 'dialplan_ixcsoft'];
+  if (!allowedAreas.includes(area) || typeof file !== 'string' ||
+      file.length === 0 || file.length > 220) {
+    throw new Error('invalid_file_id');
+  }
+  const segments = file.split('/');
+  if (segments.length > 3 || segments.some(segment =>
+      !/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,100}$/.test(segment) ||
+      segment === '.' || segment === '..')) {
+    throw new Error('invalid_file_id');
+  }
+  if (!/\.(php|agi|conf|inc)$/i.test(segments[segments.length - 1])) {
+    throw new Error('invalid_file_id');
+  }
+  const url = new URL(PABX_URL);
+  url.searchParams.set('action', 'ixc_file_info');
+  url.searchParams.set('area', area);
+  url.searchParams.set('file', file);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${readBearer()}`, Accept: 'application/json' },
+    redirect: 'error',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10000),
+  });
+  if (response.status !== 200 || !String(response.headers.get('content-type') || '').includes('application/json')) {
+    throw new Error('pabx_http_indisponivel');
+  }
+  const data = JSON.parse(await readLimited(response));
+  if (data?.ok !== true || data.action !== 'ixc_file_info' ||
+      data.result?.area !== area || data.result?.arquivo !== file ||
+      !/^[a-f0-9]{64}$/.test(data.result?.sha256 || '')) {
+    throw new Error('arquivo_info_invalida');
+  }
+  return data.result;
 }
 
 export function registerPabxTools(mcp) {
-  const config = pabxConfig();
-  if (!config) return false;
-
-  mcp.registerTool('pabx_status', {
-    description: 'Consulta somente leitura a versão, uptime e quantidade de canais ativos do PABX JR CONECT.',
-  }, async () => {
-    try {
-      const { stdout } = await execFileAsync('/usr/bin/ssh', [
-        '-F', '/dev/null',
-        '-T',
-        '-i', config.keyPath,
-        '-o', 'BatchMode=yes',
-        '-o', 'IdentitiesOnly=yes',
-        '-o', 'StrictHostKeyChecking=yes',
-        '-o', `UserKnownHostsFile=${config.knownHostsPath}`,
-        '-o', 'GlobalKnownHostsFile=/dev/null',
-        '-o', 'PasswordAuthentication=no',
-        '-o', 'KbdInteractiveAuthentication=no',
-        '-o', 'GSSAPIAuthentication=no',
-        '-o', 'ClearAllForwardings=yes',
-        '-o', 'ConnectTimeout=5',
-        '-o', 'ConnectionAttempts=1',
-        `${config.user}@${config.host}`,
-        'status',
-      ], {
-        timeout: timeoutMs,
-        maxBuffer: maxOutputBytes,
-        encoding: 'utf8',
-        windowsHide: true,
-      });
-
-      const text = String(stdout || '').trim();
-      if (!text || Buffer.byteLength(text, 'utf8') > maxOutputBytes) {
-        throw new Error('Resposta vazia ou acima do limite');
+  if (!configured()) return false;
+  for (const [name, action, description] of READ_TOOLS) {
+    mcp.registerTool(name, { description }, async () => {
+      try {
+        const results = await queryPabx(action);
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ origem: 'PABX JR Conect', acao: action, resultado: results }) }],
+        };
+      } catch {
+        // Mensagem sem credenciais, IP interno, pilha de erro ou dados de rede.
+        return {
+          isError: true,
+          content: [{ type: 'text', text: 'Falha ao consultar a API HTTPS do PABX. Confirme a configuracao e o acesso no servidor MCP.' }],
+        };
       }
-      return { content: [{ type: 'text', text }] };
+    });
+  }
+  mcp.registerTool('pabx_ixc_arquivo_info', {
+    description: 'Consulta hash SHA256 e tamanho de arquivo IXCsoft autorizado no Issabel, sem expor conteudo ou segredos.',
+    inputSchema: {
+      area: z.enum(['webservice_ixcsoft', 'agi_ixcsoft', 'dialplan_ixcsoft']),
+      arquivo: z.string().min(1).max(220),
+    },
+  }, async ({ area, arquivo }) => {
+    try {
+      const info = await queryIxcFileInfo(area, arquivo);
+      return { content: [{ type: 'text', text: JSON.stringify(info) }] };
     } catch {
       return {
         isError: true,
-        content: [{
-          type: 'text',
-          text: 'Não foi possível consultar o PABX pelo canal SSH restrito. Verifique o acesso configurado no ACS.',
-        }],
+        content: [{ type: 'text', text: 'Nao foi possivel consultar metadados do arquivo IXCsoft autorizado.' }],
       };
     }
   });
