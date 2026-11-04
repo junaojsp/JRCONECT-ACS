@@ -14,16 +14,15 @@ export function pabxAdminAuthorized(payload) {
     .split(',').map(s => s.trim()).filter(Boolean);
   const role = process.env.PABX_ADMIN_ROLE || 'jrconect-pabx-admin';
   const roles = Array.isArray(payload?.realm_access?.roles) ? payload.realm_access.roles : [];
-  // Alternativa deliberada, estritamente para 1 sub Keycloak: sem console admin.
-  // Continua exigindo validarToken() (issuer, audience, assinatura, azp).
-  // O modo padrao permanece com dupla verificacao de role e sub.
+  // Acesso administrativo exige sempre subject autorizado e role Keycloak.
+  // O modo single-subject restringe a allowlist a um unico UUID.
   const subjectOnly = process.env.PABX_ADMIN_AUTH_MODE === 'single-subject';
-  const uniqueSubject = subjectOnly && allowed.length === 1 &&
-    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(allowed[0]);
+  const uniqueSubject = !subjectOnly || (allowed.length === 1 &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(allowed[0]));
   return process.env.PABX_ADMIN_MCP_ENABLED === 'true' &&
     payload?.azp === 'chatgpt-mcp' &&
     typeof payload?.sub === 'string' && allowed.includes(payload.sub) &&
-    (subjectOnly ? uniqueSubject : roles.includes(role));
+    uniqueSubject && roles.includes(role);
 }
 
 function readAdminToken() {
