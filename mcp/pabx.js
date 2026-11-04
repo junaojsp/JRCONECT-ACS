@@ -1,5 +1,6 @@
 // JR Conect PABX - Bridge REST HTTPS de somente leitura.
 import { existsSync, readFileSync } from 'node:fs';
+import { z } from 'zod';
 
 const PABX_URL = 'https://pabx.jrconect.com/api/mcp/index.php';
 const TOKEN_PATH = '/run/secrets/pabx-read-token';
@@ -80,6 +81,36 @@ async function queryPabx(action) {
   return data.result;
 }
 
+
+async function queryIxcFileInfo(area, file) {
+  if (!['webservice_ixcsoft', 'agi_ixcsoft', 'dialplan_ixcsoft'].includes(area) ||
+      typeof file !== 'string' || !/^[A-Za-z0-9_.-]+(?:\\/[A-Za-z0-9_.-]+){0,2}$/.test(file) ||
+      file.includes('..')) {
+    throw new Error('invalid_file_id');
+  }
+  const url = new URL(PABX_URL);
+  url.searchParams.set('action', 'ixc_file_info');
+  url.searchParams.set('area', area);
+  url.searchParams.set('file', file);
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${readBearer()}`, Accept: 'application/json' },
+    redirect: 'error',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10000),
+  });
+  if (response.status !== 200 || !String(response.headers.get('content-type') || '').includes('application/json')) {
+    throw new Error('pabx_http_indisponivel');
+  }
+  const data = JSON.parse(await readLimited(response));
+  if (data?.ok !== true || data.action !== 'ixc_file_info' ||
+      data.result?.area !== area || data.result?.arquivo !== file ||
+      !/^[a-f0-9]{64}$/.test(data.result?.sha256 || '')) {
+    throw new Error('arquivo_info_invalida');
+  }
+  return data.result;
+}
+
 export function registerPabxTools(mcp) {
   if (!configured()) return false;
   for (const [name, action, description] of READ_TOOLS) {
@@ -98,5 +129,22 @@ export function registerPabxTools(mcp) {
       }
     });
   }
+  mcp.registerTool('pabx_ixc_arquivo_info', {
+    description: 'Consulta hash SHA256 e tamanho de arquivo IXCsoft autorizado no Issabel, sem expor conteudo ou segredos.',
+    inputSchema: {
+      area: z.enum(['webservice_ixcsoft', 'agi_ixcsoft', 'dialplan_ixcsoft']),
+      arquivo: z.string().min(1).max(220),
+    },
+  }, async ({ area, arquivo }) => {
+    try {
+      const info = await queryIxcFileInfo(area, arquivo);
+      return { content: [{ type: 'text', text: JSON.stringify(info) }] };
+    } catch {
+      return {
+        isError: true,
+        content: [{ type: 'text', text: 'Nao foi possivel consultar metadados do arquivo IXCsoft autorizado.' }],
+      };
+    }
+  });
   return true;
 }
