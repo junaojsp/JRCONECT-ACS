@@ -10,6 +10,7 @@ const READ_TOOLS = Object.freeze([
   ['pabx_filas', 'queues', 'Consulta o estado das filas de atendimento do Asterisk.'],
   ['pabx_ramais', 'extensions', 'Consulta os endpoints PJSIP no PABX.'],
   ['pabx_troncos', 'trunks', 'Consulta os registros de troncos PJSIP.'],
+  ['pabx_ixc_arquivos', 'ixc_files', 'Lista os metadados dos arquivos da integracao IXCsoft/Phonevox, sem divulgar codigo, dados pessoais ou credenciais.'],
 ]);
 
 function configured() {
@@ -63,8 +64,17 @@ async function queryPabx(action) {
     throw new Error('pabx_http_indisponivel');
   }
   const data = JSON.parse(await readLimited(response));
-  if (data?.ok !== true || data.action !== action ||
-      !Array.isArray(data.result) || data.result.some(x => typeof x !== 'string')) {
+  if (data?.ok !== true || data.action !== action) {
+    throw new Error('resposta_invalida');
+  }
+  if (action === 'ixc_files') {
+    if (!data.result || typeof data.result !== 'object' ||
+        !data.result.componentes || typeof data.result.componentes !== 'object') {
+      throw new Error('inventario_ixc_invalido');
+    }
+    return data.result;
+  }
+  if (!Array.isArray(data.result) || data.result.some(x => typeof x !== 'string')) {
     throw new Error('resposta_invalida');
   }
   return data.result;
