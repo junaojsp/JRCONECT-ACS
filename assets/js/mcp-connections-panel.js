@@ -496,6 +496,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
           <button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-edit="${esc(instance.id)}">Editar</button>
+          ${instance.type === 'managed' ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;" data-jrc-mcp-test-managed="${esc(instance.id)}">Verificar MCP</button>` : ''}
           ${(instance.type === 'local' || !instance.type) ? `<button type="button" class="jrc-mcp-hub__refresh" style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;width:auto;min-height:28px;padding:5px 10px;font-size:11px;background:#171c24!important;border:1px solid #343c48!important;color:#e5e7eb!important;box-shadow:none!important;" data-jrc-mcp-test-local="${esc(instance.id)}">Testar MCP principal</button>` : ''}
         </div>
         ${isExternalMcpInstance(instance) && (instance.auth_type === 'oauth2' || !instance.auth_type) ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
@@ -771,6 +772,21 @@
       if (event.target.closest('[data-jrc-mcp-edit-close]')) {
         panel.querySelector('[data-jrc-mcp-edit-modal]').hidden = true;
         document.body.classList.remove('jrc-mcp-modal-open');
+      }
+      const testManaged = event.target.closest('[data-jrc-mcp-test-managed]');
+      if (testManaged) {
+        testManaged.disabled = true;
+        try {
+          const response = await fetch('/api/mcp-instances.php', {
+            method: 'POST', credentials: 'same-origin', cache: 'no-store',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json',
+              'X-CSRF-Token': String(window.JRC_MCP_INSTANCE_CSRF || '') },
+            body: JSON.stringify({ action: 'test_managed', id: testManaged.getAttribute('data-jrc-mcp-test-managed') })
+          });
+          const data = await parseApiResponse(response, 'Falha ao verificar MCP.');
+          window.alert(data.message);
+        } catch (error) { window.alert(error.message || 'Falha na verificação.'); }
+        finally { testManaged.disabled = false; }
       }
       const testLocal = event.target.closest('[data-jrc-mcp-test-local]');
       if (testLocal) {
