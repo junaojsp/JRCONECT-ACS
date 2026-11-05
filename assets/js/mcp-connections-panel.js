@@ -349,7 +349,33 @@
     `;
   }
 
-  function renderPrimary(panel, statusData) {
+  function buildFinanceEndpointCard(finance) {
+    if (!finance || !finance.success) return '';
+    const reachable = finance.endpoint_reachable === true;
+    const label = reachable ? 'Endpoint protegido' : 'Indisponível';
+    const status = reachable ? 'online' : 'offline';
+    return `
+      <article class="jrc-mcp-integration-card">
+        <div class="jrc-mcp-integration-card__icon"><i class="bi bi-wallet2"></i></div>
+        <div class="jrc-mcp-integration-card__body">
+          <div class="jrc-mcp-integration-card__top">
+            <div>
+              <div class="jrc-mcp-integration-card__name">JR Conect Financeiro</div>
+              <div class="jrc-mcp-integration-card__subtitle">MCP Financeiro empresarial — endpoint isolado</div>
+            </div>
+            <span class="jrc-mcp-status jrc-mcp-status--${status}">${label}</span>
+          </div>
+          <div class="jrc-mcp-integration-card__chips">
+            <span class="jrc-mcp-tool">OAuth / Keycloak</span>
+            <span class="jrc-mcp-tool">/mcp-finance</span>
+            <span class="jrc-mcp-tool">Autenticação e ferramentas não verificadas pelo painel</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderPrimary(panel, statusData, financeData = null) {
     const root = panel.querySelector('[data-jrc-mcp-primary]');
     cachedStatus = statusData || { services: [], connections: [] };
     const services = Array.isArray(statusData?.services) ? statusData.services : [];
@@ -381,6 +407,10 @@
     orderedConnections.forEach(connection => {
       integrations.push(buildIntegration(connection, 'connection'));
     });
+
+    if (financeData && financeData.success) {
+      integrations.push(buildFinanceEndpointCard(financeData));
+    }
 
     const coreStatus = core.status === 'online' ? 'online' : 'offline';
     const coreLabel = coreStatus === 'online' ? 'Online' : 'Offline';
@@ -513,7 +543,7 @@
     const primary = panel.querySelector('[data-jrc-mcp-primary]');
 
     try {
-      const [statusResponse, instancesResponse] = await Promise.all([
+      const [statusResponse, instancesResponse, financeData] = await Promise.all([
         fetch('/api/mcp-connections.php', {
           credentials: 'same-origin',
           cache: 'no-store',
@@ -523,7 +553,12 @@
           credentials: 'same-origin',
           cache: 'no-store',
           headers: { Accept: 'application/json' }
-        })
+        }),
+        fetch('/api/mcp-finance-status.php', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' }
+        }).then(response => response.ok ? response.json() : null).catch(() => null)
       ]);
 
       const statusData = await parseApiResponse(
@@ -536,7 +571,7 @@
         'Não foi possível consultar instâncias MCP adicionais.'
       );
 
-      renderPrimary(panel, statusData);
+      renderPrimary(panel, statusData, financeData);
       renderAdditional(panel, instancesData.instances);
     } catch (error) {
       primary.innerHTML =
