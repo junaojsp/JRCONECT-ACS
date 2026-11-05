@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-export function createFinanceAdminClient({baseUrl='https://financeiro.jrconect.com', tokenFile='/run/secrets/finance-token'}={}) {
+export function createFinanceAdminClient({baseUrl='https://financeiro.jrconect.com', tokenFile='/run/secrets/finance-admin-token'}={}) {
   const base = new URL(baseUrl);
   if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) throw new Error('Invalid finance URL');
   return {async execute(action, id, payload) {
