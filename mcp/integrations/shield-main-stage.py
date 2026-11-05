@@ -31,11 +31,13 @@ anchors = [
     "const handler = createMcpHandler(() => {",
     "const mcpHandler = toNodeHandler(handler);",
     "    const payload = await validarToken(match[1]);",
-    "    registerPabxTools(mcp);",
 ]
 for a in anchors:
     if s.count(a) != 1:
         sys.exit("STOP: live server structure changed: " + repr(a))
+pabx_line = re.compile(r"(?m)^([ \\t]*)registerPabxTools\\(mcp\\);[ \\t]*$")
+if len(pabx_line.findall(s)) != 1:
+    sys.exit("STOP: expected one standalone registerPabxTools(mcp) line")
 if "shieldMcpHandler" in s or "createShieldClient" in s:
     sys.exit("STOP: SHIELD registration might already be active")
 
@@ -48,12 +50,13 @@ s = s.replace(
     "const makeMcpHandler = (includeShield) => createMcpHandler(() => {",
     1
 )
-s = s.replace(
-    "    registerPabxTools(mcp);",
-    """    // Opa and non-allowlisted OAuth callers never receive SHIELD tools.
-    if (includeShield) registerShieldTools(mcp, createShieldClient());
-    registerPabxTools(mcp);""",
-    1
+s = pabx_line.sub(
+    lambda match: match.group(1) +
+    "// Register SHIELD reads only for the allowlisted OAuth handler.\n" +
+    match.group(1) + "if (includeShield) registerShieldTools(mcp, createShieldClient());\n" +
+    match.group(1) + "registerPabxTools(mcp);",
+    s,
+    count=1
 )
 s = s.replace(
     "const mcpHandler = toNodeHandler(handler);",
