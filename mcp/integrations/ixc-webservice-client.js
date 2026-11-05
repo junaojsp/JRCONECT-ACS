@@ -24,11 +24,14 @@ export function createIxcWebserviceClient({
     if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Limite invalido');
 
     const credential = readFileSync(tokenFile, 'utf8').trim();
-    // IXC Webservice commonly uses Basic Auth with the API token as its password.
-    // The username is required because the API expects HTTP Basic credentials.
+    // IXC's Basic credential is installation-specific. Accept a credential
+    // stored as username:password in the secret file, or an explicit username
+    // configured separately from the token. Never assume OAuth credentials work.
     const username = process.env.IXC_WS_USERNAME;
-    if (!username || /[\r\n:]/.test(username)) throw new Error('IXC_WS_USERNAME ausente ou invalido');
-    if (!credential || /\s/.test(credential)) throw new Error('Token IXC invalido');
+    const basicPair = username ? username + ':' + credential : credential;
+    if (!basicPair.includes(':') || /[\r\n]/.test(basicPair)) {
+      throw new Error('Credencial IXC Basic incompleta: requer usuario:token');
+    }
     const data = JSON.stringify({
       qtype: table + '.id',
       query: id,
@@ -44,7 +47,7 @@ export function createIxcWebserviceClient({
         method: 'GET',
         timeout: 12000,
         headers: {
-          Authorization: 'Basic ' + Buffer.from(username + ':' + credential).toString('base64'),
+          Authorization: 'Basic ' + Buffer.from(basicPair).toString('base64'),
           ixcsoft: 'listar',
           Accept: 'application/json',
           'Content-Type': 'application/json',
