@@ -35,7 +35,7 @@ anchors = [
 for a in anchors:
     if s.count(a) != 1:
         sys.exit("STOP: live server structure changed: " + repr(a))
-pabx_line = re.compile(r"(?m)^([ \\t]*)registerPabxTools\\(mcp\\);[ \\t]*$")
+pabx_line = re.compile(r"(?m)^([ \t]*)registerPabxTools\(mcp\);[ \t]*$")
 if len(pabx_line.findall(s)) != 1:
     sys.exit("STOP: expected one standalone registerPabxTools(mcp) line")
 if "shieldMcpHandler" in s or "createShieldClient" in s:
