@@ -51,6 +51,33 @@ export function registerIxcWebserviceTools(mcp, client) {
     });
   }
 
+  // Consulta apenas contagens agregadas. O filtro != F significa
+  // "nao finalizadas" e NAO equivale necessariamente a "suporte em aberto".
+  mcp.registerTool('ixc_os_resumo', {
+    description: 'Resumo agregado de OS no IXC: total, finalizadas (F) e nao finalizadas (status diferente de F). Nao segmenta por setor de suporte, nao retorna dados pessoais e nao altera OS.',
+  }, async () => {
+    const checks = [];
+    for (const [nome, filtro] of [['todas', null], ['finalizadas', 'F'], ['nao_finalizadas', '!F']]) {
+      try {
+        const result = await client.list('os', {id:'1', page:1, limit:1, osStatus:filtro});
+        const summary = summarize(result, 'os');
+        if (summary.total_registros === null) throw new Error('Total ausente');
+        checks.push({grupo:nome, ok:true, total:summary.total_registros});
+      } catch (error) {
+        const status = /^IXC HTTP (\\d{3})$/.exec(String(error?.message || ''));
+        checks.push({grupo:nome,ok:false,erro:status?'HTTP '+status[1]:'erro de consulta'});
+      }
+    }
+    return {content:[{type:'text',text:JSON.stringify({
+      recurso:'su_oss_chamado',
+      consulta:'somente leitura',
+      escopo:'todas as OS; sem filtro de setor de suporte',
+      criterio_nao_finalizadas:'status != F',
+      contagens:checks,
+      observacao:'Validar codigos de status e ID do setor Suporte no IXC antes de chamar este numero de OS de suporte em aberto.'
+    })}]};
+  });
+
   mcp.registerTool('ixc_diagnostico_api', {
     description: 'Diagnostico agregado das tres rotas IXC (clientes, contratos, financeiro). Nao retorna cadastro ou dados pessoais.',
   }, async () => {
