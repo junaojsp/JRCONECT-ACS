@@ -34,7 +34,7 @@ export function registerIxcWebserviceTools(mcp, client) {
     mcp.registerTool(name, {
       description: description + '. Apenas contagens e estado da consulta, para operador OAuth autorizado.',
       inputSchema: {
-        id_inicial: z.string().regex(/^\\d{1,12}$/).default('1'),
+        id_inicial: z.string().regex(/^\d{1,12}$/).default('1'),
         pagina: z.number().int().min(1).max(10000).default(1),
         limite: z.number().int().min(1).max(20).default(1),
       },
@@ -44,7 +44,7 @@ export function registerIxcWebserviceTools(mcp, client) {
         return {content:[{type:'text',text:JSON.stringify(summarize(result,resource))}]};
       } catch (error) {
         const message = String(error?.message || '');
-        const status = /^IXC HTTP (\\d{3})$/.exec(message);
+        const status = /^IXC HTTP (\d{3})$/.exec(message);
         const reason = status ? 'IXC HTTP ' + status[1] : 'Erro na consulta IXC. Verificar logs no ACS.';
         return {isError:true,content:[{type:'text',text:reason}]};
       }
@@ -61,7 +61,7 @@ export function registerIxcWebserviceTools(mcp, client) {
         const summary = summarize(response,resource);
         checks.push({recurso:resource,ok:true,total_registros:summary.total_registros});
       } catch (error) {
-        const code = /^IXC HTTP (\\d{3})$/.exec(String(error?.message || ''));
+        const code = /^IXC HTTP (\d{3})$/.exec(String(error?.message || ''));
         checks.push({recurso:resource,ok:false,erro:code?'HTTP '+code[1]:'erro de API'});
       }
     }
