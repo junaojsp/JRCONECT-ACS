@@ -8,3 +8,7 @@ node_modules
 .env*
 *.bak
 *.log
+
+# Never bake runtime credentials or state into the Docker image.
+secrets/
+runtime/
