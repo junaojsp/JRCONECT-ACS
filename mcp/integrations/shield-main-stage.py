@@ -31,7 +31,6 @@ anchors = [
     "const handler = createMcpHandler(() => {",
     "const mcpHandler = toNodeHandler(handler);",
     "    const payload = await validarToken(match[1]);",
-    "    return mcpHandler(req, res);",
     "    registerPabxTools(mcp);",
 ]
 for a in anchors:
