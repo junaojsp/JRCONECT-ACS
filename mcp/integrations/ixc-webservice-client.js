@@ -6,6 +6,18 @@ const resources = Object.freeze({
   contrato: 'cliente_contrato',
   financeiro: 'fn_areceber',
   os: 'su_oss_chamado',
+  assuntos_os: 'su_oss_assunto',
+  diagnosticos_os: 'su_diagnostico',
+  tickets: 'su_ticket',
+  planos: 'vd_contratos',
+  produtos_contrato: 'vd_contratos_produtos',
+  descontos_contrato: 'cliente_contrato_descontos',
+  servicos_contrato: 'cliente_contrato_servicos',
+  produtos: 'produtos',
+  estoque: 'view_prod_estoque_almox',
+  logins: 'radusuarios',
+  vendedores: 'vendedor',
+  funcionarios: 'funcionarios',
 });
 
 export function createIxcWebserviceClient({
@@ -17,12 +29,23 @@ export function createIxcWebserviceClient({
     throw new Error('IXC deve usar URL HTTPS base sem caminho');
   }
 
-  async function list(resource, { id = '1', page = 1, limit = 1, osStatus = null } = {}) {
+  async function list(resource, { id = '1', page = 1, limit = 1, osStatus = null, filters = [] } = {}) {
     const table = resources[resource];
     if (!table) throw new Error('Recurso IXC nao autorizado');
     if (osStatus !== null && (resource !== 'os' || !['F', '!F'].includes(osStatus))) {
       throw new Error('Filtro de OS nao autorizado');
     }
+    // No unrestricted endpoint paths, fields or filters. Only whitelisted
+    // aggregate queries are exposed by ixc-report-tools.js.
+    if (!Array.isArray(filters) || filters.length > 3) throw new Error('Filtros IXC invalidos');
+    for (const f of filters) {
+      if (!f || typeof f.field !== 'string' || !/^[a-z_]{1,45}$/.test(f.field) ||
+          !['=', '!=', '>=', '<=', 'IN'].includes(f.oper) ||
+          typeof f.value !== 'string' || !/^[A-Za-z0-9,\/.-]{1,60}$/.test(f.value)) {
+        throw new Error('Filtro IXC invalido');
+      }
+    }
+    if (filters.length && osStatus !== null) throw new Error('Filtros IXC incompativeis');
     if (typeof id !== 'string' || !/^\d{1,12}$/.test(id)) throw new Error('ID invalido');
     if (!Number.isInteger(page) || page < 1 || page > 10000) throw new Error('Pagina invalida');
     if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Limite invalido');
@@ -37,9 +60,12 @@ export function createIxcWebserviceClient({
       throw new Error('Credencial IXC Basic incompleta: requer usuario:token');
     }
     const data = JSON.stringify({
-      qtype: osStatus ? table + '.status' : table + '.id',
-      query: osStatus ? 'F' : id,
-      oper: osStatus === '!F' ? '!=' : (osStatus === 'F' ? '=' : '>='),
+      qtype: filters.length ? table + '.' + filters[0].field : (osStatus ? table + '.status' : table + '.id'),
+      query: filters.length ? filters[0].value : (osStatus ? 'F' : id),
+      oper: filters.length ? filters[0].oper : (osStatus === '!F' ? '!=' : (osStatus === 'F' ? '=' : '>=')),
+      ...(filters.length > 1 ? {grid_param: JSON.stringify(filters.slice(1).map(f => ({
+        TB: table + '.' + f.field, OP: f.oper, P: f.value,
+      })))} : {}),
       page: String(page),
       rp: String(limit),
       sortname: table + '.id',
