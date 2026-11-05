@@ -37,6 +37,7 @@ injection = r"""
       inventory.setAttribute('data-mcp-topology-summary', 'true');
       inventory.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px;margin:12px 0 15px';
       const groups = [
+        ['Infraestrutura ACS', 'ACS · hospeda o JR Conect MCPv2', 'Servidor ACS é o host do MCP. O endpoint /mcp-acs é um serviço de monitoramento independente; sua disponibilidade deve ser validada separadamente.'],
         ['Direto no MCP central', 'Wiki · SHIELD · Financeiro · PABX (integração parcial)', 'Ferramentas no endpoint /mcp; operações administrativas exigem autorização.'],
         ['Clientes conectados ao MCP', 'ChatGPT · Opa Suite', 'São consumidores do MCP, não servidores integrados. O Opa não recebe ferramentas administrativas.'],
         ['Somente no ChatGPT', 'Inventário não sincronizado', 'O ACS não consulta a lista de plugins exclusivos do ChatGPT. O Financeiro independente pode ser mantido como legado até validar a migração.']
@@ -102,5 +103,5 @@ s = s.replace(anchor, anchor + "\n      monitorMcpTopology(panel);", 1)
 target = stage / "mcp-connections-panel.js"
 target.write_text(s)
 subprocess.run(["node", "--check", str(target)], check=True)
-print("STAGED_OK: classificacao centralizados/clientes/ChatGPT preparada.")
+print("STAGED_OK: classificacao ACS/centralizados/clientes/ChatGPT preparada.")
 print("Producao intacta. Arquivo:", target)
