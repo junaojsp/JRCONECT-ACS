@@ -5,6 +5,7 @@ const resources = Object.freeze({
   cliente: 'cliente',
   contrato: 'cliente_contrato',
   financeiro: 'fn_areceber',
+  os: 'su_oss_chamado',
 });
 
 export function createIxcWebserviceClient({
@@ -16,9 +17,12 @@ export function createIxcWebserviceClient({
     throw new Error('IXC deve usar URL HTTPS base sem caminho');
   }
 
-  async function list(resource, { id = '1', page = 1, limit = 1 } = {}) {
+  async function list(resource, { id = '1', page = 1, limit = 1, osStatus = null } = {}) {
     const table = resources[resource];
     if (!table) throw new Error('Recurso IXC nao autorizado');
+    if (osStatus !== null && (resource !== 'os' || !['F', '!F'].includes(osStatus))) {
+      throw new Error('Filtro de OS nao autorizado');
+    }
     if (typeof id !== 'string' || !/^\d{1,12}$/.test(id)) throw new Error('ID invalido');
     if (!Number.isInteger(page) || page < 1 || page > 10000) throw new Error('Pagina invalida');
     if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Limite invalido');
@@ -33,9 +37,9 @@ export function createIxcWebserviceClient({
       throw new Error('Credencial IXC Basic incompleta: requer usuario:token');
     }
     const data = JSON.stringify({
-      qtype: table + '.id',
-      query: id,
-      oper: '>=',
+      qtype: osStatus ? table + '.status' : table + '.id',
+      query: osStatus ? 'F' : id,
+      oper: osStatus === '!F' ? '!=' : (osStatus === 'F' ? '=' : '>='),
       page: String(page),
       rp: String(limit),
       sortname: table + '.id',
