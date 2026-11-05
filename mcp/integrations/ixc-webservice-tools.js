@@ -1,3 +1,4 @@
+import { registerIxcOsSupportTools } from './ixc-os-support-tools.js';
 import { registerIxcReportTools } from './ixc-report-tools.js';
 import { z } from 'zod';
 
@@ -27,6 +28,7 @@ function summarize(result, resource) {
 
 export function registerIxcWebserviceTools(mcp, client) {
   registerIxcReportTools(mcp, client);
+  registerIxcOsSupportTools(mcp, client);
   const resources = [
     ['ixc_clientes', 'cliente', 'Resumo da disponibilidade de clientes no IXC, sem dados pessoais'],
     ['ixc_contratos', 'contrato', 'Resumo da disponibilidade de contratos no IXC, sem dados pessoais'],
