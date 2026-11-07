@@ -212,6 +212,57 @@ final class VoipStock
         });
     }
 
+    /**
+     * Confirm a selected batch of newly supplied DIDs as available.
+     * The operator must attest the VoiceCopy delivery was free for use.
+     * All-or-nothing under the existing stock.lock; historical, linked and
+     * reserved numbers are never eligible. Uses an optimistic revision.
+     */
+    public function confirmNewBatchAvailable(array $numbers, int $expectedRevision, string $actor): array
+    {
+        if ($actor === '' || $expectedRevision < 0 ||
+            count($numbers) < 1 || count($numbers) > 100) {
+            throw new RuntimeException('Lote de novos DIDs inválido.');
+        }
+        $selected = [];
+        foreach ($numbers as $number) {
+            if (!is_string($number) ||
+                preg_match('/^[1-9][0-9]{9}$/D', $number) !== 1 ||
+                isset($selected[$number])) {
+                throw new RuntimeException('Número duplicado ou inválido no lote.');
+            }
+            $selected[$number] = true;
+        }
+        return $this->locked(true, static function(array $data) use ($selected, $expectedRevision, $actor): array {
+            if (($data['revision'] ?? null) !== $expectedRevision) {
+                throw new RuntimeException('Estoque atualizado por outro operador. Recarregue a página e confira novamente.');
+            }
+            // Validate every entry before changing any status.
+            foreach ($selected as $number => $_) {
+                $row = $data['numbers'][$number] ?? null;
+                if (!is_array($row) || ($row['status'] ?? null) !== 'a_conferir' ||
+                    !empty($row['contract_id']) || !empty($row['product_record_id']) ||
+                    !empty($row['reservation_id']) ||
+                    trim((string)($row['holder'] ?? '')) !== '') {
+                    throw new RuntimeException('Lote contém DID ocupado, atribuído, reservado ou não identificado como novo. Nada foi alterado.');
+                }
+            }
+            $batchId = bin2hex(random_bytes(8));
+            $at = gmdate('c');
+            foreach ($selected as $number => $_) {
+                $data['numbers'][$number]['status'] = 'disponivel';
+                $data['audit'][] = [
+                    'at'=>$at, 'actor'=>$actor,
+                    'action'=>'new_did_batch_available_confirmed',
+                    'number'=>(string)$number,
+                    'previous_status'=>'a_conferir',
+                    'batch_id'=>$batchId,
+                ];
+            }
+            return $data;
+        });
+    }
+
     public function confirmAvailable(string $number, string $actor): array
     {
         if (!preg_match('/^[1-9][0-9]{9}$/D', $number) || $actor === '') {

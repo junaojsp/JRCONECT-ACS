@@ -21,6 +21,7 @@ on:
       - 'tests/voip-reconcile.test.php'
       - 'tests/voip-operational.test.php'
       - 'tests/voip-stock-linking.test.php'
+      - 'tests/voip-stock-batch-available.test.php'
       - 'tests/voip-link-prefill.test.php'
       - 'tests/voip-ixc-monitor.test.php'
       - '.github/workflows/voip-reconcile.yml'
@@ -54,6 +55,7 @@ jobs:
           php -l tests/voip-reconcile.test.php
           php -l tests/voip-operational.test.php
           php -l tests/voip-stock-linking.test.php
+          php -l tests/voip-stock-batch-available.test.php
           php -l tests/voip-link-prefill.test.php
           php -l tests/voip-ixc-monitor.test.php
       - name: Test marker detection without IXC writes
@@ -68,6 +70,7 @@ jobs:
           php tests/voip-historical-review.test.php
           php tests/voip-operational.test.php
           php tests/voip-stock-linking.test.php
+          php tests/voip-stock-batch-available.test.php
           php tests/voip-auto-assign.test.php
           php tests/voip-link-prefill.test.php
           php tests/voip-ixc-monitor.test.php
