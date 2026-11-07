@@ -75,7 +75,7 @@ final class VoipIxcReservationReader
     /** Bounded pagination; reject missing totals, partial or duplicate rows. */
     private function readAll(string $resource, string $field, string $query, string $oper='=', array $extra=[]): array
     {
-        if (!in_array($resource,['cliente_contrato','vd_contratos_produtos'],true) ||
+        if (!in_array($resource,['cliente','cliente_contrato','vd_contratos_produtos'],true) ||
             !in_array($field,['id','id_produto','id_contrato'],true) ||
             !in_array($oper,['=','IN'],true) ||
             !preg_match('/^[0-9]{1,12}(?:,[0-9]{1,12}){0,19}$/D',$query)) {
@@ -156,6 +156,17 @@ final class VoipIxcReservationReader
             (string)($products[0]['id_produto']??'')!=='74') {
             throw new RuntimeException('Produto 74 ausente, multiplo ou divergente.');
         }
-        return ['contract'=>$contracts[0],'product_rows'=>$products];
+        $clientId=self::id($contracts[0]['id_cliente']??'');
+        $clients=$this->readAll('cliente','id',$clientId);
+        if (count($clients)!==1 || (string)($clients[0]['id']??'')!==$clientId) {
+            throw new RuntimeException('Cliente IXC nao unico.');
+        }
+        $clientName=trim((string)($clients[0]['razao']??''));
+        if ($clientName==='') $clientName=trim((string)($clients[0]['fantasia']??''));
+        if ($clientName==='' || strlen($clientName)>250 || preg_match('/[\x00-\x1f]/',$clientName)) {
+            throw new RuntimeException('Nome do cliente IXC invalido.');
+        }
+        return ['contract'=>$contracts[0],'product_rows'=>$products,
+            'client'=>['id'=>$clientId,'name'=>$clientName]];
     }
 }
