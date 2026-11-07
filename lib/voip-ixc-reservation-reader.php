@@ -142,6 +142,17 @@ final class VoipIxcReservationReader
             'somente_leitura'=>true,'liberacao_automatica'=>false];
     }
 
+    /** Read one contract observation even when product 74 was removed. */
+    public function readContractObservation(string $contractId): array
+    {
+        self::id($contractId);
+        $contracts=$this->readAll('cliente_contrato','id',$contractId);
+        if (count($contracts)!==1 || (string)$contracts[0]['id']!==$contractId) {
+            throw new RuntimeException('Contrato IXC nao unico.');
+        }
+        return ['contract'=>$contracts[0]];
+    }
+
     public function readFresh(string $contractId, string $productRecordId): array
     {
         self::id($contractId);self::id($productRecordId);

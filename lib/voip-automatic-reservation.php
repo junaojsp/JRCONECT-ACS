@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 final class VoipAutomaticReservation
 {
-    public static function process(array $monitor, VoipStock $stock, callable $readFresh, ?callable $writeIxc = null): array
+    public static function process(array $monitor, VoipStock $stock, callable $readFresh, ?callable $writeIxc = null, ?callable $readContract = null): array
     {
         if (($monitor['version']??null)!==1 || ($monitor['mode']??null)!=='read_only' ||
             !is_array($monitor['contracts']??null) ||
@@ -113,6 +113,29 @@ final class VoipAutomaticReservation
                 } else {
                     $summary['falhas']++;
                     $summary['falhas_detalhes'][]=['contrato_id'=>$contractId,'etapa'=>$stage];
+                }
+            }
+        }
+        // Existing local links must still be checked when product 74 was removed from IXC.
+        if ($readContract !== null) {
+            foreach (($stock->read()['numbers'] ?? []) as $linkedRow) {
+                if (!in_array(($linkedRow['status'] ?? ''), ['ocupado','reservado'], true) ||
+                    empty($linkedRow['contract_id']) || empty($linkedRow['product_record_id'])) continue;
+                $contractId=(string)$linkedRow['contract_id'];
+                $productId=(string)$linkedRow['product_record_id'];
+                $item=$monitor['contracts'][$contractId] ?? null;
+                if (is_array($item) && in_array($productId, array_map('strval', $item['product_record_ids'] ?? []), true)) continue;
+                try {
+                    $fresh=$readContract($contractId);
+                    $observation=(string)($fresh['contract']['obs_contrato'] ?? '');
+                    if (VoipAutoAssignment::cancellationRequested($observation) &&
+                        !VoipAutoAssignment::assignmentPresent($observation,$contractId,(string)$linkedRow['number'])) {
+                        $stock->cancelVoipAssignment($linkedRow,'voip-auto-cancel-product-removed');
+                        $summary['cancelados']++;
+                    }
+                } catch (Throwable $error) {
+                    $summary['falhas']++;
+                    $summary['falhas_detalhes'][]=['contrato_id'=>$contractId,'etapa'=>'cancelamento_produto_removido'];
                 }
             }
         }
