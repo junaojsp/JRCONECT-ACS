@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Existing 15-minute cron: GET-only snapshot and local reservation.
+# Existing 5-minute cron: GET-only snapshot and local reservation.
 set -Eeuo pipefail
 umask 077
 [[ "$(id -u)" == 0 ]] || { echo "BLOQUEADO: requer root" >&2; exit 2; }
