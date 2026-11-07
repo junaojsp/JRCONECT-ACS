@@ -252,6 +252,32 @@ final class VoipStock
         });
     }
 
+    /** Fill the holder on an existing exact VoIP link without changing its state. */
+    public function updateVoipHolder(array $link, string $holder, string $actor): array
+    {
+        $number=(string)($link['number']??'');
+        $contractId=(string)($link['contract_id']??'');
+        $productId=(string)($link['product_record_id']??'');
+        $holder=trim($holder);
+        if (!preg_match('/^[1-9][0-9]{9}$/D',$number) || !self::validId($contractId) ||
+            !self::validId($productId) || $holder==='' || strlen($holder)>250 ||
+            preg_match('/[\\x00-\\x1f]/',$holder) || $actor==='') {
+            throw new RuntimeException('Titular VoIP inválido.');
+        }
+        return $this->locked(true, static function(array $data) use ($number,$contractId,$productId,$holder,$actor): array {
+            $row=$data['numbers'][$number]??null;
+            if (!is_array($row) || ($row['status']??'')!=='ocupado' ||
+                (string)($row['contract_id']??'')!==$contractId ||
+                (string)($row['product_record_id']??'')!==$productId) {
+                throw new RuntimeException('Vínculo VoIP inexistente ou divergente.');
+            }
+            $data['numbers'][$number]['holder']=$holder;
+            $data['audit'][]=['at'=>gmdate('c'),'actor'=>$actor,'action'=>'voip_holder_filled',
+                'number'=>$number,'contract_id'=>$contractId,'product_record_id'=>$productId];
+            return $data;
+        });
+    }
+
     /**
      * Release an unlinked legacy number only after the operator has verified
      * it is unused in VoiceCopy. A historical IXC status is not proof.
