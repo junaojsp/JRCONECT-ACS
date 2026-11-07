@@ -52,12 +52,20 @@ final class VoipStock
             if ($write && $result !== $data) {
                 $result['revision'] = $data['revision'] + 1;
                 $json = json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+                $fileMeta = is_file($file) ? stat($file) : null;
                 $tmp = tempnam($this->dir, '.stock-');
                 if ($tmp === false) throw new RuntimeException('Falha ao preparar gravação.');
                 try {
-                    if (!chmod($tmp, 0600) || file_put_contents($tmp, $json) !== strlen($json) || !rename($tmp, $file)) {
+                    $mode = is_array($fileMeta ?? null) ? ((int)$fileMeta['mode'] & 0777) : 0600;
+                    if (!chmod($tmp, $mode) || file_put_contents($tmp, $json) !== strlen($json)) {
                         throw new RuntimeException('Falha ao gravar estoque.');
                     }
+                    if (is_array($fileMeta ?? null) && function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                        if (!chown($tmp, (int)$fileMeta['uid']) || !chgrp($tmp, (int)$fileMeta['gid'])) {
+                            throw new RuntimeException('Falha ao preservar proprietário do estoque.');
+                        }
+                    }
+                    if (!rename($tmp, $file)) throw new RuntimeException('Falha ao gravar estoque.');
                 } finally { if (is_file($tmp)) unlink($tmp); }
             }
             return $result;
@@ -180,6 +188,36 @@ final class VoipStock
                 'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'automatic_link_confirmed',
                 'number'=>$number, 'contract_id'=>$contractId,
                 'product_record_id'=>$productId,
+            ];
+            return $data;
+        });
+    }
+
+    /** Set the IXC-derived holder on one exact reservation without changing its state. */
+    public function setReservationHolder(array $reservation, string $holder, string $actor): array
+    {
+        $number = (string)($reservation['number'] ?? '');
+        $contractId = (string)($reservation['contract_id'] ?? '');
+        $productId = (string)($reservation['product_record_id'] ?? '');
+        $token = (string)($reservation['reservation_id'] ?? '');
+        $holder = trim($holder);
+        if (!preg_match('/^[1-9][0-9]{9}$/D', $number) || !self::validId($contractId) ||
+            !self::validId($productId) || !preg_match('/^[a-f0-9]{32}$/D', $token) ||
+            $holder === '' || strlen($holder) > 250 || preg_match('/[\x00-\x1f]/', $holder) || $actor === '') {
+            throw new RuntimeException('Titular da reserva inválido.');
+        }
+        return $this->locked(true, static function(array $data) use ($number, $contractId, $productId, $token, $holder, $actor): array {
+            $row = $data['numbers'][$number] ?? null;
+            if (!$row || ($row['status'] ?? '') !== 'reservado' ||
+                ($row['contract_id'] ?? null) !== $contractId ||
+                ($row['product_record_id'] ?? null) !== $productId ||
+                ($row['reservation_id'] ?? null) !== $token) {
+                throw new RuntimeException('Reserva inexistente ou diferente.');
+            }
+            $data['numbers'][$number]['holder'] = $holder;
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'reservation_holder_filled',
+                'number'=>$number, 'contract_id'=>$contractId, 'product_record_id'=>$productId,
             ];
             return $data;
         });
