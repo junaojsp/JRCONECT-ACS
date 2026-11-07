@@ -120,6 +120,17 @@
 </a>
 
             <li>
+                <a
+                    href="/voip-central.php"
+                    class="<?php echo ($currentPage ?? '') === 'voip-central' ? 'active' : ''; ?>"
+                    data-tooltip="Central VoIP"
+                >
+                    <i class="bi bi-telephone"></i>
+                    <span>Central VoIP</span>
+                </a>
+            </li>
+
+            <li>
 
                 <a
                     href="/configuration.php"
