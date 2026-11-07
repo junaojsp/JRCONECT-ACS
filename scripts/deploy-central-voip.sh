@@ -6,7 +6,7 @@ umask 027
 
 REPO=/opt/jrconect-acs-git
 WEB=/var/www/gacs
-EXPECTED_REMOTE='junaojsp/JRCONECT-ACS-MCP'
+EXPECTED_SOURCE='https://github.com/junaojsp/JRCONECT-ACS-MCP.git'
 REF=FETCH_HEAD
 BACKUP_ROOT=/var/backups/jrconect-acs
 tmp=''
@@ -37,14 +37,14 @@ command -v php >/dev/null
   { echo "Diretorio de producao inesperado; nada alterado" >&2; exit 1; }
 git -C "$REPO" rev-parse --is-inside-work-tree | grep -qx true ||
   { echo "Repositorio ACS indisponivel; nada alterado" >&2; exit 1; }
-remote="$(git -C "$REPO" remote get-url origin)"
-case "$remote" in
-  "https://github.com/$EXPECTED_REMOTE"|"https://github.com/$EXPECTED_REMOTE.git"|"git@github.com:$EXPECTED_REMOTE"|"git@github.com:$EXPECTED_REMOTE.git") ;;
-  *) echo "Remote origin inesperado: abortando" >&2; exit 1 ;;
-esac
-# FETCH_HEAD e gerado pelo comando 'git fetch origin main' da documentacao.
-git -C "$REPO" rev-parse --verify "$REF^{commit}" >/dev/null ||
+# O checkout local usa origin JRCONECT-ACS; a Central VoIP vem de outro repo.
+# O comando de deploy faz fetch explicito da fonte aprovada, sem trocar origin.
+local_commit="$(git -C "$REPO" rev-parse --verify "$REF^{commit}")" ||
   { echo "Commit de origem ausente" >&2; exit 1; }
+remote_commit="$(git -C "$REPO" ls-remote "$EXPECTED_SOURCE" refs/heads/main | awk '{print $1}')" ||
+  { echo "Nao foi possivel validar a origem da Central VoIP" >&2; exit 1; }
+[[ -n "$remote_commit" && "$local_commit" == "$remote_commit" ]] ||
+  { echo "FETCH_HEAD nao corresponde ao commit main da fonte aprovada; abortando" >&2; exit 1; }
 
 tmp="$(mktemp -d)"
 git -C "$REPO" show "$REF:voip-central.php" > "$tmp/voip-central.php"
