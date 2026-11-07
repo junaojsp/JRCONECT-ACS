@@ -65,8 +65,14 @@ final class VoipIxcControlledWriter
         try {
             $raw=curl_exec($ch);
             $status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);
-            if (!is_string($raw) || $status < 200 || $status >= 300 ||
-                strlen($raw)>1048576) throw new RuntimeException('IXC indisponivel ou HTTP incorreto.');
+            if (!is_string($raw)) {
+                throw new RuntimeException('IXC '.$method.' falha de transporte cURL '.curl_errno($ch).'.');
+            }
+            if ($status < 200 || $status >= 300) {
+                // Only method + numeric status; never print response body or headers.
+                throw new RuntimeException('IXC '.$method.' HTTP '.(int)$status.'.');
+            }
+            if (strlen($raw)>1048576) throw new RuntimeException('IXC resposta excedeu limite.');
         } finally { curl_close($ch); }
         $result=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
         if (!is_array($result) || isset($result['error']) ||
@@ -141,11 +147,19 @@ final class VoipIxcControlledWriter
         return $fields;
     }
 
-    public function writeObservation(string $id,string $previous,string $next): void
+    public function writeObservation(string $id,string $previous,string $next, ?array $baseline = null): void
     {
         if ($id!=='4740') throw new RuntimeException('Escrita fora do contrato piloto.');
         $before=$this->readFresh($id);
         $contract=$before['contract'];
+        if ($baseline !== null) {
+            $expected=$baseline;
+            $actual=$contract;
+            unset($expected['obs_contrato'], $actual['obs_contrato']);
+            if ($actual !== $expected) {
+                throw new RuntimeException('Contrato divergente do backup: PUT bloqueado.');
+            }
+        }
         $payload=self::payload($contract,$previous,$next);
         // Full record PUT: no guessed defaults, no partial patch.
         // The caller has already reserved the DID and handles ambiguous errors.
