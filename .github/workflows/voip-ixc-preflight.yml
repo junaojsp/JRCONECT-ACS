@@ -1,0 +1,26 @@
+name: VoIP IXC preflight lint
+on:
+  pull_request:
+    paths:
+      - 'scripts/preflight-voip-ixc.sh'
+      - 'scripts/README-preflight-voip-ixc.md'
+      - '.github/workflows/voip-ixc-preflight.yml'
+  workflow_dispatch:
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: bash -n scripts/preflight-voip-ixc.sh
+      - name: Check script remains non-deploying
+        run: |
+          if grep -En '(^|[[:space:]])(docker[[:space:]]+compose[[:space:]]+up|systemctl[[:space:]]+restart|git[[:space:]]+pull|git[[:space:]]+reset)' scripts/preflight-voip-ixc.sh; then
+            echo 'Unexpected potentially disruptive command'; exit 1
+          fi
+      - name: Check IXC query module syntax
+        run: |
+          node --check mcp/integrations/ixc-voip-tools.js
+          node --check mcp/integrations/ixc-webservice-tools.js
