@@ -7,8 +7,8 @@ if (PHP_SAPI!=='cli' || !function_exists('posix_geteuid') || posix_geteuid()!==0
 require_once '/var/www/gacs/lib/voip-stock.php';
 require_once '/var/www/gacs/lib/voip-auto-assign.php';
 require_once '/var/www/gacs/lib/voip-ixc-monitor.php';
-require_once __DIR__.'/../lib/voip-ixc-reservation-reader.php';
-require_once __DIR__.'/../lib/voip-automatic-reservation.php';
+require_once __DIR__.'/lib/voip-ixc-reservation-reader.php';
+require_once __DIR__.'/lib/voip-automatic-reservation.php';
 try {
     if (count($argv)!==1) throw new RuntimeException('Sem parametros.');
     $lock=fopen('/run/lock/jrconect-voip-auto-reserve.lock','c');
