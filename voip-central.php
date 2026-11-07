@@ -27,6 +27,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $input = $_POST['ixc_snapshot'] ?? null;
             if (!is_string($input)) throw new RuntimeException('Snapshot IXC inválido.');
             $voipSnapshotInput = $input;
+        } elseif (($_POST['voip_action'] ?? '') === 'link_manual') {
+            if (($_POST['checked_ixc_voicecopy'] ?? null) !== 'YES') {
+                throw new RuntimeException('Confirme a verificação do contrato no IXC e do número na VoiceCopy.');
+            }
+            $number = $_POST['number'] ?? null;
+            $contract = $_POST['contract_id'] ?? null;
+            $product = $_POST['product_record_id'] ?? null;
+            if (!is_string($number) || !is_string($contract) || !is_string($product)) {
+                throw new RuntimeException('Informe os três identificadores do vínculo.');
+            }
+            $voipStore->linkManually($number, $contract, $product, (string)$_SESSION['user_id']);
+            $_SESSION['voip_flash'] = 'Vínculo registrado manualmente com auditoria. IXC não foi alterado.';
+            header('Location: /voip-central.php#voip-vinculos', true, 303);
+            exit;
+        } elseif (($_POST['voip_action'] ?? '') === 'confirm_available') {
+            if (($_POST['checked_voicecopy'] ?? null) !== 'YES') {
+                throw new RuntimeException('Confirme a disponibilidade verificada na VoiceCopy.');
+            }
+            $number = $_POST['number'] ?? null;
+            if (!is_string($number)) throw new RuntimeException('Número inválido.');
+            $voipStore->confirmAvailable($number, (string)$_SESSION['user_id']);
+            $_SESSION['voip_flash'] = 'Disponibilidade confirmada manualmente. IXC não foi alterado.';
+            header('Location: /voip-central.php#voip-vinculos', true, 303);
+            exit;
+        } elseif (($_POST['voip_action'] ?? '') === 'set_minimum') {
+            $minimum = $_POST['minimum_available'] ?? null;
+            if (!is_string($minimum) || !preg_match('/^(?:[1-9]|[1-9][0-9]|100)$/D', $minimum)) {
+                throw new RuntimeException('Informe estoque mínimo de 1 a 100.');
+            }
+            $voipStore->setMinimum((int)$minimum, (string)$_SESSION['user_id']);
+            $_SESSION['voip_flash'] = 'Limite mínimo atualizado.';
+            header('Location: /voip-central.php#voip-vinculos', true, 303);
+            exit;
         } elseif (($_POST['voip_action'] ?? 'import') === 'import') {
             $input = $_POST['inventory'] ?? null;
             if (!is_string($input)) throw new RuntimeException('Importação inválida.');
@@ -59,6 +92,9 @@ $voipReview = count(array_filter($voipRows, static fn($r) => $r['status'] === 'a
 // Reservado para uma etapa futura: somente liberações confirmadas podem ser disponíveis.
 $voipAvailable = count(array_filter($voipRows, static fn($r) => $r['status'] === 'disponivel'));
 $voipOther = count($voipRows) - $voipOccupied - $voipReview - $voipAvailable;
+$voipLinked = count(array_filter($voipRows, static fn($r) => !empty($r['contract_id']) && !empty($r['product_record_id'])));
+$voipMin = (int)($voipData['minimum_available'] ?? 5);
+$voipLowStock = $voipData !== null && $voipAvailable <= $voipMin;
 $voipFlash = $_SESSION['voip_flash'] ?? '';
 unset($_SESSION['voip_flash']);
 function voipEscape($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -182,6 +218,11 @@ include __DIR__ . '/views/layouts/header.php';
 .voip-page .voip-status--available{color:#86e0b1;border:1px solid #246845;background:#173726}
 .voip-page .voip-status--review{color:#f4cb83;border:1px solid #64502d;background:#2b2419}
 @media(max-width:640px){.voip-page .voip-stock-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.voip-page .voip-stock-chip{justify-content:space-between}}
+.voip-page #voip-vinculos form{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin:18px 0 24px;max-width:720px}
+.voip-page #voip-vinculos input:not([type=checkbox]),.voip-page #voip-vinculos select{background:#0b0d10;color:#eef2f6;border:1px solid #414955;border-radius:8px;padding:10px;max-width:100%}
+.voip-page #voip-vinculos label{color:#d8dde5;font-size:14px}
+.voip-page #voip-vinculos label:has(input[type=checkbox]){display:flex;gap:10px;align-items:flex-start}
+.voip-page #voip-vinculos button{justify-self:start}
 </style>
 <section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
@@ -218,9 +259,9 @@ include __DIR__ . '/views/layouts/header.php';
         </section>
         <section class="voip-card voip-kpi">
             <div class="voip-kpi-heading"><span>Números vinculados</span><i class="bi bi-link-45deg" aria-hidden="true"></i></div>
-            <div class="voip-number" aria-label="Ainda não habilitado">—</div>
-            <p>Números associados a contratos do IXC</p>
-            <small class="voip-kpi-foot">Vinculação manual em preparação</small>
+            <div class="voip-number"><?= $voipData === null ? '—' : $voipLinked ?></div>
+            <p>Números associados manualmente a contratos do IXC</p>
+            <small class="voip-kpi-foot">Vínculos registrados com auditoria no ACS</small>
         </section>
         <section class="voip-card voip-kpi">
             <div class="voip-kpi-heading"><span>Cancelamentos e baixas</span><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></div>
@@ -260,7 +301,7 @@ include __DIR__ . '/views/layouts/header.php';
                     $stateClass = $status === 'ocupado' ? 'occupied' : ($status === 'disponivel' ? 'available' : 'review');
                     $stateLabel = $status === 'ocupado' ? 'Ocupado' : ($status === 'disponivel' ? 'Disponível' : 'A conferir');
                 ?><span class="voip-status voip-status--<?= $stateClass ?>"><i class="bi bi-circle-fill" aria-hidden="true"></i> <?= voipEscape($stateLabel) ?></span></td>
-                <td>Pendente de vinculação</td>
+                <td><?= !empty($row['contract_id']) ? voipEscape($row['contract_id']) : 'Pendente de vinculação' ?></td>
             </tr>
             <?php endforeach; ?>
             <?php if ($voipData !== null && !$voipRows): ?><tr><td colspan="4">Nenhum número importado. Use a importação abaixo.</td></tr><?php endif; ?>
@@ -355,9 +396,62 @@ include __DIR__ . '/views/layouts/header.php';
     </section>
 
     <section class="voip-card voip-section" id="voip-vinculos">
-        <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-link-45deg me-2" aria-hidden="true"></i>Números vinculados</h3>
-        <p>A equipe poderá selecionar um DID do estoque e associá-lo manualmente ao contrato IXC.</p></div><span class="voip-state">Em preparação</span></div>
-        <div class="voip-empty-state"><i class="bi bi-link" aria-hidden="true"></i><div><strong>Vinculação manual ainda não disponível</strong><span>Os números marcados como ocupados na importação não equivalem a contratos já vinculados.</span></div></div>
+        <div class="voip-section-head"><div>
+            <h3 class="voip-section-title"><i class="bi bi-link-45deg me-2" aria-hidden="true"></i>Vínculos manuais e estoque mínimo</h3>
+            <p>Vínculos são decisões do operador após conferir o contrato e o produto 74 no IXC e a atribuição telefônica na VoiceCopy.</p>
+        </div><span class="voip-state">Confirmação supervisionada</span></div>
+        <div class="voip-stock-summary">
+            <span class="voip-stock-chip voip-stock-chip--occupied">Vinculados <strong><?= $voipLinked ?></strong></span>
+            <span class="voip-stock-chip voip-stock-chip--available">Disponíveis confirmados <strong><?= $voipAvailable ?></strong></span>
+            <span class="voip-stock-chip voip-stock-chip--review">Mínimo configurado <strong><?= $voipMin ?></strong></span>
+        </div>
+        <?php if ($voipLowStock): ?>
+            <div class="voip-note" role="alert">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                <div><strong>Estoque disponível no limite: <?= $voipAvailable ?> de <?= $voipMin ?>.</strong>
+                    Revisar os números a conferir e avaliar solicitação à VoiceCopy. Nenhum pedido é enviado automaticamente.</div>
+            </div>
+        <?php endif; ?>
+        <form method="post" action="/voip-central.php#voip-vinculos">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <input type="hidden" name="voip_action" value="set_minimum">
+            <label for="voip-minimum">Alerta de estoque mínimo (1 a 100)</label>
+            <input id="voip-minimum" type="number" min="1" max="100" step="1" name="minimum_available" value="<?= $voipMin ?>" required>
+            <button type="submit">Salvar limite</button>
+        </form>
+        <div class="voip-subtitle">Confirmar vínculo manual</div>
+        <p>Preencha somente após verificar o ID exato do contrato, o registro do produto 74 e o número telefônico. Não confirma status ou propriedade junto ao IXC automaticamente.</p>
+        <form method="post" action="/voip-central.php#voip-vinculos" autocomplete="off">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <input type="hidden" name="voip_action" value="link_manual">
+            <label for="voip-link-number">Número VoiceCopy (somente dígitos)</label>
+            <input id="voip-link-number" name="number" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" required placeholder="1151961252">
+            <label for="voip-link-contract">Contrato IXC</label>
+            <input id="voip-link-contract" name="contract_id" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" required>
+            <label for="voip-link-product">ID do registro do produto 74</label>
+            <input id="voip-link-product" name="product_record_id" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" required>
+            <label><input type="checkbox" name="checked_ixc_voicecopy" value="YES" required>
+                Conferi o contrato e o produto 74 no IXC e confirmei a atribuição deste número na VoiceCopy.</label>
+            <button type="submit">Confirmar vínculo</button>
+        </form>
+        <div class="voip-subtitle">Confirmar disponibilidade na VoiceCopy</div>
+        <p>Disponível apenas para números <strong>a conferir</strong> e sem vínculo. Nunca libera números ocupados ou vinculados.</p>
+        <form method="post" action="/voip-central.php#voip-vinculos" autocomplete="off">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <input type="hidden" name="voip_action" value="confirm_available">
+            <label for="voip-available-number">Número a conferir</label>
+            <select id="voip-available-number" name="number" required>
+                <option value="">Selecione um número</option>
+                <?php foreach ($voipRows as $candidate): ?>
+                    <?php if ($candidate['status'] === 'a_conferir' && empty($candidate['contract_id'])): ?>
+                        <option value="<?= voipEscape($candidate['number']) ?>"><?= voipEscape($candidate['number']) ?></option>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </select>
+            <label><input type="checkbox" name="checked_voicecopy" value="YES" required>
+                Verifiquei na VoiceCopy que o número está livre e apto para nova atribuição.</label>
+            <button type="submit">Confirmar disponibilidade</button>
+        </form>
     </section>
 
     <section class="voip-card voip-section" id="voip-baixas">
@@ -380,7 +474,12 @@ include __DIR__ . '/views/layouts/header.php';
         <div class="voip-table-wrap"><table class="voip-table">
         <thead><tr><th>Data (UTC)</th><th>Operador (ID)</th><th>Número</th><th>Ação</th></tr></thead><tbody>
         <?php foreach (array_reverse($voipData['audit'] ?? []) as $event): ?>
-        <tr><td><?= voipEscape($event['at']) ?></td><td><?= voipEscape($event['actor']) ?></td><td><?= voipEscape($event['number']) ?></td><td>Importação</td></tr>
+        <tr><td><?= voipEscape($event['at']) ?></td><td><?= voipEscape($event['actor']) ?></td><td><?= voipEscape($event['number'] ?? '—') ?></td><td><?= voipEscape([
+            'import'=>'Importação',
+            'manual_link'=>'Vínculo manual: contrato ' . ($event['contract_id'] ?? '') . ', produto ' . ($event['product_record_id'] ?? ''),
+            'voicecopy_available_confirmed'=>'Disponibilidade confirmada na VoiceCopy',
+            'minimum_changed'=>'Novo estoque mínimo: ' . ($event['minimum_available'] ?? '')
+        ][$event['action'] ?? ''] ?? 'Operação') ?></td></tr>
         <?php endforeach; ?>
         </tbody></table></div>
     </details>
