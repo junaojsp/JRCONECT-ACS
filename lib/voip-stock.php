@@ -185,6 +185,33 @@ final class VoipStock
         });
     }
 
+    /**
+     * Release an unlinked legacy number only after the operator has verified
+     * it is unused in VoiceCopy. A historical IXC status is not proof.
+     * Existing links, reservations and other DIDs remain untouched.
+     */
+    public function confirmLegacyFree(string $number, string $actor): array
+    {
+        if (!preg_match('/^[1-9][0-9]{9}$/D', $number) || $actor === '') {
+            throw new RuntimeException('Liberação histórica inválida.');
+        }
+        return $this->locked(true, static function(array $data) use ($number, $actor): array {
+            $row = $data['numbers'][$number] ?? null;
+            if (!is_array($row) || ($row['status'] ?? '') !== 'ocupado' ||
+                !empty($row['contract_id']) || !empty($row['product_record_id']) ||
+                !empty($row['reservation_id'])) {
+                throw new RuntimeException('Somente DID histórico ocupado, não vinculado e não reservado pode ser liberado.');
+            }
+            $data['numbers'][$number]['status'] = 'disponivel';
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor,
+                'action'=>'legacy_free_confirmed_voicecopy', 'number'=>$number,
+                'previous_status'=>'ocupado',
+            ];
+            return $data;
+        });
+    }
+
     public function confirmAvailable(string $number, string $actor): array
     {
         if (!preg_match('/^[1-9][0-9]{9}$/D', $number) || $actor === '') {

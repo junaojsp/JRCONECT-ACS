@@ -8,6 +8,7 @@ requireLogin();
 
 require_once __DIR__ . '/lib/voip-stock.php';
 require_once __DIR__ . '/lib/voip-reconcile.php';
+require_once __DIR__ . '/lib/voip-historical-review.php';
 require_once __DIR__ . '/lib/voip-operational.php';
 require_once __DIR__ . '/lib/voip-link-prefill.php';
 require_once __DIR__ . '/lib/voip-ixc-monitor.php';
@@ -19,6 +20,7 @@ $voipStore = new VoipStock();
 $voipSnapshotInput = null;
 $voipComparison = null;
 $voipOperational = null;
+$voipHistorical = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $received = $_POST['csrf'] ?? null;
@@ -41,6 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $voipStore->linkManually($number, $contract, $product, (string)$_SESSION['user_id']);
             $_SESSION['voip_flash'] = 'Vínculo registrado manualmente com auditoria. IXC não foi alterado.';
+            header('Location: /voip-central.php#voip-vinculos', true, 303);
+            exit;
+        } elseif (($_POST['voip_action'] ?? '') === 'confirm_legacy_free') {
+            if (($_POST['checked_voicecopy_legacy'] ?? null) !== 'YES') {
+                throw new RuntimeException('Confirme na VoiceCopy que o DID histórico está efetivamente livre.');
+            }
+            $number = $_POST['number'] ?? null;
+            if (!is_string($number)) throw new RuntimeException('Número histórico inválido.');
+            $voipStore->confirmLegacyFree($number, (string)$_SESSION['user_id']);
+            $_SESSION['voip_flash'] = 'DID histórico liberado após confirmação da VoiceCopy. Auditoria registrada.';
             header('Location: /voip-central.php#voip-vinculos', true, 303);
             exit;
         } elseif (($_POST['voip_action'] ?? '') === 'confirm_available') {
@@ -84,6 +96,7 @@ if ($voipSnapshotInput !== null && $voipData !== null) {
             VoipReconcile::parseSnapshot($voipSnapshotInput)
         );
         $voipOperational = VoipOperational::summarize($voipRows, $voipComparison);
+        $voipHistorical = VoipHistoricalReview::analyze($voipRows, VoipReconcile::parseSnapshot($voipSnapshotInput));
     } catch (Throwable $e) {
         $voipError = $e->getMessage();
     }
@@ -463,6 +476,48 @@ include __DIR__ . '/views/layouts/header.php';
                     </tbody>
                 </table>
             </div>
+        <?php if ($voipHistorical !== null): ?>
+            <div class="voip-subtitle">Conciliação do estoque histórico — por número</div>
+            <p>Esta classificação usa a lista original dos DIDs ocupados e os contratos do produto 74. Status A/I são códigos brutos; ausência de contrato na lista não comprova que o número esteja livre. Nenhuma baixa é feita pela comparação.</p>
+            <div class="voip-stock-summary">
+                <span class="voip-stock-chip voip-stock-chip--occupied">Históricos ocupados <strong><?= (int)$voipHistorical['summary']['historical_occupied'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Possível vínculo ativo <strong><?= (int)$voipHistorical['summary']['active_candidate'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Possível liberação (I) <strong><?= (int)$voipHistorical['summary']['inactive_candidate'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Sem produto 74 localizado <strong><?= (int)$voipHistorical['summary']['missing_product74'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--available">Vínculos preservados <strong><?= (int)$voipHistorical['summary']['already_linked'] ?></strong></span>
+            </div>
+            <div class="voip-table-wrap">
+                <table class="voip-table" aria-label="Revisão do estoque histórico">
+                    <thead><tr><th>DID</th><th>Titular histórico</th><th>Contrato sugerido</th><th>Status IXC</th><th>Resultado</th><th>Próxima ação</th></tr></thead>
+                    <tbody>
+                        <?php
+                        $voipHistoricalLabels = [
+                            'active_candidate'=>'Possível vínculo ativo',
+                            'inactive_candidate'=>'Candidato à liberação',
+                            'missing_product74'=>'Sem produto 74 encontrado',
+                            'ambiguous'=>'Vários contratos possíveis',
+                            'already_linked'=>'Vínculo existente protegido',
+                            'unknown_status'=>'Status não classificado',
+                            'other_review'=>'Conferir',
+                        ];
+                        foreach ($voipHistorical['rows'] as $historic): ?>
+                            <tr>
+                                <td class="voip-phone"><?= voipEscape($historic['number']) ?></td>
+                                <td><?= voipEscape($historic['holder'] ?: 'Não informado') ?></td>
+                                <td><?= voipEscape($historic['contract_id'] ?? '—') ?></td>
+                                <td><?= voipEscape($historic['status_raw'] ?? '—') ?></td>
+                                <td><?= voipEscape($voipHistoricalLabels[$historic['category']] ?? 'Conferir') ?></td>
+                                <td><?= $historic['category'] === 'already_linked'
+                                    ? 'Preservar vínculo existente'
+                                    : ($historic['category'] === 'active_candidate'
+                                        ? 'Conferir atribuição e usar Preparar vínculo'
+                                        : 'Confirmar situação na VoiceCopy antes de liberar') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
         <?php endif; ?>
     </section>
 
@@ -505,6 +560,24 @@ include __DIR__ . '/views/layouts/header.php';
             <label><input type="checkbox" name="checked_ixc_voicecopy" value="YES" required>
                 Conferi o contrato e o produto 74 no IXC e confirmei a atribuição deste número na VoiceCopy.</label>
             <button type="submit">Confirmar vínculo</button>
+        </form>
+        <div class="voip-subtitle">Liberar DID histórico após conferência na VoiceCopy</div>
+        <p>Somente DIDs antigos com status <strong>ocupado</strong>, ainda sem vínculo de contrato e sem reserva. A ausência de produto 74 no IXC não comprova liberação. Confira diretamente na VoiceCopy antes de confirmar.</p>
+        <form method="post" action="/voip-central.php#voip-vinculos" autocomplete="off">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <input type="hidden" name="voip_action" value="confirm_legacy_free">
+            <label for="voip-legacy-free-number">DID histórico confirmado livre</label>
+            <select id="voip-legacy-free-number" name="number" required>
+                <option value="">Selecione um número</option>
+                <?php foreach ($voipRows as $candidate): ?>
+                    <?php if ($candidate['status'] === 'ocupado' && empty($candidate['contract_id']) && empty($candidate['product_record_id']) && empty($candidate['reservation_id'])): ?>
+                        <option value="<?= voipEscape($candidate['number']) ?>"><?= voipEscape($candidate['number']) ?></option>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </select>
+            <label><input type="checkbox" name="checked_voicecopy_legacy" value="YES" required>
+                Confirmei na VoiceCopy que este DID não está atribuído a ninguém e pode voltar ao estoque disponível.</label>
+            <button type="submit">Confirmar liberação histórica</button>
         </form>
         <div class="voip-subtitle">Confirmar disponibilidade na VoiceCopy</div>
         <p>Disponível apenas para números <strong>a conferir</strong> e sem vínculo. Nunca libera números ocupados ou vinculados.</p>
@@ -550,6 +623,7 @@ include __DIR__ . '/views/layouts/header.php';
             'import'=>'Importação',
             'manual_link'=>'Vínculo manual: contrato ' . ($event['contract_id'] ?? '') . ', produto ' . ($event['product_record_id'] ?? ''),
             'voicecopy_available_confirmed'=>'Disponibilidade confirmada na VoiceCopy',
+            'legacy_free_confirmed_voicecopy'=>'DID histórico liberado após conferência na VoiceCopy',
             'minimum_changed'=>'Novo estoque mínimo: ' . ($event['minimum_available'] ?? '')
         ][$event['action'] ?? ''] ?? 'Operação') ?></td></tr>
         <?php endforeach; ?>
