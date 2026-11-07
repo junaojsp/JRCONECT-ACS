@@ -1,20 +1,20 @@
 # Instalacao controlada da Central VoIP no ACS
 
-Esta PR adiciona apenas um instalador isolado em `scripts/deploy-central-voip.sh`.
+Esta PR corrige o instalador isolado em `scripts/deploy-central-voip.sh`.
 
 ## Executar DEPOIS do merge desta PR
 
 No SSH do ACS como root, copiar e executar este bloco:
 
 ```bash
-git -C /opt/jrconect-acs-git fetch origin main && git -C /opt/jrconect-acs-git show FETCH_HEAD:scripts/deploy-central-voip.sh > /tmp/jrc-deploy-central-voip.sh && bash -n /tmp/jrc-deploy-central-voip.sh && bash /tmp/jrc-deploy-central-voip.sh
+git -C /opt/jrconect-acs-git fetch https://github.com/junaojsp/JRCONECT-ACS-MCP.git main && git -C /opt/jrconect-acs-git show FETCH_HEAD:scripts/deploy-central-voip.sh > /tmp/jrc-deploy-central-voip.sh && bash -n /tmp/jrc-deploy-central-voip.sh && bash /tmp/jrc-deploy-central-voip.sh
 ```
 
 A atualizacao usa `git fetch`, sem `git pull`, `reset`, `checkout` ou modificacao da arvore de trabalho. O script usa somente os dois arquivos esperados na publicacao `/var/www/gacs`. Nao reinicia componentes.
 
 ## O que faz
 
-- Confirma que o diretorio Git corresponde a `junaojsp/JRCONECT-ACS-MCP` e ha commit valido em `FETCH_HEAD`.
+- Confirma que o commit em `FETCH_HEAD` corresponde exatamente ao `main` atual do repositorio `junaojsp/JRCONECT-ACS-MCP`, consultado com `git ls-remote`. O `origin` local continua `junaojsp/JRCONECT-ACS` e nao e alterado.
 - Verifica `/var/www/gacs/dashboard.php` e `views/layouts/header.php`.
 - Extrai do GitHub a nova pagina VoIP e verifica que o menu esta na versao aprovada.
 - Inclui o item Central VoIP no menu do header **atual de producao**, preservando outras alteracoes locais.
