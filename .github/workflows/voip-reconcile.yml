@@ -6,6 +6,9 @@ on:
       - 'mcp/integrations/ixc-voip-request-inspector.js'
       - 'scripts/voip-request-marker-preflight.mjs'
       - 'scripts/voip-ixc-put-preflight.mjs'
+      - 'scripts/voip-pilot-4740-ixc-readonly.mjs'
+      - 'scripts/voip-pilot-4740-preview.php'
+      - 'tests/voip-pilot-4740-preview.test.php'
       - 'tests/voip-request-marker.test.mjs'
       - 'lib/voip-reconcile.php'
       - 'lib/voip-historical-review.php'
@@ -45,6 +48,8 @@ jobs:
           php -l tests/voip-historical-review.test.php
           php -l lib/voip-operational.php
           php -l lib/voip-stock.php
+          php -l scripts/voip-pilot-4740-preview.php
+          php -l tests/voip-pilot-4740-preview.test.php
           php -l lib/voip-auto-assign.php
           php -l tests/voip-auto-assign.test.php
           php -l lib/voip-link-prefill.php
@@ -63,6 +68,7 @@ jobs:
           node --check mcp/integrations/ixc-voip-request-inspector.js
           node --check scripts/voip-request-marker-preflight.mjs
           node --check scripts/voip-ixc-put-preflight.mjs
+          node --check scripts/voip-pilot-4740-ixc-readonly.mjs
           node --test tests/voip-request-marker.test.mjs
       - name: Test reconciliation
         run: |
@@ -72,5 +78,6 @@ jobs:
           php tests/voip-stock-linking.test.php
           php tests/voip-stock-batch-available.test.php
           php tests/voip-auto-assign.test.php
+          php tests/voip-pilot-4740-preview.test.php
           php tests/voip-link-prefill.test.php
           php tests/voip-ixc-monitor.test.php
