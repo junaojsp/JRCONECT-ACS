@@ -1,8 +1,10 @@
+// Executar de /tmp/jrc-voip-request-preflight.mjs no container MCP.
+// O modulo auxiliar reside em /tmp/jrc-voip-request-inspector.mjs.
 // Execute somente mediante teste manual autorizado dentro do container MCP.
 // Nenhuma alteracao em arquivos ou estoque; saída sem observacoes ou titulares.
-import { createIxcWebserviceClient } from '../mcp/integrations/ixc-webservice-client.js';
-import { listVoipProductContracts } from '../mcp/integrations/ixc-voip-tools.js';
-import { inspectVoipRequests } from '../mcp/integrations/ixc-voip-request-inspector.js';
+import { createIxcWebserviceClient } from '/app/integrations/ixc-webservice-client.js';
+import { listVoipProductContracts } from '/app/integrations/ixc-voip-tools.js';
+import { inspectVoipRequests } from '/tmp/jrc-voip-request-inspector.mjs';
 
 const client = createIxcWebserviceClient();
 try {
