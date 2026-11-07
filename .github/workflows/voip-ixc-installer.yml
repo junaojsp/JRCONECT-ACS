@@ -1,0 +1,28 @@
+name: VoIP IXC isolated installer validation
+on:
+  pull_request:
+    paths:
+      - 'scripts/install-voip-ixc-isolated.mjs'
+      - 'scripts/README-install-voip-ixc-isolated.md'
+      - '.github/workflows/voip-ixc-installer.yml'
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax validation
+        run: |
+          node --check scripts/install-voip-ixc-isolated.mjs
+          node --check mcp/integrations/ixc-voip-tools.js
+          node --check mcp/integrations/ixc-webservice-tools.js
+      - name: Disallow service control in installer
+        run: |
+          if grep -En 'execSync\(|spawnSync\(|systemctl|docker compose|execFile\(' scripts/install-voip-ixc-isolated.mjs; then
+            echo 'Unexpected process management reference'; exit 1
+          fi
