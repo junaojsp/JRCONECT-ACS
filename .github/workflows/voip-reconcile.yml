@@ -9,6 +9,8 @@ on:
       - 'lib/voip-reconcile.php'
       - 'lib/voip-operational.php'
       - 'lib/voip-stock.php'
+      - 'lib/voip-auto-assign.php'
+      - 'tests/voip-auto-assign.test.php'
       - 'lib/voip-link-prefill.php'
       - 'lib/voip-ixc-monitor.php'
       - 'scripts/voip-monitor-ingest.php'
@@ -37,6 +39,8 @@ jobs:
           php -l lib/voip-reconcile.php
           php -l lib/voip-operational.php
           php -l lib/voip-stock.php
+          php -l lib/voip-auto-assign.php
+          php -l tests/voip-auto-assign.test.php
           php -l lib/voip-link-prefill.php
           php -l lib/voip-ixc-monitor.php
           php -l scripts/voip-monitor-ingest.php
@@ -57,5 +61,6 @@ jobs:
           php tests/voip-reconcile.test.php
           php tests/voip-operational.test.php
           php tests/voip-stock-linking.test.php
+          php tests/voip-auto-assign.test.php
           php tests/voip-link-prefill.test.php
           php tests/voip-ixc-monitor.test.php
