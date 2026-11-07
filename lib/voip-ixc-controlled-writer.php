@@ -205,6 +205,23 @@ final class VoipIxcControlledWriter
         return $fields;
     }
 
+    private static function equivalentField(string $field, $expected, $actual): bool
+    {
+        $cancelFields=['id_responsavel_cancelamento','motivo_cancelamento',
+            'obs_cancelamento','data_cancelamento'];
+        if (in_array($field,$cancelFields,true)) {
+            $normalize=static function($value): string {
+                $value=trim((string)$value);
+                return in_array($value,['','0','0000-00-00','0000-00-00 00:00:00'],true) ? '' : $value;
+            };
+            return $normalize($expected)===$normalize($actual);
+        }
+        if ((is_scalar($expected)||$expected===null) && (is_scalar($actual)||$actual===null)) {
+            return (string)$expected===(string)$actual;
+        }
+        return $expected===$actual;
+    }
+
     public function writeObservation(string $id,string $previous,string $next, ?array $baseline = null): void
     {
         $this->writeObservationPair($id,'571',$previous,$next,$baseline);
@@ -230,7 +247,7 @@ final class VoipIxcControlledWriter
         foreach ($contract as $field=>$value) {
             if ($field==='obs_contrato') continue;
             if (!array_key_exists($field,$after['contract']) ||
-                $after['contract'][$field]!==$value) {
+                !self::equivalentField($field,$value,$after['contract'][$field])) {
                 throw new RuntimeException('Campo de contrato alterado inesperadamente pelo PUT.');
             }
         }
