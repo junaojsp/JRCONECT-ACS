@@ -55,7 +55,7 @@ php -l "$tmp/voip-central.php" >/dev/null
 php -l "$WEB/views/layouts/header.php" >/dev/null
 
 # Preserva TODAS as personalizacoes do header em producao; injeta so o novo item.
-php - "$WEB/views/layouts/header.php" "$tmp/header-final.php" <<'PHP'
+php /dev/stdin "$WEB/views/layouts/header.php" "$tmp/header-final.php" <<'PHP'
 <?php
 $src = file_get_contents($argv[1]);
 if ($src === false) exit(2);
