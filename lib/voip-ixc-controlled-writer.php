@@ -117,9 +117,15 @@ final class VoipIxcControlledWriter
             'obs_contrato','alerta_contrato'];
         foreach ($required as $key) if (!array_key_exists($key,$contract))
             throw new RuntimeException('Campo exigido IXC ausente.');
-        $expected = str_replace('#JRC_VOIP_SOLICITAR#','JRC_VOIP_CONTRATO=4740;DID=', $previous);
-        if (!preg_match('/^11[0-9]{8}$/D',substr($next,-10)) ||
-            $next!==$expected.substr($next,-10)) {
+        if (!preg_match('/JRC_VOIP_CONTRATO=4740;DID=(11[0-9]{8})/', $next, $matched)) {
+            throw new RuntimeException('Nova observacao sem DID valido.');
+        }
+        $expected = str_replace(
+            '#JRC_VOIP_SOLICITAR#',
+            'JRC_VOIP_CONTRATO=4740;DID='.$matched[1],
+            $previous
+        );
+        if ($next !== $expected) {
             throw new RuntimeException('Nova observacao nao corresponde a substituicao segura.');
         }
         $fields=$contract;
