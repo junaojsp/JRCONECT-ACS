@@ -133,7 +133,8 @@ final class VoipStock
             }
             sort($candidates, SORT_STRING);
             if (!$candidates) throw new RuntimeException('Nenhum DID confirmado como disponível.');
-            $selected = $candidates[0];
+            // PHP casts numeric array keys to int; preserve DID as a string.
+            $selected = (string)$candidates[0];
             $data['numbers'][$selected]['status'] = 'reservado';
             $data['numbers'][$selected]['contract_id'] = $contractId;
             $data['numbers'][$selected]['product_record_id'] = $productRecordId;
