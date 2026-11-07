@@ -1,5 +1,6 @@
 import { registerIxcOsSupportTools } from './ixc-os-support-tools.js';
 import { registerIxcReportTools } from './ixc-report-tools.js';
+import { registerIxcVoipTools } from './ixc-voip-tools.js';
 import { z } from 'zod';
 
 // No raw customer, contract or financial records are returned in these
@@ -28,6 +29,7 @@ function summarize(result, resource) {
 
 export function registerIxcWebserviceTools(mcp, client) {
   registerIxcReportTools(mcp, client);
+  registerIxcVoipTools(mcp, client);
   registerIxcOsSupportTools(mcp, client);
   const resources = [
     ['ixc_clientes', 'cliente', 'Resumo da disponibilidade de clientes no IXC, sem dados pessoais'],
