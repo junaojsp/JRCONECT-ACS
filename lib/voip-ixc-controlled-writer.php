@@ -138,13 +138,13 @@ final class VoipIxcControlledWriter
     public function writeObservation(string $id,string $previous,string $next): void
     {
         if ($id!=='4740') throw new RuntimeException('Escrita fora do contrato piloto.');
-        $before=$this->readFresh();
+        $before=$this->readFresh($id);
         $contract=$before['contract'];
         $payload=self::payload($contract,$previous,$next);
         // Full record PUT: no guessed defaults, no partial patch.
         // The caller has already reserved the DID and handles ambiguous errors.
         $this->request('PUT','cliente_contrato',$id,$payload);
-        $after=$this->readFresh();
+        $after=$this->readFresh($id);
         foreach ($contract as $field=>$value) {
             if ($field==='obs_contrato') continue;
             if (!array_key_exists($field,$after['contract']) ||
