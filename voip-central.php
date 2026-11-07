@@ -290,7 +290,7 @@ include __DIR__ . '/views/layouts/header.php';
 
     <div class="voip-grid" aria-label="Visão geral da Central VoIP">
         <section class="voip-card voip-kpi">
-            <div class="voip-kpi-heading"><span>Solicitações pendentes</span><i class="bi bi-bell" aria-hidden="true"></i></div>
+            <div class="voip-kpi-heading"><span>Pendências atuais</span><i class="bi bi-bell" aria-hidden="true"></i></div>
             <div class="voip-number"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? count($voipMonitor['unlinked']) : '—' ?></div>
             <p>Contratos com produto 74 sem vínculo confirmado no ACS</p>
             <small class="voip-kpi-foot"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? 'Consulta automática: status IXC bruto, revisar antes de atribuir' : 'Aguardando monitor IXC válido e recente' ?></small>
@@ -338,7 +338,7 @@ include __DIR__ . '/views/layouts/header.php';
             <?php endif; ?>
             <div class="voip-stock-summary">
                 <span class="voip-stock-chip voip-stock-chip--review">Contratos sem vínculo <strong><?= count($voipMonitor['unlinked']) ?></strong></span>
-                <span class="voip-stock-chip voip-stock-chip--review">Eventos recentes <strong><?= count($voipMonitor['pending']) ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Histórico de alterações <strong><?= count($voipMonitor['pending']) ?></strong></span>
             </div>
             <?php if ($voipMonitor['pending']): ?>
                 <div class="voip-table-wrap"><table class="voip-table">
@@ -356,6 +356,8 @@ include __DIR__ . '/views/layouts/header.php';
             <?php else: ?>
                 <p>Nenhuma mudança detectada desde a referência inicial.</p>
             <?php endif; ?>
+            <div class="voip-note" role="status"><i class="bi bi-list-check" aria-hidden="true"></i><div><strong>Pendências atuais no monitor</strong><span>Estes contratos continuam sem vínculo local confirmado e permanecem separados do histórico de eventos:</span><br><strong><?= voipEscape($voipMonitor['unlinked'] ? implode(', ', $voipMonitor['unlinked']) : 'Nenhum') ?></strong></div></div>
+            <div class="voip-subtitle">Resumo da consulta atual</div>
             <p>Contratos com produto 74 ainda sem vínculo confirmado:
                 <strong><?= voipEscape($voipMonitor['unlinked'] ? implode(', ', $voipMonitor['unlinked']) : 'Nenhum') ?></strong>.
                 Confirme a necessidade de telefonia antes de atribuir um número. Remoção do produto ou mudança de status não libera o DID automaticamente.</p>
@@ -433,7 +435,8 @@ include __DIR__ . '/views/layouts/header.php';
                     <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                     <div>
                         <strong>Alertas de conferência — consulta atual (não são notificações automáticas)</strong>
-                        <p>Contratos com produto 74 e status bruto A sem número sugerido:
+                        <div class="voip-subtitle">Pendências atuais</div>
+                <p>Contratos com produto 74 e status bruto A sem número sugerido:
                         <strong><?= voipEscape($voipOperational['contracts_status_A_without_phone'] ? implode(', ', $voipOperational['contracts_status_A_without_phone']) : 'Nenhum') ?></strong>.
                         Verificar e atribuir um DID apenas após confirmação da equipe.</p>
                         <p>Contratos sem número sugerido (qualquer status):
@@ -652,7 +655,7 @@ include __DIR__ . '/views/layouts/header.php';
 
     <section class="voip-card voip-section" id="voip-baixas">
         <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-shield-exclamation me-2" aria-hidden="true"></i>Cancelamentos e baixas</h3>
-        <p>Contratos cancelados ou sem produto 74 gerarão alerta para revisão, sem liberar o número automaticamente.</p></div><span class="voip-state">Em preparação</span></div>
+        <p>O cancelamento só é processado com o marcador explícito <code>#JRC_VOIP_CANCELAR#</code> e a remoção do vínculo na observação.</p></div><span class="voip-state">Monitorado</span></div>
         <div class="voip-empty-state"><i class="bi bi-shield-check" aria-hidden="true"></i><div><strong>Liberação supervisionada</strong><span>O DID só poderá voltar ao estoque disponível após confirmação de baixa na VoiceCopy.</span></div></div>
     </section>
 

@@ -1,7 +1,7 @@
 # Reserva automatica VoIP — sem escrita IXC
 
 ## Resultado
-O agendamento do monitor IXC existente (a cada 15 minutos) consulta os contratos com produto 74 pelo leitor GET dedicado existente. Nenhum processo ou arquivo do MCP e alterado. Apos snapshot validado, a etapa root-only consulta novamente o contrato pela mesma credencial Basic dedicada e verifica:
+O agendamento do monitor IXC existente (a cada 5 minutos) consulta os contratos com produto 74 pelo leitor GET dedicado existente. Nenhum processo ou arquivo do MCP e alterado. Apos snapshot validado, a etapa root-only consulta novamente o contrato pela mesma credencial Basic dedicada e verifica:
 - status do contrato IXC `A`;
 - exatamente um registro do produto `74`, consistente com snapshot;
 - `obs_contrato` contendo a ocorrencia unica exata `#JRC_VOIP_SOLICITAR#`;
@@ -54,13 +54,20 @@ install -o root -g root -m 700 "$STAGE/run.sh" "$MON/run.sh.new"
 mv "$MON/run.sh.new" "$MON/run.sh"
 flock -u 9
 echo "Instalado. Backup: $BACKUP"
-# Este ciclo ja pode reservar contratos elegiveis; cron permanece intacto.
+# Este ciclo ja pode reservar contratos elegiveis; cron permanece configurado para execução a cada 5 minutos.
 "$MON/run.sh" 9>&-
 ```
 
 Nota: O runner instalado requer no ACS os arquivos `/var/www/gacs/lib/voip-stock.php`, `voip-auto-assign.php`, `voip-ixc-monitor.php`, e o token protegido ja configurado em `/etc/jrconect/voip-ixc-writer.basic`. Nenhuma credencial deve ser colocada no repositório. O monitor shell deve ser o existente em `$MON/run.sh`; confirme o caminho no agendamento local antes de instalar. Se o agendamento utiliza outro caminho, instale nesse arquivo e preserve a crontab original.
 
 O primeiro ciclo reserva somente DIDs de contratos elegiveis; contratos sem marcador e os 13 vinculos existentes permanecem intocados. O contrato 4740, ja reservado, permanece com DID 1156641257.
+
+## Cadência e confirmação
+
+- O monitor deve executar a cada 5 minutos, protegido por `flock`, para evitar duas execuções simultâneas.
+- Solicitações e cancelamentos são revalidados na leitura fresca do contrato antes de qualquer mudança local.
+- O processamento é idempotente: repetir o ciclo não cria novo vínculo nem libera o mesmo DID duas vezes.
+- Eventos antigos permanecem no histórico; a pendência atual é derivada dos contratos ainda sem vínculo.
 
 ## Limites / seguranca
 - A reserva nao garante entrega nem ativacao de telefonia.
