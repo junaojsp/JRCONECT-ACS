@@ -86,7 +86,8 @@ try {
         $monitor,$stock,
         static fn(string $contractId,string $productId):array=>
             $reader->readFresh($contractId,$productId),
-        $writeIxc
+        $writeIxc,
+        static fn(string $contractId):array => $reader->readContractObservation($contractId)
     );
     // Root performs the atomic stock write; restore the web worker's original
     // ownership/mode so the panel keeps reading the audit and links.
