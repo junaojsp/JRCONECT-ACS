@@ -1,0 +1,28 @@
+name: VoIP IXC VoiceCopy reconciliation
+on:
+  pull_request:
+    paths:
+      - 'voip-central.php'
+      - 'lib/voip-reconcile.php'
+      - 'tests/voip-reconcile.test.php'
+      - '.github/workflows/voip-reconcile.yml'
+  workflow_dispatch:
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: none
+      - name: Lint VoIP files
+        run: |
+          php -l lib/voip-reconcile.php
+          php -l voip-central.php
+          php -l tests/voip-reconcile.test.php
+      - name: Test reconciliation
+        run: php tests/voip-reconcile.test.php
