@@ -37,8 +37,7 @@ try {
         echo json_encode([
             'contrato'=>'4740','produto_registro'=>'571',
             'did_candidato'=>$free[0],'disponiveis'=>count($free),
-            'resultado_previsto'=>VoipAutoAssignment::replacement(
-                $valid['observation'],'4740',$free[0]),
+            'resultado_previsto'=>'JRC_VOIP_CONTRATO=4740;DID='.$free[0],
             'executado'=>false,'gravacao_ixc'=>false,'reserva_did'=>false,
         ],JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT),PHP_EOL;
         exit(0);
