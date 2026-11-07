@@ -6,9 +6,11 @@ on:
       - 'lib/voip-reconcile.php'
       - 'lib/voip-operational.php'
       - 'lib/voip-stock.php'
+      - 'lib/voip-link-prefill.php'
       - 'tests/voip-reconcile.test.php'
       - 'tests/voip-operational.test.php'
       - 'tests/voip-stock-linking.test.php'
+      - 'tests/voip-link-prefill.test.php'
       - '.github/workflows/voip-reconcile.yml'
   workflow_dispatch:
 
@@ -28,12 +30,15 @@ jobs:
           php -l lib/voip-reconcile.php
           php -l lib/voip-operational.php
           php -l lib/voip-stock.php
+          php -l lib/voip-link-prefill.php
           php -l voip-central.php
           php -l tests/voip-reconcile.test.php
           php -l tests/voip-operational.test.php
           php -l tests/voip-stock-linking.test.php
+          php -l tests/voip-link-prefill.test.php
       - name: Test reconciliation
         run: |
           php tests/voip-reconcile.test.php
           php tests/voip-operational.test.php
           php tests/voip-stock-linking.test.php
+          php tests/voip-link-prefill.test.php
