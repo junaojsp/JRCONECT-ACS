@@ -130,8 +130,10 @@ final class VoipIxcReservationReader
                     throw new RuntimeException('Contrato IXC divergente.');
                 }
                 unset($wanted[$id]);
+                $observation=(string)($row['obs_contrato']??'');
                 $contracts[]=['contrato_id'=>$id,'status_ixc_bruto'=>$row['status'],
-                    'registros_produto_74'=>$grouped[$id]];
+                    'registros_produto_74'=>$grouped[$id],
+                    'voip_cancelar'=>substr_count($observation,'#JRC_VOIP_CANCELAR#')===1];
             }
             if ($wanted) throw new RuntimeException('Contratos IXC ausentes.');
         }
