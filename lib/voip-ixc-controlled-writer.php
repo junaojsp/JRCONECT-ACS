@@ -79,20 +79,33 @@ final class VoipIxcControlledWriter
         // writeObservation() always performs an independent GET readback.
         // Do not reject a successful PUT only because its body is not JSON.
         if ($method === 'PUT') {
-            $parsed = json_decode($raw, true);
-            if (is_array($parsed) && (
-                ($parsed['success'] ?? null) === false ||
-                isset($parsed['error']) ||
-                ($parsed['type'] ?? null) === 'error'
-            )) {
-                throw new RuntimeException('IXC PUT retornou indicacao de falha.');
-            }
-            return ['http_2xx'=>true];
+            return self::interpretPutResponse($raw);
         }
         $result=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
         if (!is_array($result) || isset($result['error']) ||
             ($result['success']??null)===false) throw new RuntimeException('Falha de resposta IXC.');
         return $result;
+    }
+
+    /**
+     * Parse IXC's update acknowledgement without relying on a JSON body.
+     * ONLY called for HTTP 2xx; assignment still requires GET readback.
+     */
+    public static function interpretPutResponse(string $raw): array
+    {
+        if (strlen($raw)>1048576) throw new RuntimeException('Resposta PUT acima do limite.');
+        $trim=trim($raw);
+        $parsed=json_decode($raw,true);
+        if (is_array($parsed) && (
+            ($parsed['success'] ?? null) === false ||
+            isset($parsed['error']) ||
+            ($parsed['type'] ?? null) === 'error'
+        )) throw new RuntimeException('IXC PUT retornou indicacao de falha.');
+        if ($trim !== '' && !is_array($parsed) &&
+            preg_match('/^(erro|error|falha|unauthorized|forbidden)\\b/i', $trim)) {
+            throw new RuntimeException('IXC PUT retornou texto de erro.');
+        }
+        return ['http_2xx'=>true];
     }
 
     private function exact(string $resource, string $id): array
