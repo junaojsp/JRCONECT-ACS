@@ -116,6 +116,28 @@ include __DIR__ . '/views/layouts/header.php';
 .voip-page .voip-step span{font-size:12px}
 .voip-page :is(.voip-nav a,.voip-card){scroll-margin-top:24px}
 @media(max-width:600px){.voip-page .voip-nav a{flex:1 1 45%}.voip-page .voip-grid .voip-kpi{padding:17px}.voip-page .voip-section{padding:17px}}
+
+/* Central VoIP v1.1: alinhamento responsivo sem alterar o layout global. */
+.main-content .content-wrapper:has(> .voip-page){width:100%;max-width:none;min-width:0;padding:clamp(12px,1.5vw,24px)}
+.main-content .content-wrapper > .voip-page{width:100%;max-width:none;min-width:0;margin:0}
+.voip-page .voip-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.voip-page .voip-card,.voip-page .voip-section,.voip-page .voip-import{min-width:0;max-width:100%}
+.voip-page .voip-table-wrap{width:100%;max-width:100%;overflow-x:auto;border:1px solid #30343a;border-radius:9px}
+.voip-page table.voip-table{width:100%;min-width:650px;border-collapse:collapse;background:#14171c !important;color:#e8edf2}
+.voip-page table.voip-table thead,
+.voip-page table.voip-table tbody,
+.voip-page table.voip-table tr,
+.voip-page table.voip-table th,
+.voip-page table.voip-table td{background:#14171c !important;background-color:#14171c !important;box-shadow:none !important}
+.voip-page table.voip-table th{color:#aeb8c4 !important;font-size:12px;border-bottom:1px solid #383d46 !important}
+.voip-page table.voip-table td{color:#e0e6ee !important;border-bottom:1px solid #262c33 !important;overflow-wrap:anywhere}
+.voip-page table.voip-table tbody tr:hover td{background:#1b2027 !important;background-color:#1b2027 !important}
+.voip-page textarea{max-width:100%;min-height:170px}
+.voip-page .voip-empty-state{min-width:0}
+.voip-page .voip-empty-state div{min-width:0}
+@media(max-width:1500px){.voip-page .voip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.voip-page .voip-heading{align-items:flex-start}.voip-page .voip-workflow{grid-template-columns:1fr}.voip-page .voip-grid{gap:12px}.voip-page .voip-section-head{display:flex;flex-direction:column;align-items:flex-start}}
+@media(max-width:640px){.main-content .content-wrapper:has(> .voip-page){padding:10px}.voip-page .voip-grid{grid-template-columns:minmax(0,1fr)}.voip-page .voip-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.voip-page .voip-nav a{min-width:0}.voip-page .voip-heading h2{font-size:22px}.voip-page .voip-card{padding:15px}.voip-page table.voip-table{min-width:600px}.voip-page .voip-empty-state{align-items:flex-start}.voip-page .voip-tag{max-width:100%;white-space:normal}}
 </style>
 <section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
