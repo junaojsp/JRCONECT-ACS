@@ -21,6 +21,9 @@ on:
       - 'lib/voip-stock.php'
       - 'lib/voip-auto-assign.php'
       - 'lib/voip-ixc-controlled-writer.php'
+      - 'lib/voip-reserved-recovery.php'
+      - 'scripts/voip-ixc-recover-4740.php'
+      - 'tests/voip-reserved-recovery.test.php'
       - 'scripts/voip-ixc-assign-4740.php'
       - 'tests/voip-ixc-controlled-writer.test.php'
       - 'tests/voip-auto-assign.test.php'
@@ -62,6 +65,9 @@ jobs:
           php -l tests/voip-pilot-4740-preview.test.php
           php -l lib/voip-auto-assign.php
           php -l lib/voip-ixc-controlled-writer.php
+          php -l lib/voip-reserved-recovery.php
+          php -l scripts/voip-ixc-recover-4740.php
+          php -l tests/voip-reserved-recovery.test.php
           php -l scripts/voip-ixc-assign-4740.php
           php -l tests/voip-ixc-controlled-writer.test.php
           php -l tests/voip-auto-assign.test.php
@@ -94,6 +100,7 @@ jobs:
           php tests/voip-stock-batch-available.test.php
           php tests/voip-auto-assign.test.php
           php tests/voip-ixc-controlled-writer.test.php
+          php tests/voip-reserved-recovery.test.php
           php tests/voip-pilot-4740-preview.test.php
           php tests/voip-link-prefill.test.php
           php tests/voip-ixc-monitor.test.php
