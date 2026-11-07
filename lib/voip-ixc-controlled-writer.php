@@ -194,6 +194,12 @@ final class VoipIxcControlledWriter
             }
         }
         $fields['obs_contrato']=$next;
+        // IXC validates this legacy field even for active contracts. The
+        // read API may decode the sentinel 0 as an integer, while the PUT
+        // endpoint expects the value as a string ("0" = no cancellation).
+        if (array_key_exists('motivo_cancelamento', $fields)) {
+            $fields['motivo_cancelamento']=(string)$fields['motivo_cancelamento'];
+        }
         return $fields;
     }
 
@@ -222,7 +228,10 @@ final class VoipIxcControlledWriter
         foreach ($contract as $field=>$value) {
             if ($field==='obs_contrato') continue;
             if (!array_key_exists($field,$after['contract']) ||
-                $after['contract'][$field]!==$value) {
+                (($field==='motivo_cancelamento'
+                    ? (string)$after['contract'][$field]
+                    : $after['contract'][$field]) !==
+                 ($field==='motivo_cancelamento' ? (string)$value : $value))) {
                 throw new RuntimeException('Campo de contrato alterado inesperadamente pelo PUT.');
             }
         }
