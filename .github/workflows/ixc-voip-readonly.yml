@@ -1,0 +1,30 @@
+name: IXC VoIP read-only tests
+
+on:
+  pull_request:
+    paths:
+      - 'mcp/integrations/ixc-voip-tools.js'
+      - 'mcp/integrations/ixc-voip-tools.test.js'
+      - 'mcp/integrations/ixc-webservice-tools.js'
+      - '.github/workflows/ixc-voip-readonly.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install MCP dependencies
+        working-directory: mcp
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Check module syntax
+        run: |
+          node --check mcp/integrations/ixc-voip-tools.js
+          node --check mcp/integrations/ixc-webservice-tools.js
+      - name: Unit tests
+        run: node --test mcp/integrations/ixc-voip-tools.test.js
