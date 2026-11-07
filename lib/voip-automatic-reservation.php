@@ -20,7 +20,7 @@ final class VoipAutomaticReservation
             throw new RuntimeException('Monitor IXC desatualizado. Nenhuma reserva executada.');
         }
         $summary=['consultados'=>0,'reservados'=>0,'ja_vinculados'=>0,
-            'sem_marcador_ou_inelegiveis'=>0,'falhas'=>0,'novos'=>[]];
+            'sem_marcador_ou_inelegiveis'=>0,'falhas'=>0,'falhas_detalhes'=>[],'novos'=>[]];
         foreach ($monitor['contracts'] as $id=>$item) {
             $contractId=(string)$id;
             if (!preg_match('/^[0-9]{1,12}$/D',$contractId) || !is_array($item) ||
@@ -49,6 +49,7 @@ final class VoipAutomaticReservation
                 continue;
             }
             $summary['consultados']++;
+            $stage='consulta_ixc';
             try {
                 $fresh=$readFresh($contractId,$productId);
                 if (!is_array($fresh) || !is_array($fresh['contract']??null) ||
@@ -56,12 +57,14 @@ final class VoipAutomaticReservation
                     ($fresh['contract']['status']??null)!=='A') {
                     throw new RuntimeException('Leitura IXC incompleta.');
                 }
+                $stage='validacao_pedido';
                 $valid=VoipAutoAssignment::validateRequest(
                     $fresh['contract'],$fresh['product_rows'],$contractId
                 );
                 if ($valid['product_record_id']!==$productId) {
                     throw new RuntimeException('Produto alterado durante consulta.');
                 }
+                $stage='reserva_local';
                 $reservation=$stock->reserveForVoip(
                     $contractId,$productId,'voip-auto-reserve-monitor'
                 );
@@ -78,6 +81,7 @@ final class VoipAutomaticReservation
                     $summary['sem_marcador_ou_inelegiveis']++;
                 } else {
                     $summary['falhas']++;
+                    $summary['falhas_detalhes'][]=['contrato_id'=>$contractId,'etapa'=>$stage];
                 }
             }
         }
