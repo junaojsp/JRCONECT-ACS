@@ -206,6 +206,7 @@ include __DIR__ . '/views/layouts/header.php';
 .voip-page .voip-kpi-foot{display:block;margin-top:16px;padding-top:12px;border-top:1px solid #2a2f37;font-size:11px;color:#8998a9}
 .voip-page .voip-section{margin-bottom:16px;padding:21px}
 .voip-page .voip-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.voip-page .voip-section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.voip-page .voip-refresh{display:inline-flex;align-items:center;gap:6px;border:1px solid #374454;background:#18202a;color:#c7d4e2;border-radius:7px;padding:5px 9px;font-size:11px;font-weight:600;text-decoration:none}.voip-page .voip-refresh:hover,.voip-page .voip-refresh:focus-visible{background:#253342;color:#fff}
 .voip-page .voip-section-head .voip-section-title{margin:0 0 6px;font-size:17px}
 .voip-page .voip-section-head p{font-size:12px;margin:0;color:#a6adb8}
 .voip-page .voip-state{display:inline-flex;border:1px solid #594328;background:#251f17;color:#e9c080;border-radius:7px;padding:5px 9px;font-size:11px;white-space:nowrap}
@@ -319,7 +320,7 @@ include __DIR__ . '/views/layouts/header.php';
         <div class="voip-section-head"><div>
             <h3 class="voip-section-title"><i class="bi bi-bell me-2" aria-hidden="true"></i>Monitoramento IXC — produto 74</h3>
             <p>Consulta periódica somente leitura no MCP. Mostra contratações novas e alterações, sem liberar ou atribuir DID automaticamente.</p>
-        </div><span class="voip-state"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? 'Dados recentes' : 'Monitor pendente' ?></span></div>
+        </div><div class="voip-section-actions"><span class="voip-state"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? 'Dados recentes' : 'Monitor pendente' ?></span><a class="voip-refresh" href="/voip-central.php#voip-solicitacoes" title="Recarregar dados do painel"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Atualizar painel</a></div></div>
         <?php if ($voipMonitorError !== null): ?>
             <div class="voip-note" role="alert"><?= voipEscape($voipMonitorError) ?></div>
         <?php elseif ($voipMonitor === null || $voipMonitor['status'] === 'not_configured'): ?>
