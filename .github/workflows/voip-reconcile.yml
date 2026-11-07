@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'voip-central.php'
+      - 'mcp/integrations/ixc-voip-request-inspector.js'
+      - 'scripts/voip-request-marker-preflight.mjs'
+      - 'tests/voip-request-marker.test.mjs'
       - 'lib/voip-reconcile.php'
       - 'lib/voip-operational.php'
       - 'lib/voip-stock.php'
@@ -44,6 +47,11 @@ jobs:
           php -l tests/voip-stock-linking.test.php
           php -l tests/voip-link-prefill.test.php
           php -l tests/voip-ixc-monitor.test.php
+      - name: Test marker detection without IXC writes
+        run: |
+          node --check mcp/integrations/ixc-voip-request-inspector.js
+          node --check scripts/voip-request-marker-preflight.mjs
+          node --test tests/voip-request-marker.test.mjs
       - name: Test reconciliation
         run: |
           php tests/voip-reconcile.test.php
