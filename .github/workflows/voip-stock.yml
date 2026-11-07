@@ -1,0 +1,18 @@
+name: VoIP stock validation
+on:
+  push:
+    paths:
+      - 'voip-central.php'
+      - 'lib/voip-stock.php'
+      - 'scripts/*voip-stock*'
+      - '.github/workflows/voip-stock.yml'
+permissions:
+  contents: read
+jobs:
+  stock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: php -l voip-central.php && php -l lib/voip-stock.php
+      - run: bash -n scripts/deploy-voip-stock.sh
+      - run: php scripts/test-voip-stock.php

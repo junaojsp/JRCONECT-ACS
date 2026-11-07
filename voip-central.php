@@ -1,10 +1,38 @@
 <?php
 /**
  * Central VoIP - primeira etapa visual.
- * Sem consultas IXC, jobs, operacoes de estoque ou efeitos colaterais.
+ * Estoque isolado; importacao manual autenticada. Sem escritas IXC.
  */
 require_once __DIR__ . '/config/config.php';
 requireLogin();
+
+require_once __DIR__ . '/lib/voip-stock.php';
+header('Cache-Control: no-store, private');
+if (empty($_SESSION['voip_csrf'])) $_SESSION['voip_csrf'] = bin2hex(random_bytes(32));
+$voipError = '';
+$voipData = null;
+$voipStore = new VoipStock();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $received = $_POST['csrf'] ?? null;
+        if (!is_string($received) || !hash_equals($_SESSION['voip_csrf'], $received)) {
+            throw new RuntimeException('Sessão expirada. Atualize a página.');
+        }
+        $input = $_POST['inventory'] ?? null;
+        if (!is_string($input)) throw new RuntimeException('Importação inválida.');
+        $voipStore->import($input, (string)$_SESSION['user_id']);
+        $_SESSION['voip_flash'] = 'Estoque importado. Os vínculos com o IXC continuam pendentes.';
+        header('Location: /voip-central.php', true, 303);
+        exit;
+    } catch (Throwable $e) { $voipError = $e instanceof JsonException ? 'Arquivo de estoque inválido; importação interrompida.' : $e->getMessage(); }
+}
+try { $voipData = $voipStore->read(); } catch (Throwable $e) { $voipError = 'Estoque indisponível. Verifique a instalação antes de importar.'; }
+$voipRows = array_values($voipData['numbers'] ?? []);
+$voipOccupied = count(array_filter($voipRows, static fn($r) => $r['status'] === 'ocupado'));
+$voipReview = count($voipRows) - $voipOccupied;
+$voipFlash = $_SESSION['voip_flash'] ?? '';
+unset($_SESSION['voip_flash']);
+function voipEscape($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 
 $pageTitle = 'Central VoIP';
 $currentPage = 'voip-central';
@@ -37,6 +65,21 @@ include __DIR__ . '/views/layouts/header.php';
 .voip-page .voip-note i{color:#b4bdca;flex:none}
 @media(max-width:1200px){.voip-page .voip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.voip-page .voip-workflow{grid-template-columns:1fr;gap:22px}}
 @media(max-width:600px){.voip-page .voip-grid{grid-template-columns:1fr;gap:16px}.voip-page .voip-card{padding:22px}.voip-page .voip-heading h2{font-size:24px}.voip-page .voip-heading{gap:16px}.voip-page .voip-note{align-items:flex-start}}
+
+.voip-page .voip-table-wrap{overflow-x:auto;margin-top:20px}
+.voip-page .voip-table{width:100%;border-collapse:collapse}
+.voip-page .voip-table th{background:#1b1f26;color:#bbc4d0;text-align:left;font-size:14px;padding:14px;text-transform:none;letter-spacing:normal}
+.voip-page .voip-table td{color:#d8dde5;border-bottom:1px solid #2a2f37;padding:14px;font-size:15px}
+.voip-page .voip-phone{white-space:nowrap;font-variant-numeric:tabular-nums}
+.voip-page .voip-status{display:inline-block;border:1px solid #4a3923;border-radius:6px;padding:3px 9px;color:#e9c080;white-space:nowrap}
+.voip-page .voip-import{margin-top:20px}
+.voip-page summary{font-size:18px;font-weight:600;cursor:pointer;color:#f1f3f5}
+.voip-page .voip-import p{margin:16px 0}
+.voip-page textarea{display:block;width:100%;margin:10px 0 16px;padding:14px;border:1px solid #414955;border-radius:8px;background:#0b0d10;color:#eef2f6;font:15px/1.6 monospace;resize:vertical}
+.voip-page button{background:#ca2222;color:white;border:0;border-radius:8px;padding:12px 18px;font-size:16px;cursor:pointer}
+.voip-page button:disabled{opacity:.5;cursor:not-allowed}
+.voip-page :is(button,textarea,summary):focus-visible{outline:2px solid #efadad;outline-offset:3px}
+.voip-page .voip-note{margin:0 0 20px}
 </style>
 <section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
@@ -44,61 +87,66 @@ include __DIR__ . '/views/layouts/header.php';
             <h2 id="voip-title"><i class="bi bi-telephone me-2" aria-hidden="true"></i>Central VoIP</h2>
             <p class="voip-muted mb-0">Gerencie as linhas, os vínculos e as solicitações de telefonia.</p>
         </div>
-        <span class="voip-tag"><i class="bi bi-tools me-1" aria-hidden="true"></i> Em preparação</span>
+        <span class="voip-tag">Estoque · vínculo IXC pendente</span>
     </div>
 
-    <div class="voip-grid" aria-label="Módulos planejados">
+    <?php if ($voipError !== ''): ?><div class="voip-note" role="alert"><?= voipEscape($voipError) ?></div><?php endif; ?>
+    <?php if ($voipFlash !== ''): ?><div class="voip-note" role="status"><?= voipEscape($voipFlash) ?></div><?php endif; ?>
+    <div class="voip-grid" aria-label="Resumo do estoque">
+    <?php foreach ([
+        ['Estoque VoiceCopy', count($voipRows), 'Números cadastrados'],
+        ['Ocupados', $voipOccupied, 'Informados pela equipe; contrato ainda não vinculado'],
+        ['A conferir', $voipReview, 'Não disponíveis para atribuição'],
+        ['Disponíveis', 0, 'Liberação ainda não habilitada']
+    ] as [$label, $count, $description]): ?>
         <section class="voip-card">
-            <i class="bi bi-bell" aria-hidden="true"></i>
-            <h3>Solicitações pendentes</h3>
-            <p>Contratos com produto 74 que ainda precisam de número.</p>
-            <div class="voip-number" aria-label="Quantidade ainda indisponível">—</div>
-            <p>Aguardando integração individual do IXC.</p>
+            <h3><?= voipEscape($label) ?></h3>
+            <div class="voip-number"><?= $voipData === null ? '—' : (int)$count ?></div>
+            <p><?= voipEscape($description) ?></p>
         </section>
-        <section class="voip-card">
-            <i class="bi bi-sim" aria-hidden="true"></i>
-            <h3>Estoque VoiceCopy</h3>
-            <p>Números disponíveis, reservados e ativos.</p>
-            <div class="voip-number" aria-label="Quantidade ainda indisponível">—</div>
-            <p>Importação e conciliação ainda não realizadas.</p>
-        </section>
-        <section class="voip-card">
-            <i class="bi bi-link-45deg" aria-hidden="true"></i>
-            <h3>Números vinculados</h3>
-            <p>Associação manual de DID ao contrato do cliente.</p>
-            <div class="voip-number" aria-label="Quantidade ainda indisponível">—</div>
-            <p>Vinculação será habilitada numa próxima etapa.</p>
-        </section>
-        <section class="voip-card">
-            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-            <h3>Cancelamentos e baixas</h3>
-            <p>Revisão dos números antes de retornarem ao estoque.</p>
-            <div class="voip-number" aria-label="Quantidade ainda indisponível">—</div>
-            <p>Monitoramento automático ainda desativado.</p>
-        </section>
+    <?php endforeach; ?>
     </div>
 
     <section class="voip-card">
-        <h3 class="voip-section-title">Como funcionará a Central VoIP</h3>
-        <div class="voip-workflow">
-            <div class="voip-step">
-                <div class="voip-step-icon"><i class="bi bi-cart-check" aria-hidden="true"></i></div>
-                <div><strong>1. Contratação no IXC</strong><span>O suporte N1 cadastra o produto 74 no contrato do cliente.</span></div>
-            </div>
-            <div class="voip-step">
-                <div class="voip-step-icon"><i class="bi bi-bell" aria-hidden="true"></i></div>
-                <div><strong>2. Alerta de nova linha</strong><span>O MCP identificará registros sem número e abrirá uma pendência.</span></div>
-            </div>
-            <div class="voip-step">
-                <div class="voip-step-icon"><i class="bi bi-telephone-plus" aria-hidden="true"></i></div>
-                <div><strong>3. Vínculo supervisionado</strong><span>A equipe escolherá um DID e confirmará a ativação na VoiceCopy.</span></div>
-            </div>
+        <h3 class="voip-section-title">Números e titulares</h3>
+        <p>Ocupação informada pela equipe. A validação dos contratos e do produto 74 será feita na próxima etapa.</p>
+        <div class="voip-table-wrap">
+        <table class="voip-table">
+            <thead><tr><th>Número</th><th>Titular informado</th><th>Situação</th><th>Contrato IXC</th></tr></thead>
+            <tbody>
+            <?php foreach ($voipRows as $row): ?>
+            <tr>
+                <td class="voip-phone"><?= voipEscape('('.substr($row['number'],0,2).') '.substr($row['number'],2,4).'-'.substr($row['number'],6)) ?></td>
+                <td><?= voipEscape($row['holder'] ?: 'Não informado') ?></td>
+                <td><span class="voip-status"><?= $row['status'] === 'ocupado' ? 'Ocupado' : 'A conferir' ?></span></td>
+                <td>Pendente de vinculação</td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if ($voipData !== null && !$voipRows): ?><tr><td colspan="4">Nenhum número importado. Use a importação abaixo.</td></tr><?php endif; ?>
+            </tbody>
+        </table>
         </div>
     </section>
 
-    <div class="voip-note" role="status">
-        <i class="bi bi-info-circle" aria-hidden="true"></i>
-        <span>Central em preparação. Os indicadores e as operações serão disponibilizados após a integração dos dados.</span>
-    </div>
+    <details class="voip-card voip-import">
+        <summary>Importar números</summary>
+        <p>Uma linha por número: <code>número;ocupado;nome</code> ou <code>número;a_conferir;</code>. Uma nova importação não substitui cadastros existentes.</p>
+        <form method="post" action="/voip-central.php">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <label for="voip-inventory">Lista de números e titulares</label>
+            <textarea id="voip-inventory" name="inventory" rows="10" maxlength="100000" required spellcheck="false"></textarea>
+            <button type="submit" <?= $voipData === null ? 'disabled' : '' ?>>Importar estoque</button>
+        </form>
+    </details>
+
+    <details class="voip-card voip-import">
+        <summary>Histórico de importação</summary>
+        <div class="voip-table-wrap"><table class="voip-table">
+        <thead><tr><th>Data (UTC)</th><th>Operador (ID)</th><th>Número</th><th>Ação</th></tr></thead><tbody>
+        <?php foreach (array_reverse($voipData['audit'] ?? []) as $event): ?>
+        <tr><td><?= voipEscape($event['at']) ?></td><td><?= voipEscape($event['actor']) ?></td><td><?= voipEscape($event['number']) ?></td><td>Importação</td></tr>
+        <?php endforeach; ?>
+        </tbody></table></div>
+    </details>
 </section>
 <?php include __DIR__ . '/views/layouts/footer.php'; ?>
