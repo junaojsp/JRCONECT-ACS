@@ -74,6 +74,21 @@ final class VoipIxcControlledWriter
             }
             if (strlen($raw)>1048576) throw new RuntimeException('IXC resposta excedeu limite.');
         } finally { curl_close($ch); }
+        // IXC update endpoints may return an empty or plain-text 2xx response.
+        // A successful HTTP status alone NEVER finalizes VoIP assignment:
+        // writeObservation() always performs an independent GET readback.
+        // Do not reject a successful PUT only because its body is not JSON.
+        if ($method === 'PUT') {
+            $parsed = json_decode($raw, true);
+            if (is_array($parsed) && (
+                ($parsed['success'] ?? null) === false ||
+                isset($parsed['error']) ||
+                ($parsed['type'] ?? null) === 'error'
+            )) {
+                throw new RuntimeException('IXC PUT retornou indicacao de falha.');
+            }
+            return ['http_2xx'=>true];
+        }
         $result=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
         if (!is_array($result) || isset($result['error']) ||
             ($result['success']??null)===false) throw new RuntimeException('Falha de resposta IXC.');
