@@ -8,6 +8,8 @@ on:
       - 'scripts/voip-ixc-put-preflight.mjs'
       - 'tests/voip-request-marker.test.mjs'
       - 'lib/voip-reconcile.php'
+      - 'lib/voip-historical-review.php'
+      - 'tests/voip-historical-review.test.php'
       - 'lib/voip-operational.php'
       - 'lib/voip-stock.php'
       - 'lib/voip-auto-assign.php'
@@ -38,6 +40,8 @@ jobs:
       - name: Lint VoIP files
         run: |
           php -l lib/voip-reconcile.php
+          php -l lib/voip-historical-review.php
+          php -l tests/voip-historical-review.test.php
           php -l lib/voip-operational.php
           php -l lib/voip-stock.php
           php -l lib/voip-auto-assign.php
@@ -61,6 +65,7 @@ jobs:
       - name: Test reconciliation
         run: |
           php tests/voip-reconcile.test.php
+          php tests/voip-historical-review.test.php
           php tests/voip-operational.test.php
           php tests/voip-stock-linking.test.php
           php tests/voip-auto-assign.test.php
