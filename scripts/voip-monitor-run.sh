@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Read-only monitor: run on ACS host as root under a scheduled job.
+# IXC monitoring is read-only; after a valid snapshot, reserve only in local stock.
 # Uses the existing MCP container's IXC secret only inside that container.
 set -Eeuo pipefail
 umask 077
@@ -16,3 +16,8 @@ docker exec jrconect-mcp node --input-type=module -e '
   const result = await listVoipProductContracts(createIxcWebserviceClient());
   process.stdout.write(JSON.stringify(result));
 ' | php /opt/jrconect-voip-monitor/ingest.php
+# This second phase performs ONLY local stock reservations; no IXC PUT.
+# Existing cron interval is preserved. Missing deployment blocks safely.
+[[ -f /opt/jrconect-voip-monitor/auto-reserve.php ]] || { echo 'RESERVA PENDENTE: auto-reserve nao instalado' >&2; exit 2; }
+[[ -f /opt/jrconect-voip-monitor/lib/voip-automatic-reservation.php ]] || { echo 'RESERVA PENDENTE: biblioteca nao instalada' >&2; exit 2; }
+php /opt/jrconect-voip-monitor/auto-reserve.php

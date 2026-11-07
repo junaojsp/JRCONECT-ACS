@@ -20,6 +20,10 @@ on:
       - 'lib/voip-operational.php'
       - 'lib/voip-stock.php'
       - 'lib/voip-auto-assign.php'
+      - 'lib/voip-ixc-reservation-reader.php'
+      - 'lib/voip-automatic-reservation.php'
+      - 'scripts/voip-auto-reserve.php'
+      - 'tests/voip-auto-reservation.test.php'
       - 'lib/voip-ixc-controlled-writer.php'
       - 'lib/voip-reserved-recovery.php'
       - 'scripts/voip-ixc-recover-4740.php'
@@ -65,6 +69,10 @@ jobs:
           php -l scripts/voip-pilot-4740-preview.php
           php -l tests/voip-pilot-4740-preview.test.php
           php -l lib/voip-auto-assign.php
+          php -l lib/voip-ixc-reservation-reader.php
+          php -l lib/voip-automatic-reservation.php
+          php -l scripts/voip-auto-reserve.php
+          php -l tests/voip-auto-reservation.test.php
           php -l lib/voip-ixc-controlled-writer.php
           php -l lib/voip-reserved-recovery.php
           php -l scripts/voip-ixc-recover-4740.php
@@ -101,6 +109,7 @@ jobs:
           php tests/voip-stock-linking.test.php
           php tests/voip-stock-batch-available.test.php
           php tests/voip-auto-assign.test.php
+          php tests/voip-auto-reservation.test.php
           php tests/voip-ixc-controlled-writer.test.php
           php tests/voip-reserved-recovery.test.php
           php tests/voip-finalize-110.test.php
