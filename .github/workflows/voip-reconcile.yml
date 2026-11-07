@@ -7,6 +7,10 @@ on:
       - 'scripts/voip-request-marker-preflight.mjs'
       - 'scripts/voip-ixc-put-preflight.mjs'
       - 'scripts/voip-pilot-4740-ixc-readonly.mjs'
+      - 'scripts/voip-full-audit-readonly.mjs'
+      - 'scripts/voip-full-audit-cli.php'
+      - 'lib/voip-full-audit.php'
+      - 'tests/voip-full-audit.test.php'
       - 'scripts/voip-pilot-4740-preview.php'
       - 'tests/voip-pilot-4740-preview.test.php'
       - 'tests/voip-request-marker.test.mjs'
@@ -44,6 +48,9 @@ jobs:
       - name: Lint VoIP files
         run: |
           php -l lib/voip-reconcile.php
+          php -l lib/voip-full-audit.php
+          php -l scripts/voip-full-audit-cli.php
+          php -l tests/voip-full-audit.test.php
           php -l lib/voip-historical-review.php
           php -l tests/voip-historical-review.test.php
           php -l lib/voip-operational.php
@@ -69,10 +76,12 @@ jobs:
           node --check scripts/voip-request-marker-preflight.mjs
           node --check scripts/voip-ixc-put-preflight.mjs
           node --check scripts/voip-pilot-4740-ixc-readonly.mjs
+          node --check scripts/voip-full-audit-readonly.mjs
           node --test tests/voip-request-marker.test.mjs
       - name: Test reconciliation
         run: |
           php tests/voip-reconcile.test.php
+          php tests/voip-full-audit.test.php
           php tests/voip-historical-review.test.php
           php tests/voip-operational.test.php
           php tests/voip-stock-linking.test.php
