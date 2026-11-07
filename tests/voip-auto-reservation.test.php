@@ -11,6 +11,8 @@ try {
  $stock->import("1156641257;a_conferir;\n1156641258;a_conferir;\n1156641259;a_conferir;\n1151961252;ocupado;Legacy",'initial');
  foreach(['1156641257','1156641258','1156641259'] as $did)$stock->confirmAvailable($did,'voicecopy');
  $stock->linkManually('1151961252','2210','396','operator');
+ $stock->import("1151961251;ocupado;Legacy cancel",'initial');
+ $stock->linkManually('1151961251','2250','397','operator');
  $existing=$stock->reserveForVoip('4740','571','operator');
  arCheck($existing['number']==='1156641257','existing reservation');
  $monitor=[
@@ -31,11 +33,16 @@ try {
   return ['contract'=>['id'=>$contract,'status'=>'A','obs_contrato'=>$obs],
    'product_rows'=>[['id'=>$product,'id_contrato'=>$contract,'id_produto'=>'74']]];
  };
- $result=VoipAutomaticReservation::process($monitor,$stock,$reader);
+ $contractReader=function(string $contract):array{
+  if($contract==='2250') return ['contract'=>['id'=>'2250','status'=>'I','obs_contrato'=>'#JRC_VOIP_CANCELAR#']];
+  return ['contract'=>['id'=>$contract,'status'=>'A','obs_contrato'=>'Plano normal']];
+ };
+ $result=VoipAutomaticReservation::process($monitor,$stock,$reader,null,$contractReader);
  arCheck($result['reservados']===1,'exactly one reservation');
  arCheck($result['novos'][0]['contrato_id']==='4800','correct contract');
  arCheck($result['novos'][0]['did']==='1156641258','next free DID');
  arCheck($result['ja_vinculados']===2,'historical and pilot untouched');
+ arCheck($result['cancelados']===1,'cancel product-removed link');
  arCheck($reads===2,'skip existing before read');
  arCheck($stock->read()['numbers']['1156641257']['contract_id']==='4740','pilot preserved');
  arCheck($stock->read()['numbers']['1156641258']['status']==='reservado','new DID reserved, not occupied');
@@ -43,6 +50,7 @@ try {
  $again=VoipAutomaticReservation::process($monitor,$stock,$reader);
  arCheck($again['reservados']===0,'idempotent next 15 minute cycle');
  arCheck($stock->read()['numbers']['1151961252']['contract_id']==='2210','legacy preserved');
+ arCheck($stock->read()['numbers']['1151961251']['status']==='disponivel','released after product removal');
  $stale=$monitor;$stale['generated_at']='2020-01-01T00:00:00Z';
  try{VoipAutomaticReservation::process($stale,$stock,$reader);throw new RuntimeException('FAIL stale monitor');}
  catch(RuntimeException $e){arCheck(str_contains($e->getMessage(),'desatualizado'),'stale rejected');}
