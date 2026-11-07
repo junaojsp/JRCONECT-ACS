@@ -40,7 +40,7 @@ for P in lib/voip-ixc-controlled-writer.php scripts/voip-ixc-assign-4740.php; do
 done
 ```
 
-O CLI contém caminhos de importação padrão para `/var/www/gacs/lib`, portanto a aplicação via etapa posterior deve instalar o writer no webroot ou modificar a chamada para usar o módulo localizado no diretório root-only. **Não habilitar escrita até revisar esse caminho e validar o PUT em homologação.**
+O CLI prefere os módulos `voip-stock.php` e `voip-auto-assign.php` já existentes no webroot do ACS e usa o novo writer em `$DIR/lib`, sem expor esse módulo no webroot. **Não habilitar escrita até validar o PUT em homologação.**
 
 ## Pendências de ativação total
 Esta PR entrega a escrita executável para o caso 4740, protegida por autorização explícita. **Ainda não monitora/grava automaticamente outros contratos**: depois de homologar o piloto, a próxima implantação poderá integrar a execução a um job com flag, consulta frequente, alerta de erros, limite de atribuições por ciclo e reconciliação de reservas. Não associar todo contrato que tenha produto 74: exigir o marcador exato, status elegível e ausência de vínculo anterior.
