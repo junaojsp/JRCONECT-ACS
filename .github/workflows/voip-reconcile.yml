@@ -4,7 +4,9 @@ on:
     paths:
       - 'voip-central.php'
       - 'lib/voip-reconcile.php'
+      - 'lib/voip-operational.php'
       - 'tests/voip-reconcile.test.php'
+      - 'tests/voip-operational.test.php'
       - '.github/workflows/voip-reconcile.yml'
   workflow_dispatch:
 
@@ -22,7 +24,11 @@ jobs:
       - name: Lint VoIP files
         run: |
           php -l lib/voip-reconcile.php
+          php -l lib/voip-operational.php
           php -l voip-central.php
           php -l tests/voip-reconcile.test.php
+          php -l tests/voip-operational.test.php
       - name: Test reconciliation
-        run: php tests/voip-reconcile.test.php
+        run: |
+          php tests/voip-reconcile.test.php
+          php tests/voip-operational.test.php
