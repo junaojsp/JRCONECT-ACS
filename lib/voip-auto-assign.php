@@ -9,6 +9,17 @@ declare(strict_types=1);
 final class VoipAutoAssignment
 {
     public const MARKER = '#JRC_VOIP_SOLICITAR#';
+    public const CANCEL_MARKER = '#JRC_VOIP_CANCELAR#';
+
+    public static function cancellationRequested(string $observation): bool
+    {
+        return substr_count($observation, self::CANCEL_MARKER) === 1;
+    }
+
+    public static function assignmentPresent(string $observation, string $contractId, string $did): bool
+    {
+        return preg_match('/JRC_VOIP_CONTRATO='.preg_quote($contractId,'/').';DID='.preg_quote($did,'/').'\b/', $observation) === 1;
+    }
 
     public static function replacement(string $observation, string $contractId, string $did): string
     {

@@ -19,7 +19,7 @@ final class VoipAutomaticReservation
         if ($timestamp===false || $timestamp>time()+300 || time()-$timestamp>600) {
             throw new RuntimeException('Monitor IXC desatualizado. Nenhuma reserva executada.');
         }
-        $summary=['consultados'=>0,'reservados'=>0,'ja_vinculados'=>0,
+        $summary=['consultados'=>0,'reservados'=>0,'ja_vinculados'=>0,'cancelados'=>0,
             'sem_marcador_ou_inelegiveis'=>0,'falhas'=>0,'falhas_detalhes'=>[],'novos'=>[]];
         foreach ($monitor['contracts'] as $id=>$item) {
             $contractId=(string)$id;
@@ -37,15 +37,32 @@ final class VoipAutomaticReservation
             }
             // Re-read stock on each iteration; lock inside reserveForVoip is the
             // final arbiter under concurrent manual/automated operations.
-            $existing=false;
+            $existingRow=null;
             foreach ($stock->read()['numbers'] as $row) {
                 if ((string)($row['contract_id']??'')===$contractId ||
                     (string)($row['product_record_id']??'')===$productId) {
-                    $existing=true;break;
+                    $existingRow=$row;break;
                 }
             }
-            if ($existing) {
-                $summary['ja_vinculados']++;
+            if ($existingRow!==null) {
+                if (($item['cancel_requested']??false)===true &&
+                    in_array(($existingRow['status']??''),['ocupado','reservado'],true)) {
+                    try {
+                        $fresh=$readFresh($contractId,$productId);
+                        $observation=(string)($fresh['contract']['obs_contrato']??'');
+                        if (!VoipAutoAssignment::cancellationRequested($observation) ||
+                            VoipAutoAssignment::assignmentPresent($observation,$contractId,(string)$existingRow['number'])) {
+                            throw new RuntimeException('Cancelamento sem confirmação da observação.');
+                        }
+                        $stock->cancelVoipAssignment($existingRow,'voip-auto-cancel-monitor');
+                        $summary['cancelados']++;
+                    } catch (Throwable $error) {
+                        $summary['falhas']++;
+                        $summary['falhas_detalhes'][]=['contrato_id'=>$contractId,'etapa'=>'cancelamento'];
+                    }
+                } else {
+                    $summary['ja_vinculados']++;
+                }
                 continue;
             }
             $summary['consultados']++;

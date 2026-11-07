@@ -73,11 +73,15 @@ final class VoipReconcile
                 }
                 $seenProducts[$rec] = true;
             }
+            if (isset($row['voip_cancelar']) && !is_bool($row['voip_cancelar'])) {
+                throw new RuntimeException('Sinal de cancelamento IXC inválido.');
+            }
             $contracts[] = [
                 'contract_id' => $row['contrato_id'],
                 'customer_name' => $name,
                 'status' => $row['status_ixc_bruto'],
                 'product_ids' => $row['registros_produto_74'],
+                'cancel_requested' => (bool)($row['voip_cancelar'] ?? false),
             ];
         }
         if (count($seenProducts) !== $raw['total_registros_produto']) {

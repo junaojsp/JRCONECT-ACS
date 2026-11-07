@@ -216,6 +216,20 @@ final class VoipIxcControlledWriter
             };
             return $normalize($expected)===$normalize($actual);
         }
+        if (preg_match('/^(data|data_|dt_)/',$field)) {
+            $normalizeDate=static function($value): string {
+                $value=trim((string)$value);
+                if (in_array($value,['','0','0000-00-00','0000-00-00 00:00:00'],true)) return '';
+                foreach (['Y-m-d','d/m/Y','Y-m-d H:i:s','d/m/Y H:i:s'] as $format) {
+                    $date=DateTimeImmutable::createFromFormat('!'.$format,$value);
+                    if ($date instanceof DateTimeImmutable && $date->format($format)===$value) {
+                        return $date->format('Y-m-d');
+                    }
+                }
+                return $value;
+            };
+            return $normalizeDate($expected)===$normalizeDate($actual);
+        }
         if ((is_scalar($expected)||$expected===null) && (is_scalar($actual)||$actual===null)) {
             return (string)$expected===(string)$actual;
         }

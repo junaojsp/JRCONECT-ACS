@@ -24,6 +24,7 @@ final class VoipIxcMonitor
             $current[$row['contract_id']] = [
                 'status' => $row['status'],
                 'product_record_ids' => $row['product_ids'],
+                'cancel_requested' => (bool)($row['cancel_requested'] ?? false),
             ];
         }
         ksort($current, SORT_NATURAL);
