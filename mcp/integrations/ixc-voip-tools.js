@@ -103,7 +103,7 @@ function clientName(row) {
   for (const key of ['razao', 'nome']) {
     if (typeof row[key] === 'string') {
       const value = row[key].trim();
-      if (value && value.length <= 250 && !/[\\x00-\\x1f]/.test(value)) return value;
+      if (value && value.length <= 250 && !/[\x00-\x1f]/.test(value)) return value;
     }
   }
   return null;
