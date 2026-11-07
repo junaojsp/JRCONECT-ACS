@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 final class VoipAutomaticReservation
 {
-    public static function process(array $monitor, VoipStock $stock, callable $readFresh): array
+    public static function process(array $monitor, VoipStock $stock, callable $readFresh, ?callable $writeIxc = null): array
     {
         if (($monitor['version']??null)!==1 || ($monitor['mode']??null)!=='read_only' ||
             !is_array($monitor['contracts']??null) ||
@@ -68,11 +68,19 @@ final class VoipAutomaticReservation
                 $reservation=$stock->reserveForVoip(
                     $contractId,$productId,'voip-auto-reserve-monitor'
                 );
+                if ($writeIxc !== null) {
+                    $stage='escrita_ixc';
+                    $next=VoipAutoAssignment::replacement(
+                        $valid['observation'],$contractId,$reservation['number']
+                    );
+                    $writeIxc($contractId,$productId,$valid['observation'],$next);
+                    $stock->confirmVoipAssignment($reservation,true,'voip-auto-reserve-ixc');
+                }
                 $summary['reservados']++;
                 $summary['novos'][]=[
                     'contrato_id'=>$contractId,'produto_registro_id'=>$productId,
                     'did'=>$reservation['number'],'status'=>'reservado',
-                    'sincronizacao_ixc'=>'manual_pendente'
+                    'sincronizacao_ixc'=>$writeIxc === null ? 'manual_pendente' : 'confirmada_por_readback'
                 ];
             } catch (Throwable $error) {
                 // Missing marker is normal; other errors are reported only as
