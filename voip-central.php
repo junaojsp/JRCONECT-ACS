@@ -55,6 +55,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['voip_flash'] = 'DID histórico liberado após confirmação da VoiceCopy. Auditoria registrada.';
             header('Location: /voip-central.php#voip-vinculos', true, 303);
             exit;
+        } elseif (($_POST['voip_action'] ?? '') === 'confirm_new_batch_available') {
+            if (($_POST['checked_new_batch_voicecopy'] ?? null) !== 'YES') {
+                throw new RuntimeException('Confirme que todos os DIDs selecionados são novos e foram entregues livres pela VoiceCopy.');
+            }
+            $numbers = $_POST['new_batch_numbers'] ?? null;
+            $revision = $_POST['stock_revision'] ?? null;
+            if (!is_array($numbers) || !is_string($revision) ||
+                !preg_match('/^(0|[1-9][0-9]{0,12})$/D', $revision)) {
+                throw new RuntimeException('Seleção de números ou revisão do estoque inválida.');
+            }
+            $voipStore->confirmNewBatchAvailable($numbers, (int)$revision, (string)$_SESSION['user_id']);
+            $_SESSION['voip_flash'] = count($numbers) . ' DIDs novos confirmados como disponíveis. Nenhum contrato IXC foi alterado.';
+            header('Location: /voip-central.php#voip-vinculos', true, 303);
+            exit;
         } elseif (($_POST['voip_action'] ?? '') === 'confirm_available') {
             if (($_POST['checked_voicecopy'] ?? null) !== 'YES') {
                 throw new RuntimeException('Confirme a disponibilidade verificada na VoiceCopy.');
@@ -579,6 +593,43 @@ include __DIR__ . '/views/layouts/header.php';
                 Confirmei na VoiceCopy que este DID não está atribuído a ninguém e pode voltar ao estoque disponível.</label>
             <button type="submit">Confirmar liberação histórica</button>
         </form>
+        <div class="voip-subtitle">Confirmar em lote os DIDs novos entregues pela VoiceCopy</div>
+        <p>Selecione apenas os números novos que a VoiceCopy entregou livres para uso. Não inclui números ocupados, vinculados ou reservados. A operação será feita de uma só vez, com histórico por DID.</p>
+        <form method="post" action="/voip-central.php#voip-vinculos" autocomplete="off" id="voip-new-batch-form">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <input type="hidden" name="voip_action" value="confirm_new_batch_available">
+            <input type="hidden" name="stock_revision" value="<?= (int)($voipData['revision'] ?? 0) ?>">
+            <div class="voip-subtitle">Números novos pendentes de confirmação</div>
+            <label><input type="checkbox" id="voip-new-batch-select-all"> Selecionar todos os novos números elegíveis</label>
+            <div class="voip-table-wrap">
+                <table class="voip-table">
+                    <thead><tr><th>Selecionar</th><th>DID</th><th>Status</th></tr></thead>
+                    <tbody>
+                    <?php $voipNewBatchCount = 0; foreach ($voipRows as $candidate): ?>
+                        <?php if ($candidate['status'] === 'a_conferir' &&
+                            empty($candidate['contract_id']) && empty($candidate['product_record_id']) &&
+                            empty($candidate['reservation_id']) && trim((string)($candidate['holder'] ?? '')) === ''):
+                            $voipNewBatchCount++; ?>
+                            <tr>
+                                <td><input type="checkbox" class="voip-new-batch-number" name="new_batch_numbers[]"
+                                    value="<?= voipEscape($candidate['number']) ?>"
+                                    aria-label="Confirmar <?= voipEscape($candidate['number']) ?>"></td>
+                                <td class="voip-phone"><?= voipEscape($candidate['number']) ?></td>
+                                <td>A conferir</td>
+                            </tr>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <?php if ($voipNewBatchCount === 0): ?>
+                        <tr><td colspan="3">Nenhum DID novo pendente elegível.</td></tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+            <p><strong id="voip-new-batch-count">0 selecionados</strong> de <?= $voipNewBatchCount ?> candidatos.</p>
+            <label><input type="checkbox" name="checked_new_batch_voicecopy" value="YES" id="voip-new-batch-verified" required>
+                Confirmo que todos os DIDs selecionados são novos e foram entregues disponíveis pela VoiceCopy.</label>
+            <button type="submit" id="voip-new-batch-submit" disabled>Confirmar disponibilidade em lote</button>
+        </form>
         <div class="voip-subtitle">Confirmar disponibilidade na VoiceCopy</div>
         <p>Disponível apenas para números <strong>a conferir</strong> e sem vínculo. Nunca libera números ocupados ou vinculados.</p>
         <form method="post" action="/voip-central.php#voip-vinculos" autocomplete="off">
@@ -623,6 +674,7 @@ include __DIR__ . '/views/layouts/header.php';
             'import'=>'Importação',
             'manual_link'=>'Vínculo manual: contrato ' . ($event['contract_id'] ?? '') . ', produto ' . ($event['product_record_id'] ?? ''),
             'voicecopy_available_confirmed'=>'Disponibilidade confirmada na VoiceCopy',
+            'new_did_batch_available_confirmed'=>'DID novo disponibilizado em lote (conferência VoiceCopy)',
             'legacy_free_confirmed_voicecopy'=>'DID histórico liberado após conferência na VoiceCopy',
             'minimum_changed'=>'Novo estoque mínimo: ' . ($event['minimum_available'] ?? '')
         ][$event['action'] ?? ''] ?? 'Operação') ?></td></tr>
@@ -635,6 +687,33 @@ include __DIR__ . '/views/layouts/header.php';
   'use strict';
   const section = document.getElementById('voip-vinculos');
   if (!section) return;
+  const batchForm = document.getElementById('voip-new-batch-form');
+  if (batchForm) {
+    const items = Array.from(batchForm.querySelectorAll('.voip-new-batch-number'));
+    const all = batchForm.querySelector('#voip-new-batch-select-all');
+    const count = batchForm.querySelector('#voip-new-batch-count');
+    const verified = batchForm.querySelector('#voip-new-batch-verified');
+    const submit = batchForm.querySelector('#voip-new-batch-submit');
+    const refresh = () => {
+      const selected = items.filter(item => item.checked).length;
+      count.textContent = selected + ' selecionados';
+      all.checked = items.length > 0 && selected === items.length;
+      all.indeterminate = selected > 0 && selected < items.length;
+      submit.disabled = selected === 0 || !verified.checked;
+    };
+    all.addEventListener('change', () => {
+      items.forEach(item => { item.checked = all.checked; });
+      verified.checked = false;
+      refresh();
+    });
+    items.forEach(item => item.addEventListener('change', () => {
+      verified.checked = false;
+      refresh();
+    }));
+    verified.addEventListener('change', refresh);
+    refresh();
+  }
+
   const number = section.querySelector('#voip-link-number');
   const contract = section.querySelector('#voip-link-contract');
   const product = section.querySelector('#voip-link-product');
