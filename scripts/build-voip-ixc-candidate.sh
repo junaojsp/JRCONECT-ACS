@@ -47,8 +47,8 @@ case "${1:---plan}" in
     if (typeof registerIxcWebserviceTools !== "function") process.exit(8);
     const names = [];
     registerIxcVoipTools({registerTool(name) { names.push(name); }}, {});
-    if (names.length !== 1 || names[0] !== "ixc_voip_consultar_contrato") process.exit(9);
-    console.log("SMOKE OK: consulta VoIP registrada sem credenciais ou chamadas externas.");
+    if (names.length !== 2 || !names.includes("ixc_voip_consultar_contrato") || !names.includes("ixc_voip_listar_contratos_produto74") || new Set(names).size !== 2) process.exit(9);
+    console.log("SMOKE OK: duas ferramentas VoIP registradas sem credenciais ou chamadas externas.");
   ' || fail "Smoke test da imagem falhou"
   [[ "$(docker inspect -f '{{.Image}}' "$SERVICE")" == "$old_image" ]] || fail "Imagem ativa mudou durante o build"
   echo "CANDIDATA VALIDADA: $tag"
