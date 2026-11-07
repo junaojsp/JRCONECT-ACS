@@ -107,6 +107,83 @@ final class VoipStock
         });
     }
 
+    /**
+     * Reserve one previously verified free DID for one exact product-74 record.
+     * The stock lock prevents two simultaneous jobs assigning the same DID.
+     * No number is considered occupied until IXC write has been read back.
+     */
+    public function reserveForVoip(string $contractId, string $productRecordId, string $actor): array
+    {
+        if (!self::validId($contractId) || !self::validId($productRecordId) ||
+            $actor === '') throw new RuntimeException('Reserva VoIP inválida.');
+        $token = bin2hex(random_bytes(16));
+        $selected = null;
+        $state = $this->locked(true, static function(array $data) use ($contractId, $productRecordId, $actor, $token, &$selected): array {
+            foreach ($data['numbers'] as $number => $row) {
+                if ((string)($row['contract_id'] ?? '') === $contractId ||
+                    (string)($row['product_record_id'] ?? '') === $productRecordId) {
+                    throw new RuntimeException('Contrato ou produto já vinculado/reservado.');
+                }
+            }
+            $candidates = [];
+            foreach ($data['numbers'] as $number => $row) {
+                if (($row['status'] ?? '') === 'disponivel' &&
+                    empty($row['contract_id']) && empty($row['product_record_id']) &&
+                    empty($row['reservation_id'])) $candidates[] = $number;
+            }
+            sort($candidates, SORT_STRING);
+            if (!$candidates) throw new RuntimeException('Nenhum DID confirmado como disponível.');
+            $selected = $candidates[0];
+            $data['numbers'][$selected]['status'] = 'reservado';
+            $data['numbers'][$selected]['contract_id'] = $contractId;
+            $data['numbers'][$selected]['product_record_id'] = $productRecordId;
+            $data['numbers'][$selected]['reservation_id'] = $token;
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'automatic_reserved',
+                'number'=>$selected, 'contract_id'=>$contractId,
+                'product_record_id'=>$productRecordId,
+            ];
+            return $data;
+        });
+        return ['number'=>$selected, 'reservation_id'=>$token,
+            'contract_id'=>$contractId, 'product_record_id'=>$productRecordId];
+    }
+
+    /**
+     * Caller must independently re-read the IXC contract and confirm that
+     * obs_contrato contains the exact assigned contract/DID line.
+     * Reservation remains blocked for reconciliation on ambiguous failures.
+     */
+    public function confirmVoipAssignment(array $reservation, bool $ixcReadbackConfirmed, string $actor): array
+    {
+        $number = (string)($reservation['number'] ?? '');
+        $contractId = (string)($reservation['contract_id'] ?? '');
+        $productId = (string)($reservation['product_record_id'] ?? '');
+        $token = (string)($reservation['reservation_id'] ?? '');
+        if (!$ixcReadbackConfirmed || !preg_match('/^[1-9][0-9]{9}$/D', $number) ||
+            !self::validId($contractId) || !self::validId($productId) ||
+            !preg_match('/^[a-f0-9]{32}$/D', $token) || $actor === '') {
+            throw new RuntimeException('Atribuição não confirmada pelo IXC.');
+        }
+        return $this->locked(true, static function(array $data) use ($number, $contractId, $productId, $token, $actor): array {
+            $row = $data['numbers'][$number] ?? null;
+            if (!$row || ($row['status'] ?? '') !== 'reservado' ||
+                ($row['contract_id'] ?? null) !== $contractId ||
+                ($row['product_record_id'] ?? null) !== $productId ||
+                ($row['reservation_id'] ?? null) !== $token) {
+                throw new RuntimeException('Reserva inexistente ou diferente.');
+            }
+            $data['numbers'][$number]['status'] = 'ocupado';
+            unset($data['numbers'][$number]['reservation_id']);
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'automatic_link_confirmed',
+                'number'=>$number, 'contract_id'=>$contractId,
+                'product_record_id'=>$productId,
+            ];
+            return $data;
+        });
+    }
+
     public function confirmAvailable(string $number, string $actor): array
     {
         if (!preg_match('/^[1-9][0-9]{9}$/D', $number) || $actor === '') {
