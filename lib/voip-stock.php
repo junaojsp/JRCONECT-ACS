@@ -223,6 +223,35 @@ final class VoipStock
         });
     }
 
+    /** Release one exact VoIP link after an explicit IXC cancellation marker. */
+    public function cancelVoipAssignment(array $link, string $actor): array
+    {
+        $number=(string)($link['number']??'');
+        $contractId=(string)($link['contract_id']??'');
+        $productId=(string)($link['product_record_id']??'');
+        if (!preg_match('/^[1-9][0-9]{9}$/D',$number) || !self::validId($contractId) ||
+            !self::validId($productId) || $actor==='') {
+            throw new RuntimeException('Cancelamento VoIP inválido.');
+        }
+        return $this->locked(true, static function(array $data) use ($number,$contractId,$productId,$actor): array {
+            $row=$data['numbers'][$number]??null;
+            if (!is_array($row) || !in_array(($row['status']??''),['ocupado','reservado'],true) ||
+                (string)($row['contract_id']??'')!==$contractId ||
+                (string)($row['product_record_id']??'')!==$productId) {
+                throw new RuntimeException('Vínculo VoIP inexistente ou divergente.');
+            }
+            $data['numbers'][$number]['status']='disponivel';
+            $data['numbers'][$number]['holder']='';
+            $data['numbers'][$number]['contract_id']=null;
+            $data['numbers'][$number]['product_record_id']=null;
+            unset($data['numbers'][$number]['reservation_id']);
+            $data['audit'][]=['at'=>gmdate('c'),'actor'=>$actor,'action'=>'voip_cancelled',
+                'number'=>$number,'contract_id'=>$contractId,'product_record_id'=>$productId,
+                'previous_status'=>$row['status']];
+            return $data;
+        });
+    }
+
     /**
      * Release an unlinked legacy number only after the operator has verified
      * it is unused in VoiceCopy. A historical IXC status is not proof.
