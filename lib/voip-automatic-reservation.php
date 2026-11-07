@@ -68,6 +68,12 @@ final class VoipAutomaticReservation
                 $reservation=$stock->reserveForVoip(
                     $contractId,$productId,'voip-auto-reserve-monitor'
                 );
+                $clientName=trim((string)($fresh['client']['name']??''));
+                if ($clientName!=='') {
+                    $stock->setReservationHolder(
+                        $reservation,$clientName,'voip-auto-reserve-client-lookup'
+                    );
+                }
                 if ($writeIxc !== null) {
                     $stage='escrita_ixc';
                     $next=VoipAutoAssignment::replacement(
