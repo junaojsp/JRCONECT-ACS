@@ -7,27 +7,50 @@ require_once __DIR__ . '/config/config.php';
 requireLogin();
 
 require_once __DIR__ . '/lib/voip-stock.php';
+require_once __DIR__ . '/lib/voip-reconcile.php';
 header('Cache-Control: no-store, private');
 if (empty($_SESSION['voip_csrf'])) $_SESSION['voip_csrf'] = bin2hex(random_bytes(32));
 $voipError = '';
 $voipData = null;
 $voipStore = new VoipStock();
+$voipSnapshotInput = null;
+$voipComparison = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $received = $_POST['csrf'] ?? null;
         if (!is_string($received) || !hash_equals($_SESSION['voip_csrf'], $received)) {
             throw new RuntimeException('Sessão expirada. Atualize a página.');
         }
-        $input = $_POST['inventory'] ?? null;
-        if (!is_string($input)) throw new RuntimeException('Importação inválida.');
-        $voipStore->import($input, (string)$_SESSION['user_id']);
-        $_SESSION['voip_flash'] = 'Estoque importado. Os vínculos com o IXC continuam pendentes.';
-        header('Location: /voip-central.php', true, 303);
-        exit;
+        if (($_POST['voip_action'] ?? 'import') === 'compare_ixc') {
+            $input = $_POST['ixc_snapshot'] ?? null;
+            if (!is_string($input)) throw new RuntimeException('Snapshot IXC inválido.');
+            $voipSnapshotInput = $input;
+        } elseif (($_POST['voip_action'] ?? 'import') === 'import') {
+            $input = $_POST['inventory'] ?? null;
+            if (!is_string($input)) throw new RuntimeException('Importação inválida.');
+            $voipStore->import($input, (string)$_SESSION['user_id']);
+            $_SESSION['voip_flash'] = 'Estoque importado. Os vínculos com o IXC continuam pendentes.';
+            header('Location: /voip-central.php', true, 303);
+            exit;
+        } else {
+            throw new RuntimeException('Operação VoIP desconhecida.');
+        }
     } catch (Throwable $e) { $voipError = $e instanceof JsonException ? 'Arquivo de estoque inválido; importação interrompida.' : $e->getMessage(); }
 }
 try { $voipData = $voipStore->read(); } catch (Throwable $e) { $voipError = 'Estoque indisponível. Verifique a instalação antes de importar.'; }
 $voipRows = array_values($voipData['numbers'] ?? []);
+if ($voipSnapshotInput !== null && $voipData !== null) {
+    try {
+        $voipComparison = VoipReconcile::compare(
+            $voipRows,
+            VoipReconcile::parseSnapshot($voipSnapshotInput)
+        );
+    } catch (Throwable $e) {
+        $voipError = $e->getMessage();
+    }
+}
+unset($voipSnapshotInput);
+
 $voipOccupied = count(array_filter($voipRows, static fn($r) => $r['status'] === 'ocupado'));
 $voipReview = count(array_filter($voipRows, static fn($r) => $r['status'] === 'a_conferir'));
 // Reservado para uma etapa futura: somente liberações confirmadas podem ser disponíveis.
@@ -171,6 +194,7 @@ include __DIR__ . '/views/layouts/header.php';
     <nav class="voip-nav" aria-label="Áreas da Central VoIP">
         <a href="#voip-solicitacoes"><i class="bi bi-bell" aria-hidden="true"></i> Solicitações</a>
         <a href="#voip-estoque"><i class="bi bi-sim" aria-hidden="true"></i> Estoque</a>
+        <a href="#voip-conciliacao"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Conciliação IXC</a>
         <a href="#voip-vinculos"><i class="bi bi-link-45deg" aria-hidden="true"></i> Vínculos</a>
         <a href="#voip-baixas"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Cancelamentos</a>
         <a href="#voip-historico"><i class="bi bi-clock-history" aria-hidden="true"></i> Histórico</a>
@@ -251,6 +275,54 @@ include __DIR__ . '/views/layouts/header.php';
             <button type="submit" <?= $voipData === null ? 'disabled' : '' ?>>Importar estoque</button>
         </form>
     </details>
+
+
+    <section class="voip-card voip-section" id="voip-conciliacao">
+        <div class="voip-section-head"><div>
+            <h3 class="voip-section-title"><i class="bi bi-arrow-left-right me-2" aria-hidden="true"></i>Conciliação IXC × VoiceCopy</h3>
+            <p>Compare o estoque importado com a consulta autorizada do MCP. Somente sugestão, sem gravar vínculos ou liberar números.</p>
+        </div><span class="voip-state">Consulta supervisionada</span></div>
+        <p>Obtenha o JSON completo usando <code>ixc_voip_listar_contratos_produto74</code> no ChatGPT autorizado e cole abaixo.
+        O ACS ainda não possui um canal de autenticação servidor-servidor homologado para sincronização direta. Nenhum dado desta comparação será persistido.</p>
+        <form method="post" action="/voip-central.php#voip-conciliacao" autocomplete="off">
+            <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
+            <input type="hidden" name="voip_action" value="compare_ixc">
+            <label for="voip-ixc-snapshot">Resposta JSON da ferramenta MCP</label>
+            <textarea id="voip-ixc-snapshot" name="ixc_snapshot" rows="5" maxlength="100000" required placeholder='{"produto_id":"74","total_contratos":...}'></textarea>
+            <button type="submit" <?= $voipData === null ? 'disabled' : '' ?>>Comparar com estoque</button>
+        </form>
+        <?php if ($voipComparison !== null): ?>
+            <div class="voip-stock-summary" aria-label="Resumo da comparação">
+                <span class="voip-stock-chip voip-stock-chip--occupied">Correspondência única: <strong><?= $voipComparison['stats']['unica'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Ambíguos: <strong><?= $voipComparison['stats']['ambigua'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Sem correspondência: <strong><?= $voipComparison['stats']['sem_correspondencia'] ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Sem titular: <strong><?= $voipComparison['stats']['sem_nome'] ?></strong></span>
+            </div>
+            <p><strong>Resultado somente para conferência.</strong> Mesmo uma correspondência única não confirma a atribuição do número.
+            Códigos de status IXC não foram classificados; nenhuma baixa VoiceCopy foi confirmada.</p>
+            <div class="voip-table-wrap">
+                <table class="voip-table">
+                    <thead><tr><th>Contrato</th><th>Titular IXC</th><th>Status IXC bruto</th><th>Número(s) sugerido(s)</th><th>Conferência</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($voipComparison['rows'] as $match): ?>
+                        <tr>
+                            <td><?= voipEscape($match['contract_id']) ?></td>
+                            <td><?= voipEscape($match['customer_name'] ?? 'Não informado') ?></td>
+                            <td><?= voipEscape($match['status']) ?></td>
+                            <td><?= voipEscape($match['candidates'] ? implode(', ', $match['candidates']) : 'Nenhum') ?></td>
+                            <td><?php
+                                $labels = ['unica' => 'Sugestão única — confirmar', 'ambigua' => 'Ambígua — revisar',
+                                    'sem_correspondencia' => 'Não localizado no estoque', 'sem_nome' => 'Titular ausente'];
+                                echo voipEscape($labels[$match['classification']] ?? 'Revisar');
+                            ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$voipComparison['rows']): ?><tr><td colspan="5">Nenhum contrato do produto 74 retornado.</td></tr><?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </section>
 
     <section class="voip-card voip-section" id="voip-vinculos">
         <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-link-45deg me-2" aria-hidden="true"></i>Números vinculados</h3>
