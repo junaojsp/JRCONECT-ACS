@@ -5,6 +5,7 @@ on:
       - 'voip-central.php'
       - 'mcp/integrations/ixc-voip-request-inspector.js'
       - 'scripts/voip-request-marker-preflight.mjs'
+      - 'scripts/voip-ixc-put-preflight.mjs'
       - 'tests/voip-request-marker.test.mjs'
       - 'lib/voip-reconcile.php'
       - 'lib/voip-operational.php'
@@ -55,6 +56,7 @@ jobs:
         run: |
           node --check mcp/integrations/ixc-voip-request-inspector.js
           node --check scripts/voip-request-marker-preflight.mjs
+          node --check scripts/voip-ixc-put-preflight.mjs
           node --test tests/voip-request-marker.test.mjs
       - name: Test reconciliation
         run: |
