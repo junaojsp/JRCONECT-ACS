@@ -28,6 +28,11 @@ try {
    echo json_encode(VoipReservedRecovery::publicStatus($state),JSON_PRETTY_PRINT|JSON_THROW_ON_ERROR),PHP_EOL;
    exit(0);
  }
+ // Prevent two operator sessions from running the same PUT concurrently.
+ $lock=fopen('/run/lock/jrconect-voip-4740-recovery.lock','c');
+ if(!$lock || !flock($lock,LOCK_EX|LOCK_NB))
+   throw new RuntimeException('Recuperacao em andamento em outra sessao.');
+ // Re-read stock and IXC AFTER the lock in recover(), never reuse pre-lock state.
  if(getenv('JRC_VOIP_CONFIRM_RECOVERY')!=='4740:571' ||
     !is_file('/etc/jrconect/voip-ixc-writer-approved') ||
     is_link('/etc/jrconect/voip-ixc-writer-approved')) throw new RuntimeException('Recuperacao nao autorizada.');
@@ -42,6 +47,8 @@ try {
    'IXC PUT HTTP 400.','IXC PUT HTTP 401.','IXC PUT HTTP 403.',
    'IXC PUT HTTP 404.','IXC PUT HTTP 409.','IXC PUT HTTP 422.',
    'IXC PUT HTTP 500.','IXC PUT HTTP 502.','IXC PUT HTTP 503.',
+   'IXC PUT retornou indicacao de falha.',
+   'IXC PUT retornou texto de erro.',
  ];
  $reason=$e->getMessage();
  if(!in_array($reason,$messages,true)) $reason='Verificar reserva, backup, leitura IXC e permissao de edicao.';
