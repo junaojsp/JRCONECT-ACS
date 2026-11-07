@@ -82,16 +82,17 @@ test('IDs de consulta invalidos sao rejeitados', async () => {
 });
 
 test('handler de ferramenta nao divulga detalhes de erro', async () => {
-  let register;
+  const registered = new Map();
   const mock = { registerTool(name, spec, handler) {
-    assert.equal(name, 'ixc_voip_consultar_contrato');
-    assert.ok(spec.inputSchema.contrato_id);
-    register = handler;
+    registered.set(name, {spec, handler});
   }};
   registerIxcVoipTools(mock, {
     async list() { throw new Error('SEGREDO - nao pode vazar'); },
   });
-  const out = await register({ contrato_id: '1520' });
+  assert.ok(registered.has('ixc_voip_consultar_contrato'));
+  assert.ok(registered.get('ixc_voip_consultar_contrato').spec.inputSchema.contrato_id);
+  assert.ok(registered.has('ixc_voip_listar_contratos_produto74'));
+  const out = await registered.get('ixc_voip_consultar_contrato').handler({ contrato_id: '1520' });
   assert.equal(out.isError, true);
   assert.equal(JSON.stringify(out).includes('SEGREDO'), false);
 });

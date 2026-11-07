@@ -5,6 +5,7 @@ on:
     paths:
       - 'mcp/integrations/ixc-voip-tools.js'
       - 'mcp/integrations/ixc-voip-tools.test.js'
+      - 'mcp/test/ixc-voip-list-contracts.test.js'
       - 'mcp/integrations/ixc-webservice-tools.js'
       - '.github/workflows/ixc-voip-readonly.yml'
   workflow_dispatch:
@@ -27,4 +28,4 @@ jobs:
           node --check mcp/integrations/ixc-voip-tools.js
           node --check mcp/integrations/ixc-webservice-tools.js
       - name: Unit tests
-        run: node --test mcp/integrations/ixc-voip-tools.test.js
+        run: node --test mcp/integrations/ixc-voip-tools.test.js mcp/test/ixc-voip-list-contracts.test.js
