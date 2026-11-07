@@ -92,7 +92,102 @@ export async function queryVoipContract(client, contractId) {
   };
 }
 
+
+const MAX_VOIP_CONTRACTS = 200;
+function optionalId(value, label) {
+  if (value === null || value === undefined || value === '') return null;
+  return id(value, label);
+}
+function clientName(row) {
+  // IXC customer name is usually 'razao'. Never infer from another record.
+  for (const key of ['razao', 'nome']) {
+    if (typeof row[key] === 'string') {
+      const value = row[key].trim();
+      if (value && value.length <= 250 && !/[\\x00-\\x1f]/.test(value)) return value;
+    }
+  }
+  return null;
+}
+
+/**
+ * Read-only snapshot of all associations to product 74.
+ * No binding, stock mutations or automatic release is performed.
+ * Client fields may vary between IXC versions: missing name is a
+ * verifiable pending field, not a fabricated match.
+ */
+export async function listVoipProductContracts(client) {
+  if (!client || typeof client.list !== 'function') throw new TypeError('Cliente IXC invalido');
+  const productRows = await readAll(client, 'produtos_contrato', [
+    { field: 'id_produto', oper: '=', value: '74' },
+  ]);
+  const grouped = new Map();
+  for (const row of productRows) {
+    if (id(row.id_produto, 'Produto retornado') !== '74') throw new Error('Filtro do produto ignorado');
+    const contractId = id(row.id_contrato, 'Contrato do produto');
+    const recordId = id(row.id, 'Registro de produto');
+    if (!grouped.has(contractId)) grouped.set(contractId, []);
+    grouped.get(contractId).push(recordId);
+  }
+  if (grouped.size > MAX_VOIP_CONTRACTS) throw new Error('Limite de contratos excedido');
+  const contracts = [];
+  for (const [contractId, recordIds] of grouped) {
+    const contractRows = await readAll(client, 'contrato', [
+      { field: 'id', oper: '=', value: contractId },
+    ]);
+    if (contractRows.length !== 1 || id(contractRows[0].id, 'Contrato retornado') !== contractId) {
+      throw new Error('Contrato IXC nao encontrado ou divergente');
+    }
+    const contract = contractRows[0];
+    if (typeof contract.status !== 'string' || !contract.status.trim() || contract.status.length > 40) {
+      throw new Error('Status de contrato sem validacao');
+    }
+    const customerId = optionalId(contract.id_cliente, 'Cliente do contrato');
+    let customer = null;
+    if (customerId) {
+      const customerRows = await readAll(client, 'cliente', [
+        { field: 'id', oper: '=', value: customerId },
+      ]);
+      if (customerRows.length !== 1 || id(customerRows[0].id, 'Cliente retornado') !== customerId) {
+        throw new Error('Cliente IXC nao encontrado ou divergente');
+      }
+      customer = clientName(customerRows[0]);
+    }
+    contracts.push({
+      contrato_id: contractId,
+      id_cliente: customerId,
+      nome_cliente: customer,
+      titular_validado: customer !== null,
+      status_ixc_bruto: contract.status,
+      status_validado: false,
+      registros_produto_74: recordIds.sort((a,b) => Number(a)-Number(b)),
+    });
+  }
+  contracts.sort((a,b) => Number(a.contrato_id)-Number(b.contrato_id));
+  return {
+    produto_id: '74',
+    total_registros_produto: productRows.length,
+    total_contratos: contracts.length,
+    contratos: contracts,
+    somente_leitura: true,
+    conciliacao_confirmada: false,
+    liberacao_automatica: false,
+    observacao: 'Nomes e codigos de status exigem validacao na instalacao IXC; nao usar coincidencia de nome para liberar DID.',
+  };
+}
+
 export function registerIxcVoipTools(mcp, client) {
+  mcp.registerTool('ixc_voip_listar_contratos_produto74', {
+    description: 'Lista todos os contratos com produto 74, status bruto, IDs e titular quando disponivel no cadastro IXC. Somente leitura; nao altera ou libera numeros. Restrito ao mesmo escopo OAuth IXC.',
+    inputSchema: {},
+  }, async () => {
+    try {
+      const result = await listVoipProductContracts(client);
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+    } catch {
+      return { isError: true, content: [{ type: 'text', text:
+        'Consulta IXC incompleta ou indisponivel. Nenhum numero foi alterado.' }] };
+    }
+  });
   mcp.registerTool('ixc_voip_consultar_contrato', {
     description: 'Consulta por ID um contrato e seus registros do produto 74 no IXC. Somente leitura, sem titular e sem autorizar vinculo automatico. Requer as mesmas permissoes IXC do MCP atual.',
     inputSchema: {
