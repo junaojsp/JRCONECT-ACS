@@ -7,16 +7,43 @@ if (PHP_SAPI!=='cli' || !function_exists('posix_geteuid') || posix_geteuid()!==0
 require_once '/var/www/gacs/lib/voip-stock.php';
 require_once '/var/www/gacs/lib/voip-auto-assign.php';
 require_once '/var/www/gacs/lib/voip-ixc-monitor.php';
+require_once '/var/www/gacs/lib/voip-reconcile.php';
 require_once __DIR__.'/lib/voip-ixc-reservation-reader.php';
 require_once __DIR__.'/lib/voip-automatic-reservation.php';
 try {
-    if (count($argv)!==1) throw new RuntimeException('Sem parametros.');
+    if (count($argv)>2 || (count($argv)===2 && !in_array($argv[1],['--monitor','--check-monitor'],true)))
+        throw new RuntimeException('Parametro invalido.');
     $lock=fopen('/run/lock/jrconect-voip-auto-reserve.lock','c');
     if (!$lock || !flock($lock,LOCK_EX|LOCK_NB))
         throw new RuntimeException('Reserva automatica ja em execucao.');
-    $monitor=VoipIxcMonitor::read();
-    if ($monitor===null) throw new RuntimeException('Monitor IXC nao configurado.');
     $reader=new VoipIxcReservationReader();
+    if (($argv[1]??'')==='--check-monitor') {
+        $start=microtime(true);
+        $snapshot=$reader->snapshot();
+        $validated=VoipIxcMonitor::consume(json_encode($snapshot,JSON_THROW_ON_ERROR),null,gmdate('c'));
+        echo 'CONSULTA OK: contratos='.count($validated['contracts']).
+            ' duracao_s='.round(microtime(true)-$start,2).' (sem gravacao local ou IXC)'.PHP_EOL;
+        exit(0);
+    }
+    if (($argv[1]??'')==='--monitor') {
+        $start=microtime(true);
+        try {
+            $snapshot=$reader->snapshot();
+            $monitor=VoipIxcMonitor::ingest(json_encode($snapshot,JSON_THROW_ON_ERROR));
+        } catch (Throwable $error) {
+            // Reader diagnostics contain only fixed resource names/page/reason.
+            $message=$error->getMessage();
+            if (preg_match('/^IXC GET (cliente_contrato|vd_contratos_produtos) pagina=[0-9]+ (timeout|http_ou_transporte)$/D',$message))
+                fwrite(STDERR,$message.PHP_EOL);
+            fwrite(STDERR,"MONITOR FALHOU: snapshot incompleto; estado anterior preservado; reserva nao iniciada.\n");
+            exit(2);
+        }
+        echo 'MONITOR OK: contratos='.count($monitor['contracts']).
+            ' duracao_s='.round(microtime(true)-$start,2).PHP_EOL;
+    } else {
+        $monitor=VoipIxcMonitor::read();
+    }
+    if ($monitor===null) throw new RuntimeException('Monitor IXC nao configurado.');
     $stock=new VoipStock();
     $result=VoipAutomaticReservation::process(
         $monitor,$stock,
@@ -24,6 +51,7 @@ try {
             $reader->readFresh($contractId,$productId)
     );
     echo json_encode($result,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE),PHP_EOL;
+    if ($result['falhas']>0) exit(2);
 } catch (Throwable $error) {
     fwrite(STDERR,"BLOQUEADO: reserva automatica nao concluiu; nao houve escrita IXC.\n");
     exit(2);

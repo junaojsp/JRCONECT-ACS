@@ -24,6 +24,7 @@ on:
       - 'lib/voip-automatic-reservation.php'
       - 'scripts/voip-auto-reserve.php'
       - 'tests/voip-auto-reservation.test.php'
+      - 'tests/voip-ixc-reservation-reader.test.php'
       - 'lib/voip-ixc-controlled-writer.php'
       - 'lib/voip-reserved-recovery.php'
       - 'scripts/voip-ixc-recover-4740.php'
@@ -110,6 +111,7 @@ jobs:
           php tests/voip-stock-batch-available.test.php
           php tests/voip-auto-assign.test.php
           php tests/voip-auto-reservation.test.php
+          php tests/voip-ixc-reservation-reader.test.php
           php tests/voip-ixc-controlled-writer.test.php
           php tests/voip-reserved-recovery.test.php
           php tests/voip-finalize-110.test.php
