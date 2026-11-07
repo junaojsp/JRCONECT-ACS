@@ -9,6 +9,7 @@ requireLogin();
 require_once __DIR__ . '/lib/voip-stock.php';
 require_once __DIR__ . '/lib/voip-reconcile.php';
 require_once __DIR__ . '/lib/voip-operational.php';
+require_once __DIR__ . '/lib/voip-link-prefill.php';
 header('Cache-Control: no-store, private');
 if (empty($_SESSION['voip_csrf'])) $_SESSION['voip_csrf'] = bin2hex(random_bytes(32));
 $voipError = '';
@@ -74,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 try { $voipData = $voipStore->read(); } catch (Throwable $e) { $voipError = 'Estoque indisponível. Verifique a instalação antes de importar.'; }
 $voipRows = array_values($voipData['numbers'] ?? []);
+$voipStockByNumber = $voipData['numbers'] ?? [];
 if ($voipSnapshotInput !== null && $voipData !== null) {
     try {
         $voipComparison = VoipReconcile::compare(
@@ -223,6 +225,9 @@ include __DIR__ . '/views/layouts/header.php';
 .voip-page #voip-vinculos label{color:#d8dde5;font-size:14px}
 .voip-page #voip-vinculos label:has(input[type=checkbox]){display:flex;gap:10px;align-items:flex-start}
 .voip-page #voip-vinculos button{justify-self:start}
+.voip-page .voip-use-suggestion{font-size:12px;padding:8px 10px;white-space:nowrap;background:#27533c;border:1px solid #39845d}
+.voip-page .voip-use-suggestion:hover{background:#316b4d}
+.voip-page #voip-prefill-notice[hidden]{display:none}
 </style>
 <section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
@@ -373,7 +378,7 @@ include __DIR__ . '/views/layouts/header.php';
             Códigos de status IXC não foram classificados; nenhuma baixa VoiceCopy foi confirmada.</p>
             <div class="voip-table-wrap">
                 <table class="voip-table">
-                    <thead><tr><th>Contrato</th><th>Titular IXC</th><th>Status IXC bruto</th><th>Número(s) sugerido(s)</th><th>Conferência</th></tr></thead>
+                    <thead><tr><th>Contrato</th><th>Titular IXC</th><th>Status IXC bruto</th><th>Número(s) sugerido(s)</th><th>Conferência</th><th>Vinculação</th></tr></thead>
                     <tbody>
                     <?php foreach ($voipComparison['rows'] as $match): ?>
                         <tr>
@@ -386,9 +391,22 @@ include __DIR__ . '/views/layouts/header.php';
                                     'sem_correspondencia' => 'Não localizado no estoque', 'sem_nome' => 'Titular ausente'];
                                 echo voipEscape($labels[$match['classification']] ?? 'Revisar');
                             ?></td>
+                            <td>
+                                <?php $voipPrefill = VoipLinkPrefill::suggest($match, $voipStockByNumber); ?>
+                                <?php if ($voipPrefill !== null): ?>
+                                    <button type="button" class="voip-use-suggestion"
+                                        data-number="<?= voipEscape($voipPrefill['number']) ?>"
+                                        data-contract="<?= voipEscape($voipPrefill['contract_id']) ?>"
+                                        data-product="<?= voipEscape($voipPrefill['product_record_id']) ?>">
+                                        Preparar vínculo
+                                    </button>
+                                <?php else: ?>
+                                    <span class="voip-muted">Conferir manualmente</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if (!$voipComparison['rows']): ?><tr><td colspan="5">Nenhum contrato do produto 74 retornado.</td></tr><?php endif; ?>
+                    <?php if (!$voipComparison['rows']): ?><tr><td colspan="6">Nenhum contrato do produto 74 retornado.</td></tr><?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -421,6 +439,7 @@ include __DIR__ . '/views/layouts/header.php';
         </form>
         <div class="voip-subtitle">Confirmar vínculo manual</div>
         <p>Preencha somente após verificar o ID exato do contrato, o registro do produto 74 e o número telefônico. Não confirma status ou propriedade junto ao IXC automaticamente.</p>
+        <div id="voip-prefill-notice" class="voip-note" role="status" hidden>Campos preparados a partir da conciliação. Confira os dados na VoiceCopy e no IXC antes de confirmar o vínculo.</div>
         <form method="post" action="/voip-central.php#voip-vinculos" autocomplete="off">
             <input type="hidden" name="csrf" value="<?= voipEscape($_SESSION['voip_csrf']) ?>">
             <input type="hidden" name="voip_action" value="link_manual">
@@ -484,4 +503,28 @@ include __DIR__ . '/views/layouts/header.php';
         </tbody></table></div>
     </details>
 </section>
+<script>
+(() => {
+  'use strict';
+  const section = document.getElementById('voip-vinculos');
+  if (!section) return;
+  const number = section.querySelector('#voip-link-number');
+  const contract = section.querySelector('#voip-link-contract');
+  const product = section.querySelector('#voip-link-product');
+  const confirm = section.querySelector('input[name="checked_ixc_voicecopy"]');
+  const notice = section.querySelector('#voip-prefill-notice');
+  document.querySelectorAll('.voip-use-suggestion').forEach(button => {
+    button.addEventListener('click', () => {
+      if (!number || !contract || !product || !confirm) return;
+      number.value = button.dataset.number || '';
+      contract.value = button.dataset.contract || '';
+      product.value = button.dataset.product || '';
+      confirm.checked = false;
+      if (notice) notice.hidden = false;
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      contract.focus({ preventScroll: true });
+    });
+  });
+})();
+</script>
 <?php include __DIR__ . '/views/layouts/footer.php'; ?>
