@@ -62,7 +62,7 @@ if ($src === false) exit(2);
 if (strpos($src, 'href="/voip-central.php"') !== false) {
     $result = $src; // idempotente
 } else {
-    $needle = '~(?=^[ \t]*<li>[ \t]*\R[ \t]*\R[ \t]*<a[ \t]*\R[ \t]*href="/configuration\.php")~m';
+    $needle = '~(?=^[ \\t]*<li>\\s*<a\\s+href="/configuration\\.php")~m';
     $new = <<<'HTML'
             <li>
                 <a
@@ -77,6 +77,11 @@ if (strpos($src, 'href="/voip-central.php"') !== false) {
 
 
 HTML;
+    // Exige um unico destino; nao depende de quebras de linha do header.
+    if (preg_match_all($needle, $src) !== 1) {
+        fwrite(STDERR, "Menu de configuracao ausente ou ambiguo; abortando sem alterar producao\n");
+        exit(3);
+    }
     $result = preg_replace($needle, $new, $src, 1, $n);
     if ($result === null || $n !== 1) {
         fwrite(STDERR, "Ponto de insercao do menu nao encontrado; abortando sem alterar producao\n");
