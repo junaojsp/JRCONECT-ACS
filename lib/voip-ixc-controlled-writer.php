@@ -37,7 +37,7 @@ final class VoipIxcControlledWriter
     {
         if (!in_array($resource, ['cliente_contrato', 'vd_contratos_produtos'], true) ||
             !in_array($method, ['GET','PUT'], true) ||
-            ($method==='PUT' && ($resource!=='cliente_contrato' || $id!=='4740'))) {
+            ($method==='PUT' && $resource!=='cliente_contrato')) {
             throw new RuntimeException('Rota de escrita IXC nao autorizada.');
         }
         if ($id !== null && !preg_match('/^[0-9]{1,12}$/D',$id)) throw new RuntimeException('ID invalido');
@@ -135,9 +135,31 @@ final class VoipIxcControlledWriter
         return ['contract'=>$contract,'product_rows'=>[$product]];
     }
 
+    /** Generic read-only contract/product pair for the approved automatic flow. */
+    public function readFreshPair(string $contractId, string $productRecordId): array
+    {
+        if (!preg_match('/^[0-9]{1,12}$/D', $contractId) ||
+            !preg_match('/^[0-9]{1,12}$/D', $productRecordId)) {
+            throw new RuntimeException('IDs invalidos.');
+        }
+        $contract=$this->exact('cliente_contrato',$contractId);
+        $product=$this->exact('vd_contratos_produtos',$productRecordId);
+        if ((string)($product['id_contrato']??'')!==$contractId ||
+            (string)($product['id_produto']??'')!=='74' ||
+            ($contract['status']??null)!=='A') {
+            throw new RuntimeException('Contrato ou produto 74 divergente.');
+        }
+        return ['contract'=>$contract,'product_rows'=>[$product]];
+    }
+
     public static function payload(array $contract,string $previous,string $next): array
     {
-        if ((string)($contract['id']??'')!=='4740' ||
+        return self::payloadForContract($contract,'4740',$previous,$next);
+    }
+
+    public static function payloadForContract(array $contract,string $contractId,string $previous,string $next): array
+    {
+        if ((string)($contract['id']??'')!==$contractId ||
             ($contract['status']??null)!=='A' ||
             ($contract['obs_contrato']??null)!==$previous ||
             substr_count($previous,'#JRC_VOIP_SOLICITAR#')!==1 ||
@@ -151,12 +173,12 @@ final class VoipIxcControlledWriter
             'obs_contrato','alerta_contrato'];
         foreach ($required as $key) if (!array_key_exists($key,$contract))
             throw new RuntimeException('Campo exigido IXC ausente.');
-        if (!preg_match('/JRC_VOIP_CONTRATO=4740;DID=(11[0-9]{8})/', $next, $matched)) {
+        if (!preg_match('/JRC_VOIP_CONTRATO='.preg_quote($contractId,'/').';DID=(11[0-9]{8})/', $next, $matched)) {
             throw new RuntimeException('Nova observacao sem DID valido.');
         }
         $expected = str_replace(
             '#JRC_VOIP_SOLICITAR#',
-            'JRC_VOIP_CONTRATO=4740;DID='.$matched[1],
+            'JRC_VOIP_CONTRATO='.$contractId.';DID='.$matched[1],
             $previous
         );
         if ($next !== $expected) {
@@ -177,8 +199,12 @@ final class VoipIxcControlledWriter
 
     public function writeObservation(string $id,string $previous,string $next, ?array $baseline = null): void
     {
-        if ($id!=='4740') throw new RuntimeException('Escrita fora do contrato piloto.');
-        $before=$this->readFresh($id);
+        $this->writeObservationPair($id,'571',$previous,$next,$baseline);
+    }
+
+    public function writeObservationPair(string $id,string $productRecordId,string $previous,string $next, ?array $baseline = null): void
+    {
+        $before=$this->readFreshPair($id,$productRecordId);
         $contract=$before['contract'];
         if ($baseline !== null) {
             $expected=$baseline;
@@ -188,11 +214,11 @@ final class VoipIxcControlledWriter
                 throw new RuntimeException('Contrato divergente do backup: PUT bloqueado.');
             }
         }
-        $payload=self::payload($contract,$previous,$next);
+        $payload=self::payloadForContract($contract,$id,$previous,$next);
         // Full record PUT: no guessed defaults, no partial patch.
         // The caller has already reserved the DID and handles ambiguous errors.
         $this->request('PUT','cliente_contrato',$id,$payload);
-        $after=$this->readFresh($id);
+        $after=$this->readFreshPair($id,$productRecordId);
         foreach ($contract as $field=>$value) {
             if ($field==='obs_contrato') continue;
             if (!array_key_exists($field,$after['contract']) ||
