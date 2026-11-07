@@ -29,7 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 try { $voipData = $voipStore->read(); } catch (Throwable $e) { $voipError = 'Estoque indisponível. Verifique a instalação antes de importar.'; }
 $voipRows = array_values($voipData['numbers'] ?? []);
 $voipOccupied = count(array_filter($voipRows, static fn($r) => $r['status'] === 'ocupado'));
-$voipReview = count($voipRows) - $voipOccupied;
+$voipReview = count(array_filter($voipRows, static fn($r) => $r['status'] === 'a_conferir'));
+// Reservado para uma etapa futura: somente liberações confirmadas podem ser disponíveis.
+$voipAvailable = count(array_filter($voipRows, static fn($r) => $r['status'] === 'disponivel'));
+$voipOther = count($voipRows) - $voipOccupied - $voipReview - $voipAvailable;
 $voipFlash = $_SESSION['voip_flash'] ?? '';
 unset($_SESSION['voip_flash']);
 function voipEscape($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -138,6 +141,21 @@ include __DIR__ . '/views/layouts/header.php';
 @media(max-width:1500px){.voip-page .voip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.voip-page .voip-heading{align-items:flex-start}.voip-page .voip-workflow{grid-template-columns:1fr}.voip-page .voip-grid{gap:12px}.voip-page .voip-section-head{display:flex;flex-direction:column;align-items:flex-start}}
 @media(max-width:640px){.main-content .content-wrapper:has(> .voip-page){padding:10px}.voip-page .voip-grid{grid-template-columns:minmax(0,1fr)}.voip-page .voip-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.voip-page .voip-nav a{min-width:0}.voip-page .voip-heading h2{font-size:22px}.voip-page .voip-card{padding:15px}.voip-page table.voip-table{min-width:600px}.voip-page .voip-empty-state{align-items:flex-start}.voip-page .voip-tag{max-width:100%;white-space:normal}}
+
+/* Sinalização de ocupação: independente dos estilos de tabela do ACS. */
+.voip-page .voip-stock-summary{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 18px}
+.voip-page .voip-stock-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid #3a414a;color:#cbd5df;background:#1a1f25;font-size:12px}
+.voip-page .voip-stock-chip strong{font-variant-numeric:tabular-nums;font-size:14px}
+.voip-page .voip-stock-chip i{font-size:8px}
+.voip-page .voip-stock-chip--occupied{color:#ff9c9c;border-color:#673036;background:#281a1d}
+.voip-page .voip-stock-chip--available{color:#80dbae;border-color:#285840;background:#13271f}
+.voip-page .voip-stock-chip--review{color:#f2ca7b;border-color:#68502d;background:#282219}
+.voip-page .voip-status{display:inline-flex;align-items:center;gap:8px;padding:5px 9px;border-radius:6px;font-size:11px;font-weight:700}
+.voip-page .voip-status i{font-size:7px}
+.voip-page .voip-status--occupied{color:#ffa0a0;border:1px solid #81363d;background:#331c21}
+.voip-page .voip-status--available{color:#86e0b1;border:1px solid #246845;background:#173726}
+.voip-page .voip-status--review{color:#f4cb83;border:1px solid #64502d;background:#2b2419}
+@media(max-width:640px){.voip-page .voip-stock-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.voip-page .voip-stock-chip{justify-content:space-between}}
 </style>
 <section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
@@ -169,7 +187,7 @@ include __DIR__ . '/views/layouts/header.php';
             <div class="voip-kpi-heading"><span>Estoque VoiceCopy</span><i class="bi bi-sim" aria-hidden="true"></i></div>
             <div class="voip-number"><?= $voipData === null ? '—' : count($voipRows) ?></div>
             <p>Números cadastrados no estoque</p>
-            <small class="voip-kpi-foot"><?= $voipData === null ? 'Armazenamento indisponível' : $voipOccupied . ' ocupados · ' . $voipReview . ' a conferir' ?></small>
+            <small class="voip-kpi-foot"><?= $voipData === null ? 'Armazenamento indisponível' : $voipOccupied . ' ocupados · ' . $voipReview . ' a conferir · ' . $voipAvailable . ' disponíveis' ?></small>
         </section>
         <section class="voip-card voip-kpi">
             <div class="voip-kpi-heading"><span>Números vinculados</span><i class="bi bi-link-45deg" aria-hidden="true"></i></div>
@@ -195,6 +213,11 @@ include __DIR__ . '/views/layouts/header.php';
         <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-sim me-2" aria-hidden="true"></i>Estoque VoiceCopy</h3>
         <p>Números informados pela equipe, ainda sem validação dos contratos pelo IXC.</p></div><span class="voip-state">Importação manual</span></div>
 
+        <div class="voip-stock-summary" aria-label="Situação dos números">
+            <span class="voip-stock-chip voip-stock-chip--occupied"><i class="bi bi-circle-fill" aria-hidden="true"></i> Ocupados <strong><?= $voipData === null ? '—' : $voipOccupied ?></strong></span>
+            <span class="voip-stock-chip voip-stock-chip--available"><i class="bi bi-circle-fill" aria-hidden="true"></i> Disponíveis <strong><?= $voipData === null ? '—' : $voipAvailable ?></strong></span>
+            <span class="voip-stock-chip voip-stock-chip--review"><i class="bi bi-circle-fill" aria-hidden="true"></i> A conferir <strong><?= $voipData === null ? '—' : $voipReview ?></strong></span>
+        </div>
         <div class="voip-subtitle">Números e titulares</div>
         <p>Ocupação informada pela equipe. A validação dos contratos e do produto 74 será feita na próxima etapa.</p>
         <div class="voip-table-wrap">
@@ -205,7 +228,11 @@ include __DIR__ . '/views/layouts/header.php';
             <tr>
                 <td class="voip-phone"><?= voipEscape('('.substr($row['number'],0,2).') '.substr($row['number'],2,4).'-'.substr($row['number'],6)) ?></td>
                 <td><?= voipEscape($row['holder'] ?: 'Não informado') ?></td>
-                <td><span class="voip-status"><?= $row['status'] === 'ocupado' ? 'Ocupado' : 'A conferir' ?></span></td>
+                <td><?php
+                    $status = $row['status'] ?? 'a_conferir';
+                    $stateClass = $status === 'ocupado' ? 'occupied' : ($status === 'disponivel' ? 'available' : 'review');
+                    $stateLabel = $status === 'ocupado' ? 'Ocupado' : ($status === 'disponivel' ? 'Disponível' : 'A conferir');
+                ?><span class="voip-status voip-status--<?= $stateClass ?>"><i class="bi bi-circle-fill" aria-hidden="true"></i> <?= voipEscape($stateLabel) ?></span></td>
                 <td>Pendente de vinculação</td>
             </tr>
             <?php endforeach; ?>
