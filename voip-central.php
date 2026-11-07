@@ -11,33 +11,38 @@ $currentPage = 'voip-central';
 include __DIR__ . '/views/layouts/header.php';
 ?>
 <style>
-.voip-page{color:#dcebf3;max-width:1360px;margin:auto}
-.voip-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
-.voip-heading h2{font-size:22px;font-weight:700;margin:0 0 6px}
-.voip-muted{color:#87a0b1;font-size:13px}
-.voip-tag{border:1px solid rgba(56,189,248,.28);background:rgba(56,189,248,.08);color:#7dd3fc;border-radius:24px;padding:7px 12px;font-size:12px;font-weight:600}
-.voip-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 18px}
-.voip-card{background:linear-gradient(145deg,rgba(11,27,41,.98),rgba(6,17,28,.98));border:1px solid rgba(106,159,187,.17);border-radius:13px;padding:18px}
-.voip-card i{color:#35c5e4;font-size:20px}
-.voip-card h3{font-size:13px;font-weight:700;margin:14px 0 5px}
-.voip-card p{font-size:12px;color:#8da7b7;line-height:1.6;margin:0}
-.voip-number{font-size:27px;font-weight:700;margin-top:13px}
-.voip-section-title{font-size:16px;font-weight:700;margin:4px 0 15px}
-.voip-workflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.voip-step{display:flex;align-items:flex-start;gap:10px}
-.voip-step strong{display:block;color:#e7f4fa;font-size:13px;margin-bottom:5px}
-.voip-step span{font-size:12px;color:#8da7b7;line-height:1.6}
-.voip-step-icon{display:flex;align-items:center;justify-content:center;flex:none;background:rgba(53,197,228,.12);border-radius:9px;width:35px;height:35px}
-.voip-note{border-left:3px solid #35c5e4;background:rgba(53,197,228,.05);border-radius:5px;padding:15px 17px;color:#9db7c7;font-size:13px;line-height:1.6;margin-top:20px}
-.voip-empty{margin-top:16px;color:#8da7b7;font-size:13px}
-@media(max-width:1080px){.voip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.voip-workflow{grid-template-columns:1fr}}
-@media(max-width:560px){.voip-grid{grid-template-columns:1fr}}
+/* Estilos restritos a esta pagina; o layout global do ACS permanece intacto. */
+.voip-page{display:block;width:100%;max-width:none;margin:0;padding:8px 0 24px;background:transparent;color:#f1f3f5;font-size:16px;line-height:1.6}
+.voip-page *{box-sizing:border-box}
+.voip-page .voip-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 28px;flex-wrap:wrap}
+.voip-page .voip-heading h2{color:#f5f6f7;font-size:28px;font-weight:700;line-height:1.25;margin:0 0 8px}
+.voip-page .voip-muted{color:#a6adb8;font-size:16px;margin:0}
+.voip-page .voip-tag{display:inline-flex;align-items:center;gap:8px;border:1px solid #4a3923;background:#251f17;color:#e9c080;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:600;white-space:nowrap}
+.voip-page .voip-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin:0 0 28px}
+.voip-page .voip-card{min-width:0;background:#14171c;border:1px solid #2a2f37;border-radius:12px;padding:26px;box-shadow:0 4px 16px #00000012}
+.voip-page .voip-grid .voip-card{display:flex;flex-direction:column;border-top:3px solid #d72a2a}
+.voip-page .voip-card>i{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:#2c1a1e;color:#ff9393;font-size:22px}
+.voip-page .voip-card h3{color:#f1f3f5;font-size:18px;font-weight:650;line-height:1.4;margin:18px 0 8px}
+.voip-page .voip-card p{font-size:15px;color:#a6adb8;line-height:1.65;margin:0}
+.voip-page .voip-number{font-size:36px;font-weight:650;line-height:1;margin:24px 0 12px;color:#d8dde5}
+.voip-page .voip-grid .voip-card p:last-child{margin-top:auto;padding-top:16px;border-top:1px solid #2a2f37;font-size:14px;color:#969faa}
+.voip-page .voip-card .voip-section-title{font-size:20px;margin:0 0 24px}
+.voip-page .voip-workflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.voip-page .voip-step{display:flex;align-items:flex-start;gap:14px;min-width:0}
+.voip-page .voip-step strong{display:block;color:#e9edf1;font-size:16px;margin-bottom:6px}
+.voip-page .voip-step span{font-size:15px;color:#a6adb8;line-height:1.65}
+.voip-page .voip-step-icon{display:grid;place-items:center;flex:none;background:#22262e;border:1px solid #343b46;border-radius:10px;width:44px;height:44px}
+.voip-page .voip-step-icon i{color:#c3cbd6;font-size:20px}
+.voip-page .voip-note{display:flex;align-items:center;gap:10px;border:1px solid #2a2f37;background:#111419;border-radius:10px;padding:16px 20px;color:#a6adb8;font-size:14px;line-height:1.65;margin-top:24px}
+.voip-page .voip-note i{color:#b4bdca;flex:none}
+@media(max-width:1200px){.voip-page .voip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.voip-page .voip-workflow{grid-template-columns:1fr;gap:22px}}
+@media(max-width:600px){.voip-page .voip-grid{grid-template-columns:1fr;gap:16px}.voip-page .voip-card{padding:22px}.voip-page .voip-heading h2{font-size:24px}.voip-page .voip-heading{gap:16px}.voip-page .voip-note{align-items:flex-start}}
 </style>
-<main class="voip-page" aria-labelledby="voip-title">
+<section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
         <div>
             <h2 id="voip-title"><i class="bi bi-telephone me-2" aria-hidden="true"></i>Central VoIP</h2>
-            <p class="voip-muted mb-0">Gestão de números VoiceCopy vinculados aos contratos IXC com produto 74.</p>
+            <p class="voip-muted mb-0">Gerencie as linhas, os vínculos e as solicitações de telefonia.</p>
         </div>
         <span class="voip-tag"><i class="bi bi-tools me-1" aria-hidden="true"></i> Em preparação</span>
     </div>
@@ -89,13 +94,11 @@ include __DIR__ . '/views/layouts/header.php';
                 <div><strong>3. Vínculo supervisionado</strong><span>A equipe escolherá um DID e confirmará a ativação na VoiceCopy.</span></div>
             </div>
         </div>
-        <p class="voip-empty mb-0">Histórico, alertas reais e ações de estoque serão liberados após validação da integração e do banco isolado.</p>
     </section>
 
     <div class="voip-note" role="status">
-        <i class="bi bi-shield-check me-2" aria-hidden="true"></i>
-        <strong>Ambiente protegido:</strong> esta é somente a estrutura visual inicial.
-        Nenhum contrato, número, banco de dados, servidor MCP, equipamento ACS ou serviço VoiceCopy é alterado por esta página.
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <span>Central em preparação. Os indicadores e as operações serão disponibilizados após a integração dos dados.</span>
     </div>
-</main>
+</section>
 <?php include __DIR__ . '/views/layouts/footer.php'; ?>
