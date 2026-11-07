@@ -194,11 +194,13 @@ final class VoipIxcControlledWriter
             }
         }
         $fields['obs_contrato']=$next;
-        // IXC validates this legacy field even for active contracts. The
-        // read API may decode the sentinel 0 as an integer, while the PUT
-        // endpoint expects the value as a string ("0" = no cancellation).
-        if (array_key_exists('motivo_cancelamento', $fields)) {
-            $fields['motivo_cancelamento']=(string)$fields['motivo_cancelamento'];
+        // IXC's PUT contract schema expects cancellation fields as empty
+        // strings for an active contract. The read API may expose sentinels
+        // such as 0 or 0000-00-00, which the PUT validator rejects as an
+        // attempted cancellation without a reason.
+        foreach (['id_responsavel_cancelamento','motivo_cancelamento',
+                  'obs_cancelamento','data_cancelamento'] as $key) {
+            $fields[$key]='';
         }
         return $fields;
     }
@@ -228,10 +230,7 @@ final class VoipIxcControlledWriter
         foreach ($contract as $field=>$value) {
             if ($field==='obs_contrato') continue;
             if (!array_key_exists($field,$after['contract']) ||
-                (($field==='motivo_cancelamento'
-                    ? (string)$after['contract'][$field]
-                    : $after['contract'][$field]) !==
-                 ($field==='motivo_cancelamento' ? (string)$value : $value))) {
+                $after['contract'][$field]!==$value) {
                 throw new RuntimeException('Campo de contrato alterado inesperadamente pelo PUT.');
             }
         }
