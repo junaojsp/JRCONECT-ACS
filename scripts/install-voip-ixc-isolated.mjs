@@ -78,13 +78,14 @@ function main() {
     const m = JSON.parse(readFileSync(manifest, 'utf8'));
     if (m.path !== TARGET || m.module !== MODULE || typeof m.appliedHash !== 'string') fail('manifest invalido');
     if (hash(readFileSync(TARGET)) !== m.appliedHash) fail('arquivo foi alterado depois do deploy; rollback manual');
-    const previous = readFileSync(old, 'utf8');
-    atomicReplace(TARGET, previous, targetStat);
-    if (m.moduleWasAbsent === true && existsSync(MODULE)) {
-      const moduleContent = readFileSync(MODULE);
-      if (hash(moduleContent) !== m.moduleHash) fail('modulo alterado; remocao exige revisao');
-      rmSync(MODULE);
+    if (m.moduleWasAbsent === true && existsSync(MODULE) &&
+        hash(readFileSync(MODULE)) !== m.moduleHash) {
+      fail('modulo alterado; remocao exige revisao');
     }
+    const previous = readFileSync(old, 'utf8');
+    if (hash(previous) !== m.originalHash) fail('backup inconsistente');
+    atomicReplace(TARGET, previous, targetStat);
+    if (m.moduleWasAbsent === true && existsSync(MODULE)) rmSync(MODULE);
     console.log('ROLLBACK DOS ARQUIVOS concluido; processo/container NAO reiniciado.');
     return;
   }
