@@ -1,0 +1,18 @@
+name: Central VoIP menu regression
+on:
+  pull_request:
+    paths:
+      - 'scripts/deploy-central-voip.sh'
+      - 'scripts/test-central-voip-menu.py'
+      - '.github/workflows/central-voip-menu.yml'
+permissions:
+  contents: read
+jobs:
+  menu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check installer syntax
+        run: bash -n scripts/deploy-central-voip.sh
+      - name: Test actual PHP menu patcher
+        run: python3 scripts/test-central-voip-menu.py
