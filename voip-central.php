@@ -8,6 +8,7 @@ requireLogin();
 
 require_once __DIR__ . '/lib/voip-stock.php';
 require_once __DIR__ . '/lib/voip-reconcile.php';
+require_once __DIR__ . '/lib/voip-operational.php';
 header('Cache-Control: no-store, private');
 if (empty($_SESSION['voip_csrf'])) $_SESSION['voip_csrf'] = bin2hex(random_bytes(32));
 $voipError = '';
@@ -15,6 +16,7 @@ $voipData = null;
 $voipStore = new VoipStock();
 $voipSnapshotInput = null;
 $voipComparison = null;
+$voipOperational = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $received = $_POST['csrf'] ?? null;
@@ -45,6 +47,7 @@ if ($voipSnapshotInput !== null && $voipData !== null) {
             $voipRows,
             VoipReconcile::parseSnapshot($voipSnapshotInput)
         );
+        $voipOperational = VoipOperational::summarize($voipRows, $voipComparison);
     } catch (Throwable $e) {
         $voipError = $e->getMessage();
     }
@@ -292,6 +295,33 @@ include __DIR__ . '/views/layouts/header.php';
             <button type="submit" <?= $voipData === null ? 'disabled' : '' ?>>Comparar com estoque</button>
         </form>
         <?php if ($voipComparison !== null): ?>
+            <?php if ($voipOperational !== null): ?>
+                <div class="voip-stock-summary" aria-label="Análise operacional com dados IXC">
+                    <span class="voip-stock-chip voip-stock-chip--occupied">Ocupados no estoque <strong><?= $voipOperational['stock']['ocupado'] ?></strong></span>
+                    <span class="voip-stock-chip voip-stock-chip--review">Sugestões únicas <strong><?= $voipOperational['suggested_unique'] ?></strong></span>
+                    <span class="voip-stock-chip voip-stock-chip--review">Ocupados sem sugestão <strong><?= $voipOperational['occupied_without_suggestion'] ?></strong></span>
+                    <span class="voip-stock-chip voip-stock-chip--review">A conferir <strong><?= $voipOperational['stock']['a_conferir'] ?></strong></span>
+                    <span class="voip-stock-chip voip-stock-chip--available">Disponíveis confirmados no estoque <strong><?= $voipOperational['stock']['disponivel'] ?></strong></span>
+                </div>
+                <div class="voip-note" role="status">
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    <div>
+                        <strong>Alertas de conferência — consulta atual (não são notificações automáticas)</strong>
+                        <p>Contratos com produto 74 e status bruto A sem número sugerido:
+                        <strong><?= voipEscape($voipOperational['contracts_status_A_without_phone'] ? implode(', ', $voipOperational['contracts_status_A_without_phone']) : 'Nenhum') ?></strong>.
+                        Verificar e atribuir um DID apenas após confirmação da equipe.</p>
+                        <p>Contratos sem número sugerido (qualquer status):
+                        <strong><?= voipEscape($voipOperational['contracts_without_phone'] ? implode(', ', $voipOperational['contracts_without_phone']) : 'Nenhum') ?></strong>.
+                        Divergências e nomes duplicados requerem revisão.</p>
+                        <p>Distribuição IXC por códigos brutos:
+                        <?php foreach ($voipOperational['raw_status'] as $code => $count): ?>
+                            <span><?= voipEscape($code) ?>: <?= (int)$count ?></span>
+                        <?php endforeach; ?>
+                        </p>
+                        <p>Um novo contrato com produto 74 só poderá gerar alerta de inclusão automaticamente após existir monitoramento autenticado e referência persistente entre consultas. Nenhuma disponibilidade é inferida pela ausência de correspondência.</p>
+                    </div>
+                </div>
+            <?php endif; ?>
             <div class="voip-stock-summary" aria-label="Resumo da comparação">
                 <span class="voip-stock-chip voip-stock-chip--occupied">Correspondência única: <strong><?= $voipComparison['stats']['unica'] ?></strong></span>
                 <span class="voip-stock-chip voip-stock-chip--review">Ambíguos: <strong><?= $voipComparison['stats']['ambigua'] ?></strong></span>
