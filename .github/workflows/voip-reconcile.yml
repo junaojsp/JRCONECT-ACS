@@ -5,8 +5,10 @@ on:
       - 'voip-central.php'
       - 'lib/voip-reconcile.php'
       - 'lib/voip-operational.php'
+      - 'lib/voip-stock.php'
       - 'tests/voip-reconcile.test.php'
       - 'tests/voip-operational.test.php'
+      - 'tests/voip-stock-linking.test.php'
       - '.github/workflows/voip-reconcile.yml'
   workflow_dispatch:
 
@@ -25,10 +27,13 @@ jobs:
         run: |
           php -l lib/voip-reconcile.php
           php -l lib/voip-operational.php
+          php -l lib/voip-stock.php
           php -l voip-central.php
           php -l tests/voip-reconcile.test.php
           php -l tests/voip-operational.test.php
+          php -l tests/voip-stock-linking.test.php
       - name: Test reconciliation
         run: |
           php tests/voip-reconcile.test.php
           php tests/voip-operational.test.php
+          php tests/voip-stock-linking.test.php

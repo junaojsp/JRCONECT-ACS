@@ -66,6 +66,84 @@ final class VoipStock
 
     public function read(): array { return $this->locked(false, static fn(array $data): array => $data); }
 
+
+    private static function validId(string $value): bool
+    {
+        return preg_match('/^[0-9]{1,12}$/D', $value) === 1;
+    }
+
+    public function linkManually(string $number, string $contractId, string $productRecordId, string $actor): array
+    {
+        if (!preg_match('/^[1-9][0-9]{9}$/D', $number) ||
+            !self::validId($contractId) || !self::validId($productRecordId) ||
+            $actor === '') throw new RuntimeException('Dados de vínculo inválidos.');
+
+        return $this->locked(true, static function(array $data) use ($number, $contractId, $productRecordId, $actor): array {
+            if (!isset($data['numbers'][$number])) throw new RuntimeException('Número não cadastrado.');
+            $current = $data['numbers'][$number];
+            if (!in_array($current['status'] ?? '', ['ocupado', 'disponivel'], true)) {
+                throw new RuntimeException('Número a conferir: valide a disponibilidade na VoiceCopy antes de vincular.');
+            }
+            if (!empty($current['contract_id']) || !empty($current['product_record_id'])) {
+                throw new RuntimeException('Número já vinculado. Nenhuma alteração realizada.');
+            }
+            foreach ($data['numbers'] as $existingNumber => $existing) {
+                if ($existingNumber !== $number &&
+                    ((string)($existing['contract_id'] ?? '') === $contractId ||
+                     (string)($existing['product_record_id'] ?? '') === $productRecordId)) {
+                    throw new RuntimeException('Contrato ou registro do produto 74 já vinculado a outro número.');
+                }
+            }
+            $data['numbers'][$number]['status'] = 'ocupado';
+            $data['numbers'][$number]['contract_id'] = $contractId;
+            $data['numbers'][$number]['product_record_id'] = $productRecordId;
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'manual_link',
+                'number'=>$number, 'contract_id'=>$contractId,
+                'product_record_id'=>$productRecordId,
+                'previous_status'=>$current['status']
+            ];
+            return $data;
+        });
+    }
+
+    public function confirmAvailable(string $number, string $actor): array
+    {
+        if (!preg_match('/^[1-9][0-9]{9}$/D', $number) || $actor === '') {
+            throw new RuntimeException('Confirmação de disponibilidade inválida.');
+        }
+        return $this->locked(true, static function(array $data) use ($number, $actor): array {
+            if (!isset($data['numbers'][$number])) throw new RuntimeException('Número não cadastrado.');
+            $row = $data['numbers'][$number];
+            if ($row['status'] !== 'a_conferir' ||
+                !empty($row['contract_id']) || !empty($row['product_record_id'])) {
+                throw new RuntimeException('Somente números a conferir e sem vínculo podem ser confirmados como disponíveis.');
+            }
+            $data['numbers'][$number]['status'] = 'disponivel';
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'voicecopy_available_confirmed',
+                'number'=>$number, 'previous_status'=>$row['status']
+            ];
+            return $data;
+        });
+    }
+
+    public function setMinimum(int $minimum, string $actor): array
+    {
+        if ($minimum < 1 || $minimum > 100 || $actor === '') {
+            throw new RuntimeException('Estoque mínimo inválido (1 a 100).');
+        }
+        return $this->locked(true, static function(array $data) use ($minimum, $actor): array {
+            if (($data['minimum_available'] ?? 5) === $minimum) return $data;
+            $data['minimum_available'] = $minimum;
+            $data['audit'][] = [
+                'at'=>gmdate('c'), 'actor'=>$actor, 'action'=>'minimum_changed',
+                'minimum_available'=>$minimum
+            ];
+            return $data;
+        });
+    }
+
     public function import(string $text, string $actor): array
     {
         $rows = self::parseImport($text);
