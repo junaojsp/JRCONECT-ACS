@@ -80,35 +80,100 @@ include __DIR__ . '/views/layouts/header.php';
 .voip-page button:disabled{opacity:.5;cursor:not-allowed}
 .voip-page :is(button,textarea,summary):focus-visible{outline:2px solid #efadad;outline-offset:3px}
 .voip-page .voip-note{margin:0 0 20px}
+
+/* Navegação local, cards e blocos do layout operacional aprovado. */
+.voip-page{max-width:1540px}
+.voip-page .voip-heading{margin-bottom:19px}
+.voip-page .voip-heading h2{font-size:25px}
+.voip-page .voip-muted{font-size:13px}
+.voip-page .voip-tag{font-size:12px}
+.voip-page .voip-tag i{font-size:7px}
+.voip-page .voip-nav{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 22px;padding:8px;background:#111419;border:1px solid #2a2f37;border-radius:10px}
+.voip-page .voip-nav a{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border-radius:7px;color:#b4bfcd;text-decoration:none;font-size:12px;font-weight:600}
+.voip-page .voip-nav a:hover,.voip-page .voip-nav a:focus-visible{background:#242a33;color:#fff}
+.voip-page .voip-grid{gap:14px;margin-bottom:18px}
+.voip-page .voip-grid .voip-kpi{padding:20px;border-top:2px solid #cb2727}
+.voip-page .voip-kpi-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:#f1f3f5}
+.voip-page .voip-kpi-heading i{color:#e86767;font-size:18px}
+.voip-page .voip-kpi .voip-number{font-size:30px;margin:21px 0 9px}
+.voip-page .voip-kpi p{font-size:12px;line-height:1.5;min-height:36px}
+.voip-page .voip-kpi-foot{display:block;margin-top:16px;padding-top:12px;border-top:1px solid #2a2f37;font-size:11px;color:#8998a9}
+.voip-page .voip-section{margin-bottom:16px;padding:21px}
+.voip-page .voip-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.voip-page .voip-section-head .voip-section-title{margin:0 0 6px;font-size:17px}
+.voip-page .voip-section-head p{font-size:12px;margin:0;color:#a6adb8}
+.voip-page .voip-state{display:inline-flex;border:1px solid #594328;background:#251f17;color:#e9c080;border-radius:7px;padding:5px 9px;font-size:11px;white-space:nowrap}
+.voip-page .voip-empty-state{display:flex;align-items:center;gap:14px;padding:17px;border:1px dashed #39414c;border-radius:9px;background:#111419}
+.voip-page .voip-empty-state>i{font-size:23px;color:#8999aa}
+.voip-page .voip-empty-state strong{display:block;color:#dce5ed;font-size:13px;margin-bottom:4px}
+.voip-page .voip-empty-state span{display:block;color:#91a1b2;font-size:12px}
+.voip-page .voip-subtitle{font-size:13px;font-weight:700;color:#dce5ed;margin:12px 0}
+.voip-page .voip-section .voip-table-wrap{margin-top:10px}
+.voip-page .voip-table th{font-size:12px;padding:12px}
+.voip-page .voip-table td{font-size:12px;padding:12px}
+.voip-page .voip-steps .voip-section-title{font-size:17px;margin-bottom:20px}
+.voip-page .voip-step strong{font-size:13px}
+.voip-page .voip-step span{font-size:12px}
+.voip-page :is(.voip-nav a,.voip-card){scroll-margin-top:24px}
+@media(max-width:600px){.voip-page .voip-nav a{flex:1 1 45%}.voip-page .voip-grid .voip-kpi{padding:17px}.voip-page .voip-section{padding:17px}}
 </style>
 <section class="voip-page" aria-labelledby="voip-title">
     <div class="voip-heading">
         <div>
             <h2 id="voip-title"><i class="bi bi-telephone me-2" aria-hidden="true"></i>Central VoIP</h2>
-            <p class="voip-muted mb-0">Gerencie as linhas, os vínculos e as solicitações de telefonia.</p>
+            <p class="voip-muted mb-0">Estoque VoiceCopy, solicitações de telefonia e vínculos com contratos IXC.</p>
         </div>
-        <span class="voip-tag">Estoque · vínculo IXC pendente</span>
+        <span class="voip-tag"><i class="bi bi-circle-fill" aria-hidden="true"></i> Central em implantação</span>
     </div>
 
     <?php if ($voipError !== ''): ?><div class="voip-note" role="alert"><?= voipEscape($voipError) ?></div><?php endif; ?>
     <?php if ($voipFlash !== ''): ?><div class="voip-note" role="status"><?= voipEscape($voipFlash) ?></div><?php endif; ?>
-    <div class="voip-grid" aria-label="Resumo do estoque">
-    <?php foreach ([
-        ['Estoque VoiceCopy', count($voipRows), 'Números cadastrados'],
-        ['Ocupados', $voipOccupied, 'Informados pela equipe; contrato ainda não vinculado'],
-        ['A conferir', $voipReview, 'Não disponíveis para atribuição'],
-        ['Disponíveis', 0, 'Liberação ainda não habilitada']
-    ] as [$label, $count, $description]): ?>
-        <section class="voip-card">
-            <h3><?= voipEscape($label) ?></h3>
-            <div class="voip-number"><?= $voipData === null ? '—' : (int)$count ?></div>
-            <p><?= voipEscape($description) ?></p>
+    <nav class="voip-nav" aria-label="Áreas da Central VoIP">
+        <a href="#voip-solicitacoes"><i class="bi bi-bell" aria-hidden="true"></i> Solicitações</a>
+        <a href="#voip-estoque"><i class="bi bi-sim" aria-hidden="true"></i> Estoque</a>
+        <a href="#voip-vinculos"><i class="bi bi-link-45deg" aria-hidden="true"></i> Vínculos</a>
+        <a href="#voip-baixas"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Cancelamentos</a>
+        <a href="#voip-historico"><i class="bi bi-clock-history" aria-hidden="true"></i> Histórico</a>
+    </nav>
+
+    <div class="voip-grid" aria-label="Visão geral da Central VoIP">
+        <section class="voip-card voip-kpi">
+            <div class="voip-kpi-heading"><span>Solicitações pendentes</span><i class="bi bi-bell" aria-hidden="true"></i></div>
+            <div class="voip-number" aria-label="Aguardando integração">—</div>
+            <p>Contratos com produto 74 sem número vinculado</p>
+            <small class="voip-kpi-foot">Monitoramento IXC ainda não habilitado</small>
         </section>
-    <?php endforeach; ?>
+        <section class="voip-card voip-kpi">
+            <div class="voip-kpi-heading"><span>Estoque VoiceCopy</span><i class="bi bi-sim" aria-hidden="true"></i></div>
+            <div class="voip-number"><?= $voipData === null ? '—' : count($voipRows) ?></div>
+            <p>Números cadastrados no estoque</p>
+            <small class="voip-kpi-foot"><?= $voipData === null ? 'Armazenamento indisponível' : $voipOccupied . ' ocupados · ' . $voipReview . ' a conferir' ?></small>
+        </section>
+        <section class="voip-card voip-kpi">
+            <div class="voip-kpi-heading"><span>Números vinculados</span><i class="bi bi-link-45deg" aria-hidden="true"></i></div>
+            <div class="voip-number" aria-label="Ainda não habilitado">—</div>
+            <p>Números associados a contratos do IXC</p>
+            <small class="voip-kpi-foot">Vinculação manual em preparação</small>
+        </section>
+        <section class="voip-card voip-kpi">
+            <div class="voip-kpi-heading"><span>Cancelamentos e baixas</span><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></div>
+            <div class="voip-number" aria-label="Ainda não habilitado">—</div>
+            <p>Linhas aguardando revisão e liberação</p>
+            <small class="voip-kpi-foot">Nenhuma baixa automática</small>
+        </section>
     </div>
 
-    <section class="voip-card">
-        <h3 class="voip-section-title">Números e titulares</h3>
+    <section class="voip-card voip-section" id="voip-solicitacoes">
+        <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-bell me-2" aria-hidden="true"></i>Solicitações pendentes</h3>
+        <p>Contratos ativos com produto 74 e sem número associado serão apresentados aqui automaticamente.</p></div><span class="voip-state">Integração pendente</span></div>
+        <div class="voip-empty-state"><i class="bi bi-inbox" aria-hidden="true"></i><div><strong>Aguardando a integração de consulta do IXC</strong><span>A ausência de solicitações nesta tela ainda não significa que não existam contratos pendentes.</span></div></div>
+    </section>
+
+    <section class="voip-card voip-section" id="voip-estoque">
+        <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-sim me-2" aria-hidden="true"></i>Estoque VoiceCopy</h3>
+        <p>Números informados pela equipe, ainda sem validação dos contratos pelo IXC.</p></div><span class="voip-state">Importação manual</span></div>
+
+        <div class="voip-subtitle">Números e titulares</div>
         <p>Ocupação informada pela equipe. A validação dos contratos e do produto 74 será feita na próxima etapa.</p>
         <div class="voip-table-wrap">
         <table class="voip-table">
@@ -127,8 +192,7 @@ include __DIR__ . '/views/layouts/header.php';
         </table>
         </div>
     </section>
-
-    <details class="voip-card voip-import">
+    <details class="voip-card voip-import" id="voip-importar">
         <summary>Importar números</summary>
         <p>Uma linha por número: <code>número;ocupado;nome</code> ou <code>número;a_conferir;</code>. Uma nova importação não substitui cadastros existentes.</p>
         <form method="post" action="/voip-central.php">
@@ -139,7 +203,28 @@ include __DIR__ . '/views/layouts/header.php';
         </form>
     </details>
 
-    <details class="voip-card voip-import">
+    <section class="voip-card voip-section" id="voip-vinculos">
+        <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-link-45deg me-2" aria-hidden="true"></i>Números vinculados</h3>
+        <p>A equipe poderá selecionar um DID do estoque e associá-lo manualmente ao contrato IXC.</p></div><span class="voip-state">Em preparação</span></div>
+        <div class="voip-empty-state"><i class="bi bi-link" aria-hidden="true"></i><div><strong>Vinculação manual ainda não disponível</strong><span>Os números marcados como ocupados na importação não equivalem a contratos já vinculados.</span></div></div>
+    </section>
+
+    <section class="voip-card voip-section" id="voip-baixas">
+        <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-shield-exclamation me-2" aria-hidden="true"></i>Cancelamentos e baixas</h3>
+        <p>Contratos cancelados ou sem produto 74 gerarão alerta para revisão, sem liberar o número automaticamente.</p></div><span class="voip-state">Em preparação</span></div>
+        <div class="voip-empty-state"><i class="bi bi-shield-check" aria-hidden="true"></i><div><strong>Liberação supervisionada</strong><span>O DID só poderá voltar ao estoque disponível após confirmação de baixa na VoiceCopy.</span></div></div>
+    </section>
+
+    <section class="voip-card voip-section voip-steps" aria-label="Fluxo operacional">
+        <h3 class="voip-section-title">Fluxo operacional</h3>
+        <div class="voip-workflow">
+            <div class="voip-step"><div class="voip-step-icon"><i class="bi bi-cart-check" aria-hidden="true"></i></div><div><strong>1. Contratação no IXC</strong><span>O suporte N1 adiciona o produto 74 ao contrato.</span></div></div>
+            <div class="voip-step"><div class="voip-step-icon"><i class="bi bi-bell" aria-hidden="true"></i></div><div><strong>2. Alerta no ACS</strong><span>O MCP identificará contratos sem telefone vinculado.</span></div></div>
+            <div class="voip-step"><div class="voip-step-icon"><i class="bi bi-telephone-plus" aria-hidden="true"></i></div><div><strong>3. Vinculação manual</strong><span>A equipe selecionará um número e confirmará a ativação.</span></div></div>
+        </div>
+    </section>
+
+    <details class="voip-card voip-import" id="voip-historico">
         <summary>Histórico de importação</summary>
         <div class="voip-table-wrap"><table class="voip-table">
         <thead><tr><th>Data (UTC)</th><th>Operador (ID)</th><th>Número</th><th>Ação</th></tr></thead><tbody>
