@@ -73,7 +73,26 @@ final class VoipReservedRecovery
             if (!$writeApproved) throw new RuntimeException('PUT nao autorizado: somente diagnostico.');
             // Independent fresh GET + full-record PUT + readback are performed by the writer.
             // If a PUT times out, the reservation stays reserved and should be inspected again.
-            $writer->writeObservation('4740',$state['before'],$state['next'],$baseline);
+            try {
+                $writer->writeObservation('4740',$state['before'],$state['next'],$baseline);
+            } catch (Throwable $putFailure) {
+                // A 2xx response, network timeout or error decoding is not proof
+                // of failure. Perform a NEW independent GET. If the exact DID was
+                // persisted and no other contract field changed, finish the existing
+                // reservation. Otherwise preserve it and report the original error.
+                try {
+                    $afterFailure=self::inspect(
+                        $stock->read(), $writer->readFresh('4740'), $baseline
+                    );
+                    if ($afterFailure['status'] !== 'confirm_only' ||
+                        $afterFailure['did'] !== $state['did']) {
+                        throw $putFailure;
+                    }
+                } catch (Throwable $readbackFailure) {
+                    // Never auto-release or reserve a second number.
+                    throw $putFailure;
+                }
+            }
         }
         $verified=self::inspect($stock->read(),$writer->readFresh('4740'),$baseline);
         if ($verified['status'] !== 'confirm_only' ||
