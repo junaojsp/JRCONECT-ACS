@@ -10,6 +10,7 @@ require_once __DIR__ . '/lib/voip-stock.php';
 require_once __DIR__ . '/lib/voip-reconcile.php';
 require_once __DIR__ . '/lib/voip-operational.php';
 require_once __DIR__ . '/lib/voip-link-prefill.php';
+require_once __DIR__ . '/lib/voip-ixc-monitor.php';
 header('Cache-Control: no-store, private');
 if (empty($_SESSION['voip_csrf'])) $_SESSION['voip_csrf'] = bin2hex(random_bytes(32));
 $voipError = '';
@@ -97,6 +98,17 @@ $voipOther = count($voipRows) - $voipOccupied - $voipReview - $voipAvailable;
 $voipLinked = count(array_filter($voipRows, static fn($r) => !empty($r['contract_id']) && !empty($r['product_record_id'])));
 $voipMin = (int)($voipData['minimum_available'] ?? 5);
 $voipLowStock = $voipData !== null && $voipAvailable <= $voipMin;
+$voipMonitor = null;
+$voipMonitorError = null;
+try {
+    $voipMonitor = VoipIxcMonitor::overview(
+        VoipIxcMonitor::read(),
+        $voipRows
+    );
+} catch (Throwable $e) {
+    $voipMonitorError = 'Monitor IXC indisponível; verifique a última execução no ACS.';
+}
+
 $voipFlash = $_SESSION['voip_flash'] ?? '';
 unset($_SESSION['voip_flash']);
 function voipEscape($value): string { return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -252,9 +264,9 @@ include __DIR__ . '/views/layouts/header.php';
     <div class="voip-grid" aria-label="Visão geral da Central VoIP">
         <section class="voip-card voip-kpi">
             <div class="voip-kpi-heading"><span>Solicitações pendentes</span><i class="bi bi-bell" aria-hidden="true"></i></div>
-            <div class="voip-number" aria-label="Aguardando integração">—</div>
-            <p>Contratos com produto 74 sem número vinculado</p>
-            <small class="voip-kpi-foot">Monitoramento IXC ainda não habilitado</small>
+            <div class="voip-number"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? count($voipMonitor['unlinked']) : '—' ?></div>
+            <p>Contratos com produto 74 sem vínculo confirmado no ACS</p>
+            <small class="voip-kpi-foot"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? 'Consulta automática: status IXC bruto, revisar antes de atribuir' : 'Aguardando monitor IXC válido e recente' ?></small>
         </section>
         <section class="voip-card voip-kpi">
             <div class="voip-kpi-heading"><span>Estoque VoiceCopy</span><i class="bi bi-sim" aria-hidden="true"></i></div>
@@ -277,9 +289,50 @@ include __DIR__ . '/views/layouts/header.php';
     </div>
 
     <section class="voip-card voip-section" id="voip-solicitacoes">
-        <div class="voip-section-head"><div><h3 class="voip-section-title"><i class="bi bi-bell me-2" aria-hidden="true"></i>Solicitações pendentes</h3>
-        <p>Contratos ativos com produto 74 e sem número associado serão apresentados aqui automaticamente.</p></div><span class="voip-state">Integração pendente</span></div>
-        <div class="voip-empty-state"><i class="bi bi-inbox" aria-hidden="true"></i><div><strong>Aguardando a integração de consulta do IXC</strong><span>A ausência de solicitações nesta tela ainda não significa que não existam contratos pendentes.</span></div></div>
+        <div class="voip-section-head"><div>
+            <h3 class="voip-section-title"><i class="bi bi-bell me-2" aria-hidden="true"></i>Monitoramento IXC — produto 74</h3>
+            <p>Consulta periódica somente leitura no MCP. Mostra contratações novas e alterações, sem liberar ou atribuir DID automaticamente.</p>
+        </div><span class="voip-state"><?= $voipMonitor !== null && !$voipMonitor['stale'] ? 'Dados recentes' : 'Monitor pendente' ?></span></div>
+        <?php if ($voipMonitorError !== null): ?>
+            <div class="voip-note" role="alert"><?= voipEscape($voipMonitorError) ?></div>
+        <?php elseif ($voipMonitor === null || $voipMonitor['status'] === 'not_configured'): ?>
+            <div class="voip-empty-state"><i class="bi bi-shield-lock" aria-hidden="true"></i>
+                <div><strong>Monitor automático ainda não ativado</strong>
+                    <span>A instalação do código não ativa um agendamento. A primeira consulta define a referência inicial de contratos.</span>
+                </div></div>
+        <?php else: ?>
+            <p>Última consulta: <strong><?= voipEscape($voipMonitor['last_checked']) ?></strong>
+                · Contratos com produto 74: <strong><?= (int)$voipMonitor['total_contracts'] ?></strong>
+                · Sem vínculo confirmado: <strong><?= count($voipMonitor['unlinked']) ?></strong>.
+                O status contratual exige validação; não classificar automaticamente como solicitação.</p>
+            <?php if ($voipMonitor['stale']): ?>
+                <div class="voip-note" role="alert"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    Monitor desatualizado. Dados podem não refletir o IXC. Verifique o serviço agendado no ACS.</div>
+            <?php endif; ?>
+            <div class="voip-stock-summary">
+                <span class="voip-stock-chip voip-stock-chip--review">Contratos sem vínculo <strong><?= count($voipMonitor['unlinked']) ?></strong></span>
+                <span class="voip-stock-chip voip-stock-chip--review">Eventos recentes <strong><?= count($voipMonitor['pending']) ?></strong></span>
+            </div>
+            <?php if ($voipMonitor['pending']): ?>
+                <div class="voip-table-wrap"><table class="voip-table">
+                    <thead><tr><th>Data UTC</th><th>Contrato</th><th>Alteração detectada</th></tr></thead><tbody>
+                    <?php foreach ($voipMonitor['pending'] as $event): ?>
+                        <tr><td><?= voipEscape($event['at'] ?? '—') ?></td>
+                            <td><?= voipEscape($event['contract_id'] ?? '—') ?></td>
+                            <td><?= voipEscape([
+                                'new_product_74'=>'Produto 74 identificado em novo contrato',
+                                'status_changed'=>'Status IXC alterado: ' . ($event['previous_status'] ?? '?') . ' → ' . ($event['status'] ?? '?'),
+                                'product_74_absent'=>'Produto 74 não consta mais na consulta'
+                            ][$event['type'] ?? ''] ?? 'Verificar alteração') ?></td></tr>
+                    <?php endforeach; ?>
+                    </tbody></table></div>
+            <?php else: ?>
+                <p>Nenhuma mudança detectada desde a referência inicial.</p>
+            <?php endif; ?>
+            <p>Contratos com produto 74 ainda sem vínculo confirmado:
+                <strong><?= voipEscape($voipMonitor['unlinked'] ? implode(', ', $voipMonitor['unlinked']) : 'Nenhum') ?></strong>.
+                Confirme a necessidade de telefonia antes de atribuir um número. Remoção do produto ou mudança de status não libera o DID automaticamente.</p>
+        <?php endif; ?>
     </section>
 
     <section class="voip-card voip-section" id="voip-estoque">
